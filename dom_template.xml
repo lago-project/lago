@@ -1,0 +1,31 @@
+<domain type='kvm'>
+    <name>NAME</name>
+    <memory unit='GiB'>8</memory>
+    <vcpu>2</vcpu>
+    <cpu mode='host-passthrough'>
+      <topology sockets='1' cores='2' threads='2'/>
+    </cpu>
+    <os>
+      <type arch='x86_64' machine='pc'>hvm</type>
+      <boot dev='hd'/>
+    </os>
+    <features>
+      <acpi/>
+      <apic/>
+      <pae/>
+    </features>
+    <devices>
+      <emulator>/usr/bin/qemu-kvm</emulator>
+      <disk type='block' device='disk'>
+        <driver name='qemu' type='qcow2'/>
+        <source dev='DISK_PATH'/>
+        <target dev='DISK_DEV' bus='virtio'/>
+      </disk>
+      <interface type='network'>
+        <source network='NET_NAME'/>
+        <model type='virtio'/>
+        <mac address='MAC_BR'/>
+      </interface>
+      <graphics type='vnc' port='-1' autoport='yes' listen='0.0.0.0' keymap='en-us'/>
+    </devices>
+</domain>

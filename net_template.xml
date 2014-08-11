@@ -1,0 +1,14 @@
+<network>
+  <name>NAME</name>
+  <forward mode='nat'>
+    <nat>
+      <port start='1024' end='65535'/>
+    </nat>
+  </forward>
+  <bridge name='BR_NAME' stp='on' delay='0' />
+  <ip address='GW_ADDR' netmask='255.255.255.0'>
+    <dhcp>
+      <range start='DHCP_START' end='DHCP_END' />
+    </dhcp>
+  </ip>
+</network>
