@@ -1,0 +1,16 @@
+#!/bin/bash
+SCRIPT_DIR=$(cd `dirname "${BASH_SOURCE[0]}"` && pwd)/
+
+# add all libs to PYTHONPATH
+for LIB in $(find $(realpath $SCRIPT_DIR/..) -type d -name lib); do
+export PYTHONPATH=$LIB:$PYTHONPATH
+done
+
+# add all libexecs to PATH
+for LIBEXEC in $(find $(realpath $SCRIPT_DIR/..) -type d -name libexec); do
+export PATH=$LIBEXEC:$PATH
+done
+
+export PATH=$SCRIPT_DIR:$SCRIPT_DIR/../contrib/ovirt/ovirttestenv/:$PATH
+
+testenvcli $@

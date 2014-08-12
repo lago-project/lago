@@ -1,0 +1,102 @@
+[main]
+reposdir=/etc/reposync.repos.d
+
+[ovirt-master-snapshot-el6]
+name=oVirt Master Nightly Test Releases
+baseurl=http://ovirt-mirror.eng.lab.tlv.redhat.com/pub/ovirt-master-snapshot/rpm/el6/
+enabled=1
+gpgcheck=0
+
+[ovirt-master-snapshot-el7]
+name=oVirt Master Nightly Test Releases
+baseurl=http://ovirt-mirror.eng.lab.tlv.redhat.com/pub/ovirt-master-snapshot/rpm/el7/
+enabled=1
+gpgcheck=0
+
+[ovirt-master-snapshot-fc19]
+name=oVirt Master Nightly Test Releases
+baseurl=http://ovirt-mirror.eng.lab.tlv.redhat.com/pub/ovirt-master-snapshot/rpm/fc19/
+enabled=1
+gpgcheck=0
+
+[ovirt-master-snapshot-fc20]
+name=oVirt Master Nightly Test Releases
+baseurl=http://ovirt-mirror.eng.lab.tlv.redhat.com/pub/ovirt-master-snapshot/rpm/fc20/
+enabled=1
+gpgcheck=0
+
+[ovirt-master-snapshot-static-el6]
+name=oVirt Master Nightly Statics
+baseurl=http://ovirt-mirror.eng.lab.tlv.redhat.com/pub/ovirt-master-snapshot-static/rpm/el6/
+enabled=1
+gpgcheck=0
+
+[ovirt-master-snapshot-static-el7]
+name=oVirt Master Nightly Statics
+baseurl=http://ovirt-mirror.eng.lab.tlv.redhat.com/pub/ovirt-master-snapshot-static/rpm/el7/
+enabled=1
+gpgcheck=0
+
+[ovirt-master-snapshot-static-fc19]
+name=oVirt Master Nightly Statics
+baseurl=http://ovirt-mirror.eng.lab.tlv.redhat.com/pub/ovirt-master-snapshot-static/rpm/fc19/
+enabled=1
+gpgcheck=0
+
+[ovirt-master-snapshot-static-fc20]
+name=oVirt Master Nightly Statics
+baseurl=http://ovirt-mirror.eng.lab.tlv.redhat.com/pub/ovirt-master-snapshot-static/rpm/fc20/
+enabled=1
+gpgcheck=0
+
+[ovirt-master-dependencies-el6]
+name=oVirt dependencies
+baseurl=http://copr-be.cloud.fedoraproject.org/results/patternfly/patternfly1/epel-6-x86_64/
+enabled=1
+gpgcheck=0
+
+[ovirt-master-dependencies-el7]
+name=oVirt dependencies
+baseurl=http://copr-be.cloud.fedoraproject.org/results/patternfly/patternfly1/epel-7-x86_64/
+enabled=1
+gpgcheck=0
+
+[ovirt-master-dependencies-fc19]
+name=oVirt dependencies
+baseurl=http://copr-be.cloud.fedoraproject.org/results/patternfly/patternfly1/fedora-19-x86_64/
+enabled=1
+gpgcheck=0
+
+[ovirt-master-dependencies-fc20]
+name=oVirt dependencies
+baseurl=http://copr-be.cloud.fedoraproject.org/results/patternfly/patternfly1/fedora-20-x86_64/
+enabled=1
+gpgcheck=0
+
+[epel-el6]
+name=EPEL repo
+baseurl=https://dl.fedoraproject.org/pub/epel/6/x86_64/
+enabled=1
+gpgcheck=0
+includepkgs=ioprocess python-ioprocess
+
+[epel-el7]
+name=EPEL repo
+baseurl=https://dl.fedoraproject.org/pub/epel/7/x86_64/
+enabled=1
+gpgcheck=0
+includepkgs=ioprocess python-ioprocess
+
+[updates-fc19]
+name=Fedora updates repo
+baseurl=http://download.fedoraproject.org/pub/fedora/linux/updates/19/x86_64
+enabled=1
+gpgcheck=0
+includepkgs=ioprocess python-ioprocess
+
+[updates-fc20]
+name=Fedora updates repo
+baseurl=http://download.fedoraproject.org/pub/fedora/linux/updates/20/x86_64
+enabled=1
+gpgcheck=0
+includepkgs=ioprocess python-ioprocess

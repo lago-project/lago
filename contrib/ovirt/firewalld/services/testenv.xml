@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<service>
+  <short>Testing framework local repository</short>
+  <description>
+    HTTP server that serves RPMs to a running deployment of the testing
+    framework.
+  </description>
+  <port port="8585" protocol="tcp" />
+  <destination ipv4="192.168.0.0/16" />
+</service>

@@ -1,0 +1,328 @@
+#!/usr/bin/python
+#
+# Copyright 2014 Red Hat, Inc.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
+#
+# Refer to the README and COPYING files for full details of the license
+#
+import argparse
+import collections
+import functools
+import logging
+import os
+import sys
+
+import testenv
+import ovirttestenv
+
+
+DISTS = ['el6', 'el7', 'fc20']
+
+
+def in_prefix(func):
+    @functools.wraps(func)
+    def wrapper(args):
+        if not os.path.exists('.testenv'):
+            raise RuntimeError('Not inside prefix')
+        prefix = ovirttestenv.OvirtPrefix(os.getcwd())
+        return func(prefix, args)
+    return wrapper
+
+
+def with_logging(func):
+    @functools.wraps(func)
+    def wrapper(prefix, args):
+        testenv.utils.setup_logging(prefix.paths.logs())
+        return func(prefix, args)
+    return wrapper
+
+
+@in_prefix
+@with_logging
+def do_ovirt_snapshot(prefix, args):
+    prefix.create_snapshots(args.snapshot_name, args.restore)
+
+
+@in_prefix
+@with_logging
+def do_ovirt_revert(prefix, args):
+    prefix.revert_snapshots(args.snapshot_name)
+
+
+@in_prefix
+@with_logging
+def do_ovirt_runtest(prefix, args):
+    if not os.path.exists(args.test_file):
+        raise RuntimeError('Test file not found')
+    if not prefix.run_test(args.test_file):
+        raise RuntimeError('Some tests failed')
+
+
+@in_prefix
+@with_logging
+def do_ovirt_reposetup(prefix, args):
+    engine_dists = list(set(args.engine_dist))
+    vdsm_dists = list(set(args.vdsm_dist))
+    prefix.prepare_repo(
+        rpm_repo=args.rpm_repo,
+        reposync_yum_config=args.reposync_yum_config,
+        engine_dir=args.engine_dir,
+        engine_dists=engine_dists,
+        engine_build_gwt=args.engine_with_gwt,
+        vdsm_dir=args.vdsm_dir,
+        vdsm_dists=vdsm_dists,
+    )
+
+
+@in_prefix
+@with_logging
+def do_deploy(prefix, args):
+    prefix.deploy(
+        args.config,
+        args.scripts_root,
+    )
+
+
+@in_prefix
+@with_logging
+def do_ovirt_start(prefix, args):
+    prefix.start()
+
+
+@in_prefix
+@with_logging
+def do_ovirt_stop(prefix, args):
+    prefix.stop()
+
+
+@in_prefix
+@with_logging
+def do_ovirt_engine_setup(prefix, args):
+    prefix.virt_env().engine_vm().engine_setup(args.config)
+
+
+class Verbs:
+    OVIRT_DEPLOY = 'deploy'
+    OVIRT_REPOSETUP = 'reposetup'
+    OVIRT_RUNTEST = 'runtest'
+    OVIRT_SNAPSHOT = 'snapshot'
+    OVIRT_REVERT = 'revert'
+    OVIRT_START = 'start'
+    OVIRT_STOP = 'stop'
+    OVIRT_ENGINE_SETUP = 'engine-setup'
+
+ARGUMENTS = collections.OrderedDict()
+ARGUMENTS[Verbs.OVIRT_DEPLOY] = (
+    'Run scripts that install necessary RPMs and configuration',
+    (
+        (
+            'config',
+            {
+                'help': (
+                    'Path to config that describes the scripts needed to run'
+                ),
+                'type': os.path.abspath,
+            },
+        ),
+        (
+            'scripts_root',
+            {
+                'help': (
+                    'Prefix of all paths in the provided configuration file.'
+                ),
+                'type': os.path.abspath,
+            },
+        ),
+    ),
+    do_deploy,
+)
+ARGUMENTS[Verbs.OVIRT_REPOSETUP] = (
+    (
+        'Create a local rpm repository with rpms provided by external '
+        'repository and rpms build from engine/vdsm sources if provided.'
+    ),
+    (
+        (
+            '--rpm-repo',
+            {
+                'help': 'Path to local rpm repository',
+                'type': os.path.abspath,
+            }
+        ),
+        (
+            '--reposync-yum-config',
+            {
+                'help': (
+                    'Path to configuration to use when updating local rpm '
+                    'repository'
+                ),
+                'type': os.path.abspath,
+            },
+        ),
+        (
+            '--engine-dir',
+            {
+                'help': 'Path to oVirt engine source'
+            },
+        ),
+        (
+            '--engine-dist',
+            {
+                'help': (
+                    'Distribuiton to build engine for, can be provided '
+                    'several times. '
+                ),
+                'action': 'append',
+                'choices': DISTS,
+                'default': [],
+            },
+        ),
+        (
+            '--engine-with-gwt',
+            {
+                'help': 'Build GWT when build engine rpms',
+                'action': 'store_true',
+            },
+        ),
+        (
+            '--vdsm-dir',
+            {
+                'help': 'Path to VDSM source'
+            },
+        ),
+        (
+            '--vdsm-dist',
+            {
+                'help': (
+                    'Distribuiton to build VDSM for, can be provided '
+                    'several times'
+                ),
+                'action': 'append',
+                'choices': DISTS,
+                'default': [],
+            },
+        ),
+    ),
+    do_ovirt_reposetup,
+)
+ARGUMENTS[Verbs.OVIRT_RUNTEST] = (
+    'Run unit tests from a specified file',
+    (
+        (
+            'test_file',
+            {
+                'help': 'Path to tests file to run',
+                'metavar': 'TEST_FILE',
+            },
+        ),
+    ),
+    do_ovirt_runtest,
+)
+ARGUMENTS[Verbs.OVIRT_SNAPSHOT] = (
+    (
+        'Create snapshots for all deployed resources.\n'
+        'This command maintenances storage domains and hosts before '
+        'taking snapshot.'
+    ),
+    (
+        (
+            'snapshot_name',
+            {
+                'help': 'Name of the snapshot to create',
+                'metavar': 'SNAPSHOT_NAME',
+            },
+        ),
+        (
+            '--no-restore',
+            {
+                'help': (
+                    'Do not bring system in to previous state '
+                    '(active storage domains/hosts/services)'
+                ),
+                'action': 'store_false',
+                'dest': 'restore',
+            },
+        ),
+    ),
+    do_ovirt_snapshot,
+)
+ARGUMENTS[Verbs.OVIRT_REVERT] = (
+    (
+        'Revert to a previously created snapshot.\n'
+        'This command activates storage domains and hosts after booting up.'
+    ),
+    (
+        (
+            'snapshot_name',
+            {
+                'help': 'Name of the snapshot to create',
+                'metavar': 'SNAPSHOT_NAME',
+            },
+        ),
+    ),
+    do_ovirt_revert,
+)
+ARGUMENTS[Verbs.OVIRT_START] = (
+    'Start all resources and activate all storage domains and hosts.',
+    (),
+    do_ovirt_start,
+)
+ARGUMENTS[Verbs.OVIRT_STOP] = (
+    'Maintenance all storage domains and hosts, and stop all resources',
+    (),
+    do_ovirt_stop,
+)
+ARGUMENTS[Verbs.OVIRT_ENGINE_SETUP] = (
+    'Run engine-setup command on the engine machine',
+    (
+        (
+            '--config',
+            {
+                'help': 'Path to answer file',
+                'type': os.path.abspath,
+            },
+        ),
+    ),
+    do_ovirt_engine_setup,
+)
+
+
+def create_parser():
+    parser = argparse.ArgumentParser(
+        os.environ.get('TESTENV_PROG_NAME', sys.argv[0]),
+        description='Command line interface to oVirt testing framework.'
+    )
+    verbs = parser.add_subparsers(dest='verb', metavar='VERB')
+    for verb, (desc, args, _) in ARGUMENTS.items():
+        verb_parser = verbs.add_parser(verb, help=desc)
+        for arg_name, arg_kw in args:
+            verb_parser.add_argument(arg_name, **arg_kw)
+    return parser
+
+
+def main():
+    parser = create_parser()
+    args = parser.parse_args()
+
+    try:
+        _, _, func = ARGUMENTS[args.verb]
+        func(args)
+    except Exception:
+        logging.exception('Error occured, aborting')
+        sys.exit(1)
+
+if __name__ == '__main__':
+    main()

@@ -1,0 +1,6 @@
+.*.swp
+*.pyc
+MANIFEST
+testenv.spec
+dist/
+build/

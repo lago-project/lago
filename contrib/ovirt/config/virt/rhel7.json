@@ -1,0 +1,174 @@
+{
+    "domains": {
+        "engine": {
+            "nics": [
+                {
+                    "net": "testenv"
+                }
+            ], 
+            "disks": [
+                {
+                    "template_name": "rhel7/engine_template.img", 
+                    "type": "template", 
+                    "name": "root", 
+                    "dev": "vda", 
+                    "format": "qcow2"
+                }
+            ], 
+            "metadata": {
+                "ovirt-engine-password": "123", 
+                "ovirt-role": "engine"
+            }
+        }, 
+        "storage-iscsi": {
+            "nics": [
+                {
+                    "net": "testenv"
+                }
+            ], 
+            "disks": [
+                {
+                    "template_name": "fedora20/storage-iscsi_template.img", 
+                    "type": "template", 
+                    "name": "root", 
+                    "dev": "vda", 
+                    "format": "qcow2"
+                }, 
+                {
+                    "size": "60G", 
+                    "type": "empty", 
+                    "name": "extra1", 
+                    "dev": "vdb", 
+                    "format": "raw"
+                }
+            ]
+        }, 
+        "storage-nfs": {
+            "nics": [
+                {
+                    "net": "testenv"
+                }
+            ], 
+            "disks": [
+                {
+                    "template_name": "fedora20/storage-nfs_template.img", 
+                    "type": "template", 
+                    "name": "root", 
+                    "dev": "vda", 
+                    "format": "qcow2"
+                }, 
+                {
+                    "size": "60G", 
+                    "type": "empty", 
+                    "name": "extra1", 
+                    "dev": "vdb", 
+                    "format": "raw"
+                }, 
+                {
+                    "template_name": "fedora20/storage-nfs_export.img", 
+                    "type": "template", 
+                    "name": "export", 
+                    "dev": "vdc", 
+                    "format": "qcow2"
+                }
+            ]
+        }, 
+        "host3": {
+            "nics": [
+                {
+                    "net": "testenv"
+                }
+            ], 
+            "disks": [
+                {
+                    "template_name": "rhel7/host_template.img", 
+                    "type": "template", 
+                    "name": "root", 
+                    "dev": "vda", 
+                    "format": "qcow2"
+                }
+            ], 
+            "metadata": {
+                "ovirt-capabilities": [
+                    "snapshot-live-merge"
+                ], 
+                "ovirt-role": "host"
+            }
+        }, 
+        "host2": {
+            "nics": [
+                {
+                    "net": "testenv"
+                }
+            ], 
+            "disks": [
+                {
+                    "template_name": "rhel7/host_template.img", 
+                    "type": "template", 
+                    "name": "root", 
+                    "dev": "vda", 
+                    "format": "qcow2"
+                }
+            ], 
+            "metadata": {
+                "ovirt-capabilities": [
+                    "snapshot-live-merge"
+                ], 
+                "ovirt-role": "host"
+            }
+        }, 
+        "host1": {
+            "nics": [
+                {
+                    "net": "testenv"
+                }
+            ], 
+            "disks": [
+                {
+                    "template_name": "rhel7/host_template.img", 
+                    "type": "template", 
+                    "name": "root", 
+                    "dev": "vda", 
+                    "format": "qcow2"
+                }
+            ], 
+            "metadata": {
+                "ovirt-capabilities": [
+                    "snapshot-live-merge"
+                ], 
+                "ovirt-role": "host"
+            }
+        }, 
+        "host0": {
+            "nics": [
+                {
+                    "net": "testenv"
+                }
+            ], 
+            "disks": [
+                {
+                    "template_name": "rhel7/host_template.img", 
+                    "type": "template", 
+                    "name": "root", 
+                    "dev": "vda", 
+                    "format": "qcow2"
+                }
+            ], 
+            "metadata": {
+                "ovirt-capabilities": [
+                    "snapshot-live-merge"
+                ], 
+                "ovirt-role": "host"
+            }
+        }
+    }, 
+    "nets": {
+        "testenv": {
+            "dhcp": {
+                "start": 100, 
+                "end": 254
+            }, 
+            "management": true
+        }
+    }
+}

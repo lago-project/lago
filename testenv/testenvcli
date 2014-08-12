@@ -1,0 +1,369 @@
+#!/usr/bin/python
+#
+# Copyright 2014 Red Hat, Inc.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
+#
+# Refer to the README and COPYING files for full details of the license
+#
+
+import argparse
+import collections
+import functools
+import json
+import logging
+import os
+import shutil
+import stat
+import sys
+
+import testenv
+
+CLI_PREFIX = 'testenvcli-'
+
+
+def do_init(args):
+    prefix = testenv.Prefix(args.prefix)
+    prefix.initialize()
+    # FIXME
+    with open(os.path.join(args.prefix, '.testenv'), 'w') as f:
+        f.write('')
+
+    with open(args.virt_config, 'r') as f:
+        virt_conf = json.load(f)
+    testenv.utils.setup_logging(prefix.paths.logs())
+
+    try:
+        prefix.virt_conf(virt_conf, args.templates_dir)
+    except:
+        shutil.rmtree(args.prefix)
+        raise
+
+
+def in_prefix(func):
+    @functools.wraps(func)
+    def wrapper(args):
+        if not os.path.exists('.testenv'):
+            raise RuntimeError('Not inside prefix')
+        return func(testenv.Prefix(os.getcwd()), args)
+    return wrapper
+
+
+def with_logging(func):
+    @functools.wraps(func)
+    def wrapper(prefix, args):
+        testenv.utils.setup_logging(prefix.paths.logs())
+        return func(prefix, args)
+    return wrapper
+
+
+@in_prefix
+@with_logging
+def do_cleanup(prefix, args):
+    prefix.cleanup()
+
+
+@in_prefix
+@with_logging
+def do_start(prefix, args):
+    prefix.start()
+
+
+@in_prefix
+@with_logging
+def do_stop(prefix, args):
+    prefix.stop()
+
+
+@in_prefix
+@with_logging
+def do_snapshot(prefix, args):
+    prefix.create_snapshots(args.snapshot_name)
+
+
+@in_prefix
+@with_logging
+def do_revert(prefix, args):
+    prefix.revert_snapshots(args.snapshot_name)
+
+
+@in_prefix
+@with_logging
+def do_shell(prefix, args):
+    host = prefix.virt_env().get_vm(args.host)
+    if not host.alive():
+        raise RuntimeError('Host %s is not running' % host.name())
+
+    host.wait_for_ssh()
+
+    if len(args.args) == 0:
+        host.interactive_ssh(['bash'])
+    elif len(args.args) == 1:
+        host.ssh_script(args.args[1])
+    elif (len(args.args) > 1 and args.args[0] == '-c'):
+        host.interactive_ssh(args.args[1:])
+    else:
+        raise RuntimeError('Invalid arguments passed')
+
+
+@in_prefix
+@with_logging
+def do_status(prefix, args):
+    print '[Prefix]:'
+    print '\tBase directory:', prefix.paths.prefix()
+    with open(prefix.paths.uuid()) as f:
+        print '\tUUID:', f.read()
+    net = prefix.virt_env().get_net()
+    print '[Networks]:'
+    for net in prefix.virt_env().get_nets().values():
+        print '\t[%s]' % net.name()
+        print '\t\tGateway:', net.gw()
+        print '\t\tStatus:', net.alive() and 'up' or 'down'
+        print '\t\tManagement:', net.is_management()
+    print '[VMs]:'
+    for vm in prefix.virt_env().get_vms().values():
+        print '\t[%s]' % vm.name()
+        print '\t\tStatus:', vm.alive() and 'up' or 'down'
+        print '\t\tSnapshots:', ', '.join(vm._spec['snapshots'].keys())
+        if vm.alive():
+            print '\t\tVNC port:', vm.vnc_port()
+        if vm.metadata:
+            print '\t\tMetadata:'
+            for k, v in vm.metadata.items():
+                print '\t\t\t%s: %s' % (k, v)
+        print '\t\tNICs:'
+        for i, nic in enumerate(vm.nics()):
+            print '\t\t\t[eth%d]' % i
+            print '\t\t\tNetwork:', nic['net']
+            print '\t\t\tIP', nic['ip']
+
+
+class Verbs:
+    INIT = 'init'
+    START = 'start'
+    STOP = 'stop'
+    SNAPSHOT = 'snapshot'
+    REVERT = 'revert'
+    CLEANUP = 'cleanup'
+    SHELL = 'shell'
+    STATUS = 'status'
+
+
+ARGUMENTS = collections.OrderedDict()
+ARGUMENTS[Verbs.INIT] = (
+    {
+        'help': 'Initialize a directory for framework deployment',
+    },
+    (
+        (
+            'prefix',
+            {
+                'help': 'Prefix directory of the deployment',
+                'metavar': 'PREFIX',
+                'type': os.path.abspath,
+            },
+        ),
+        (
+            'virt_config',
+            {
+                'help': 'Configuration of resources to deploy',
+                'type': os.path.abspath,
+                'metavar': 'VIRT_CONFIG',
+            },
+        ),
+        (
+            '--templates-dir',
+            {
+                'help': (
+                    'Location of templates (that are referenced '
+                    'from virt config)'
+                ),
+                'type': os.path.abspath,
+            },
+        ),
+    ),
+    do_init,
+)
+ARGUMENTS[Verbs.CLEANUP] = (
+    {
+        'help': 'Clean up deployed resources',
+    },
+    (),
+    do_cleanup,
+)
+ARGUMENTS[Verbs.START] = (
+    {
+        'help': 'Deploy testing framework resources',
+    },
+    (),
+    do_start,
+)
+ARGUMENTS[Verbs.STOP] = (
+    {
+        'help': 'Destroy testing framework resources',
+    },
+    (),
+    do_stop,
+)
+ARGUMENTS[Verbs.SNAPSHOT] = (
+    {
+        'help': 'Create snapshots for all deployed resources',
+    },
+    (
+        (
+            'snapshot_name',
+            {
+                'help': 'Snapshot name to create',
+                'metavar': 'SNAPSHOT_NAME',
+            },
+        ),
+    ),
+    do_snapshot,
+)
+ARGUMENTS[Verbs.REVERT] = (
+    {
+        'help': 'Revert resources to snapshot',
+    },
+    (
+        (
+            'snapshot_name',
+            {
+                'help': 'Snapshot name to revert to',
+                'metavar': 'SNAPSHOT_NAME',
+            },
+        ),
+    ),
+    do_revert,
+)
+ARGUMENTS[Verbs.SHELL] = (
+    {
+        'help': 'Open shell on the domain or run as script/command',
+        'prefix_chars': '\x00',
+    },
+    (
+        (
+            'host',
+            {
+                'help': 'Host to connect to',
+                'metavar': 'HOST',
+            },
+        ),
+        (
+            'args',
+            {
+                'help': (
+                    'If none provided, an interactive shell will be started.\n'
+                    'If arguments start with -c, what follows will be '
+                    'executes as a command.\n'
+                    'Otherwise, if a single provided, it will be ran as script'
+                    ' on the domain.'
+                ),
+                'nargs': '*',
+            },
+        ),
+    ),
+    do_shell,
+)
+ARGUMENTS[Verbs.STATUS] = (
+    {
+        'help': 'Show status of deployed virtual resources',
+    },
+    (),
+    do_status,
+)
+
+
+def call_discovered_verb(path, verb_name, args):
+    env = os.environ.copy()
+    env['TESTENV_PROG_NAME'] = 'testenvcli %s' % verb_name
+    os.execve(path, [path] + args.args, env)
+
+
+def is_exec_file(path):
+    try:
+        mode = os.stat(path).st_mode
+    except OSError:
+        return False
+    return (mode & stat.S_IEXEC) and (mode & stat.S_IFREG)
+
+
+def unprefixed(name):
+    if name.startswith(CLI_PREFIX):
+        return name[len(CLI_PREFIX):]
+    return name
+
+
+def discovered_verbs():
+    verbs = {}
+    for path in os.environ.get('PATH', '').split(':'):
+        if not os.path.isdir(path):
+            continue
+        verbs.update({
+            unprefixed(name): (
+                {
+                    'help': (
+                        "Invoke 'testenvcli %s --help' "
+                        "to see more" % unprefixed(name)
+                    ),
+                    'add_help': False,
+                    'prefix_chars': '\x00',
+                },
+                (
+                    ('args', {'nargs': '*'}),
+                ),
+                functools.partial(
+                    call_discovered_verb,
+                    os.path.join(path, name),
+                    unprefixed(name),
+                ),
+            ) for name in os.listdir(path)
+            if (
+                is_exec_file(os.path.join(path, name))
+                and
+                name.startswith(CLI_PREFIX)
+            )
+        })
+    return verbs
+
+
+def create_parser():
+    ARGUMENTS.update(discovered_verbs())
+    parser = argparse.ArgumentParser(
+        description='Command line interface to oVirt testing framework.'
+    )
+    verbs = parser.add_subparsers(dest='verb', metavar='VERB')
+    for verb, (kwargs, verb_arguments, _) in ARGUMENTS.items():
+        verb_parser = verbs.add_parser(
+            verb,
+            **kwargs
+        )
+        for arg_name, arg_kw in verb_arguments:
+            verb_parser.add_argument(arg_name, **arg_kw)
+    return parser
+
+
+def main():
+    parser = create_parser()
+    args = parser.parse_args()
+
+    try:
+        _, _, func = ARGUMENTS[args.verb]
+        func(args)
+    except Exception:
+        logging.exception('Error occured, aborting')
+        sys.exit(1)
+
+if __name__ == '__main__':
+    main()
