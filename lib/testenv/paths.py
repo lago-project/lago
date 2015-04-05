@@ -42,9 +42,6 @@ class Paths(object):
     def images(self, *path):
         return self._prefixed('images', *path)
 
-    def templates(self, *path):
-        return self._prefixed('templates', *path)
-
     def virt(self, *path):
         return self._prefixed('virt', *path)
 

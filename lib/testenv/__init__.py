@@ -185,17 +185,19 @@ class Prefix(object):
                 net_spec['name'] = net_name
             rollback.clear()
 
-    def _create_disk(self, name, spec):
+    def _create_disk(self, name, spec, templates_dir=None):
         logging.debug("Creating disk for '%s': %s", name, spec)
 
         disk_filename = '%s_%s.%s' % (name, spec['name'], spec['format'])
         disk_path = self.paths.images(disk_filename)
         if spec['type'] == 'template':
-            base = spec['template_name']
+            if templates_dir is None:
+                raise RuntimeError('No templates directory provided')
+            base = os.path.join(templates_dir, spec['template_name'])
             qemu_img_cmd = ['qemu-img', 'create', '-f', 'qcow2',
-                            '-b', self.paths.templates(base), disk_path]
+                            '-b', base, disk_path]
 
-            template_hash_file = '%s.hash' % self.paths.templates(base)
+            template_hash_file = '%s.hash' % base
             if os.path.exists(template_hash_file):
                 with open(template_hash_file) as f:
                     template_hash = f.read()
@@ -237,10 +239,11 @@ class Prefix(object):
         with utils.RollbackContext() as rollback:
             if templates_dir:
                 dirlock.lock(templates_dir, False, self.paths.uuid())
-                if os.path.exists(self.paths.templates()):
-                    os.unlink(self.paths.templates())
-                os.symlink(templates_dir, self.paths.templates())
-                rollback.prependDefer(os.unlink, self.paths.templates())
+                rollback.prependDefer(
+                    dirlock.unlock,
+                    templates_dir,
+                    self.paths.uuid()
+                )
 
             if not os.path.exists(self.paths.images()):
                 os.mkdir(self.paths.images())
@@ -258,7 +261,11 @@ class Prefix(object):
                 for disk in spec['disks']:
                     new_disks.append(
                         {
-                            'path': self._create_disk(name, disk),
+                            'path': self._create_disk(
+                                name,
+                                disk,
+                                templates_dir
+                            ),
                             'dev': disk['dev'],
                             'format': disk['format'],
                         },
