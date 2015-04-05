@@ -57,7 +57,7 @@ class Prefix(object):
             try:
                 with open(self.paths.metadata()) as f:
                     self._metadata = json.load(f)
-            except OSError:
+            except IOError:
                 self._metadata = {}
         return self._metadata
 
