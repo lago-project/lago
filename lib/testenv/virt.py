@@ -420,6 +420,9 @@ class VM(object):
         )
         self._ssh_client = None
 
+    def virt_env(self):
+        return self._env
+
     @classmethod
     def _normalize_spec(clazz, spec):
         spec['snapshots'] = spec.get('snapshots', {})

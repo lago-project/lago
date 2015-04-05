@@ -18,6 +18,7 @@
 # Refer to the README and COPYING files for full details of the license
 #
 import BaseHTTPServer
+import contextlib
 import os
 import threading
 import SimpleHTTPServer
@@ -66,6 +67,7 @@ def _create_http_server(ip, port, root_dir):
     return server
 
 
+@contextlib.contextmanager
 def repo_server_context(prefix):
     gw_ip = prefix.virt_env().get_net().gw()
     port = constants.REPO_SERVER_PORT

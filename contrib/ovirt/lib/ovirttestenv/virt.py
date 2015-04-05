@@ -23,7 +23,6 @@ import ovirtsdk.api
 import testenv
 
 import constants
-import utils
 import testlib
 
 
@@ -67,14 +66,6 @@ class TestVM(testenv.virt.VM):
                 ) for guest_path in self._artifact_paths()
             ]
         )
-
-    def ssh(self, *args, **kwargs):
-        with utils.repo_server_context(self.virt_env().prefix()):
-            super(TestVM, self).ssh(*args, **kwargs)
-
-    def interactive_ssh(self, *args, **kwargs):
-        with utils.repo_server_context(self.virt_env().prefix()):
-            super(TestVM, self).interactive_ssh(*args, **kwargs)
 
 
 class EngineVM(TestVM):
