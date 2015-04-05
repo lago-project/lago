@@ -21,9 +21,6 @@ import testenv.paths
 
 
 class OvirtPaths(testenv.paths.Paths):
-    def external_repo(self, *path):
-        return self._prefixed('external_repo', *path)
-
     def internal_repo(self, *path):
         return self._prefixed('internal_repo', *path)
 

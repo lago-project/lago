@@ -225,7 +225,7 @@ class OvirtPrefix(testenv.Prefix):
         super(OvirtPrefix, self).revert_snapshots(name)
         self._activate()
 
-    def _create_rpm_repository(self, dists, repos):
+    def _create_rpm_repository(self, dists, repos_path, repo_names):
         for dist in dists:
             dist_output = self.paths.internal_repo(dist)
             rpm_dirs = []
@@ -239,14 +239,13 @@ class OvirtPrefix(testenv.Prefix):
                 rpm_dirs.append(
                     os.path.join(self.paths.build_dir('ovirt-engine'), dist)
                 )
-            if repos:
-                rpm_dirs.extend(
-                    [
-                        self.paths.external_repo(name)
-                        for name in repos
-                        if name.endswith(dist)
-                    ]
-                )
+            rpm_dirs.extend(
+                [
+                    os.path.join(repos_path, name)
+                    for name in repo_names
+                    if name.endswith(dist)
+                ],
+            )
 
             merge_repos.merge(dist_output, rpm_dirs)
 
@@ -316,9 +315,7 @@ class OvirtPrefix(testenv.Prefix):
             metadata['vdsm-revision'] = _git_revision_at(vdsm_dir)
         vt.join_all()
 
-        if rpm_repo:
-            os.symlink(rpm_repo, self.paths.external_repo())
-        self._create_rpm_repository(all_dists, repos)
+        self._create_rpm_repository(all_dists, rpm_repo, repos)
         self.save()
 
     @_with_repo_server
