@@ -50,3 +50,6 @@ class Paths(object):
 
     def logs(self):
         return self._prefixed('logs')
+
+    def metadata(self):
+        return self._prefixed('metadata')

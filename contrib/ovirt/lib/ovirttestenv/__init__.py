@@ -310,8 +310,10 @@ class OvirtPrefix(testenv.Prefix):
 
         vt = testenv.utils.VectorThread(jobs)
         vt.start_all()
-        metadata['ovirt-engine-revision'] = _git_revision_at(engine_dir)
-        metadata['vdsm-revision'] = _git_revision_at(vdsm_dir)
+        if engine_dir:
+            metadata['ovirt-engine-revision'] = _git_revision_at(engine_dir)
+        if vdsm_dir:
+            metadata['vdsm-revision'] = _git_revision_at(vdsm_dir)
         vt.join_all()
 
         if rpm_repo:
