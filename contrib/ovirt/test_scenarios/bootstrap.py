@@ -32,9 +32,6 @@ DC_VER_MIN = '5'
 CLUSTER_NAME = 'test-cluster'
 CLUSTER_CPU_FAMILY = 'Intel Conroe Family'
 
-# Hosts
-HOST_PASSWD = '123456'
-
 # Storage
 SD_NFS_NAME = 'nfs'
 SD_NFS_ADDRESS = 'storage-nfs'
@@ -93,21 +90,21 @@ def add_cluster(api):
 def add_hosts(prefix):
     api = prefix.virt_env().engine_vm().get_api()
 
-    def _add_host(name):
+    def _add_host(vm):
         p = params.Host(
-            name=name,
-            address=name,
+            name=vm.name(),
+            address=vm.name(),
             cluster=params.Cluster(
                 name=CLUSTER_NAME,
             ),
-            root_password=HOST_PASSWD,
+            root_password=vm.root_password(),
             override_iptables=True,
         )
 
         return api.hosts.add(p)
 
     hosts = prefix.virt_env().host_vms()
-    vec = utils.func_vector(_add_host, [(h.name(),) for h in hosts])
+    vec = utils.func_vector(_add_host, [(h,) for h in hosts])
     vt = utils.VectorThread(vec)
     vt.start_all()
     nt.assert_true(all(vt.join_all()))
