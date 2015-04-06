@@ -23,7 +23,6 @@ import os
 import shutil
 import uuid
 
-import dirlock
 import paths
 import subnet_lease
 import utils
@@ -185,15 +184,31 @@ class Prefix(object):
                 net_spec['name'] = net_name
             rollback.clear()
 
-    def _create_disk(self, name, spec, templates_dir=None):
+    def _create_disk(
+        self,
+        name,
+        spec,
+        template_repo=None,
+        template_store=None,
+    ):
         logging.debug("Creating disk for '%s': %s", name, spec)
 
         disk_filename = '%s_%s.%s' % (name, spec['name'], spec['format'])
         disk_path = self.paths.images(disk_filename)
         if spec['type'] == 'template':
-            if templates_dir is None:
+            if template_store is None or template_repo is None:
                 raise RuntimeError('No templates directory provided')
-            base = os.path.join(templates_dir, spec['template_name'])
+
+            template = template_repo.get_by_name(spec['template_name'])
+            template_version = template.get_version(
+                spec.get('template_version', None)
+            )
+
+            if template_version not in template_store:
+                template_store.download(template_version)
+            template_store.mark_used(template_version, self.paths.uuid())
+
+            base = template_store.get_path(template_version)
             qemu_img_cmd = ['qemu-img', 'create', '-f', 'qcow2',
                             '-b', base, disk_path]
 
@@ -235,16 +250,13 @@ class Prefix(object):
         logging.info('Successfully created disk at %s', disk_path)
         return disk_path
 
-    def virt_conf(self, conf, templates_dir=None):
+    def virt_conf(
+        self,
+        conf,
+        template_repo=None,
+        template_store=None,
+    ):
         with utils.RollbackContext() as rollback:
-            if templates_dir:
-                dirlock.lock(templates_dir, False, self.paths.uuid())
-                rollback.prependDefer(
-                    dirlock.unlock,
-                    templates_dir,
-                    self.paths.uuid()
-                )
-
             if not os.path.exists(self.paths.images()):
                 os.mkdir(self.paths.images())
                 rollback.prependDefer(os.unlink, self.paths.images())
@@ -264,7 +276,8 @@ class Prefix(object):
                             'path': self._create_disk(
                                 name,
                                 disk,
-                                templates_dir
+                                template_repo,
+                                template_store,
                             ),
                             'dev': disk['dev'],
                             'format': disk['format'],

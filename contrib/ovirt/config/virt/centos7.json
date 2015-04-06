@@ -8,7 +8,7 @@
             ], 
             "disks": [
                 {
-                    "template_name": "centos7/engine_template.img", 
+                    "template_name": "centos7_engine", 
                     "type": "template", 
                     "name": "root", 
                     "dev": "vda", 
@@ -28,7 +28,7 @@
             ], 
             "disks": [
                 {
-                    "template_name": "fedora20/storage-iscsi_template.img", 
+                    "template_name": "storage-iscsi", 
                     "type": "template", 
                     "name": "root", 
                     "dev": "vda", 
@@ -51,7 +51,7 @@
             ], 
             "disks": [
                 {
-                    "template_name": "fedora20/storage-nfs_template.img", 
+                    "template_name": "storage-nfs", 
                     "type": "template", 
                     "name": "root", 
                     "dev": "vda", 
@@ -65,7 +65,7 @@
                     "format": "raw"
                 }, 
                 {
-                    "template_name": "fedora20/storage-nfs_export.img", 
+                    "template_name": "storage-nfs-export", 
                     "type": "template", 
                     "name": "export", 
                     "dev": "vdc", 
@@ -81,7 +81,7 @@
             ], 
             "disks": [
                 {
-                    "template_name": "centos7/host_template.img", 
+                    "template_name": "centos7_host", 
                     "type": "template", 
                     "name": "root", 
                     "dev": "vda", 
@@ -100,7 +100,7 @@
             ], 
             "disks": [
                 {
-                    "template_name": "centos7/host_template.img", 
+                    "template_name": "centos7_host", 
                     "type": "template", 
                     "name": "root", 
                     "dev": "vda", 
@@ -119,7 +119,7 @@
             ], 
             "disks": [
                 {
-                    "template_name": "centos7/host_template.img", 
+                    "template_name": "centos7_host", 
                     "type": "template", 
                     "name": "root", 
                     "dev": "vda", 
@@ -138,7 +138,7 @@
             ], 
             "disks": [
                 {
-                    "template_name": "centos7/host_template.img", 
+                    "template_name": "centos7_host", 
                     "type": "template", 
                     "name": "root", 
                     "dev": "vda", 

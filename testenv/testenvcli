@@ -30,6 +30,7 @@ import stat
 import sys
 
 import testenv
+import testenv.templates
 
 CLI_PREFIX = 'testenvcli-'
 
@@ -46,7 +47,10 @@ def do_init(args):
     testenv.utils.setup_logging(prefix.paths.logs())
 
     try:
-        prefix.virt_conf(virt_conf, args.templates_dir)
+        with open(args.template_repo) as f:
+            repo = testenv.templates.TemplateRepository(json.load(f))
+        store = testenv.templates.TemplateStore(args.template_store)
+        prefix.virt_conf(virt_conf, repo, store)
     except:
         shutil.rmtree(args.prefix)
         raise
@@ -184,11 +188,19 @@ ARGUMENTS[Verbs.INIT] = (
             },
         ),
         (
-            '--templates-dir',
+            '--template-repo',
             {
                 'help': (
-                    'Location of templates (that are referenced '
-                    'from virt config)'
+                    'Repo file describing the templates'
+                ),
+                'type': os.path.abspath,
+            },
+        ),
+        (
+            '--template-store',
+            {
+                'help': (
+                    'Location to store templates at'
                 ),
                 'type': os.path.abspath,
             },
