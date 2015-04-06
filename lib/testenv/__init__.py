@@ -192,6 +192,7 @@ class Prefix(object):
         template_store=None,
     ):
         logging.debug("Creating disk for '%s': %s", name, spec)
+        disk_metadata = {}
 
         disk_filename = '%s_%s.%s' % (name, spec['name'], spec['format'])
         disk_path = self.paths.images(disk_filename)
@@ -207,6 +208,12 @@ class Prefix(object):
             if template_version not in template_store:
                 template_store.download(template_version)
             template_store.mark_used(template_version, self.paths.uuid())
+
+            disk_metadata.update(
+                template_store.get_stored_metadata(
+                    template_version,
+                ),
+            )
 
             base = template_store.get_path(template_version)
             qemu_img_cmd = ['qemu-img', 'create', '-f', 'qcow2',
@@ -248,7 +255,7 @@ class Prefix(object):
         os.chmod(disk_path, 0666)
 
         logging.info('Successfully created disk at %s', disk_path)
-        return disk_path
+        return disk_path, disk_metadata
 
     def virt_conf(
         self,
@@ -271,16 +278,18 @@ class Prefix(object):
                 new_disks = []
                 spec['name'] = name
                 for disk in spec['disks']:
+                    path, metadata = self._create_disk(
+                        name,
+                        disk,
+                        template_repo,
+                        template_store,
+                    )
                     new_disks.append(
                         {
-                            'path': self._create_disk(
-                                name,
-                                disk,
-                                template_repo,
-                                template_store,
-                            ),
+                            'path': path,
                             'dev': disk['dev'],
                             'format': disk['format'],
+                            'metadata': metadata,
                         },
                     )
                 conf['domains'][name]['disks'] = new_disks

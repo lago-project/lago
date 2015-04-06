@@ -139,6 +139,8 @@ def do_status(prefix, args):
     print '[VMs]:'
     for vm in prefix.virt_env().get_vms().values():
         print '\t[%s]' % vm.name()
+        print '\t\tDistro:', vm.distro()
+        print '\t\tRoot password:', vm.root_password()
         print '\t\tStatus:', vm.alive() and 'up' or 'down'
         print '\t\tSnapshots:', ', '.join(vm._spec['snapshots'].keys())
         if vm.alive():

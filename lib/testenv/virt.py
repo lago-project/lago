@@ -856,3 +856,12 @@ class VM(object):
 
     def nics(self):
         return self._spec['nics'][:]
+
+    def _template_metadata(self):
+        return self._spec['disks'][0].get('metadata', {})
+
+    def distro(self):
+        return self._template_metadata().get('distro', None)
+
+    def root_password(self):
+        return self._template_metadata()['root-password']
