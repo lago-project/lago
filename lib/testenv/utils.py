@@ -225,7 +225,7 @@ def drain_ssh_channel(chan, stdin=None, stdout=sys.stdout, stderr=sys.stderr):
     try:
         stdout_is_tty = stdout.isatty()
         tty_w = tty_h = -1
-    except Exception:
+    except AttributeError:
         stdout_is_tty = False
 
     done = False
