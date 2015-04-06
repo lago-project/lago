@@ -74,16 +74,12 @@ def do_ovirt_runtest(prefix, args):
 @in_prefix
 @with_logging
 def do_ovirt_reposetup(prefix, args):
-    engine_dists = list(set(args.engine_dist))
-    vdsm_dists = list(set(args.vdsm_dist))
     prefix.prepare_repo(
         rpm_repo=args.rpm_repo,
         reposync_yum_config=args.reposync_yum_config,
         engine_dir=args.engine_dir,
-        engine_dists=engine_dists,
         engine_build_gwt=args.engine_with_gwt,
         vdsm_dir=args.vdsm_dir,
-        vdsm_dists=vdsm_dists,
     )
 
 
@@ -179,18 +175,6 @@ ARGUMENTS[Verbs.OVIRT_REPOSETUP] = (
             },
         ),
         (
-            '--engine-dist',
-            {
-                'help': (
-                    'Distribuiton to build engine for, can be provided '
-                    'several times. '
-                ),
-                'action': 'append',
-                'choices': DISTS,
-                'default': [],
-            },
-        ),
-        (
             '--engine-with-gwt',
             {
                 'help': 'Build GWT when build engine rpms',
@@ -201,18 +185,6 @@ ARGUMENTS[Verbs.OVIRT_REPOSETUP] = (
             '--vdsm-dir',
             {
                 'help': 'Path to VDSM source'
-            },
-        ),
-        (
-            '--vdsm-dist',
-            {
-                'help': (
-                    'Distribuiton to build VDSM for, can be provided '
-                    'several times'
-                ),
-                'action': 'append',
-                'choices': DISTS,
-                'default': [],
             },
         ),
     ),

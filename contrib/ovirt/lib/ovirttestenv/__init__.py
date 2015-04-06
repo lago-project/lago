@@ -254,12 +254,22 @@ class OvirtPrefix(testenv.Prefix):
         rpm_repo=None,
         reposync_yum_config=None,
         vdsm_dir=None,
-        vdsm_dists=None,
         engine_dir=None,
-        engine_dists=None,
         engine_build_gwt=None,
     ):
-        all_dists = list(set(vdsm_dists + engine_dists))
+        # Detect distros from template metadata
+        engine_dists = filter(None, [self.virt_env().engine_vm().distro()])
+        vdsm_dists = filter(
+            None,
+            set(
+                [
+                    vm.distro()
+                    for vm in self.virt_env().host_vms()
+                ],
+            ),
+        )
+        all_dists = list(set(engine_dists + vdsm_dists))
+
         repos = []
         jobs = []
 
