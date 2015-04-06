@@ -228,7 +228,8 @@ def drain_ssh_channel(chan, stdin=None, stdout=sys.stdout, stderr=sys.stderr):
     except Exception:
         stdout_is_tty = False
 
-    while not chan.closed:
+    done = False
+    while not done:
         if stdout_is_tty:
             arr = array.array('h', range(4))
             if not fcntl.ioctl(stdout.fileno(), termios.TIOCGWINSZ, arr):
@@ -236,9 +237,13 @@ def drain_ssh_channel(chan, stdin=None, stdout=sys.stdout, stderr=sys.stderr):
                     tty_h, tty_w = arr[:2]
                     chan.resize_pty(width=tty_w, height=tty_h)
 
-        read_stream = [chan]
-        if stdin and not stdin.closed:
-            read_stream.append(stdin)
+        read_streams = []
+        if not chan.closed:
+            read_streams.append(chan)
+
+            if stdin and not stdin.closed:
+                read_streams.append(stdin)
+
         write_streams = []
         if stdout and out_queue:
             write_streams.append(stdout)
@@ -246,39 +251,42 @@ def drain_ssh_channel(chan, stdin=None, stdout=sys.stdout, stderr=sys.stderr):
             write_streams.append(stderr)
 
         read, write, _ = select.select(
-            read_stream,
+            read_streams,
             write_streams,
             [],
         )
+
         if stdin in read:
             c = _read_nonblocking(stdin)
             if c:
                 chan.send(c)
             else:
                 chan.shutdown_write()
+
         try:
             if chan.recv_ready():
                 c = chan.recv(1024)
-
                 if stdout:
                     out_queue.append(c)
                 out_all.append(c)
-            elif chan.recv_stderr_ready():
-                c = chan.recv_stderr(1024)
 
+            if chan.recv_stderr_ready():
+                c = chan.recv_stderr(1024)
                 if stderr:
                     err_queue.append(c)
                 err_all.append(c)
-            elif chan in read:
-                chan.close()
         except socket.error:
             pass
+
         if stdout in write:
             stdout.write(out_queue.pop(0))
             stdout.flush()
         if stderr in write:
             stderr.write(err_queue.pop(0))
             stderr.flush()
+
+        if chan.closed and not out_queue and not err_queue:
+            done = True
 
     return (''.join(out_all), ''.join(err_all))
 
