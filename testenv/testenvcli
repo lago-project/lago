@@ -342,9 +342,9 @@ def discovered_verbs():
                 ),
             ) for name in os.listdir(path)
             if (
-                is_exec_file(os.path.join(path, name))
-                and
                 name.startswith(CLI_PREFIX)
+                and
+                is_exec_file(os.path.join(path, name))
             )
         })
     return verbs
