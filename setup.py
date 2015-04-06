@@ -69,6 +69,7 @@ distutils.core.setup(
             [
                 'contrib/ovirt/config/answer-files/el6_master.conf',
                 'contrib/ovirt/config/answer-files/el7_master.conf',
+                'contrib/ovirt/config/answer-files/el6_3.5.conf',
                 'contrib/ovirt/config/answer-files/el7_3.5.conf',
             ],
         ),
