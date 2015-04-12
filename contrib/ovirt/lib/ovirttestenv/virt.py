@@ -103,7 +103,7 @@ class EngineVM(TestVM):
 
                 api = []
                 testlib.assert_true_within_short(
-                    lambda: api.append(self._create_api) or True
+                    lambda: api.append(self._create_api()) or True
                 )
             except AssertionError:
                 raise RuntimeError('Failed to connect to the engine')
