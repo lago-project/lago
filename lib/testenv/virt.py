@@ -547,10 +547,10 @@ class VM(object):
         return self._spec['metadata'].copy()
 
     def name(self):
-        return self._spec['name']
+        return str(self._spec['name'])
 
     def ip(self):
-        return self._env.get_net().resolve(self.name())
+        return str(self._env.get_net().resolve(self.name()))
 
     def _libvirt_name(self):
         return self._env.prefixed_name(self.name())
