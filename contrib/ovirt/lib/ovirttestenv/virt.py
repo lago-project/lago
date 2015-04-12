@@ -87,7 +87,7 @@ class EngineVM(TestVM):
         return ovirtsdk.api.API(
             url=url,
             username=constants.ENGINE_USER,
-            password=self.metadata['ovirt-engine-password'],
+            password=str(self.metadata['ovirt-engine-password']),
             validate_cert_chain=False,
             insecure=True,
             persistent_auth=False,
