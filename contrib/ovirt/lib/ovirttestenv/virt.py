@@ -90,7 +90,6 @@ class EngineVM(TestVM):
             password=str(self.metadata['ovirt-engine-password']),
             validate_cert_chain=False,
             insecure=True,
-            persistent_auth=False,
         )
 
     def _get_api(self, wait):
@@ -101,15 +100,17 @@ class EngineVM(TestVM):
                     lambda:
                         self.service('ovirt-engine').alive()
                 )
+
+                api = []
                 testlib.assert_true_within_short(
-                    lambda: self._create_api().disconnect() or True
+                    lambda: api.append(self._create_api) or True
                 )
             except AssertionError:
                 raise RuntimeError('Failed to connect to the engine')
-        return self._create_api()
+        return api.pop()
 
     def get_api(self, wait=True):
-        if self._api is None:
+        if self._api is None or not self._api.test():
             self._api = self._get_api(wait)
         return self._api
 
