@@ -471,10 +471,11 @@ class VM(object):
         joined_command = ' '.join(command)
         command_id = _gen_ssh_command_id()
         logging.debug(
-            'Running %s on %s: %s',
+            'Running %s on %s: %s%s',
             command_id,
             self.name(),
-            joined_command
+            joined_command,
+            data is not None and (' < "%s"' % data) or '',
         )
 
         channel.exec_command(joined_command)
@@ -487,11 +488,27 @@ class VM(object):
         )
         rc = channel.exit_status
 
-        logging.debug('Command %s returned with %d', command_id, rc)
+        logging.debug(
+            'Command %s on %s returned with %d',
+            command_id,
+            self.name(),
+            rc,
+        )
+
         if out:
-            logging.debug('Command %s output:\n %s', command_id, out)
+            logging.debug(
+                'Command %s on %s output:\n %s',
+                command_id,
+                self.name(),
+                out,
+            )
         if err:
-            logging.debug('Command %s errors:\n %s', command_id, err)
+            logging.debug(
+                'Command %s on %s  errors:\n %s',
+                command_id,
+                self.name(),
+                err,
+            )
         return rc, out, err
 
     def wait_for_ssh(self, connect_retries=50):
