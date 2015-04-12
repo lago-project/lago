@@ -254,7 +254,7 @@ def drain_ssh_channel(chan, stdin=None, stdout=sys.stdout, stderr=sys.stderr):
             read_streams,
             write_streams,
             [],
-            timeout=0.1,
+            0.1,
         )
 
         if stdin in read:
