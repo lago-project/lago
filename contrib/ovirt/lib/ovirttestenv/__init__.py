@@ -423,3 +423,26 @@ class OvirtPrefix(testenv.Prefix):
     def stop(self):
         self._deactivate()
         super(OvirtPrefix, self).stop()
+
+    def collect_artifacts(self, output_dir):
+        os.makedirs(output_dir)
+
+        def _collect_artifacts(vm, path):
+            os.makedirs(path)
+            vm.collect_artifacts(path)
+
+        vt = testenv.utils.VectorThread(
+            [
+                functools.partial(
+                    _collect_artifacts,
+                    vm,
+                    os.path.join(
+                        output_dir,
+                        vm.name(),
+                    ),
+                )
+                for vm in self._prefix.virt_env().get_vms().values()
+            ],
+        )
+        vt.start_all()
+        vt.join_all()

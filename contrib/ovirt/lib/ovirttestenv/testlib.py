@@ -136,27 +136,7 @@ class LogCollectorPlugin(nose.plugins.Plugin):
     def _addFault(self, test, err):
         suffix = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         test_name = '%s-%s' % (test.id(), suffix)
-        os.makedirs(self._prefix.paths.test_logs(test_name))
-
-        def collect_artifacts(vm, path):
-            os.makedirs(path)
-            vm.collect_artifacts(path)
-
-        vt = utils.VectorThread(
-            [
-                functools.partial(
-                    collect_artifacts,
-                    vm,
-                    self._prefix.paths.test_logs(
-                        test_name,
-                        vm.name(),
-                    ),
-                )
-                for vm in self._prefix.virt_env().get_vms().values()
-            ],
-        )
-        vt.start_all()
-        vt.join_all()
+        self._prefix.collect_artifacts(self._prefix.paths.test_logs(test_name))
 
 
 def assert_true_within(func, timeout):

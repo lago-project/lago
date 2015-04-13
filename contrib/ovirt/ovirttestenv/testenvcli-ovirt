@@ -110,6 +110,12 @@ def do_ovirt_engine_setup(prefix, args):
     prefix.virt_env().engine_vm().engine_setup(args.config)
 
 
+@in_prefix
+@with_logging
+def do_ovirt_collect(prefix, args):
+    prefix.collect(args.output)
+
+
 class Verbs:
     OVIRT_DEPLOY = 'deploy'
     OVIRT_REPOSETUP = 'reposetup'
@@ -119,6 +125,7 @@ class Verbs:
     OVIRT_START = 'start'
     OVIRT_STOP = 'stop'
     OVIRT_ENGINE_SETUP = 'engine-setup'
+    OVIRT_COLLECT = 'collect'
 
 ARGUMENTS = collections.OrderedDict()
 ARGUMENTS[Verbs.OVIRT_DEPLOY] = (
@@ -269,6 +276,19 @@ ARGUMENTS[Verbs.OVIRT_ENGINE_SETUP] = (
         ),
     ),
     do_ovirt_engine_setup,
+)
+ARGUMENTS[Verbs.OVIRT_COLLECT] = (
+    'Collect logs from running VMs',
+    (
+        (
+            '--output',
+            {
+                'help': 'Path to place all the extracted at',
+                'type': os.path.abspath,
+            },
+        ),
+    ),
+    do_ovirt_collect,
 )
 
 
