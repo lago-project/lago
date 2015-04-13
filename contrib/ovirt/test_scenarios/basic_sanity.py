@@ -29,7 +29,7 @@ LONG_TIMEOUT = 600
 
 TEST_DC = 'test-dc'
 TEST_CLUSTER = 'test-cluster'
-TEMPLATE_DEFAULT = 'Default'
+TEMPLATE_BLANK = 'Blank'
 TEMPLATE_CENTOS7 = 'centos7_template'
 HOSTS = [
     'host0',
@@ -53,7 +53,7 @@ def add_vm_blank(api):
             name=TEST_CLUSTER,
         ),
         template=params.Template(
-            name=TEMPLATE_DEFAULT,
+            name=TEMPLATE_BLANK,
         ),
         display=params.Display(
             type_='spice',
