@@ -113,7 +113,7 @@ def do_ovirt_engine_setup(prefix, args):
 @in_prefix
 @with_logging
 def do_ovirt_collect(prefix, args):
-    prefix.collect(args.output)
+    prefix.collect_artifacts(args.output)
 
 
 class Verbs:

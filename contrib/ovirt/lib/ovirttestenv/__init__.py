@@ -441,7 +441,7 @@ class OvirtPrefix(testenv.Prefix):
                         vm.name(),
                     ),
                 )
-                for vm in self._prefix.virt_env().get_vms().values()
+                for vm in self.virt_env().get_vms().values()
             ],
         )
         vt.start_all()
