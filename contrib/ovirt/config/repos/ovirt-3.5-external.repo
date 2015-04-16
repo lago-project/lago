@@ -17,6 +17,7 @@ gpgcheck=0
 name=oVirt Master Nightly Test Releases
 baseurl=http://resources.ovirt.org/pub/ovirt-3.5-snapshot/rpm/fc20/
 enabled=1
+exclude=jasperreports-server
 gpgcheck=0
 
 [ovirt-3.5-snapshot-static-el6]
@@ -29,12 +30,14 @@ gpgcheck=0
 name=oVirt Master Nightly Statics
 baseurl=http://resources.ovirt.org/pub/ovirt-3.5-snapshot-static/rpm/el7/
 enabled=1
+exclude=jasperreports-server
 gpgcheck=0
 
 [ovirt-3.5-snapshot-static-fc20]
 name=oVirt Master Nightly Statics
 baseurl=http://resources.ovirt.org/pub/ovirt-3.5-snapshot-static/rpm/fc20/
 enabled=1
+exclude=jasperreports-server
 gpgcheck=0
 
 [ovirt-3.5-dependencies-el6]

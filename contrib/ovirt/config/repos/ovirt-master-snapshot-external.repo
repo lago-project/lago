@@ -23,18 +23,21 @@ gpgcheck=0
 name=oVirt Master Nightly Statics
 baseurl=http://resources.ovirt.org/pub/ovirt-master-snapshot-static/rpm/el6/
 enabled=1
+exclude=jasperreports-server
 gpgcheck=0
 
 [ovirt-master-snapshot-static-el7]
 name=oVirt Master Nightly Statics
 baseurl=http://resources.ovirt.org/pub/ovirt-master-snapshot-static/rpm/el7/
 enabled=1
+exclude=jasperreports-server
 gpgcheck=0
 
 [ovirt-master-snapshot-static-fc20]
 name=oVirt Master Nightly Statics
 baseurl=http://resources.ovirt.org/pub/ovirt-master-snapshot-static/rpm/fc20/
 enabled=1
+exclude=jasperreports-server
 gpgcheck=0
 
 [ovirt-master-dependencies-el6]
