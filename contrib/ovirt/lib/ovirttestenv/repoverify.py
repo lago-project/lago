@@ -25,6 +25,7 @@ import StringIO
 import urllib2
 
 import lxml.etree
+import rpmUtils.arch
 import rpmUtils.miscutils
 
 import testenv.utils
@@ -68,6 +69,10 @@ def get_packages(repo_url, whitelist=None):
         name = pkg_element.xpath('common:name', namespaces=RPMNS)[0].text
 
         if whitelist and name not in whitelist:
+            continue
+
+        arch = pkg_element.xpath('common:arch', namespaces=RPMNS)[0].text
+        if arch not in rpmUtils.arch.getArchList():
             continue
 
         yield {
