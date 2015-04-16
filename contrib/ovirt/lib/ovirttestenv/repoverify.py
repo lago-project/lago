@@ -54,7 +54,7 @@ def fetch_xml(url):
 
 
 @gen_to_list
-def get_packages(repo_url, whitelist=None):
+def get_packages(repo_url, whitelist=None, blacklist=None):
     repomd_url = '%s/repodata/repomd.xml' % repo_url
     repomd_xml = fetch_xml(repomd_url)
     primary_xml_loc = repomd_xml.xpath(
@@ -69,6 +69,9 @@ def get_packages(repo_url, whitelist=None):
         name = pkg_element.xpath('common:name', namespaces=RPMNS)[0].text
 
         if whitelist and name not in whitelist:
+            continue
+
+        if blacklist and name in blacklist:
             continue
 
         arch = pkg_element.xpath('common:arch', namespaces=RPMNS)[0].text
@@ -139,12 +142,14 @@ def discard_older_rpms(rpms):
     return rpms_by_name.values()
 
 
-def verify_repo(repo_url, path, whitelist=None):
+def verify_repo(repo_url, path, whitelist=None, blacklist=None):
     downloaded_rpms = []
     for root, dirs, files in os.walk(path):
         downloaded_rpms.extend([f for f in files if f.endswith('.rpm')])
 
-    for rpm in discard_older_rpms(get_packages(repo_url, whitelist)):
+    for rpm in discard_older_rpms(
+        get_packages(repo_url, whitelist, blacklist)
+    ):
         rpm_filename = os.path.basename(rpm['location'])
 
         if whitelist and rpm['name'] not in whitelist:
@@ -183,6 +188,11 @@ def verify_reposync(config_path, sync_dir, repo_whitelist=None):
         else:
             whitelist = None
 
+        if config.has_option(repo, 'exclude'):
+            blacklist = config.get(repo, 'exclude').split(' ')
+        else:
+            blacklist = None
+
         repo_path = os.path.join(sync_dir, repo)
 
         jobs.append(
@@ -190,7 +200,8 @@ def verify_reposync(config_path, sync_dir, repo_whitelist=None):
                 verify_repo,
                 config.get(repo, 'baseurl'),
                 repo_path,
-                whitelist
+                whitelist,
+                blacklist,
             )
         )
     vt = testenv.utils.VectorThread(jobs)
