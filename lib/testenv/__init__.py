@@ -222,11 +222,11 @@ class Prefix(object):
             qemu_img_cmd = ['qemu-img', 'create', '-f', 'qcow2',
                             '-b', base, disk_path]
 
-            template_hash_file = '%s.hash' % base
-            if os.path.exists(template_hash_file):
-                with open(template_hash_file) as f:
-                    template_hash = f.read()
-            else:
+            try:
+                template_hash = template_store.get_stored_hash(
+                    template_version
+                )
+            except:
                 template_hash = '<unversioned>'
 
             logging.info(

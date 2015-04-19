@@ -197,6 +197,9 @@ class TemplateStore:
                     )
                 )
 
+            with open('%s.hash' % dest, 'w') as f:
+                f.write(sha1.hexdigest())
+
             utils.run_command(
                 [
                     'qemu-img',
@@ -224,6 +227,10 @@ class TemplateStore:
     def get_stored_metadata(self, temp_ver):
         with open(self._prefixed('%s.metadata' % temp_ver.name())) as f:
             return json.load(f)
+
+    def get_stored_hash(self, temp_ver):
+        with open(self._prefixed('%s.hash' % temp_ver.name())) as f:
+            return f.read().strip()
 
     def mark_used(self, temp_ver, key_path):
         dest = self.get_path(temp_ver)
