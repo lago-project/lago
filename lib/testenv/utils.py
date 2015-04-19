@@ -33,6 +33,7 @@ import time
 import tty
 import Queue
 
+import config
 import constants
 
 
@@ -202,6 +203,7 @@ def setup_logging(logdir):
         ),
         defaults={
             'log_path': os.path.join(logdir, 'testenv.log'),
+            'log_level': config.get('log_level', 'info').upper(),
         },
     )
 
