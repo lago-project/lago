@@ -74,9 +74,21 @@ def do_ovirt_runtest(prefix, args):
 @in_prefix
 @with_logging
 def do_ovirt_reposetup(prefix, args):
+    rpm_repo = (
+        args.rpm_repo
+        or
+        testenv.config.get('reposync_dir')
+    )
+
+    reposync_config = (
+        args.reposync_yum_config
+        or
+        testenv.config.get('reposync_config')
+    )
+
     prefix.prepare_repo(
-        rpm_repo=args.rpm_repo,
-        reposync_yum_config=args.reposync_yum_config,
+        rpm_repo=rpm_repo,
+        reposync_yum_config=reposync_config,
         engine_dir=args.engine_dir,
         engine_build_gwt=args.engine_with_gwt,
         vdsm_dir=args.vdsm_dir,

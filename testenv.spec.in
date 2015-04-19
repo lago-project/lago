@@ -54,6 +54,7 @@ Requires:	git
 %{python2_sitelib}/%{name}/*.xml
 %{python2_sitelib}/%{name}/*.log.conf
 %{python2_sitelib}/%{name}-%{version}-py*.egg-info
+%{_sysconfdir}/testenv.d/testenv.conf
 %{_sysconfdir}/polkit-1/localauthority/50-local.d/
 %dir %attr(0775, root, testenv) /var/lib/testenv/
 %dir %attr(0775, root, testenv) /var/lib/testenv/subnets/
@@ -102,6 +103,7 @@ Requires:	rpm-build
 %{_datadir}/ovirt%{name}/*
 %{_sysconfdir}/mock/*
 %{_sysconfdir}/firewalld/services/*
+%{_sysconfdir}/testenv.d/ovirt.conf
 
 %post -n python-%{name}-ovirt
 if [ "$1" -eq 1 ]; then

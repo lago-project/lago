@@ -30,6 +30,7 @@ import stat
 import sys
 
 import testenv
+import testenv.config
 import testenv.templates
 
 CLI_PREFIX = 'testenvcli-'
@@ -38,6 +39,7 @@ CLI_PREFIX = 'testenvcli-'
 def do_init(args):
     prefix = testenv.Prefix(args.prefix)
     prefix.initialize()
+
     # FIXME
     with open(os.path.join(args.prefix, '.testenv'), 'w') as f:
         f.write('')
@@ -47,9 +49,21 @@ def do_init(args):
     testenv.utils.setup_logging(prefix.paths.logs())
 
     try:
-        with open(args.template_repo) as f:
+        template_repo_path = (
+            args.template_repo
+            or
+            testenv.config.get('template_repo', default=True)
+        )
+        with open(template_repo_path) as f:
             repo = testenv.templates.TemplateRepository(json.load(f))
-        store = testenv.templates.TemplateStore(args.template_store)
+
+        template_store_path = (
+            args.template_store
+            or
+            testenv.config.get('template_store', default=None)
+        )
+        store = testenv.templates.TemplateStore(template_store_path)
+
         prefix.virt_conf(virt_conf, repo, store)
     except:
         shutil.rmtree(args.prefix)

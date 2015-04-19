@@ -99,6 +99,13 @@ distutils.core.setup(
             ],
         ),
         (
+            '/etc/testenv.d/',
+            [
+                'etc/testenv.d/testenv.conf',
+                'contrib/ovirt/etc/testenv.d/ovirt.conf',
+            ],
+        ),
+        (
             '/etc/mock',
             [
                 'contrib/ovirt/mock/epel-6-x86_64_ovirt.cfg',

@@ -23,7 +23,7 @@ build:
 check: check-local
 
 check-local:
-	PYTHONPATH=${PWD}/lib:${PYTHONPATH} nosetests tests/*.py
+	PYTHONPATH=${PWD}/lib:${PYTHONPATH} nosetests -v tests/*.py
 
 dist: ${TAR_DIST_LOCATION}
 
