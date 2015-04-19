@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -xe
 #
 # Copyright 2014 Red Hat, Inc.
 #
@@ -18,14 +18,12 @@
 #
 # Refer to the README and COPYING files for full details of the license
 #
-set -e
-
 if [ $# -lt 3 ];
 then
 	echo "Usage:"
 	echo "$0 SOURCE_DIR RESULT_DIR DIST1 ... DISTn"
 	echo "This builds VDSM from source provided in SOURCE_DIR"
-	echo "RPMs are  built inside mock environment for each one of"
+	echo "RPMs are built inside mock environment for each one of"
 	echo "specified distributions (DISTx)."
 fi
 
@@ -35,42 +33,46 @@ RESULT_DIR=$2
 shift 2
 DISTS=$@
 
-echo 'Source directory:' $SOURCE_DIR
-echo 'Result directory:' $RESULT_DIR
-echo 'Build for following dists:' $DISTS
+echo "Source directory: ${SOURCE_DIR?}"
+echo "Result directory: ${RESULT_DIR?}"
+echo "Build for following dists: ${DISTS?}"
 
-cd $SOURCE_DIR
-rm -rf $PWD/rpmbuild
-rm -rf $PWD/*.tar.gz
+cd "${SOURCE_DIR?}"
+rm -rf "${PWD?}/rpmbuild"
+rm -rf ${PWD?}/*.tar.gz
 
 ./autogen.sh --system
 make dist
-rpmbuild -ts *.tar.gz -D "_topdir $PWD/rpmbuild"
+rpmbuild -ts *.tar.gz -D "_topdir ${PWD}/rpmbuild"
 
-SRPM_PATH=$(realpath $PWD/rpmbuild/SRPMS/*.src.rpm)
+SRPM_PATH=$(realpath ${PWD}/rpmbuild/SRPMS/*.src.rpm)
 
 export NOSE_EXCLUDE='.*'
 
-for DIST in $DISTS;
+for DIST in ${DISTS?};
 do
-	case "$DIST" in
+	case "${DIST?}" in
 		el6)
-			ROOTENV="epel-6-x86_64"
+			MOCK_CFG="epel-6-x86_64"
 			;;
 		el7)
-			ROOTENV="epel-7-x86_64"
+			MOCK_CFG="epel-7-x86_64"
 			;;
 		fc20)
-			ROOTENV="fedora-20-x86_64"
+			MOCK_CFG="fedora-20-x86_64"
 			;;
 	esac
-	rm -rf $RESULT_DIR/$DIST
-	mkdir -p $RESULT_DIR/$DIST
-	/usr/bin/mock -r $ROOTENV --rebuild $SRPM_PATH \
-		--resultdir=$RESULT_DIR/$DIST &
+	rm -rf "${RESULT_DIR?}/${DIST?}"
+	mkdir -p "${RESULT_DIR?}/${DIST?}"
+	/usr/bin/mock \
+		--root="${MOCK_CFG?}" \
+		--resultdir="${RESULT_DIR?}/${DIST?}" \
+		--rebuild \
+		"${SRPM_PATH?}" \
+		&
 done
 
 for PID in $(jobs -p);
 do
-	wait $PID || exit 1
+	wait ${PID?} || exit 1
 done

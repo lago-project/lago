@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -xe
 #
 # Copyright 2014 Red Hat, Inc.
 #
@@ -18,47 +18,44 @@
 #
 # Refer to the README and COPYING files for full details of the license
 #
-set -e
-
-if [ $# -lt 3 ];
+if [[ $# -lt 3 ]];
 then
 	echo "Usage:"
 	echo "$0 SOURCE_DIR RESULT_DIR DIST1 ... DISTn"
 	echo "This builds oVirt-Engine from source provided in SOURCE_DIR"
-	echo "RPMs are  built inside mock environment for each one of"
+	echo "RPMs are built inside mock environment for each one of"
 	echo "specified distributions (DISTx)."
-	echo "Usage:"
 	exit 1
 fi
 
 SOURCE_DIR=$1
 RESULT_DIR=$2
 
-if [ -z $BUILD_GWT ];
+if [ -z "${BUILD_GWT}" ];
 then
-BUILD_GWT=0
+	BUILD_GWT=0
 fi
 
 shift 2
 DISTS=$@
 
-echo 'Source directory:' $SOURCE_DIR
-echo 'Result directory:' $RESULT_DIR
-echo 'Build for following dists:' $DISTS
+echo "Source directory: ${SOURCE_DIR?}"
+echo "Result directory: ${RESULT_DIR?}"
+echo "Build for following dists: ${DISTS?}"
 
-cd $SOURCE_DIR
-rm -rf $PWD/rpmbuild
-rm -rf $PWD/*.tar.gz
+cd "${SOURCE_DIR?}"
+rm -rf "${PWD}/rpmbuild"
+rm -rf "${PWD}/*.tar.gz"
 
 make dist
 
-rpmbuild -ts *.tar.gz -D "_topdir $PWD/rpmbuild"
+rpmbuild -ts *.tar.gz -D "_topdir ${PWD}/rpmbuild"
 
-SRPM_PATH=$(realpath $PWD/rpmbuild/SRPMS/*.src.rpm)
+SRPM_PATH=$(realpath "${PWD}/rpmbuild/SRPMS/*.src.rpm")
 
-for DIST in $DISTS;
+for DIST in ${DISTS?};
 do
-	case "$DIST" in
+	case "${DIST?}" in
 		el6)
 			MOCK_CFG=epel-6-x86_64_ovirt
 			;;
@@ -66,19 +63,20 @@ do
 			MOCK_CFG=epel-7-x86_64_ovirt
 			;;
 	esac
-	rm -rf $RESULT_DIR/$DIST
-	mkdir -p $RESULT_DIR/$DIST
+	rm -rf "${RESULT_DIR?}/${DIST?}"
+	mkdir -p "${RESULT_DIR?}/${DIST?}"
+
 	/usr/bin/mock \
-		--root=$MOCK_CFG \
+		--root="${MOCK_CFG?}" \
 		--define="ovirt_build_minimal 1" \
-		--define="ovirt_build_gwt $BUILD_GWT" \
-		--resultdir=$RESULT_DIR/$DIST \
+		--define="ovirt_build_gwt ${BUILD_GWT?}" \
+		--resultdir="${RESULT_DIR?}/${DIST?}" \
 		--rebuild \
-		$SRPM_PATH \
+		"${SRPM_PATH?}" \
 		&
 done
 
 for PID in $(jobs -p);
 do
-	wait $PID || exit 1
+	wait ${PID} || exit 1
 done
