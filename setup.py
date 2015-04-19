@@ -134,5 +134,13 @@ distutils.core.setup(
             '/var/lib/testenv/subnets',
             [],
         ),
+        (
+            '/var/lib/testenv/store',
+            [],
+        ),
+        (
+            '/var/lib/testenv/reposync',
+            [],
+        ),
     ],
 )

@@ -58,6 +58,7 @@ Requires:	git
 %{_sysconfdir}/polkit-1/localauthority/50-local.d/
 %dir %attr(0775, root, testenv) /var/lib/testenv/
 %dir %attr(0775, root, testenv) /var/lib/testenv/subnets/
+%dir %attr(0775, root, testenv) /var/lib/testenv/store/
 
 %pre -n python-%{name}
 if [[ "$1" -eq 1 ]]; then
@@ -104,6 +105,7 @@ Requires:	rpm-build
 %{_sysconfdir}/mock/*
 %{_sysconfdir}/firewalld/services/*
 %{_sysconfdir}/testenv.d/ovirt.conf
+%dir %attr(0775, root, testenv) /var/lib/testenv/reposync/
 
 %post -n python-%{name}-ovirt
 if [ "$1" -eq 1 ]; then
