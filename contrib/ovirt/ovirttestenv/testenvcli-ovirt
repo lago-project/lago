@@ -92,6 +92,7 @@ def do_ovirt_reposetup(prefix, args):
         engine_dir=args.engine_dir,
         engine_build_gwt=args.engine_with_gwt,
         vdsm_dir=args.vdsm_dir,
+        vdsm_jsonrpc_java_dir=args.vdsm_jsonrpc_java_dir,
     )
 
 
@@ -204,6 +205,12 @@ ARGUMENTS[Verbs.OVIRT_REPOSETUP] = (
             '--vdsm-dir',
             {
                 'help': 'Path to VDSM source'
+            },
+        ),
+        (
+            '--vdsm-jsonrpc-java-dir',
+            {
+                'help': 'Path to vdsm-jsonrpc-java source'
             },
         ),
     ),

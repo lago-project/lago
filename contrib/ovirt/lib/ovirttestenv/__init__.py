@@ -69,32 +69,64 @@ def _sync_rpm_repository(repo_path, yum_config, repos):
             repoverify.verify_reposync(yum_config, repo_path, repos)
 
 
-def _build_vdsm_rpms(vdsm_dir, output_dir, dists):
-    ret, _, _ = utils.run_command(
-        [
-            'build_vdsm_rpms.sh',
-            vdsm_dir,
-            output_dir
-        ] + dists
+def _build_rpms(name, script, source_dir, output_dir, dists, env=None):
+    logging.info(
+        'Building %s from %s, for %s, storing results in %s',
+        name,
+        script,
+        source_dir,
+        ', '.join(dists),
+        output_dir,
     )
-    if ret != 0:
-        raise RuntimeError('Failed to build VDSM rpms')
+    ret, out, err = utils.run_command(
+        [
+            script,
+            source_dir,
+            output_dir,
+        ] + dists,
+        env,
+    )
+
+    if ret:
+        logging.error(
+            '%s returned with error %d',
+            script,
+            ret,
+        )
+        logging.error('Output was: \n%s', out)
+        logging.error('Errors were: \n%s', err)
+        raise RuntimeError('%s failed, see logs' % script)
+
+    return ret
+
+
+def _build_vdsm_rpms(vdsm_dir, output_dir, dists):
+    _build_rpms('vdsm', 'build_vdsm_rpms.sh', vdsm_dir, output_dir, dists)
 
 
 def _build_engine_rpms(engine_dir, output_dir, dists, build_gwt=False):
     env = os.environ.copy()
+    del env['BUILD_GWT']
     if build_gwt:
         env['BUILD_GWT'] = '1'
-    ret, _, _ = utils.run_command(
-        [
-            'build_engine_rpms.sh',
-            engine_dir,
-            output_dir,
-        ] + dists,
-        env=env,
+    _build_rpms(
+        'ovirt-engine',
+        'build_engine_rpms.sh',
+        engine_dir,
+        output_dir,
+        dists,
+        env
     )
-    if ret != 0:
-        raise RuntimeError('Failed to build engine rpms')
+
+
+def _build_vdsm_jsonrpc_java_rpms(source_dir, output_dir, dists):
+    _build_rpms(
+        'vdsm-jsonrpc-java',
+        'build_vdsm-jsonrpc-java_rpms.sh',
+        source_dir,
+        output_dir,
+        dists
+    )
 
 
 def _git_revision_at(path):
@@ -256,6 +288,7 @@ class OvirtPrefix(testenv.Prefix):
         vdsm_dir=None,
         engine_dir=None,
         engine_build_gwt=None,
+        vdsm_jsonrpc_java_dir=None,
     ):
         # Detect distros from template metadata
         engine_dists = filter(None, [self.virt_env().engine_vm().distro()])
@@ -295,7 +328,6 @@ class OvirtPrefix(testenv.Prefix):
         metadata = self._get_metadata()
 
         if vdsm_dir and vdsm_dists:
-            logging.info('Building VDSM from %s', vdsm_dir)
             jobs.append(
                 functools.partial(
                     _build_vdsm_rpms,
@@ -306,7 +338,17 @@ class OvirtPrefix(testenv.Prefix):
             )
 
         if engine_dir and engine_dists:
-            logging.info('Building ovirt-engine from %s', engine_dir)
+            jobs.append(
+                functools.partial(
+                    _build_engine_rpms,
+                    engine_dir=engine_dir,
+                    output_dir=self.paths.build_dir('ovirt-engine'),
+                    dists=engine_dists,
+                    build_gwt=engine_build_gwt,
+                ),
+            )
+
+        if vdsm_jsonrpc_java_dir and engine_dists:
             jobs.append(
                 functools.partial(
                     _build_engine_rpms,
