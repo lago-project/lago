@@ -69,7 +69,7 @@ class Prefix(object):
 
     def save(self):
         self._save_metadata()
-        self.virt_env().save()
+        self.virt_env.save()
 
     @property
     def paths(self):
@@ -303,20 +303,21 @@ class Prefix(object):
             rollback.clear()
 
     def start(self):
-        self.virt_env().start()
+        self.virt_env.start()
 
     def stop(self):
-        self.virt_env().stop()
+        self.virt_env.stop()
 
     def create_snapshots(self, name):
-        self.virt_env().create_snapshots(name)
+        self.virt_env.create_snapshots(name)
 
     def revert_snapshots(self, name):
-        self.virt_env().revert_snapshots(name)
+        self.virt_env.revert_snapshots(name)
 
     def _create_virt_env(self):
         return virt.VirtEnv.from_prefix(self)
 
+    @property
     def virt_env(self):
         if self._virt_env is None:
             self._virt_env = self._create_virt_env()

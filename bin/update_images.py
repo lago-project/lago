@@ -127,7 +127,7 @@ if __name__ == '__main__':
 
         jobs = []
         images_to_merge = []
-        for vm in prefix.virt_env().get_vms().values():
+        for vm in prefix.virt_env.get_vms().values():
             def update_domain(vm):
                 vm.wait_for_ssh()
                 vm.ssh_script(script_path)

@@ -221,7 +221,7 @@ class OvirtPrefix(testenv.Prefix):
 
     def create_snapshots(self, name, restore=True):
         with testenv.utils.RollbackContext() as rollback:
-            engine = self.virt_env().engine_vm()
+            engine = self.virt_env.engine_vm()
 
             self._deactivate()
             rollback.prependDefer(self._activate)
@@ -242,7 +242,7 @@ class OvirtPrefix(testenv.Prefix):
 
             vec = testenv.utils.func_vector(
                 stop_host,
-                [(vm,) for vm in self.virt_env().host_vms()],
+                [(vm,) for vm in self.virt_env.host_vms()],
             )
             vt = testenv.utils.VectorThread(vec)
             vt.start_all()
@@ -291,13 +291,13 @@ class OvirtPrefix(testenv.Prefix):
         vdsm_jsonrpc_java_dir=None,
     ):
         # Detect distros from template metadata
-        engine_dists = filter(None, [self.virt_env().engine_vm().distro()])
+        engine_dists = filter(None, [self.virt_env.engine_vm().distro()])
         vdsm_dists = filter(
             None,
             set(
                 [
                     vm.distro()
-                    for vm in self.virt_env().host_vms()
+                    for vm in self.virt_env.host_vms()
                 ],
             ),
         )
@@ -405,7 +405,7 @@ class OvirtPrefix(testenv.Prefix):
         )
 
     def _deploy_host(self, host_name, scripts):
-        host = self.virt_env().get_vm(host_name)
+        host = self.virt_env.get_vm(host_name)
         host.wait_for_ssh()
         for script in scripts:
             ret, _, _ = host.ssh_script(script, show_output=False)
@@ -443,17 +443,17 @@ class OvirtPrefix(testenv.Prefix):
         return virt.OvirtVirtEnv.from_prefix(self)
 
     def _activate(self):
-        for vm in self.virt_env().get_vms().values():
+        for vm in self.virt_env.get_vms().values():
             vm.wait_for_ssh()
         logging.info('Hosts up')
-        api = self.virt_env().engine_vm().get_api()
+        api = self.virt_env.engine_vm().get_api()
         _activate_all_hosts(api)
         logging.info('Hosts activated')
         _activate_all_storage_domains(api)
         logging.info('Storage domains activated')
 
     def _deactivate(self):
-        api = self.virt_env().engine_vm().get_api()
+        api = self.virt_env.engine_vm().get_api()
 
         _deactivate_all_storage_domains(api)
         _deactivate_all_hosts(api)
@@ -483,7 +483,7 @@ class OvirtPrefix(testenv.Prefix):
                         vm.name(),
                     ),
                 )
-                for vm in self.virt_env().get_vms().values()
+                for vm in self.virt_env.get_vms().values()
             ],
         )
         vt.start_all()

@@ -54,7 +54,7 @@ def with_ovirt_api(func):
     @with_ovirt_prefix
     def wrapper(prefix, *args, **kwargs):
         return func(
-            prefix.virt_env().engine_vm().get_api(),
+            prefix.virt_env.engine_vm().get_api(),
             *args,
             **kwargs
         )
@@ -77,7 +77,7 @@ def engine_capability(caps):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             prefix = get_test_prefix()
-            if not _vms_capable([prefix.virt_env().engine_vm()], caps):
+            if not _vms_capable([prefix.virt_env.engine_vm()], caps):
                 raise SkipTest()
             return func()
         return wrapper
@@ -89,7 +89,7 @@ def host_capability(caps):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             prefix = get_test_prefix()
-            if not _vms_capable(prefix.virt_env().host_vms(), caps):
+            if not _vms_capable(prefix.virt_env.host_vms(), caps):
                 raise SkipTest()
             return func()
         return wrapper

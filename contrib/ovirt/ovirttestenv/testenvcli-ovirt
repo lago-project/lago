@@ -120,7 +120,7 @@ def do_ovirt_stop(prefix, args):
 @in_prefix
 @with_logging
 def do_ovirt_engine_setup(prefix, args):
-    prefix.virt_env().engine_vm().engine_setup(args.config)
+    prefix.virt_env.engine_vm().engine_setup(args.config)
 
 
 @in_prefix

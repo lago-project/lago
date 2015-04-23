@@ -120,7 +120,7 @@ def do_revert(prefix, args):
 @in_prefix
 @with_logging
 def do_shell(prefix, args):
-    host = prefix.virt_env().get_vm(args.host)
+    host = prefix.virt_env.get_vm(args.host)
     if not host.alive():
         raise RuntimeError('Host %s is not running' % host.name())
 
@@ -143,15 +143,15 @@ def do_status(prefix, args):
     print '\tBase directory:', prefix.paths.prefix()
     with open(prefix.paths.uuid()) as f:
         print '\tUUID:', f.read()
-    net = prefix.virt_env().get_net()
+    net = prefix.virt_env.get_net()
     print '[Networks]:'
-    for net in prefix.virt_env().get_nets().values():
+    for net in prefix.virt_env.get_nets().values():
         print '\t[%s]' % net.name()
         print '\t\tGateway:', net.gw()
         print '\t\tStatus:', net.alive() and 'up' or 'down'
         print '\t\tManagement:', net.is_management()
     print '[VMs]:'
-    for vm in prefix.virt_env().get_vms().values():
+    for vm in prefix.virt_env.get_vms().values():
         print '\t[%s]' % vm.name()
         print '\t\tDistro:', vm.distro()
         print '\t\tRoot password:', vm.root_password()

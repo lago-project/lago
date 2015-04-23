@@ -69,7 +69,7 @@ def _create_http_server(ip, port, root_dir):
 
 @contextlib.contextmanager
 def repo_server_context(prefix):
-    gw_ip = prefix.virt_env().get_net().gw()
+    gw_ip = prefix.virt_env.get_net().gw()
     port = constants.REPO_SERVER_PORT
     server = _create_http_server(gw_ip, port, prefix.paths.internal_repo())
     try:

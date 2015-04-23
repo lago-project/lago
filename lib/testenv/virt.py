@@ -90,7 +90,7 @@ class VirtEnv(object):
     * libvirt_con
     '''
     def __init__(self, prefix, vm_specs, net_specs):
-        self._prefix = prefix
+        self.prefix = prefix
 
         with open(self._prefix.paths.uuid(), 'r') as f:
             self._uuid = f.read().strip()
@@ -111,9 +111,6 @@ class VirtEnv(object):
     def _create_vm(self, vm_spec):
         return VM(self, vm_spec)
 
-    def prefix(self):
-        return self._prefix
-
     def prefixed_name(self, unprefixed_name):
         return '%s-%s' % (self._uuid[:8], unprefixed_name)
 
@@ -126,6 +123,7 @@ class VirtEnv(object):
         vt.start_all()
         vt.join_all()
 
+    @property
     def libvirt_con(self):
         if self._libvirt_con is None:
             self._libvirt_con = libvirt.open('qemu:///system')
@@ -219,7 +217,7 @@ class VirtEnv(object):
         vt.join_all()
 
 
-class Network:
+class Network(object):
     def __init__(self, env, spec):
         self._env = env
         self._spec = spec
@@ -296,19 +294,19 @@ class Network:
     def alive(self):
         net_names = [
             net.name()
-            for net in self._env.libvirt_con().listAllNetworks()
+            for net in self._env.libvirt_con.listAllNetworks()
         ]
         return self._libvirt_name() in net_names
 
     def start(self):
         if not self.alive():
             logging.info('Creating network %s', self.name())
-            self._env.libvirt_con().networkCreateXML(self._libvirt_xml())
+            self._env.libvirt_con.networkCreateXML(self._libvirt_xml())
 
     def stop(self):
         if self.alive():
             logging.info('Destroying network %s', self.name())
-            self._env.libvirt_con().networkLookupByName(
+            self._env.libvirt_con.networkLookupByName(
                 self._libvirt_name(),
             ).destroy()
 
@@ -439,7 +437,7 @@ class VM(object):
                 client.connect(
                     self.ip(),
                     username='root',
-                    key_filename=self._env.prefix().paths.ssh_id_rsa(),
+                    key_filename=self._env.prefix.paths.ssh_id_rsa(),
                     timeout=1,
                 )
                 return client
@@ -642,20 +640,20 @@ class VM(object):
     def start(self):
         if not self.alive():
             logging.info('Starting VM %s', self.name())
-            self._env.libvirt_con().createXML(self._libvirt_xml())
+            self._env.libvirt_con.createXML(self._libvirt_xml())
 
     def stop(self):
         if self.alive():
             self._ssh_client = None
             logging.info('Destroying VM %s', self.name())
-            self._env.libvirt_con().lookupByName(
+            self._env.libvirt_con.lookupByName(
                 self._libvirt_name(),
             ).destroy()
 
     def alive(self):
         dom_names = [
             dom.name()
-            for dom in self._env.libvirt_con().listAllDomains()
+            for dom in self._env.libvirt_con.listAllDomains()
         ]
         return self._libvirt_name() in dom_names
 
@@ -681,7 +679,7 @@ class VM(object):
         self.guest_agent().start()
         self.ssh('sync'.split(' '))
 
-        dom = self._env.libvirt_con().lookupByName(self._libvirt_name())
+        dom = self._env.libvirt_con.lookupByName(self._libvirt_name())
         dom_xml = lxml.etree.fromstring(dom.XMLDesc())
         disks = dom_xml.xpath('devices/disk')
 
@@ -753,7 +751,7 @@ class VM(object):
 
     def extract_paths(self, paths):
         self.guest_agent().start()
-        dom = self._env.libvirt_con().lookupByName(self._libvirt_name())
+        dom = self._env.libvirt_con.lookupByName(self._libvirt_name())
         dom.fsFreeze()
         try:
             disk_path = self._spec['disks'][0]['path']
@@ -808,7 +806,7 @@ class VM(object):
             if not g.exists(SSH_DIR):
                 g.mkdir(SSH_DIR)
                 g.chmod(0700, SSH_DIR)
-            with open(self._env.prefix().paths.ssh_id_rsa_pub()) as f:
+            with open(self._env.prefix.paths.ssh_id_rsa_pub()) as f:
                 g.write(AUTHORIZED_KEYS, f.read())
 
             # persistent net rules
@@ -832,7 +830,7 @@ class VM(object):
 
     @_check_alive
     def vnc_port(self):
-        dom = self._env.libvirt_con().lookupByName(self._libvirt_name())
+        dom = self._env.libvirt_con.lookupByName(self._libvirt_name())
         dom_xml = lxml.etree.fromstring(dom.XMLDesc())
         return dom_xml.xpath('devices/graphics').pop().attrib['port']
 

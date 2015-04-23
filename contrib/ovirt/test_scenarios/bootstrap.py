@@ -88,7 +88,7 @@ def add_cluster(api):
 
 @testlib.with_ovirt_prefix
 def add_hosts(prefix):
-    api = prefix.virt_env().engine_vm().get_api()
+    api = prefix.virt_env.engine_vm().get_api()
 
     def _add_host(vm):
         p = params.Host(
@@ -103,7 +103,7 @@ def add_hosts(prefix):
 
         return api.hosts.add(p)
 
-    hosts = prefix.virt_env().host_vms()
+    hosts = prefix.virt_env.host_vms()
     vec = utils.func_vector(_add_host, [(h,) for h in hosts])
     vt = utils.VectorThread(vec)
     vt.start_all()
@@ -167,7 +167,7 @@ def add_master_storage_domain(api):
 
 @testlib.with_ovirt_prefix
 def add_secondary_storage_domains(prefix):
-    api = prefix.virt_env().engine_vm().get_api()
+    api = prefix.virt_env.engine_vm().get_api()
     vt = utils.VectorThread(
         [
             functools.partial(add_iscsi_storage_domain, prefix),
@@ -180,10 +180,10 @@ def add_secondary_storage_domains(prefix):
 
 
 def add_iscsi_storage_domain(prefix):
-    api = prefix.virt_env().engine_vm().get_api()
+    api = prefix.virt_env.engine_vm().get_api()
 
     # Find LUN GUIDs
-    ret, stdout, _ = prefix.virt_env().get_vm('storage-iscsi').ssh(
+    ret, stdout, _ = prefix.virt_env.get_vm('storage-iscsi').ssh(
         ['multipath', '-ll'],
     )
     nt.assert_equals(ret, 0)
