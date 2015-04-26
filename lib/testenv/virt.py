@@ -92,7 +92,7 @@ class VirtEnv(object):
     def __init__(self, prefix, vm_specs, net_specs):
         self.prefix = prefix
 
-        with open(self._prefix.paths.uuid(), 'r') as f:
+        with open(self.prefix.paths.uuid(), 'r') as f:
             self._uuid = f.read().strip()
 
         self._nets = {}
@@ -115,7 +115,7 @@ class VirtEnv(object):
         return '%s-%s' % (self._uuid[:8], unprefixed_name)
 
     def virt_path(self, *args):
-        return self._prefix.paths.virt(*args)
+        return self.prefix.paths.virt(*args)
 
     def bootstrap(self):
         vec = [vm.bootstrap for vm in self._vms.values()]
