@@ -18,6 +18,7 @@
 # Refer to the README and COPYING files for full details of the license
 #
 import ConfigParser
+import fnmatch
 import functools
 import gzip
 import os
@@ -68,10 +69,16 @@ def get_packages(repo_url, whitelist=None, blacklist=None):
     ):
         name = pkg_element.xpath('common:name', namespaces=RPMNS)[0].text
 
-        if whitelist and name not in whitelist:
+        if not whitelist:
+            whitelist = ('*', )
+
+        if not blacklist:
+            blacklist = ()
+
+        if any([fnmatch.fnmatch(name, pat) for pat in whitelist]):
             continue
 
-        if blacklist and name in blacklist:
+        if any([fnmatch.fnmatch(name, pat) for pat in blacklist]):
             continue
 
         arch = pkg_element.xpath('common:arch', namespaces=RPMNS)[0].text
