@@ -49,12 +49,23 @@ def do_init(args):
     testenv.utils.setup_logging(prefix.paths.logs())
 
     try:
-        if args.template_repo_name:
-            repo = testenv.templates.find_repo_by_name(args.template_repo_name)
-        else:
+        if args.template_repo_path:
             repo = testenv.templates.TemplateRepository.from_file(
                 args.template_repo_path
             )
+        else:
+            try:
+                repo_name = (
+                    args.template_repo_name
+                    or
+                    testenv.config.get('template_default_repo')
+                )
+            except KeyError:
+                raise RuntimeError(
+                    'No template repo was configured or specified'
+                )
+
+            repo = testenv.templates.find_repo_by_name(repo_name)
 
         template_store_path = (
             args.template_store
