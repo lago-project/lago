@@ -25,6 +25,7 @@ distutils.core.setup(
     provides=['testenv', 'ovirttestenv'],
     scripts=[
         'testenv/testenvcli',
+        'testenv/testenvcli-template-repo',
         'contrib/ovirt/ovirttestenv/testenvcli-ovirt',
     ],
     data_files=[

@@ -30,6 +30,7 @@ TESTENV_VERSION=%{version} %{__python} setup.py install --root $RPM_BUILD_ROOT
 %files
 %doc AUTHORS COPYING README.md
 %{_bindir}/testenvcli
+%{_bindir}/testenvcli-template-repo
 %{_datadir}/%{name}/*
 %attr(0775, root, root) %{_sysconfdir}/sudoers.d/*
 
