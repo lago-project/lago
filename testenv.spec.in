@@ -59,6 +59,7 @@ Requires:	git
 %dir %attr(0775, root, testenv) /var/lib/testenv/
 %dir %attr(0775, root, testenv) /var/lib/testenv/subnets/
 %dir %attr(0775, root, testenv) /var/lib/testenv/store/
+%dir %attr(0775, root, testenv) /var/lib/testenv/repos/
 
 %pre -n python-%{name}
 if [[ "$1" -eq 1 ]]; then

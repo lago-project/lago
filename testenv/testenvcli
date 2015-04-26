@@ -49,13 +49,12 @@ def do_init(args):
     testenv.utils.setup_logging(prefix.paths.logs())
 
     try:
-        template_repo_path = (
-            args.template_repo
-            or
-            testenv.config.get('template_repo', default=True)
-        )
-        with open(template_repo_path) as f:
-            repo = testenv.templates.TemplateRepository(json.load(f))
+        if args.template_repo_name:
+            repo = testenv.templates.find_repo_by_name(args.template_repo_name)
+        else:
+            repo = testenv.templates.TemplateRepository.from_file(
+                args.template_repo_path
+            )
 
         template_store_path = (
             args.template_store
@@ -204,12 +203,20 @@ ARGUMENTS[Verbs.INIT] = (
             },
         ),
         (
-            '--template-repo',
+            '--template-repo-path',
             {
                 'help': (
                     'Repo file describing the templates'
                 ),
                 'type': os.path.abspath,
+            },
+        ),
+        (
+            '--template-repo-name',
+            {
+                'help': (
+                    'Name of repo from the template repos dir'
+                ),
             },
         ),
         (

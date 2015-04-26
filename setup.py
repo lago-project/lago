@@ -139,6 +139,10 @@ distutils.core.setup(
             [],
         ),
         (
+            '/var/lib/testenv/repos',
+            [],
+        ),
+        (
             '/var/lib/testenv/reposync',
             [],
         ),

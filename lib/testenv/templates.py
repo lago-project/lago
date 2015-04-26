@@ -9,6 +9,7 @@ import urllib
 
 import lockfile
 
+import config
 import utils
 
 
@@ -59,6 +60,30 @@ _PROVIDERS = {
 }
 
 
+def find_repo_by_name(name, repo_dir=None):
+    if repo_dir is None:
+        repo_dir = config.get('template_repos')
+
+    ret, out, _ = utils.run_command(
+        [
+            'find',
+            repo_dir,
+            '-name', '*.json',
+        ],
+    )
+
+    repos = [
+        TemplateRepository.from_file(line.strip())
+        for line in out.split('\n')
+        if len(line.strip())
+    ]
+
+    for repo in repos:
+        if repo.name == name:
+            return repo
+    raise RuntimeError('Could not find repo %s' % (name))
+
+
 class TemplateRepository:
     def __init__(self, dom):
         self._dom = dom
@@ -70,12 +95,13 @@ class TemplateRepository:
     @classmethod
     def from_file(clazz, path):
         with open(path) as f:
-            return TemplateRepository(json.load(f))
+            return clazz(json.load(f))
 
     def _get_provider(self, spec):
         provider_class = _PROVIDERS[spec['type']]
         return provider_class(**spec['args'])
 
+    @property
     def name(self):
         return self._dom['name']
 
@@ -85,7 +111,7 @@ class TemplateRepository:
             name=name,
             versions={
                 ver_name: TemplateVersion(
-                    name='%s:%s' % (name, ver_name),
+                    name='%s:%s:%s' % (self.name, name, ver_name),
                     source=self._providers[ver_spec['source']],
                     handle=ver_spec['handle'],
                     timestamp=ver_spec['timestamp'],
@@ -97,11 +123,8 @@ class TemplateRepository:
 
 class Template:
     def __init__(self, name, versions):
-        self._name = name
+        self.name = name
         self._versions = versions
-
-    def name(self):
-        return self._name
 
     def get_version(self, ver_name=None):
         if ver_name is None:
@@ -114,15 +137,12 @@ class Template:
 
 class TemplateVersion:
     def __init__(self, name, source, handle, timestamp):
-        self._name = name
+        self.name = name
         self._source = source
         self._handle = handle
         self._timestamp = timestamp
         self._hash = None
         self._metadata = None
-
-    def name(self):
-        return self._name
 
     def timestamp(self):
         return self._timestamp
@@ -161,15 +181,15 @@ class TemplateStore:
         return os.path.join(self._root, *path)
 
     def __contains__(self, temp_ver):
-        return os.path.exists(self._prefixed(temp_ver.name()))
+        return os.path.exists(self._prefixed(temp_ver.name))
 
     def get_path(self, temp_ver):
         if temp_ver not in self:
             raise RuntimeError('Template not present')
-        return self._prefixed(temp_ver.name())
+        return self._prefixed(temp_ver.name)
 
     def download(self, temp_ver, store_metadata=True):
-        dest = self._prefixed(temp_ver.name())
+        dest = self._prefixed(temp_ver.name)
         temp_dest = '%s.tmp' % dest
 
         with lockfile.LockFile(dest):
@@ -192,7 +212,7 @@ class TemplateStore:
             if temp_ver.get_hash() != sha1.hexdigest():
                 raise RuntimeError(
                     'Image %s does not match the expected hash %s' % (
-                        temp_ver.name(),
+                        temp_ver.name,
                         sha1.hexdigest(),
                     )
                 )
@@ -225,11 +245,11 @@ class TemplateStore:
             )
 
     def get_stored_metadata(self, temp_ver):
-        with open(self._prefixed('%s.metadata' % temp_ver.name())) as f:
+        with open(self._prefixed('%s.metadata' % temp_ver.name)) as f:
             return json.load(f)
 
     def get_stored_hash(self, temp_ver):
-        with open(self._prefixed('%s.hash' % temp_ver.name())) as f:
+        with open(self._prefixed('%s.hash' % temp_ver.name)) as f:
             return f.read().strip()
 
     def mark_used(self, temp_ver, key_path):
