@@ -105,10 +105,6 @@ class Prefix(object):
 
             rollback.clear()
 
-    def uuid(self):
-        with open(self.paths.uuid(), 'r') as f:
-            return f.read()
-
     def cleanup(self):
         self.stop()
 
