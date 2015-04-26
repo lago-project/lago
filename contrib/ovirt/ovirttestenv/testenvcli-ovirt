@@ -89,6 +89,7 @@ def do_ovirt_reposetup(prefix, args):
     prefix.prepare_repo(
         rpm_repo=rpm_repo,
         reposync_yum_config=reposync_config,
+        skip_sync=args.skip_sync,
         engine_dir=args.engine_dir,
         engine_build_gwt=args.engine_with_gwt,
         vdsm_dir=args.vdsm_dir,
@@ -186,6 +187,13 @@ ARGUMENTS[Verbs.OVIRT_REPOSETUP] = (
                     'repository'
                 ),
                 'type': os.path.abspath,
+            },
+        ),
+        (
+            '--skip-sync',
+            {
+                'help': 'Do not sync repos',
+                'action': 'store_true',
             },
         ),
         (

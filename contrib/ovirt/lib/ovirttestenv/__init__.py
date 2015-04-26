@@ -285,6 +285,7 @@ class OvirtPrefix(testenv.Prefix):
         self,
         rpm_repo=None,
         reposync_yum_config=None,
+        skip_sync=False,
         vdsm_dir=None,
         engine_dir=None,
         engine_build_gwt=None,
@@ -316,14 +317,15 @@ class OvirtPrefix(testenv.Prefix):
                 if repo.split('-')[-1] in all_dists
             ]
 
-            jobs.append(
-                functools.partial(
-                    _sync_rpm_repository,
-                    rpm_repo,
-                    reposync_yum_config,
-                    repos,
+            if not skip_sync:
+                jobs.append(
+                    functools.partial(
+                        _sync_rpm_repository,
+                        rpm_repo,
+                        reposync_yum_config,
+                        repos,
+                    )
                 )
-            )
 
         metadata = self._get_metadata()
 
