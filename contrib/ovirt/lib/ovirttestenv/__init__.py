@@ -71,7 +71,7 @@ def _sync_rpm_repository(repo_path, yum_config, repos):
 
 def _build_rpms(name, script, source_dir, output_dir, dists, env=None):
     logging.info(
-        'Building %s from %s, for %s, storing results in %s',
+        'Building %s(%s) from %s, for %s, storing results in %s',
         name,
         script,
         source_dir,
@@ -84,7 +84,7 @@ def _build_rpms(name, script, source_dir, output_dir, dists, env=None):
             source_dir,
             output_dir,
         ] + dists,
-        env,
+        env=env,
     )
 
     if ret:
@@ -106,9 +106,10 @@ def _build_vdsm_rpms(vdsm_dir, output_dir, dists):
 
 def _build_engine_rpms(engine_dir, output_dir, dists, build_gwt=False):
     env = os.environ.copy()
-    del env['BUILD_GWT']
     if build_gwt:
         env['BUILD_GWT'] = '1'
+    else:
+        env['BUILD_GWT'] = '0'
     _build_rpms(
         'ovirt-engine',
         'build_engine_rpms.sh',

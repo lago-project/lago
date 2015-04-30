@@ -51,7 +51,7 @@ make dist
 
 rpmbuild -ts *.tar.gz -D "_topdir ${PWD}/rpmbuild"
 
-SRPM_PATH=$(realpath "${PWD}/rpmbuild/SRPMS/*.src.rpm")
+SRPM_PATH=$(realpath ${PWD}/rpmbuild/SRPMS/*.src.rpm)
 
 for DIST in ${DISTS?};
 do
