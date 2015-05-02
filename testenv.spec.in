@@ -14,6 +14,8 @@ URL:		redhat.com
 Source0:	https://dimak.fedorapeople.org/testenv/%{name}-%{version}.tar.gz
 
 BuildRequires:	python2-devel
+BuildRequires:	python-flake8
+BuildRequires:	python-nose
 Requires:	python-%{name} = %{version}
 
 %description

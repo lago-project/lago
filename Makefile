@@ -23,9 +23,10 @@ build:
 check: check-local
 
 check-local:
+	find . -name '*.py' | xargs flake8
 	PYTHONPATH=${PWD}/lib:${PYTHONPATH} nosetests -v tests/*.py
 
-dist: ${TAR_DIST_LOCATION}
+dist: check ${TAR_DIST_LOCATION}
 
 ${TAR_DIST_LOCATION}:
 	TESTENV_VERSION=${VERSION} python setup.py sdist
