@@ -48,8 +48,10 @@ updating = lambda x: '%s.updating' % x
 
 if __name__ == '__main__':
     logging.basicConfig(
-        stream=sys.stdout, level=logging.DEBUG,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        stream=sys.stdout,
+        level=logging.DEBUG,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    )
 
     working_dir = sys.argv[1]
     script_path = sys.argv[2]
@@ -75,8 +77,14 @@ if __name__ == '__main__':
             os.chmod(updating(img), 0666)
 
         config = {
-            'net': {
-                'name': NETWORK_NAME,
+            'nets': {
+                NETWORK_NAME: {
+                    'dhcp': {
+                        'start': 100,
+                        'end': 254,
+                    },
+                    'management': True,
+                },
             },
             'domains': {},
         }
@@ -93,12 +101,18 @@ if __name__ == '__main__':
             ].pop()
 
             qemu_to_libvirt_formats = {'raw': 'file'}
-            libvirt_format = qemu_to_libvirt_formats.get(image_format,
-                                                         image_format)
+            libvirt_format = qemu_to_libvirt_formats.get(
+                image_format,
+                image_format
+            )
 
             dom_name = domain_name(img)
             dom_spec = {
-                'net': NETWORK_NAME,
+                'nics': [
+                    {
+                        'net': NETWORK_NAME,
+                    },
+                ],
                 'disks': [
                     {
                         'name': 'root',
@@ -130,7 +144,7 @@ if __name__ == '__main__':
         for vm in prefix.virt_env.get_vms().values():
             def update_domain(vm):
                 vm.wait_for_ssh()
-                vm.ssh_script(script_path)
+                ret, _, _ = vm.ssh_script(script_path)
 
                 # Do not commit image if script returned with error.
                 if ret:
