@@ -237,7 +237,7 @@ class Prefix(object):
                             disk_path, spec['size']]
         elif spec['type'] == 'file':
             # If we're using raw file, just return it's path
-            return spec['path']
+            return spec['path'], disk_metadata
         else:
             raise RuntimeError('Unknown drive spec %s' % str(spec))
 
