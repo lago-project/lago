@@ -32,15 +32,8 @@ import libvirt
 import lxml.etree
 import paramiko
 
+import bootstrap
 import utils
-
-HOSTNAME_PATH = '/etc/hostname'
-ISCSI_DIR = '/etc/iscsi/'
-ISCSI_INITIATOR_NAME_PATH = os.path.join(ISCSI_DIR, 'initiatorname.iscsi')
-
-SSH_DIR = '/root/.ssh/'
-AUTHORIZED_KEYS = os.path.join(SSH_DIR, 'authorized_keys')
-PERSISTENT_NET_RULES = '/etc/udev/rules.d/70-persistent-net.rules'
 
 
 def _gen_ssh_command_id():
@@ -547,6 +540,9 @@ class VM(object):
     def name(self):
         return str(self._spec['name'])
 
+    def iscsi_name(self):
+        return 'iqn.2014-07.org.testenv:%s' % self.name()
+
     def ip(self):
         return str(self._env.get_net().resolve(self.name()))
 
@@ -780,43 +776,22 @@ class VM(object):
             utils.json_dump(self._spec, f)
 
     def bootstrap(self):
-        path = self._spec['disks'][0]['path']
-        logging.debug('Bootstrapping %s:%s begin', self.name(), path)
+        logging.debug('Bootstrapping %s begin', self.name())
 
-        g = guestfs.GuestFS(python_return_dict=True)
-        g.add_drive_opts(path, format='qcow2', readonly=0)
-        g.set_backend('direct')
-        g.launch()
-        try:
-            rootfs = filter(lambda x: 'root' in x, g.list_filesystems())[0]
-            g.mount(rootfs, '/')
+        with open(self._env.prefix.paths.ssh_id_rsa_pub()) as f:
+            pub_key = f.read()
 
-            # /etc/hostname
-            g.write(HOSTNAME_PATH, self.name() + '\n')
-
-            # /etc/iscsi/initiatorname.iscsi
-            if not g.exists(ISCSI_DIR):
-                g.mkdir(ISCSI_DIR)
-            g.write(
-                ISCSI_INITIATOR_NAME_PATH,
-                'InitiatorName=iqn.2014-07.org.ovirt:%s\n' % self.name(),
-            )
-
-            # $HOME/.ssh/authorized_keys
-            if not g.exists(SSH_DIR):
-                g.mkdir(SSH_DIR)
-                g.chmod(0700, SSH_DIR)
-            with open(self._env.prefix.paths.ssh_id_rsa_pub()) as f:
-                g.write(AUTHORIZED_KEYS, f.read())
-
-            # persistent net rules
-            if g.exists(PERSISTENT_NET_RULES):
-                g.rm(PERSISTENT_NET_RULES)
-
-            logging.debug('Bootstrapping %s:%s end', self.name(), path)
-        finally:
-            g.shutdown()
-            g.close()
+        bootstrap.bootstrap(
+            self._spec['disks'][0]['path'],
+            [
+                bootstrap.add_ssh_key(key=pub_key),
+                bootstrap.set_hostname(hostname=self.name()),
+                bootstrap.set_selinux(mode='permissive'),
+                bootstrap.remove_persistent_nets(),
+                bootstrap.set_iscsi_initiator_name(name=self.iscsi_name()),
+            ],
+        )
+        logging.debug('Bootstrapping %s end', self.name())
 
     def _reclaim_disk(self, path):
         if pwd.getpwuid(os.stat(path).st_uid).pw_name == 'qemu':
