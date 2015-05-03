@@ -422,7 +422,7 @@ class OvirtPrefix(testenv.Prefix):
     @_with_repo_server
     def deploy(self):
         jobs = []
-        for host in self.virt_env.get_vms().itervalues():
+        for host in self.virt_env.get_vms().values():
             jobs.append(
                 functools.partial(self._deploy_host, host=host)
             )
