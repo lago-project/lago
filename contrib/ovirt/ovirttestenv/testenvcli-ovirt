@@ -100,10 +100,7 @@ def do_ovirt_reposetup(prefix, args):
 @in_prefix
 @with_logging
 def do_deploy(prefix, args):
-    prefix.deploy(
-        args.config,
-        args.scripts_root,
-    )
+    prefix.deploy()
 
 
 @in_prefix
@@ -144,26 +141,7 @@ class Verbs:
 ARGUMENTS = collections.OrderedDict()
 ARGUMENTS[Verbs.OVIRT_DEPLOY] = (
     'Run scripts that install necessary RPMs and configuration',
-    (
-        (
-            'config',
-            {
-                'help': (
-                    'Path to config that describes the scripts needed to run'
-                ),
-                'type': os.path.abspath,
-            },
-        ),
-        (
-            'scripts_root',
-            {
-                'help': (
-                    'Prefix of all paths in the provided configuration file.'
-                ),
-                'type': os.path.abspath,
-            },
-        ),
-    ),
+    (),
     do_deploy,
 )
 ARGUMENTS[Verbs.OVIRT_REPOSETUP] = (

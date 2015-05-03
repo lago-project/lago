@@ -17,7 +17,11 @@
             ], 
             "metadata": {
                 "ovirt-engine-password": "123", 
-                "ovirt-role": "engine"
+                "ovirt-role": "engine",
+                "ovirt-scripts": [
+                    "/usr/share/ovirttestenv/setup_scripts/add_local_repo.sh",
+                    "/usr/share/ovirttestenv/setup_scripts/setup_engine.sh"
+                ]
             }
         }, 
         "storage-iscsi": {
@@ -41,7 +45,12 @@
                     "dev": "vdb", 
                     "format": "raw"
                 }
-            ]
+            ],
+            "metadata": {
+                "ovirt-scripts": [
+                    "/usr/share/ovirttestenv/setup_scripts/setup_storage_iscsi.sh"
+                ]
+            }
         }, 
         "storage-nfs": {
             "nics": [
@@ -71,7 +80,12 @@
                     "dev": "vdc", 
                     "format": "qcow2"
                 }
-            ]
+            ],
+            "metadata": {
+                "ovirt-scripts": [
+                    "/usr/share/ovirttestenv/setup_scripts/setup_storage_nfs.sh"
+                ]
+            }
         }, 
         "host3": {
             "nics": [
@@ -92,7 +106,11 @@
                 "ovirt-capabilities": [
                     "snapshot-live-merge"
                 ], 
-                "ovirt-role": "host"
+                "ovirt-role": "host",
+                "ovirt-scripts": [
+                    "/usr/share/ovirttestenv/setup_scripts/add_local_repo.sh",
+                    "/usr/share/ovirttestenv/setup_scripts/setup_host.sh"
+                ]
             }
         }, 
         "host2": {
@@ -114,7 +132,11 @@
                 "ovirt-capabilities": [
                     "snapshot-live-merge"
                 ], 
-                "ovirt-role": "host"
+                "ovirt-role": "host",
+                "ovirt-scripts": [
+                    "/usr/share/ovirttestenv/setup_scripts/add_local_repo.sh",
+                    "/usr/share/ovirttestenv/setup_scripts/setup_host.sh"
+                ]
             }
         }, 
         "host1": {
@@ -136,7 +158,11 @@
                 "ovirt-capabilities": [
                     "snapshot-live-merge"
                 ], 
-                "ovirt-role": "host"
+                "ovirt-role": "host",
+                "ovirt-scripts": [
+                    "/usr/share/ovirttestenv/setup_scripts/add_local_repo.sh",
+                    "/usr/share/ovirttestenv/setup_scripts/setup_host.sh"
+                ]
             }
         }, 
         "host0": {
@@ -158,7 +184,11 @@
                 "ovirt-capabilities": [
                     "snapshot-live-merge"
                 ], 
-                "ovirt-role": "host"
+                "ovirt-role": "host",
+                "ovirt-scripts": [
+                    "/usr/share/ovirttestenv/setup_scripts/add_local_repo.sh",
+                    "/usr/share/ovirttestenv/setup_scripts/setup_host.sh"
+                ]
             }
         }
     }, 

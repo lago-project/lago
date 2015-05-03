@@ -19,7 +19,6 @@
 #
 import ConfigParser
 import functools
-import json
 import logging
 import os
 
@@ -407,36 +406,25 @@ class OvirtPrefix(testenv.Prefix):
             addplugins=addplugins,
         )
 
-    def _deploy_host(self, host_name, scripts):
-        host = self.virt_env.get_vm(host_name)
+    def _deploy_host(self, host):
         host.wait_for_ssh()
-        for script in scripts:
+        for script in host.metadata.get('ovirt-scripts', []):
             ret, _, _ = host.ssh_script(script, show_output=False)
             if ret != 0:
                 raise RuntimeError(
                     '%s failed with status %d on %s' % (
                         script,
                         ret,
-                        host_name
+                        host.name(),
                     ),
                 )
 
     @_with_repo_server
-    def deploy(self, config_path, scripts_root):
-        with open(config_path) as f:
-            config = json.load(f)
-
+    def deploy(self):
         jobs = []
-        for host in config.keys():
+        for host in self.virt_env.get_vms().itervalues():
             jobs.append(
-                functools.partial(
-                    self._deploy_host,
-                    host,
-                    [
-                        os.path.join(scripts_root, script)
-                        for script in config[host]
-                    ],
-                )
+                functools.partial(self._deploy_host, host=host)
             )
         vt = testenv.utils.VectorThread(jobs)
         vt.start_all()
