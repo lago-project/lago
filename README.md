@@ -1,165 +1,262 @@
-# oVirt testing framework
+# System testing framework: getting started
 
-A framework (library + utilities) to allow quick deployment of virtual machines
-with predefined configurations.
-
-## Introduction
-
-This utility was created to facilitate system testing of oVirt, a system that 
-has to be deployed on several machines. To avoid the need to clean-up and 
-provision physical hosts, and to independent of network/storage unavailability,
-it was decided to run all the machines on a single host, as VMs, with a virtual
-network, and storage exported by those VMs.
-
-The bare flow is the following:
-
-* Create a prefix - directory where all the resoures of the running environment
-will be placed.
-* Start VMs - Create a virtual network and virtual machines according to a
-provided specification.
-* Run specific logic - Interact with VMs as if they were regular machines, over
-IP.
-* Create/revert snapshots
-* Tear down the environment and all its resources.
-
-### oVirt
-Test scenarions for oVirt are written as unit-tests written in python using
-python-nose and oVirt python SDK.
-
-To prepare environment for testing, the following has to be done:
-
-* Build VDSM/oVirt RPMs from source.
-* Sync nightly oVirt repository
-* Combine built RPMs and nightly sync into a repository local to the testing
-environment.
-* Bring up an HTTP server on the local virtual network of the environment and 
-install RPMs on the virtual machines.
+Hello, this describes how to get started with oVirt testing framework.
 
 
-### building engine/VDSM
-Most of the build process will happen in mock environment but 'dist' targets are going to be ran outside, so all the utilites used by for dist tar creation (autotools / pep8 / ???) have to be installed.
+## Installation
 
-* [oVirt-Engine requirements](http://www.ovirt.org/OVirt_Engine_Development_Environment#RPM_based)
-* [VDSM requirements](http://www.ovirt.org/Vdsm_Developers#Installing_the_required_packages)
+In order to install the framework, you'll need to build RPMs or acquire them
+from a repository.
 
-## CLI
-One of the ways to interact with the testing framework is the provided CLI. It contains several basic verbs:
-
-* `init` - Create a directory the framework will utilize as root of exectuion. Stores all the resources required throughout its lifecycle.
-* `start` - Start virtual appliances of the current deployment
-* `stop` - Stop virtual appliances of the current deployment
-* `snapshot` - Create snapshots of all the virtual machines in the environment.
-* `revert` - Revert to previously created snapshot
-* `shell` - Run scripts and execute shell commands on the virtual machines.
-* `cleanup` - Cleans up the exection environment. Note: directory still needs to be deleted afterwards.
-
-For specific parameters run with `--help`, to run locally without installing the libraries, use `testenv/testenvcli_local`.
-
-### oVirt CLI
-The above CLI also includes `ovirt` verb that has several *sub-verbs*:
-
-* `reposetup` - Build RPMs, sync exteranal repositories and create a private combined repository for the environment.
-* `deploy` - Install RPMs and configure the virtual machines.
-* `runtest` - Run a series of `python-nose` compatible tests.
-* `snapshot` - Stop all services and take a snapshot of the system.
-
-Run with `--help` for more detailed help.
-
-## Basic usage
-For basic usage, examine function `testenv_run` in `contrib/jenkins/testenv_common.sh`. This function demonstrates the way oVirt jenkins uses the testing framework (throught the CLI) to perform tests.
-
-## Setting up
-Currently the code relies on various configurations, this list might be incomplete.
-
-### Libvirt authentication
-At the moment, library uses qemu:///system URL and authenticates with `testenv@ovirt` as username and `testenv` as password.
-
-### Nested virtualization
-Enable nested virtualization in the kernel on intel CPUs set kvm\_intel.nested parameter to 1, by either editing /etc/modprobe.d/modprobe.conf and adding this line: `options kvm_intel nested=1` or by adding `kvm_intel.nested=1` to kernel cmdline in grub
-
-
-### sudo rules
-qemu takes possession of the disks it uses, to be able to manipulate VM disks we need to the following rule:
+Once you have them, install the following packages:
 ```
-jenkins    ALL = (qemu) NOPASSWD: /bin/qemu-img
+yum install testenv-ovirt testenv-ovirt-extras
 ```
 
-### Subnet lease directory
-To automatially allocate subnets, the library uses a global directory to manage leases. At the moment, this directory is `/var/lib/testenv/subnets/`. It must be writeable by current user in order for subnet allocation to succeed.
+This will install all the needed packages.
 
-# Jenkins
-Most of jenkins scripts are located in `contrib/jenkins/`. 
+Note: on Fedora 20, you might need to enable `fedora-virt-preview` repository 
+to satisfy libvirt version requirement.
 
-## sudo rules
-Jenkins user runs without an attached shell, so the following sudo rules are advised for successful mock use:
-```
-Defaults:%jenkins !requiretty
-Defaults:jenkins !requiretty
-Defaults:%mock !requiretty
-Defaults:mock !requiretty
-```
+## Machine set-up
 
-## Virtual resources specification:
-The spec is a JSON file with the following format: 
+### Virtualization and nested virtualization support
 
+1. Make sure that virtualization extension is enabled on the CPU, otherwise, 
+you might need to enable it in the BIOS. Generally, if virtualization extension 
+is disabled, `dmesg` log would contain a line similar to:
 
-```json
-{
-    "net": {
-        "name": "NET_NAME",
-		"gw*": "IP.IP.IP.IP"
-	},
-	"domains": {
-		"DOMAIN_NAME1" : {
-		        "vcpu*": "VCPUS",
-			"cpu*": "CPUS",
-			"memory*": "MEM_SIZE",
-			"disks": [
-				{
-					"name": "NAME",
-					"dev": "vdX",
-					"type": "(template|empty|file)",
-					"format": "(qcow2|raw)",
-					"template_name*": "PATH",
-					"size": "SIZE",
-					"path*": "PATH"
-				}
-			],
-			"ip*": "IP.IP.IP.IP",
-			"metadata*": {
-				"key_1": "value_1",
-				"key_2": "value_2"
-			}
-		}
-}
+ ```
+kvm: disabled by BIOS
 ```
 
-* **net** - Specification of the network.
-    * **net.name** - Name of the virtual network to create
-    * **net.gw** - (Optional) Gateway for the newtork to be created, e.g. 192.168.2.1. If ommited one will be selected for the environment.
-* **domains** - All the specifications of the VMs to be created.
-    * **domains.NAME** - Specification of a specific VM named NAME:
-        * **domains.NAME.vcpu** - (Optional) Number of VCPUs to allocate to the domain.
-        * **domains.NAME.cpu** - (Optional) Number of CPUs visible to the domain.
-        * **domains.NAME.memory** - (Optional) Memory size allocated to the domain, in megabytes.
-        * **domains.NAME.disks** - Specs for all the disks for a specific VM.
-            * **domains.NAME.disks[index].name** - Logical name of the disk, when bootstrapping a VM, various files are placed on the disk named 'root', otherwise name is ignored.
-            * **domains.NAME.disks[index].dev** - Device ID that will be provided to libvirt, e.g. when provided 'vda', disk will be accessible as the first VirtIO Disk at /dev/vda
-            * **domains.NAME.disks[index].type** - Type of the disk
-                * *template* - Create the disk as on overlay of existing disk image with disk path provided in *template_name* used as the backing file
-                * *empty* - Create an empty disk image, with size provided in *size* argument.
-                * *file* - Use the path provided in *path* field as disk image (directly).
-            * **domains.NAME.disks[index].type** - Format of the disk image to create, ignored for template disks (always created as qcow2).
-            * **domains.NAME.disks[index].template_name** - (Optional) Path to used as backing file for template disk.
-            * **domains.NAME.disks[index].size** - (Optional) Size of the new disk to create.
-            * **domains.NAME.disks[index].path** - (Optional) Path to use when using *file* disk.
-        * **domains.NAME.ip** - (Optional) IP that should be assigned to the VM inside the virtual network. If not provided one will be assigned to it.
-        * **domains.NAME.metadata** - (Optional) Metadata dictionary specific to the domain.
+1. To make sure that nested virtualization is enabled, run:
 
-An example config is available at contrib/ovirt/config/virt/centos6.json
-### oVirt specific
-oVirt uses metadata field to attach properties to hosts:
+ ```
+cat /sys/module/kvm_intel/parameters/nested
+```
+
+ This command should print `Y` if nested virtualization is enabled, otherwise, 
+enable it the following way:
+
+ 1. Edit `/etc/modprobe.d/kvm-intel.conf` and add the following line:
+
+   ```
+options kvm-intel nested=y
+```
+ 1.  Reboot, and make sure nested virtualization is enabled.
+
+### libvirt
+
+Make sure libvirt is configured to run:
+
+```
+systemctl enable libvirtd
+systemctl start libvirtd
+```
+
+### SELinux
+At the moment, this framework might encounter problems running while SELinux 
+policy is enforced.
+
+To disable SELinux on the running system, run ```setenforce 0```
+
+To disable SELinux from start-up, edit ```/etc/selinux/config``` and set:
+
+```
+SELINUX=permissive
+```
 
 
-* **ovirt-role** - Marks the role of the vm, current possible values are 'engine' and 'host'
-* **ovirt-capabilities** - List of capabilities of VMs, that can be checked upon staring a test.
+## User setup
+
+Running a testing framework environment requires certain permissions, so the
+user running it should be part of certain groups:
+
+Add yourself to testenv, mock and qemu groups:
+```
+usermod -a -G testenv USERNAME
+usermod -a -G mock USERNAME
+usermod -a -G qemu USERNAME
+```
+
+It is also advised to add qemu user to your group (to be able to store VM files
+in home directory):
+```
+usermod -a -G USERNAME qemu
+```
+
+For the group changes to take place, you'll need to re-login to the shell.
+Make sure running `id` returns all the aforementioned groups.
+
+
+## Preparing the workspace
+
+Create a directory where you'll be working, make sure qemu user can access it.
+
+Clone the repository continaing template info:
+```
+git clone https://github.com/dimakuz/testenv-template-repositories.git
+```
+
+Copy the provided testenv_example.sh to the directory you'll be working in
+
+
+## Running the testing framework
+
+This example script assumes templates on one of my hosts in my office, so
+obviouly you'll have to be in the network when downloading them for the first
+time.
+
+To bring up a deployment inside the testing framework, run:
+./testenv_example.sh
+
+This will take a while, as first time execution downloads a lot of stuff.
+
+Once it is done, the framework will contain the latest 3.5 engine with all the
+hosts and storage added, the environment itsel will be deployed in
+test-deployment directory.
+
+To access it, log in to the web-ui at 
+* URL: `https://192.168.200.2/`
+* Username: `admin@internal`
+* Password: `123`
+
+If you're running the framework on a remote machine, you can tunnel a local
+port directly to the destination machine:
+```
+ssh -L 8443:192.168.200.2:443 remote-user@remote-ip
+       ---- =================             ~~~~~~~~~
+       (*)   (**)                         (***)
+
+(*)   - The port on localhost that the tunnel will be available at.
+(**)  - The destination where the remote machine will connect when local machine
+        connects to the local end of the tunnel.
+(***) - Remote machine through which we'll connect to the remote end of the
+        tunnel.
+```
+After creating the tunnel, web-ui will be available at `https://localhost:8443/`
+
+
+## Cleanup
+
+Once you're done with the environment, run
+```
+cd test-deployment
+testenvcli cleanup
+```
+
+
+## The example script
+
+The following example creates an environment at `$PWD/test-deployment`, with 
+the following virtual machines:
+* `storage-iscsi`
+  * Fedora 20 with an iSCSI target and 10 exposed LUNs
+* `storage-nfs`
+  * Fedora 20 with several NFS exports
+* `engine`
+  * RHEL7.1 with latest 3.5.x oVirt engine installed.
+* `host[0-3]`
+  * RHEL7.1 with latest 3.5.x VDSM deployed and connected to the engine.
+
+
+The whole script is available at:
+`/usr/share/ovirttestenv/examples/rhel7_with_35.sh`
+
+### Step 1: Create the testing environment
+
+```shell
+testenvcli init								\
+    $PWD/test-deployment 						\
+    /usr/share/ovirttestenv/config/virt/rhel7.json 			\
+    --template-repo-path=$PWD/testenv-template-repositories/repo.json
+echo '[INIT_OK] Initialized successfully, need cleanup later'
+
+```
+
+* This step creates a new environment at `$PWD/test-deployment` using the `init`
+verb of the testenvcli, see `testenvcli init --help` for more information on
+the parameters.
+
+* After this step, no virtual resources are launched yet, but the environment
+directory now contains all the information required to launch them later on.
+
+* First time this command is ran, it might take a while to complete, because
+the templates have to be downloaded (only once).
+
+```shell
+cd $PWD/test-deployment
+```
+
+* All `testenvcli` verbs interacting with an existing environment assume that
+the environment was created at the current working directory.
+
+### Step 2: Build RPM repository
+
+```shell
+testenvcli ovirt reposetup \
+    --reposync-yum-config=/usr/share/ovirttestenv/config/repos/ovirt-3.5-external.repo
+```
+
+The `reposetup` verb is responsible for construction of the internal repository.
+The internal repository is served to the VMs during various steps.
+
+The internal reposirtory is built from one or several 'sources', there are 2
+types of sources:
+* External RPM repositories:
+
+  A yum .repo file can be passed to the verb, and all the included repositories
+  will be downloaded using 'reposync' and added to the internal repo.
+
+* RPMs build from source
+
+  At the moment of writing, this utility knows to build 3 projects from source:
+
+  * ovirt-engine
+  * vdsm
+  * vdsm-jsonrpc-java
+
+  All the builds are launched inside mock so mock permissions are required if
+  anything is to be built from source. That way host distro does not have to 
+  match the distro of the VMs.
+  RPMs build from source take precedence over ones synced from external repos.
+
+### Step 3: Bring up the virtual resources
+
+```shell
+testenvcli start
+```
+
+This starts all resources (VMs, bridges), at any time, you can use the `stop`
+verb to stop any active resources.
+
+
+### Step 4: Run initial setup scripts
+
+```shell
+testenvcli ovirt deploy
+```
+
+### Step 5: Configure the engine
+
+```shell
+testenvcli ovirt engine-setup \
+	--config=/usr/share/ovirttestenv/config/answer-files/el7_3.5.conf
+```
+
+### Step 6: Deploy hosts, and add storage domains
+
+```shell
+testenvcli ovirt runtest /usr/share/ovirttestenv/test_scenarios/bootstrap.py
+```
+
+This test runs a simple test case on the environment:
+
+* Create a new DC and cluster
+* Deploy all the hosts
+* Add storage domains
+* Import templates
+
+The tests are written in python and interact with the environment using the
+python SDK.

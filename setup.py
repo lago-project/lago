@@ -94,6 +94,12 @@ distutils.core.setup(
             ],
         ),
         (
+            'share/ovirttestenv/examples',
+            [
+                'contrib/ovirt/examples/rhel7_with_35.sh',
+            ],
+        ),
+        (
             'libexec/ovirttestenv',
             [
                 'contrib/ovirt/libexec/build_engine_rpms.sh',
