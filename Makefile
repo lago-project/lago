@@ -1,5 +1,6 @@
-VERSION=0.2
-RELEASE=5
+_DESCRIBE=$(shell git describe --tags)
+VERSION=$(shell echo $(_DESCRIBE) | sed 's/-.*//')
+RELEASE=$(shell echo $(_DESCRIBE) | sed 's/^[^-]*-//' | tr '-' '_')
 NAME=testenv
 FULL_NAME=${NAME}-${VERSION}
 TAR_FILE=${FULL_NAME}.tar.gz
@@ -9,7 +10,7 @@ SPECFILE=testenv.spec
 DIST=dist
 TAR_DIST_LOCATION=${DIST}/${TAR_FILE}
 
-.PHONY: build rpm srpm ${TAR_DIST_LOCATION} check-local dist check
+.PHONY: build rpm srpm ${TAR_DIST_LOCATION} check-local dist check repo upload upload-unstable
 
 ${SPECFILE}: ${SPECFILE}.in
 	sed \
@@ -32,13 +33,36 @@ ${TAR_DIST_LOCATION}:
 	TESTENV_VERSION=${VERSION} python setup.py sdist
 
 srpm: ${SPECFILE} ${TAR_DIST_LOCATION} dist
-	rpmbuild --define "_sourcedir `pwd`/${DIST}" -bs ${SPECFILE}
+	rpmbuild 					\
+		--define "_topdir `pwd`/rpmbuild" 	\
+		--define "_sourcedir `pwd`/${DIST}" 	\
+		-bs 					\
+		${SPECFILE}
 
 rpm: ${SPECFILE} ${TAR_DIST_LOCATION} dist
-	rpmbuild --define "_sourcedir `pwd`/${DIST}" -ba ${SPECFILE}
+	rpmbuild 					\
+		--define "_topdir `pwd`/rpmbuild" 	\
+		--define "_sourcedir `pwd`/${DIST}"	\
+		-ba 					\
+		${SPECFILE}
+
+repo: dist rpm
+	rm -rf repo/
+	mkdir repo
+	find rpmbuild/ -name '*$(VERSION)-$(RELEASE)*.rpm' -exec cp '{}' repo/ \;
+	cd repo/
+	createrepo repo/
+	cp dist/testenv-${VERSION}.tar.gz ${SPECFILE} repo/
+
+upload: repo
+	scp -r repo/* dimak@fedorapeople.org:public_html/testenv
+
+upload-unstable: repo
+	scp -r repo/* dimak@fedorapeople.org:public_html/testenv-unstable
 
 clean:
 	TESTENV_VERSION=${VERSION} python setup.py clean
 	rm -rf ${DIST}
-	rm -rf build
+	rm -rf build dist repo rpmbuild
 	rm -f ${SPECFILE}
+
