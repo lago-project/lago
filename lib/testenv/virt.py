@@ -18,6 +18,7 @@
 # Refer to the README and COPYING files for full details of the license
 #
 import collections
+import contextlib
 import functools
 import json
 import logging
@@ -519,19 +520,21 @@ class VM(object):
                 show_output=show_output
             )
 
-    def scp_to(self, local_path, remote_path, remote_user='root'):
+    @contextlib.contextmanager
+    def _sftp(self):
         sftp = self._get_ssh_client().open_sftp()
         try:
-            sftp.put(local_path, remote_path)
+            yield sftp
         finally:
             sftp.close()
 
-    def scp_from(self, remote_path, local_path, remote_user='root'):
-        sftp = self._get_ssh_client().open_sftp()
-        try:
+    def copy_to(self, local_path, remote_path):
+        with self._sftp() as sftp:
+            sftp.put(local_path, remote_path)
+
+    def copy_from(self, remote_path, local_path):
+        with self._sftp() as sftp:
             sftp.get(remote_path, local_path)
-        finally:
-            sftp.close()
 
     @property
     def metadata(self):

@@ -116,7 +116,7 @@ class EngineVM(TestVM):
 
     def add_iso(self, path):
         iso_name = os.path.basename(path)
-        ret, _, _ = self.scp_to(path, '.')
+        ret, _, _ = self.copy_to(path, '.')
         if ret != 0:
             raise RuntimeError('Failed to copy iso to engine')
         ret, _, _ = self.ssh(
@@ -135,7 +135,7 @@ class EngineVM(TestVM):
         self.wait_for_ssh()
 
         if config:
-            self.scp_to(config, 'engine-answer-file')
+            self.copy_to(config, 'engine-answer-file')
 
         self.interactive_ssh(
             [
