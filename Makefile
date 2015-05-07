@@ -55,9 +55,11 @@ repo: dist rpm
 	cp dist/testenv-${VERSION}.tar.gz ${SPECFILE} repo/
 
 upload: repo
+	ssh dimak@fedorapeople.org 'rm -rf public_html/testenv/*'
 	scp -r repo/* dimak@fedorapeople.org:public_html/testenv
 
 upload-unstable: repo
+	ssh dimak@fedorapeople.org 'rm -rf public_html/testenv-unstable/*'
 	scp -r repo/* dimak@fedorapeople.org:public_html/testenv-unstable
 
 clean:
