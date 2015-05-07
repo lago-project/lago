@@ -109,7 +109,8 @@
                 "ovirt-role": "host",
                 "ovirt-scripts": [
                     "/usr/share/ovirttestenv/setup_scripts/add_local_repo.sh",
-                    "/usr/share/ovirttestenv/setup_scripts/setup_host.sh"
+                    "/usr/share/ovirttestenv/setup_scripts/setup_host.sh",
+                    "/usr/share/ovirttestenv/setup_scripts/bz_1195882_libvirt_workaround.sh"
                 ]
             }
         }, 
@@ -135,7 +136,8 @@
                 "ovirt-role": "host",
                 "ovirt-scripts": [
                     "/usr/share/ovirttestenv/setup_scripts/add_local_repo.sh",
-                    "/usr/share/ovirttestenv/setup_scripts/setup_host.sh"
+                    "/usr/share/ovirttestenv/setup_scripts/setup_host.sh",
+                    "/usr/share/ovirttestenv/setup_scripts/bz_1195882_libvirt_workaround.sh"
                 ]
             }
         }, 
@@ -161,7 +163,8 @@
                 "ovirt-role": "host",
                 "ovirt-scripts": [
                     "/usr/share/ovirttestenv/setup_scripts/add_local_repo.sh",
-                    "/usr/share/ovirttestenv/setup_scripts/setup_host.sh"
+                    "/usr/share/ovirttestenv/setup_scripts/setup_host.sh",
+                    "/usr/share/ovirttestenv/setup_scripts/bz_1195882_libvirt_workaround.sh"
                 ]
             }
         }, 
@@ -187,7 +190,8 @@
                 "ovirt-role": "host",
                 "ovirt-scripts": [
                     "/usr/share/ovirttestenv/setup_scripts/add_local_repo.sh",
-                    "/usr/share/ovirttestenv/setup_scripts/setup_host.sh"
+                    "/usr/share/ovirttestenv/setup_scripts/setup_host.sh",
+                    "/usr/share/ovirttestenv/setup_scripts/bz_1195882_libvirt_workaround.sh"
                 ]
             }
         }
