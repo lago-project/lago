@@ -10,7 +10,7 @@ SPECFILE=testenv.spec
 DIST=dist
 TAR_DIST_LOCATION=${DIST}/${TAR_FILE}
 
-.PHONY: build rpm srpm ${TAR_DIST_LOCATION} check-local dist check repo upload upload-unstable
+.PHONY: build rpm srpm ${TAR_DIST_LOCATION} check-local dist check repo upload upload-unstable ${SPECFILE}
 
 ${SPECFILE}: ${SPECFILE}.in
 	sed \
