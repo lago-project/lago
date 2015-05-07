@@ -105,7 +105,6 @@ Requires:	rpm-build
 %files -n python-%{name}-ovirt
 %{python2_sitelib}/ovirt%{name}/*.py*
 %{_libexecdir}/ovirt%{name}/*
-%{_datadir}/ovirt%{name}/*
 %{_sysconfdir}/mock/*
 %{_sysconfdir}/firewalld/services/*
 %{_sysconfdir}/testenv.d/ovirt.conf
@@ -123,5 +122,16 @@ if [ "$1" -eq 0 ]; then
 	firewall-cmd --permanent --zone=public --remove-service=testenv
 	firewall-cmd --reload
 fi
+
+%package -n %{name}-ovirt-extras
+Summary:	Extra files for testenv-ovirt package
+BuildArch:	noarch
+Requires:	%{name}-ovirt = %{version}
+
+%description -n %{name}-ovirt-extras
+
+%files -n %{name}-ovirt-extras
+%{_datadir}/ovirt%{name}/*
+
 
 %changelog
