@@ -458,7 +458,8 @@ class VM(object):
         if not self.alive():
             raise RuntimeError('Attempt to ssh into offline host')
 
-        channel = self._get_ssh_client().get_transport().open_session()
+        transport = self._get_ssh_client().get_transport()
+        channel = transport.open_session()
 
         joined_command = ' '.join(command)
         command_id = _gen_ssh_command_id()
@@ -479,6 +480,9 @@ class VM(object):
             **(show_output and {} or {'stdout': None, 'stderr': None})
         )
         rc = channel.exit_status
+
+        del channel
+        del transport
 
         logging.debug(
             'Command %s on %s returned with %d',
