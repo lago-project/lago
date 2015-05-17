@@ -126,6 +126,9 @@ class Prefix(object):
 
         with utils.RollbackContext() as rollback:
             for net_name, net_spec in conf.get('nets', {}).items():
+                net_spec['name'] = net_name
+                if net_spec['type'] == 'bridge':
+                    continue
                 try:
                     subnet = net_spec['gw']
                     if subnet_lease.is_leasable_subnet(subnet):
@@ -180,7 +183,6 @@ class Prefix(object):
                         for nic, dom in nics_by_net[net_name]
                     },
                 )
-                net_spec['name'] = net_name
             rollback.clear()
 
     def _create_disk(
