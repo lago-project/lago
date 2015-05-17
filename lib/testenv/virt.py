@@ -320,9 +320,6 @@ class NATNetwork(Network):
 
 
 class BridgeNetwork(Network):
-    def _libvirt_name(self):
-        return 'te-%s' % super(BridgeNetwork, self)._libvirt_name()
-
     def _libvirt_xml(self):
         with open(_path_to_xml('net_br_template.xml')) as f:
             net_raw_xml = f.read()
