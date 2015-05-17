@@ -433,12 +433,19 @@ class _SystemdContainerService(_Service):
     HOST_BIN_PATH = '/usr/bin/systemctl'
 
     def _request_start(self):
-        if (self._vm.ssh([self.BIN_PATH, 'exec vdsmc systemctl start', self._name])[0]):
+        ret, _, _ = self._vm.ssh(
+            [self.BIN_PATH, 'exec vdsmc systemctl start', self._name]
+        )
+
+        if ret:
             return self._vm.ssh([self.HOST_BIN_PATH, 'start', self._name])[0]
         return 0
 
     def _request_stop(self):
-        if (self._vm.ssh([self.BIN_PATH, 'exec vdsmc systemctl stop', self._name])[0]):
+        ret, _, _ = self._vm.ssh(
+            [self.BIN_PATH, 'exec vdsmc systemctl stop', self._name]
+        )
+        if ret:
             return self._vm.ssh([self.HOST_BIN_PATH, 'stop', self._name])[0]
         return 0
 
