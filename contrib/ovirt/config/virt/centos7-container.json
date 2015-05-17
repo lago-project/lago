@@ -1,6 +1,7 @@
 {
     "domains": {
         "engine": {
+            "memory":4096,
             "nics": [
                 {
                     "net": "testenv"
@@ -25,6 +26,7 @@
             }
         },
         "storage-iscsi": {
+            "memory":4096,
             "nics": [
                 {
                     "net": "testenv"
@@ -53,6 +55,7 @@
             }
         },
         "storage-nfs": {
+            "memory":4096,
             "nics": [
                 {
                     "net": "testenv"
@@ -88,6 +91,7 @@
             }
         },
         "host0": {
+            "memory":4096,
             "nics": [
                 {
                     "net": "testenv"
@@ -109,7 +113,34 @@
                 "ovirt-role": "host",
                 "ovirt-scripts": [
                     "/usr/share/ovirttestenv/setup_scripts/add_local_repo.sh",
-                    "/home/tlitovsk/workspace/virtualenvs/testenv-ovirt/share/ovirttestenv/setup_scripts/setup_container_host.sh"
+                    "/usr/share/ovirttestenv/setup_scripts/setup_container_host.sh"
+                ]
+            }
+        },
+        "host1": {
+            "memory":4096,
+            "nics": [
+                {
+                    "net": "testenv"
+                }
+            ],
+            "disks": [
+                {
+                    "template_name": "centos7_docker_host",
+                    "type": "template",
+                    "name": "root",
+                    "dev": "vda",
+                    "format": "qcow2"
+                }
+            ],
+            "metadata": {
+                "ovirt-capabilities": [
+                    "snapshot-live-merge"
+                ],
+                "ovirt-role": "host",
+                "ovirt-scripts": [
+                    "/usr/share/ovirttestenv/setup_scripts/add_local_repo.sh",
+                    "/usr/share/ovirttestenv/setup_scripts/setup_container_host.sh"
                 ]
             }
         }
