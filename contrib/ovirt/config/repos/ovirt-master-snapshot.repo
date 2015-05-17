@@ -73,7 +73,7 @@ name=EPEL repo
 baseurl=https://dl.fedoraproject.org/pub/epel/7/x86_64/
 enabled=1
 gpgcheck=0
-includepkgs=ioprocess python-ioprocess userspace-rcu
+includepkgs=ioprocess python-ioprocess userspace-rcu safelease
 
 [updates-fc20]
 name=Fedora updates repo
