@@ -83,7 +83,7 @@ distutils.core.setup(
                 'contrib/ovirt/setup_scripts/setup_storage_iscsi.sh',
                 'contrib/ovirt/setup_scripts/setup_storage_nfs.sh',
                 'contrib/ovirt/setup_scripts/bz_1195882_libvirt_workaround.sh',
-                 'contrib/ovirt/setup_scripts/setup_container_host.sh',
+                'contrib/ovirt/setup_scripts/setup_container_host.sh',
             ],
         ),
         (
