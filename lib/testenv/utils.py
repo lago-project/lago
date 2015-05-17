@@ -18,6 +18,7 @@
 # Refer to the README and COPYING files for full details of the license
 #
 import array
+import collections
 import fcntl
 import json
 import logging
@@ -79,6 +80,9 @@ class VectorThread:
         return map(lambda x: x.get('return', None), self.results)
 
 
+CommandStatus = collections.namedtuple('CommandStatus', ('ret', 'out', 'err'))
+
+
 def run_command(command, input_data=None, env=None, **kwargs):
     logging.debug('Running command: %s', str(command))
 
@@ -118,7 +122,7 @@ def run_command(command, input_data=None, env=None, **kwargs):
         logging.debug('command stdout: %s', out)
     if err:
         logging.debug('command stderr: %s', err)
-    return (popen.returncode, out, err)
+    return CommandStatus(popen.returncode, out, err)
 
 
 def service_is_enabled(name):
