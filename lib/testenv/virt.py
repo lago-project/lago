@@ -76,6 +76,7 @@ def _path_to_xml(basename):
 
 
 class VirtEnv(object):
+
     '''Env properties:
     * prefix
     * vms
@@ -83,6 +84,7 @@ class VirtEnv(object):
 
     * libvirt_con
     '''
+
     def __init__(self, prefix, vm_specs, net_specs):
         self.prefix = prefix
 
@@ -212,6 +214,7 @@ class VirtEnv(object):
 
 
 class Network(object):
+
     def __init__(self, env, spec):
         self._env = env
         self._spec = spec
@@ -316,6 +319,7 @@ class ServiceState:
 
 
 class _Service:
+
     def __init__(self, vm, name):
         self._vm = vm
         self._name = name
@@ -389,6 +393,7 @@ class _SysVInitService(_Service):
 
         return ServiceState.MISSING
 
+
 class _SystemdContainerService(_Service):
     BIN_PATH = '/usr/bin/docker'
     HOST_BIN_PATH = '/usr/bin/systemctl'
@@ -404,7 +409,8 @@ class _SystemdContainerService(_Service):
         return 0
 
     def state(self):
-        ret, out, _ = self._vm.ssh([self.BIN_PATH, 'exec vdsmc systemctl status', self._name])
+        ret, out, _ = self._vm.ssh(
+            [self.BIN_PATH, 'exec vdsmc systemctl status', self._name])
         if ret == 0:
             return ServiceState.ACTIVE
 
@@ -433,6 +439,7 @@ _SERVICE_WRAPPERS['sysvinit'] = _SysVInitService
 
 
 class VM(object):
+
     '''VM properties:
     * name
     * cpus
@@ -441,6 +448,7 @@ class VM(object):
     * metadata
     * network/mac addr
     '''
+
     def __init__(self, env, spec):
         self._env = env
         self._spec = self._normalize_spec(spec.copy())
@@ -862,7 +870,7 @@ class VM(object):
             print "Detecting services start loop"
             for manager_name, service_class in _SERVICE_WRAPPERS.items():
                 ret, _, _ = self.ssh(['test', '-e', service_class.BIN_PATH])
-                print "try %s"%(service_class.BIN_PATH)
+                print "try %s" % (service_class.BIN_PATH)
                 if not ret:
                     logging.debug(
                         'Setting %s as service manager for %s',
