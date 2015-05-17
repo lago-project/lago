@@ -228,7 +228,7 @@ class Network(object):
         return self._spec['name']
 
     def gw(self):
-        return self.get('gw')
+        return self._spec.get('gw')
 
     def is_management(self):
         return self._spec.get('management', False)
