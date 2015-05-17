@@ -149,7 +149,7 @@ class TemplateVersion:
 
     def get_hash(self):
         if self._hash is None:
-            self._hash = self._source.get_hash(self._handle)
+            self._hash = self._source.get_hash(self._handle).strip()
         return self._hash
 
     def get_metadata(self):
