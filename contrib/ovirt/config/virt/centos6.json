@@ -182,6 +182,7 @@
     }, 
     "nets": {
         "testenv": {
+            "type": "nat",
             "dhcp": {
                 "start": 100, 
                 "end": 254

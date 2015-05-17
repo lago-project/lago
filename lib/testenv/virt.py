@@ -34,6 +34,7 @@ import lxml.etree
 import paramiko
 
 import bootstrap
+import brctl
 import utils
 
 
@@ -102,7 +103,11 @@ class VirtEnv(object):
         self._libvirt_con = None
 
     def _create_net(self, net_spec):
-        return Network(self, net_spec)
+        if net_spec['type'] == 'nat':
+            cls = NATNetwork
+        elif net_spec['type'] == 'bridge':
+            cls = BridgeNetwork
+        return cls(self, net_spec)
 
     def _create_vm(self, vm_spec):
         return VM(self, vm_spec)
@@ -223,7 +228,7 @@ class Network(object):
         return self._spec['name']
 
     def gw(self):
-        return self._spec['gw']
+        return self.get('gw')
 
     def is_management(self):
         return self._spec.get('management', False)
@@ -244,8 +249,33 @@ class Network(object):
     def _libvirt_name(self):
         return self._env.prefixed_name(self.name())
 
+    def alive(self):
+        net_names = [
+            net.name()
+            for net in self._env.libvirt_con.listAllNetworks()
+        ]
+        return self._libvirt_name() in net_names
+
+    def start(self):
+        if not self.alive():
+            logging.info('Creating network %s', self.name())
+            self._env.libvirt_con.networkCreateXML(self._libvirt_xml())
+
+    def stop(self):
+        if self.alive():
+            logging.info('Destroying network %s', self.name())
+            self._env.libvirt_con.networkLookupByName(
+                self._libvirt_name(),
+            ).destroy()
+
+    def save(self):
+        with open(self._env.virt_path('net-%s' % self.name()), 'w') as f:
+            utils.json_dump(self._spec, f)
+
+
+def NATNetwork(network):
     def _libvirt_xml(self):
-        with open(_path_to_xml('net_template.xml')) as f:
+        with open(_path_to_xml('net_nat_template.xml')) as f:
             net_raw_xml = f.read()
 
         replacements = {
@@ -288,28 +318,32 @@ class Network(object):
                     )
         return lxml.etree.tostring(net_xml)
 
-    def alive(self):
-        net_names = [
-            net.name()
-            for net in self._env.libvirt_con.listAllNetworks()
-        ]
-        return self._libvirt_name() in net_names
+
+def BridgeNetwork(Network):
+    def _libvirt_xml(self):
+        with open(_path_to_xml('net_br_template.xml')) as f:
+            net_raw_xml = f.read()
+
+        replacements = {
+            '@NAME@': self._libvirt_name(),
+            '@BR_NAME@': self._libvirt_name(),
+        }
+        for k, v in replacements.items():
+            net_raw_xml = net_raw_xml.replace(k, v, 1)
+
+        return net_raw_xml
 
     def start(self):
-        if not self.alive():
-            logging.info('Creating network %s', self.name())
-            self._env.libvirt_con.networkCreateXML(self._libvirt_xml())
+        brctl.create(self._libvirt_name())
+        try:
+            super(BridgeNetwork, self).start()
+        except:
+            brctl.destroy(self._libvirt_name())
 
     def stop(self):
-        if self.alive():
-            logging.info('Destroying network %s', self.name())
-            self._env.libvirt_con.networkLookupByName(
-                self._libvirt_name(),
-            ).destroy()
-
-    def save(self):
-        with open(self._env.virt_path('net-%s' % self.name()), 'w') as f:
-            utils.json_dump(self._spec, f)
+        super(BridgeNetwork, self).start()
+        if brctl.exists(self._libvirt_name()):
+            brctl.create(self._libvirt_name())
 
 
 class ServiceState:
