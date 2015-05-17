@@ -273,7 +273,7 @@ class Network(object):
             utils.json_dump(self._spec, f)
 
 
-def NATNetwork(network):
+class NATNetwork(Network):
     def _libvirt_xml(self):
         with open(_path_to_xml('net_nat_template.xml')) as f:
             net_raw_xml = f.read()
@@ -319,7 +319,7 @@ def NATNetwork(network):
         return lxml.etree.tostring(net_xml)
 
 
-def BridgeNetwork(Network):
+class BridgeNetwork(Network):
     def _libvirt_xml(self):
         with open(_path_to_xml('net_br_template.xml')) as f:
             net_raw_xml = f.read()
