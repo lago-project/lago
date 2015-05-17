@@ -320,6 +320,9 @@ class NATNetwork(Network):
 
 
 class BridgeNetwork(Network):
+    def _libvirt_name(self):
+        return 'te-%s' % super(BridgeNetwork, self)._libvirt_name()
+
     def _libvirt_xml(self):
         with open(_path_to_xml('net_br_template.xml')) as f:
             net_raw_xml = f.read()
@@ -343,7 +346,7 @@ class BridgeNetwork(Network):
     def stop(self):
         super(BridgeNetwork, self).stop()
         if brctl.exists(self._libvirt_name()):
-            brctl.create(self._libvirt_name())
+            brctl.destroy(self._libvirt_name())
 
 
 class ServiceState:
@@ -717,12 +720,13 @@ class VM(object):
                     type='virtio',
                 ),
             )
-            interface.append(
-                lxml.etree.Element(
-                    'mac',
-                    address=_ip_to_mac(dev_spec['ip'])
-                ),
-            )
+            if 'ip' in dev_spec:
+                interface.append(
+                    lxml.etree.Element(
+                        'mac',
+                        address=_ip_to_mac(dev_spec['ip'])
+                    ),
+                )
             devices.append(interface)
 
         return lxml.etree.tostring(dom_xml)

@@ -30,19 +30,13 @@ def _brctl(command, *args):
     return ret, out, err
 
 
-def _name(name):
-    return 'te-%s' % name
-
-
 def _set_link(name, state):
-    name = _name(name)
     ret, _, _ = utils.run_command(_IP + ['link', 'set', 'dev', name, state])
     if ret:
         raise RuntimeError('Could not set %s to state %s' % (name, state))
 
 
 def create(name, stp=True):
-    name = _name(name)
     _brctl('addbr', name)
     try:
         _set_link(name, 'up')
@@ -54,11 +48,10 @@ def create(name, stp=True):
 
 
 def destroy(name):
-    name = _name(name)
+    _set_link(name, 'down')
     _brctl('delbr', name)
 
 
 def exists(name):
-    name = _name(name)
     ret, out, err = _brctl('show', name)
     return err == ''
