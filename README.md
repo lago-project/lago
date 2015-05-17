@@ -8,6 +8,9 @@ Hello, this describes how to get started with oVirt testing framework.
 In order to install the framework, you'll need to build RPMs or acquire them
 from a repository.
 
+Here is a repo file you can use to acquire up-to-date RPMs:
+https://dimak.fedorapeople.org/testenv.repo
+
 Once you have them, install the following packages:
 ```
 yum install testenv-ovirt testenv-ovirt-extras
@@ -99,8 +102,6 @@ Clone the repository continaing template info:
 git clone https://github.com/dimakuz/testenv-template-repositories.git
 ```
 
-Copy the provided testenv_example.sh to the directory you'll be working in
-
 
 ## Running the testing framework
 
@@ -108,8 +109,8 @@ This example script assumes templates on one of my hosts in my office, so
 obviouly you'll have to be in the network when downloading them for the first
 time.
 
-To bring up a deployment inside the testing framework, run:
-./testenv_example.sh
+Run the example script:
+/usr/share/ovirttestenv/examples/rhel7_with_35.sh
 
 This will take a while, as first time execution downloads a lot of stuff.
 
@@ -159,10 +160,6 @@ the following virtual machines:
   * RHEL7.1 with latest 3.5.x oVirt engine installed.
 * `host[0-3]`
   * RHEL7.1 with latest 3.5.x VDSM deployed and connected to the engine.
-
-
-The whole script is available at:
-`/usr/share/ovirttestenv/examples/rhel7_with_35.sh`
 
 ### Step 1: Create the testing environment
 
