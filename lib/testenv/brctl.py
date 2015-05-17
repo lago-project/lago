@@ -24,7 +24,7 @@ _IP = ['sudo', 'ip']
 
 
 def _brctl(command, *args):
-    ret, out, err = utils.run_command(_BRCTL + [command] + args)
+    ret, out, err = utils.run_command(_BRCTL + [command] + list(args))
     if ret:
         raise RuntimeError('brctl %s failed' % command)
     return ret, out, err
@@ -43,13 +43,14 @@ def _set_link(name, state):
 
 def create(name, stp=True):
     name = _name(name)
-    with utils.RollbackContext as rollback:
-        _brctl('addbr', name)
-        rollback.prependDefer(_brctl, 'delbr', name)
+    _brctl('addbr', name)
+    try:
         _set_link(name, 'up')
-
         if stp:
             _brctl('stp', name, 'on')
+    except:
+        _brctl('delbr', name)
+        raise
 
 
 def destroy(name):

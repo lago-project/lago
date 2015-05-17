@@ -341,7 +341,7 @@ class BridgeNetwork(Network):
             brctl.destroy(self._libvirt_name())
 
     def stop(self):
-        super(BridgeNetwork, self).start()
+        super(BridgeNetwork, self).stop()
         if brctl.exists(self._libvirt_name()):
             brctl.create(self._libvirt_name())
 
