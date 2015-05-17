@@ -127,7 +127,8 @@ class Prefix(object):
         with utils.RollbackContext() as rollback:
             for net_name, net_spec in conf.get('nets', {}).items():
                 net_spec['name'] = net_name
-                if net_spec['type'] == 'bridge':
+
+                if net_spec.setdefault('type', 'nat') == 'bridge':
                     continue
                 try:
                     subnet = net_spec['gw']
