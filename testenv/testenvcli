@@ -177,7 +177,7 @@ def do_status(prefix, args):
         for i, nic in enumerate(vm.nics()):
             print '\t\t\t[eth%d]' % i
             print '\t\t\t\tNetwork:', nic['net']
-            print '\t\t\t\tIP', nic['ip']
+            print '\t\t\t\tIP', nic.get('ip', 'N/A')
 
 
 class Verbs:
