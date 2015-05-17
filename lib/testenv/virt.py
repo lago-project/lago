@@ -389,7 +389,45 @@ class _SysVInitService(_Service):
 
         return ServiceState.MISSING
 
+class _SystemdContainerService(_Service):
+    BIN_PATH = '/usr/bin/docker'
+    HOST_BIN_PATH = '/usr/bin/systemctl'
+
+    def _request_start(self):
+        if (self._vm.ssh([self.BIN_PATH, 'exec vdsmc systemctl start', self._name])[0]):
+            return self._vm.ssh([self.HOST_BIN_PATH, 'start', self._name])[0]
+        return 0
+
+    def _request_stop(self):
+        if (self._vm.ssh([self.BIN_PATH, 'exec vdsmc systemctl stop', self._name])[0]):
+            return self._vm.ssh([self.HOST_BIN_PATH, 'stop', self._name])[0]
+        return 0
+
+    def state(self):
+        ret, out, _ = self._vm.ssh([self.BIN_PATH, 'exec vdsmc systemctl status', self._name])
+        if ret == 0:
+            return ServiceState.ACTIVE
+
+        lines = [l.strip() for l in out.split('\n')]
+        loaded = [l for l in lines if l.startswith('Loaded:')].pop()
+
+        if loaded.split()[1] == 'loaded':
+            return ServiceState.INACTIVE
+
+        ret, out, _ = self._vm.ssh([self.HOST_BIN_PATH, 'status', self._name])
+        if ret == 0:
+            return ServiceState.ACTIVE
+
+        lines = [l.strip() for l in out.split('\n')]
+        loaded = [l for l in lines if l.startswith('Loaded:')].pop()
+
+        if loaded.split()[1] == 'loaded':
+            return ServiceState.INACTIVE
+
+        return ServiceState.MISSING
+
 _SERVICE_WRAPPERS = collections.OrderedDict()
+_SERVICE_WRAPPERS['systemd_container'] = _SystemdContainerService
 _SERVICE_WRAPPERS['systemd'] = _SystemdService
 _SERVICE_WRAPPERS['sysvinit'] = _SysVInitService
 
@@ -818,10 +856,13 @@ class VM(object):
 
     @_check_alive
     def service(self, name):
+        print "Detecting services"
         if self._service_class is None:
             logging.debug('Detecting service manager for %s', self.name())
+            print "Detecting services start loop"
             for manager_name, service_class in _SERVICE_WRAPPERS.items():
                 ret, _, _ = self.ssh(['test', '-e', service_class.BIN_PATH])
+                print "try %s"%(service_class.BIN_PATH)
                 if not ret:
                     logging.debug(
                         'Setting %s as service manager for %s',
