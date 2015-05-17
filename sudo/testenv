@@ -1,2 +1,6 @@
 %testenv ALL = (qemu) NOPASSWD: /usr/bin/chmod
-%testenv ALL = NOPASSWD: /usr/sbin/brctl
+%testenv ALL = NOPASSWD: /usr/sbin/brctl addbr te-*
+%testenv ALL = NOPASSWD: /usr/sbin/brctl delbr te-*
+%testenv ALL = NOPASSWD: /usr/sbin/brctl show te-*
+%testenv ALL = NOPASSWD: /usr/sbin/ip link set dev te-* up
+%testenv ALL = NOPASSWD: /usr/sbin/ip link set dev te-* down
