@@ -52,7 +52,7 @@ def _get_header(path):
     for line in lines:
         if line.startswith('Description'):
             break
-        header[line.split(':', 1)[0].strip()] = line.split(':', 1)[1].split()
+        header[line.split(':', 1)[0].strip()] = line.split(':', 1)[1].strip()
     return header
 
 
@@ -73,7 +73,7 @@ def merge(output_dir, input_dirs):
         if ret:
             raise RuntimeError('Could not find the RPMs in %s' % input_dir)
 
-        rpm_paths = ret.out.split('\n')
+        rpm_paths = ret.out.strip().split('\n')
         pkgs_by_name = {}
 
         for path in rpm_paths:
