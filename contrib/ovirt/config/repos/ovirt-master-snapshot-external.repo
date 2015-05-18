@@ -4,21 +4,21 @@ reposdir=/etc/reposync.repos.d
 [ovirt-master-snapshot-el6]
 name=oVirt Master Nightly Test Releases
 baseurl=http://resources.ovirt.org/pub/ovirt-master-snapshot/rpm/el6/
-exclude=ovirt-node-iso *-debuginfo
+exclude=ovirt-node-* *-debuginfo ovirt-engine-appliance
 enabled=1
 gpgcheck=0
 
 [ovirt-master-snapshot-el7]
 name=oVirt Master Nightly Test Releases
 baseurl=http://resources.ovirt.org/pub/ovirt-master-snapshot/rpm/el7/
-exclude=ovirt-node-iso *-debuginfo
+exclude=ovirt-node-* *-debuginfo ovirt-engine-appliance
 enabled=1
 gpgcheck=0
 
 [ovirt-master-snapshot-fc20]
 name=oVirt Master Nightly Test Releases
 baseurl=http://resources.ovirt.org/pub/ovirt-master-snapshot/rpm/fc20/
-exclude=ovirt-node-iso *-debuginfo
+exclude=ovirt-node-* *-debuginfo ovirt-engine-appliance
 enabled=1
 gpgcheck=0
 
