@@ -22,7 +22,6 @@ import logging
 import os
 import shutil
 
-import rpm
 import rpmUtils.arch
 import rpmUtils.miscutils
 
@@ -34,6 +33,27 @@ def _fastcopy(source, dest):
         os.link(source, dest)
     except OSError:
         shutil.copy(source, dest)
+
+
+def _get_header(path):
+    ret = utils.run_command(
+        [
+            'rpm',
+            '-qpi',
+            path,
+        ],
+    )
+
+    if ret:
+        raise RuntimeError('Failed to query RPM %s' % path)
+
+    lines = ret.out.strip().split('\n')
+    header = {}
+    for line in lines:
+        if line.startswith('Description'):
+            break
+        header[line.split(':', 1)[0].strip()] = line.split(':', 1)[1].split()
+    return header
 
 
 def merge(output_dir, input_dirs):
@@ -57,13 +77,13 @@ def merge(output_dir, input_dirs):
         pkgs_by_name = {}
 
         for path in rpm_paths:
-            hdr = rpmUtils.miscutils.hdrFromPackage(rpm.ts(), path)
+            hdr = _get_header(path)
 
-            if hdr[rpm.RPMTAG_ARCH] not in rpmUtils.arch.getArchList():
+            if hdr['Architecture'] not in rpmUtils.arch.getArchList():
                 continue
 
             pkgs_by_name.setdefault(
-                hdr[rpm.RPMTAG_NAME],
+                hdr['Name'],
                 [],
             ).append((path, hdr))
 
@@ -76,14 +96,14 @@ def merge(output_dir, input_dirs):
             for other_path, other_hdr in pkgs[1:]:
                 if rpmUtils.miscutils.compareEVR(
                     (
-                        cand_hdr[rpm.RPMTAG_EPOCH],
-                        cand_hdr[rpm.RPMTAG_VERSION],
-                        cand_hdr[rpm.RPMTAG_RELEASE],
+                        None,
+                        cand_hdr['Version'],
+                        cand_hdr['Release'],
                     ),
                     (
-                        other_hdr[rpm.RPMTAG_EPOCH],
-                        other_hdr[rpm.RPMTAG_VERSION],
-                        other_hdr[rpm.RPMTAG_RELEASE],
+                        None,
+                        other_hdr['Version'],
+                        other_hdr['Release'],
                     )
                 ) < 0:
                     cand_path, cand_hdr = other_path, other_hdr
