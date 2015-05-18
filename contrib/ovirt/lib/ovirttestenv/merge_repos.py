@@ -22,6 +22,10 @@ import logging
 import os
 import shutil
 
+import rpm
+import rpmUtils.arch
+import rpmUtils.miscutils
+
 import utils
 
 
@@ -37,31 +41,54 @@ def merge(output_dir, input_dirs):
 
     for input_dir in input_dirs:
         logging.info('Processing directory %s', input_dir)
-        all_files = []
-        for root, _, files in os.walk(input_dir):
-            all_files.extend([os.path.join(root, path) for path in files])
-        logging.debug('Files in this dir: %s', repr(all_files))
+        ret = utils.run_command(
+            [
+                'find',
+                input_dir,
+                '-type', 'f',
+                '-name', '*.rpm',
+            ]
+        )
 
-        for root, _, files in os.walk(input_dir):
-            rpm_files = [f for f in files
-                         if f.endswith('.rpm') and not f.endswith('.src.rpm')]
-            for rpm_file in rpm_files:
-                ret, out, _ = utils.run_command(['rpm', '-qpi', rpm_file],
-                                                cwd=root)
-                if ret != 0:
-                    logging.warning('Failed to get package-name of %s',
-                                    rpm_file)
-                    continue
-                rpm_name = [l.split()[-1]
-                            for l in out.split('\n')
-                            if l.startswith('Name')][0]
+        if ret:
+            raise RuntimeError('Could not find the RPMs in %s' % input_dir)
 
-                if rpm_name not in rpms_by_name:
-                    rpms_by_name[rpm_name] = os.path.join(root, rpm_file)
-                    logging.debug('Adding %s', rpm_file)
-                else:
-                    logging.debug('Discarding %s, preceeded by %s',
-                                  rpm_file, rpms_by_name[rpm_name])
+        rpm_paths = ret.out.split('\n')
+        pkgs_by_name = {}
+
+        for path in rpm_paths:
+            hdr = rpmUtils.miscutils.hdrFromPackage(rpm.ts(), path)
+
+            if hdr[rpm.RPMTAG_ARCH] not in rpmUtils.arch.getArchList():
+                continue
+
+            pkgs_by_name.setdefault(
+                hdr[rpm.RPMTAG_NAME],
+                [],
+            ).append((path, hdr))
+
+        for name, pkgs in pkgs_by_name.items():
+            if name in rpms_by_name:
+                continue
+
+            cand_path, cand_hdr = pkgs[0]
+
+            for other_path, other_hdr in pkgs[1:]:
+                if rpmUtils.miscutils.compareEVR(
+                    (
+                        cand_hdr[rpm.RPMTAG_EPOCH],
+                        cand_hdr[rpm.RPMTAG_VERSION],
+                        cand_hdr[rpm.RPMTAG_RELEASE],
+                    ),
+                    (
+                        other_hdr[rpm.RPMTAG_EPOCH],
+                        other_hdr[rpm.RPMTAG_VERSION],
+                        other_hdr[rpm.RPMTAG_RELEASE],
+                    )
+                ) < 0:
+                    cand_path, cand_hdr = other_path, other_hdr
+
+            rpms_by_name[name] = cand_path
 
     try:
         shutil.rmtree(output_dir)
@@ -73,6 +100,6 @@ def merge(output_dir, input_dirs):
         logging.debug('Copying %s to output directory', path)
         _fastcopy(path, os.path.join(output_dir, os.path.basename(path)))
 
-    ret, _, _ = utils.run_command(['createrepo', '.'], cwd=output_dir)
-    if ret != 0:
+    ret = utils.run_command(['createrepo', '.'], cwd=output_dir)
+    if ret:
         raise RuntimeError('createrepo failed')

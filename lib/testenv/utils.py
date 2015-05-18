@@ -80,7 +80,15 @@ class VectorThread:
         return map(lambda x: x.get('return', None), self.results)
 
 
-CommandStatus = collections.namedtuple('CommandStatus', ('ret', 'out', 'err'))
+_CommandStatus = collections.namedtuple(
+    'CommandStatus',
+    ('code', 'out', 'err')
+)
+
+
+class CommandStatus(_CommandStatus):
+    def __nonzero__(self):
+        return self.code
 
 
 def run_command(command, input_data=None, env=None, **kwargs):
