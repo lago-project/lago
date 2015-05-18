@@ -4,14 +4,25 @@ cp /etc/sysconfig/network-scripts/ifcfg-eth0 /tmp/tmp
 cat /tmp/tmp | grep -v HWADDR > /etc/sysconfig/network-scripts/ifcfg-eth0
 rm -f /tmp/tmp
 
-#install staff
-systemctl status docker
-
 #get code
-env GIT_SSL_NO_VERIFY=true git clone https://code.engineering.redhat.com/gerrit/rhevh_container/
+git clone https://gerrit.ovirt.org/ovirt-container-node
+pushd ovirt-container-node
 
 #build container
-docker build -f rhevh_container/Vdsm.Dockerfile -t vdsmi:latest rhevh_container
+cat > repos/repo-custom.sh << EOF_main
 
-atomic install vdsmi:latest
+#!/usr/bin/bash
+yum install -y http://mirror.symnds.com/distributions/fedora-epel/7/x86_64/e/epel-release-7-5.noarch.rpm
+cat > /etc/yum.repos.d/local-ovirt.repo << EOF
+EOF_main
+cat /etc/yum.repos.d/local-ovirt.repo >> repos/repo-custom.sh
+
+echo "EOF" >> repos/repo-custom.sh
+
+make centos7 repo-install=repos/repo-custom.sh
+atomic install centos7-vdsmi:latest
+systemctl start vdsmc
+
+
+
 
