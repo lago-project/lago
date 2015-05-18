@@ -906,13 +906,10 @@ class VM(object):
 
     @_check_alive
     def service(self, name):
-        print "Detecting services"
         if self._service_class is None:
             logging.debug('Detecting service manager for %s', self.name())
-            print "Detecting services start loop"
             for manager_name, service_class in _SERVICE_WRAPPERS.items():
                 ret, _, _ = self.ssh(['test', '-e', service_class.BIN_PATH])
-                print "try %s" % (service_class.BIN_PATH)
                 if not ret:
                     logging.debug(
                         'Setting %s as service manager for %s',
