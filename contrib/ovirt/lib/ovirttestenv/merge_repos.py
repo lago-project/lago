@@ -79,6 +79,9 @@ def merge(output_dir, input_dirs):
         for path in rpm_paths:
             hdr = _get_header(path)
 
+            if path.endswith('.src.rpm'):
+                continue
+
             if hdr['Architecture'] not in rpmUtils.arch.getArchList():
                 continue
 
