@@ -20,9 +20,3 @@ cat /etc/yum.repos.d/local-ovirt.repo >> repos/repo-custom.sh
 echo "EOF" >> repos/repo-custom.sh
 
 make centos7 repo-install=repos/repo-custom.sh
-atomic install centos7-vdsmi:latest
-systemctl start vdsmc
-
-
-
-
