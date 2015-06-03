@@ -56,6 +56,7 @@ distutils.core.setup(
             [
                 'contrib/ovirt/config/virt/centos6.json',
                 'contrib/ovirt/config/virt/centos7.json',
+                'contrib/ovirt/config/virt/centos7-container.json',
                 'contrib/ovirt/config/virt/rhel7.json',
             ],
         ),
