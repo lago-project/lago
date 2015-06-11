@@ -289,6 +289,7 @@ ARGUMENTS[Verbs.OVIRT_COLLECT] = (
             '--output',
             {
                 'help': 'Path to place all the extracted at',
+                'required': True,
                 'type': os.path.abspath,
             },
         ),
