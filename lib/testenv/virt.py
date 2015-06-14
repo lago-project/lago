@@ -537,15 +537,30 @@ class VM(object):
 
     @_check_alive
     def _get_ssh_client(self):
-        if self._ssh_client is None:
-            self._ssh_client = self._open_ssh_client()
-        return self._ssh_client
+        while True:
+            try:
+                client = paramiko.SSHClient()
+                client.set_missing_host_key_policy(
+                    paramiko.AutoAddPolicy(),
+                )
+                client.connect(
+                    self.ip(),
+                    username='root',
+                    key_filename=self._env.prefix.paths.ssh_id_rsa(),
+                    timeout=1,
+                )
+                return client
+            except socket.error:
+                pass
+            except socket.timeout:
+                pass
 
     def ssh(self, command, data=None, show_output=True):
         if not self.alive():
             raise RuntimeError('Attempt to ssh into offline host')
 
-        transport = self._get_ssh_client().get_transport()
+        client = self._get_ssh_client()
+        transport = client.get_transport()
         channel = transport.open_session()
 
         joined_command = ' '.join(command)
@@ -568,8 +583,9 @@ class VM(object):
         )
         rc = channel.exit_status
 
-        del channel
-        del transport
+        channel.close()
+        transport.close()
+        client.close()
 
         logging.debug(
             'Command %s on %s returned with %d',
