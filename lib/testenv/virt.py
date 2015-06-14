@@ -952,8 +952,15 @@ class VM(object):
 
     @_check_alive
     def interactive_ssh(self, command):
-        channel = self._get_ssh_client().get_transport().open_session()
-        utils.interactive_ssh_channel(channel, ' '.join(command))
+        client = self._get_ssh_client()
+        transport = client.get_transport()
+        channel = transport.open_session()
+        try:
+            utils.interactive_ssh_channel(channel, ' '.join(command))
+        finally:
+            channel.close()
+            transport.close()
+            client.close()
 
     def nics(self):
         return self._spec['nics'][:]
