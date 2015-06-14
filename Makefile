@@ -7,8 +7,11 @@ TAR_FILE=${FULL_NAME}.tar.gz
 
 SPECFILE=testenv.spec
 
-DIST=dist
-TAR_DIST_LOCATION=${DIST}/${TAR_FILE}
+OUTPUT_DIR=${PWD}
+RPM_DIR=${OUTPUT_DIR}/rpmbuild
+DIST_DIR=${OUTPUT_DIR}/dist
+
+TAR_DIST_LOCATION=${DIST_DIR}/${TAR_FILE}
 
 .PHONY: build rpm srpm ${TAR_DIST_LOCATION} check-local dist check repo upload upload-unstable ${SPECFILE}
 
@@ -30,29 +33,29 @@ check-local:
 dist: check ${TAR_DIST_LOCATION}
 
 ${TAR_DIST_LOCATION}:
-	TESTENV_VERSION=${VERSION} python setup.py sdist
+	TESTENV_VERSION=${VERSION} python setup.py sdist --dist-dir ${DIST_DIR}
 
 srpm: ${SPECFILE} ${TAR_DIST_LOCATION} dist
 	rpmbuild 					\
-		--define "_topdir `pwd`/rpmbuild" 	\
-		--define "_sourcedir `pwd`/${DIST}" 	\
+		--define "_topdir ${RPM_DIR}" 	\
+		--define "_sourcedir ${DIST_DIR}" 	\
 		-bs 					\
 		${SPECFILE}
 
 rpm: ${SPECFILE} ${TAR_DIST_LOCATION} dist
 	rpmbuild 					\
-		--define "_topdir `pwd`/rpmbuild" 	\
-		--define "_sourcedir `pwd`/${DIST}"	\
+		--define "_topdir ${RPM_DIR}" 	\
+		--define "_sourcedir ${DIST_DIR}" 	\
 		-ba 					\
 		${SPECFILE}
 
 repo: dist rpm
 	rm -rf repo/
 	mkdir repo
-	find rpmbuild/ -name '*$(VERSION)-$(RELEASE)*.rpm' -exec cp '{}' repo/ \;
+	find ${RPM_DIR} -name '*$(VERSION)-$(RELEASE)*.rpm' -exec cp '{}' repo/ \;
 	cd repo/
 	createrepo repo/
-	cp dist/testenv-${VERSION}.tar.gz ${SPECFILE} repo/
+	cp ${TAR_DIST_LOCATION} ${SPECFILE} repo/
 
 upload: repo
 	ssh dimak@fedorapeople.org 'rm -rf public_html/testenv/*'
@@ -64,7 +67,8 @@ upload-unstable: repo
 
 clean:
 	TESTENV_VERSION=${VERSION} python setup.py clean
-	rm -rf ${DIST}
-	rm -rf build dist repo rpmbuild
+	rm -rf ${DIST_DIR}
+	rm -rf ${RPM_DIR}
+	rm -rf build repo
 	rm -f ${SPECFILE}
 
