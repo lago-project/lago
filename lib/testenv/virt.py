@@ -629,11 +629,13 @@ class VM(object):
 
     @contextlib.contextmanager
     def _sftp(self):
-        sftp = self._get_ssh_client().open_sftp()
+        client = self._get_ssh_client()
+        sftp = client.open_sftp()
         try:
             yield sftp
         finally:
             sftp.close()
+            client.close()
 
     def copy_to(self, local_path, remote_path):
         with self._sftp() as sftp:
