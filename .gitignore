@@ -4,3 +4,5 @@ MANIFEST
 testenv.spec
 dist/
 build/
+automation-build/
+exported-artifacts/
