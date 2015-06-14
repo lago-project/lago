@@ -84,6 +84,7 @@ if __name__ == '__main__':
                         'end': 254,
                     },
                     'management': True,
+                    'type': 'nat',
                 },
             },
             'domains': {},
