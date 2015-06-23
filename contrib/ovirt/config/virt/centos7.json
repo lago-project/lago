@@ -104,6 +104,9 @@
             ], 
             "metadata": {
                 "ovirt-role": "host",
+                "ovirt-capabilities": [
+                    "snapshot-live-merge"
+                ], 
                 "ovirt-scripts": [
                     "/usr/share/ovirttestenv/setup_scripts/add_local_repo.sh",
                     "/usr/share/ovirttestenv/setup_scripts/setup_host.sh",
@@ -128,6 +131,9 @@
             ], 
             "metadata": {
                 "ovirt-role": "host",
+                "ovirt-capabilities": [
+                    "snapshot-live-merge"
+                ], 
                 "ovirt-scripts": [
                     "/usr/share/ovirttestenv/setup_scripts/add_local_repo.sh",
                     "/usr/share/ovirttestenv/setup_scripts/setup_host.sh",
@@ -152,6 +158,9 @@
             ], 
             "metadata": {
                 "ovirt-role": "host",
+                "ovirt-capabilities": [
+                    "snapshot-live-merge"
+                ], 
                 "ovirt-scripts": [
                     "/usr/share/ovirttestenv/setup_scripts/add_local_repo.sh",
                     "/usr/share/ovirttestenv/setup_scripts/setup_host.sh",
@@ -176,6 +185,9 @@
             ], 
             "metadata": {
                 "ovirt-role": "host",
+                "ovirt-capabilities": [
+                    "snapshot-live-merge"
+                ], 
                 "ovirt-scripts": [
                     "/usr/share/ovirttestenv/setup_scripts/add_local_repo.sh",
                     "/usr/share/ovirttestenv/setup_scripts/setup_host.sh",
