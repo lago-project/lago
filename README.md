@@ -98,8 +98,13 @@ Make sure running `id` returns all the aforementioned groups.
 Create a directory where you'll be working, make sure qemu user can access it.
 
 Clone the repository continaing template info:
+
 ```
-git clone https://github.com/dimakuz/testenv-template-repositories.git
+git clone https://github.com/dimakuz/testenv-template-repo-office.git testenv-template-repositories
+
+OR
+
+git clone https://github.com/dimakuz/testenv-template-repo-ci.git testenv-template-repositories
 ```
 
 
@@ -110,7 +115,7 @@ obviouly you'll have to be in the network when downloading them for the first
 time.
 
 Run the example script:
-/usr/share/ovirttestenv/examples/rhel7_with_35.sh
+/usr/share/ovirttestenv/examples/rhel7_with_master.sh
 
 This will take a while, as first time execution downloads a lot of stuff.
 

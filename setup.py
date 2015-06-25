@@ -99,7 +99,7 @@ distutils.core.setup(
         (
             'share/ovirttestenv/examples',
             [
-                'contrib/ovirt/examples/rhel7_with_35.sh',
+                'contrib/ovirt/examples/rhel7_with_master.sh',
             ],
         ),
         (
