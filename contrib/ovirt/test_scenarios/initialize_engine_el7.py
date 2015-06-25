@@ -19,10 +19,25 @@
 #
 import os
 
-LIBEXEC_DIR = '/usr/libexec/ovirttestenv/'
-DATA_DIR = '/usr/share/ovirttestenv/'
-ANSWER_FILES_DIR = os.path.join(DATA_DIR, 'config', 'answer-files')
+from ovirttestenv import testlib
+from ovirttestenv import constants
 
-REPO_SERVER_PORT = 8585
-ENGINE_USER = 'admin@internal'
-ENGINE_PASSWORD = '123'
+
+@testlib.with_ovirt_prefix
+def test_initialize_engine(prefix):
+    engine = prefix.virt_env.engine_vm()
+
+    engine.copy_to(
+        os.path.join(
+            constants.ANSWER_FILES_DIR,
+            'el7_master.conf',
+        ),
+        '/tmp/answer-file',
+    )
+
+    engine.ssh(
+        [
+            'engine-setup',
+            '--config=/tmp/answer-file',
+        ],
+    )

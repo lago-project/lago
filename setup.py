@@ -90,6 +90,7 @@ distutils.core.setup(
         (
             'share/ovirttestenv/test_scenarios',
             [
+                'contrib/ovirt/test_scenarios/initialize_engine_el7.py',
                 'contrib/ovirt/test_scenarios/bootstrap.py',
                 'contrib/ovirt/test_scenarios/create_clean_snapshot.py',
                 'contrib/ovirt/test_scenarios/basic_sanity.py',
