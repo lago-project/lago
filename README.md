@@ -171,7 +171,7 @@ the following virtual machines:
 ```shell
 testenvcli init								\
     $PWD/test-deployment 						\
-    /usr/share/ovirttestenv/config/virt/rhel7.json 			\
+    /usr/share/ovirttestenv/config/virt/centos7.json 			\
     --template-repo-path=$PWD/testenv-template-repositories/repo.json
 echo '[INIT_OK] Initialized successfully, need cleanup later'
 
@@ -198,7 +198,7 @@ the environment was created at the current working directory.
 
 ```shell
 testenvcli ovirt reposetup \
-    --reposync-yum-config=/usr/share/ovirttestenv/config/repos/ovirt-3.5-external.repo
+    --reposync-yum-config=/usr/share/ovirttestenv/config/repos/ovirt-master-snapshot-external.repo
 ```
 
 The `reposetup` verb is responsible for construction of the internal repository.
@@ -243,8 +243,8 @@ testenvcli ovirt deploy
 ### Step 5: Configure the engine
 
 ```shell
-testenvcli ovirt engine-setup \
-	--config=/usr/share/ovirttestenv/config/answer-files/el7_3.5.conf
+testenvcli ovirt runtest \
+	/usr/share/ovirttestenv/test_scenarios/initialize_engine_el7.py
 ```
 
 ### Step 6: Deploy hosts, and add storage domains
