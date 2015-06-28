@@ -61,12 +61,6 @@ distutils.core.setup(
             ],
         ),
         (
-            'share/ovirttestenv/config/deploy',
-            [
-                'contrib/ovirt/config/deploy/scripts.json',
-            ],
-        ),
-        (
             'share/ovirttestenv/config/answer-files',
             [
                 'contrib/ovirt/config/answer-files/el6_master.conf',
