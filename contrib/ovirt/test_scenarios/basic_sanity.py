@@ -31,12 +31,6 @@ TEST_DC = 'test-dc'
 TEST_CLUSTER = 'test-cluster'
 TEMPLATE_BLANK = 'Blank'
 TEMPLATE_CENTOS7 = 'centos7_template'
-HOSTS = [
-    'host0',
-    'host1',
-    'host2',
-    'host3',
-]
 
 VM0_NAME = 'vm0'
 VM1_NAME = 'vm1'
@@ -198,13 +192,16 @@ def add_vm_template(api):
     )
 
 
-@testlib.with_ovirt_api
-def vm_run(api):
+@testlib.with_ovirt_prefix
+def vm_run(prefix):
+    api = prefix.virt_env.engine_vm().get_api()
+    host_names = [h.name() for h in prefix.virt_env.host_vms()]
+
     start_params = params.Action(
         vm=params.VM(
             placement_policy=params.VmPlacementPolicy(
                 host=params.Host(
-                    name=HOSTS[0],
+                    name=sorted(host_names)[0]
                 ),
             ),
         ),
@@ -216,11 +213,14 @@ def vm_run(api):
     )
 
 
-@testlib.with_ovirt_api
-def vm_migrate(api):
+@testlib.with_ovirt_prefix
+def vm_migrate(prefix):
+    api = prefix.virt_env.engine_vm().get_api()
+    host_names = [h.name() for h in prefix.virt_env.host_vms()]
+
     migrate_params = params.Action(
         host=params.Host(
-            name=HOSTS[1],
+            name=sorted(host_names)[1]
         ),
     )
     api.vms.get(VM1_NAME).migrate(migrate_params)
