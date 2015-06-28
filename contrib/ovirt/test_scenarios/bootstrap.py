@@ -51,9 +51,6 @@ SD_TEMPLATES_NAME = 'templates'
 SD_TEMPLATES_ADDRESS = 'storage-nfs'
 SD_TEMPLATES_PATH = '/exports/nfs_exported/share'
 
-SHORT_TIMEOUT = 20
-LONG_TIMEOUT = 5 * 60
-
 
 @testlib.with_ovirt_api
 def add_dc(api):
@@ -110,9 +107,8 @@ def add_hosts(prefix):
     nt.assert_true(all(vt.join_all()))
 
     for host in hosts:
-        testlib.assert_true_within(
-            func=lambda: api.hosts.get(host.name()).status.state == 'up',
-            timeout=LONG_TIMEOUT,
+        testlib.assert_true_within_long(
+            lambda: api.hosts.get(host.name()).status.state == 'up',
         )
 
 
@@ -129,18 +125,11 @@ def _add_storage_domain(api, p):
             ),
         )
     )
-    if dc.storagedomains.get(
-        sd.name,
-    ).status.state == 'maintenance':
+
+    if dc.storagedomains.get(sd.name).status.state == 'maintenance':
         sd.activate()
-        testlib.assert_true_within(
-            func=(
-                lambda:
-                    dc.starage_domains.get(
-                        sd.name,
-                    ).status.state == 'active'
-                ),
-            timeout=LONG_TIMEOUT,
+        testlib.assert_true_within_long(
+            lambda: dc.starage_domains.get(sd.name).status.state == 'active'
         )
 
 
@@ -183,14 +172,14 @@ def add_iscsi_storage_domain(prefix):
     api = prefix.virt_env.engine_vm().get_api()
 
     # Find LUN GUIDs
-    ret, stdout, _ = prefix.virt_env.get_vm('storage-iscsi').ssh(
+    ret = prefix.virt_env.get_vm('storage-iscsi').ssh(
         ['multipath', '-ll'],
     )
-    nt.assert_equals(ret, 0)
+    nt.assert_equals(ret.code, 0)
 
     lun_guids = [
         line.split()[0]
-        for line in stdout.split('\n')
+        for line in ret.out.split('\n')
         if line.find('LIO-ORG') != -1
     ]
 
@@ -281,9 +270,8 @@ def import_templates(api):
         )
 
     for template in api.templates.list():
-        testlib.assert_true_within(
-            func=lambda: api.templates.get(template.name).status.state == 'ok',
-            timeout=SHORT_TIMEOUT,
+        testlib.assert_true_within_short(
+            lambda: api.templates.get(template.name).status.state == 'ok',
         )
 
 _TEST_LIST = [
