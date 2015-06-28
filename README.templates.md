@@ -98,3 +98,43 @@ framework) where the template disk images are going to be downloaded and stored
 
  * Template store should be accessible to qemu user.
  * Can be specified as parameter to `init` verb or config values.
+
+## Managing templates, repositores, and testing environments
+At the moment, `testenvcli` provides verbs for managing repositories. To allow 
+simple versioning and distribution, each repository is managed inside a 
+separate git repository.
+ * `testenvcli template-repo add <URI>` - add a git repository (like 
+ `git clone <URI>`) with the JSON manifest
+ * `testenvcli template-repo update`  - update all the added repositories
+
+All added repos are stored at a configurable path (default at 
+`/var/lib/testenv/repos/`). A path to a specific JSON manifest can be provided 
+when creating an environment.
+
+Once an environment is initialized, repository is no longer relevant (but the 
+store must not be moved, disks based on templates still point there). The 
+template store itself can be any empty path, whenever an environment 
+initializes itself and looks for the templates it is going to use, it downloads 
+any templates it needs that are not present in the template store.
+
+## Template sources / providers
+Template repositories list what provider should be used to fetch each template
+version. At the moment 2 providers are supported.
+### `"type": "http"`
+This provider fetches images over HTTP. It takes a single parameter, `baseurl` 
+which is prepended to handles of the template images. Upon fetching a template 
+version, several files are fetched from the HTTP server. Let `baseurl=$BASEURL` 
+and `handle=$HANDLE` then:
+ * `$BASEURL/$HANDLE` - this is the URL of the image itself.
+ * `$BASEURL/$HANDLE.hash` - SHA1 hash of the image.
+ * `$BASEURL/$HANDLE.metadata` - Metadata of the template in JSON format.
+
+### `"type": "file"`
+This provider is useful when working with a local directory. This provider 
+takes a single parameter `root` that is the base directory from which all 
+handles will be looked up. Let `root=$ROOT` and `handle=$HANDLE` then this 
+provider will fetch:
+ * `$ROOT/$HANDLE` - this is the URL of the image itself.
+ * `$ROOT/$HANDLE.hash` - SHA1 hash of the image.
+ * `$ROOT/$HANDLE.metadata` - Metadata of the template in JSON format.
+
