@@ -24,9 +24,6 @@ from ovirttestenv import testlib
 MB = 2 ** 20
 GB = 2 ** 30
 
-SHORT_TIMEOUT = 120
-LONG_TIMEOUT = 600
-
 TEST_DC = 'test-dc'
 TEST_CLUSTER = 'test-cluster'
 TEMPLATE_BLANK = 'Blank'
@@ -54,9 +51,8 @@ def add_vm_blank(api):
         ),
     )
     api.vms.add(vm_params)
-    testlib.assert_true_within(
-        func=lambda: api.vms.get(VM0_NAME).status.state == 'down',
-        timeout=SHORT_TIMEOUT,
+    testlib.assert_true_within_short(
+        lambda: api.vms.get(VM0_NAME).status.state == 'down',
     )
 
 
@@ -93,14 +89,9 @@ def add_disk(api):
         bootable=True,
     )
     api.vms.get(VM0_NAME).disks.add(disk_params)
-    testlib.assert_true_within(
-        func=(
-            lambda:
-                api.vms.get(
-                    VM0_NAME,
-                ).disks.get(DISK0_NAME).status.state == 'ok'
-        ),
-        timeout=SHORT_TIMEOUT,
+    testlib.assert_true_within_short(
+        lambda:
+            api.vms.get(VM0_NAME).disks.get(DISK0_NAME).status.state == 'ok'
     )
 
 
@@ -118,13 +109,9 @@ def snapshot_merge(api):
         ),
     )
     api.vms.get(VM0_NAME).snapshots.add(dead_snap1_params)
-    testlib.assert_true_within(
-        func=(
-            lambda:
-                api.vms.get(VM0_NAME).snapshots.list()[-1].snapshot_status
-                == 'ok'
-        ),
-        timeout=SHORT_TIMEOUT,
+    testlib.assert_true_within_short(
+        lambda:
+            api.vms.get(VM0_NAME).snapshots.list()[-1].snapshot_status == 'ok'
     )
 
     dead_snap2_params = params.Snapshot(
@@ -139,24 +126,17 @@ def snapshot_merge(api):
         ),
     )
     api.vms.get(VM0_NAME).snapshots.add(dead_snap2_params)
-    testlib.assert_true_within(
-        func=(
-            lambda:
-                api.vms.get(VM0_NAME).snapshots.list()[-1].snapshot_status
-                == 'ok'
-        ),
-        timeout=SHORT_TIMEOUT,
+    testlib.assert_true_within_short(
+        lambda:
+            api.vms.get(VM0_NAME).snapshots.list()[-1].snapshot_status == 'ok'
     )
 
     api.vms.get(VM0_NAME).snapshots.list()[-2].delete()
-    testlib.assert_true_within(
-        func=(
-            lambda:
-                (len(api.vms.get(VM0_NAME).snapshots.list()) == 2) and
-                (api.vms.get(VM0_NAME).snapshots.list()[-1].snapshot_status
-                 == 'ok')
-        ),
-        timeout=SHORT_TIMEOUT,
+    testlib.assert_true_within_short(
+        lambda:
+            (len(api.vms.get(VM0_NAME).snapshots.list()) == 2) and
+            (api.vms.get(VM0_NAME).snapshots.list()[-1].snapshot_status
+             == 'ok'),
     )
 
 
@@ -176,19 +156,13 @@ def add_vm_template(api):
         ),
     )
     api.vms.add(vm_params)
-    testlib.assert_true_within(
-        func=lambda: api.vms.get(VM1_NAME).status.state == 'down',
-        timeout=LONG_TIMEOUT,
+    testlib.assert_true_within_long(
+        lambda: api.vms.get(VM1_NAME).status.state == 'down',
     )
     disk_name = api.vms.get(VM1_NAME).disks.list()[0].name
-    testlib.assert_true_within(
-        func=(
-            lambda:
-                api.vms.get(
-                    VM1_NAME,
-                ).disks.get(disk_name).status.state == 'ok'
-        ),
-        timeout=LONG_TIMEOUT,
+    testlib.assert_true_within_long(
+        lambda:
+            api.vms.get(VM1_NAME).disks.get(disk_name).status.state == 'ok'
     )
 
 
@@ -207,9 +181,8 @@ def vm_run(prefix):
         ),
     )
     api.vms.get(VM1_NAME).start(start_params)
-    testlib.assert_true_within(
-        func=lambda: api.vms.get(VM1_NAME).status.state == 'up',
-        timeout=SHORT_TIMEOUT,
+    testlib.assert_true_within_short(
+        lambda: api.vms.get(VM1_NAME).status.state == 'up',
     )
 
 
@@ -224,9 +197,8 @@ def vm_migrate(prefix):
         ),
     )
     api.vms.get(VM1_NAME).migrate(migrate_params)
-    testlib.assert_true_within(
-        func=lambda: api.vms.get(VM1_NAME).status.state == 'up',
-        timeout=SHORT_TIMEOUT,
+    testlib.assert_true_within_short(
+        lambda: api.vms.get(VM1_NAME).status.state == 'up',
     )
 
 
@@ -249,13 +221,9 @@ def snapshot_live_merge(api):
         ),
     )
     api.vms.get(VM1_NAME).snapshots.add(live_snap1_params)
-    testlib.assert_true_within(
-        func=(
-            lambda:
-                api.vms.get(VM1_NAME).snapshots.list()[-1].snapshot_status
-                == 'ok'
-        ),
-        timeout=SHORT_TIMEOUT,
+    testlib.assert_true_within_short(
+        lambda:
+            api.vms.get(VM1_NAME).snapshots.list()[-1].snapshot_status == 'ok'
     )
 
     live_snap2_params = params.Snapshot(
@@ -271,13 +239,10 @@ def snapshot_live_merge(api):
     )
     api.vms.get(VM1_NAME).snapshots.add(live_snap2_params)
     for i, _ in enumerate(api.vms.get(VM1_NAME).snapshots.list()):
-        testlib.assert_true_within(
-            func=(
-                lambda:
-                    (api.vms.get(VM1_NAME).snapshots.list()[i].snapshot_status
-                     == 'ok')
-            ),
-            timeout=SHORT_TIMEOUT,
+        testlib.assert_true_within_short(
+            lambda:
+                (api.vms.get(VM1_NAME).snapshots.list()[i].snapshot_status
+                 == 'ok')
         )
 
     api.vms.get(VM1_NAME).snapshots.list()[-2].delete()
@@ -334,14 +299,9 @@ def hotplug_disk(api):
         bootable=False,
     )
     api.vms.get(VM1_NAME).disks.add(disk2_params)
-    testlib.assert_true_within(
-        func=(
-            lambda:
-                api.vms.get(
-                    VM1_NAME,
-                ).disks.get(DISK1_NAME).status.state == 'ok'
-        ),
-        timeout=SHORT_TIMEOUT,
+    testlib.assert_true_within_short(
+        lambda:
+            api.vms.get(VM1_NAME).disks.get(DISK1_NAME).status.state == 'ok'
     )
 
 _TEST_LIST = [
