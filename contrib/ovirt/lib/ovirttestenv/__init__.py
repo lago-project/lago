@@ -292,16 +292,15 @@ class OvirtPrefix(testenv.Prefix):
         vdsm_jsonrpc_java_dir=None,
     ):
         # Detect distros from template metadata
-        engine_dists = filter(None, [self.virt_env.engine_vm().distro()])
-        vdsm_dists = filter(
-            None,
-            set(
-                [
-                    vm.distro()
-                    for vm in self.virt_env.host_vms()
-                ],
-            ),
-        )
+        engine_dists = []
+        if self.virt_env.engine_vm():
+            engine_dists.append(self.virt_env.engine_vm().distro())
+
+        vdsm_dists = []
+        for host in self.virt_env.host_vms():
+            if host.distro() not in vdsm_dists:
+                vdsm_dists.append(host.distro())
+
         all_dists = list(set(engine_dists + vdsm_dists))
 
         repos = []
