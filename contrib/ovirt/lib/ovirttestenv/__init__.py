@@ -148,8 +148,7 @@ def _activate_storage_domains(api, sds):
             id=sd.get_data_center().get_id(),
         )
         testlib.assert_true_within_long(
-            lambda:
-                dc.storagedomains.get(sd.name).status.state == 'active',
+            lambda: dc.storagedomains.get(sd.name).status.state == 'active',
         )
 
 
@@ -158,12 +157,10 @@ def _deactivate_storage_domains(api, sds):
         sd.deactivate()
 
     for sd in sds:
-        dc = api.datacenters.get(
-            id=sd.get_data_center().get_id(),
-        )
+        dc = api.datacenters.get(id=sd.get_data_center().get_id())
         testlib.assert_true_within_long(
             lambda:
-                dc.storagedomains.get(sd.name).status.state == 'maintenance',
+            dc.storagedomains.get(sd.name).status.state == 'maintenance',
         )
 
 

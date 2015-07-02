@@ -97,8 +97,7 @@ class EngineVM(TestVM):
             self.wait_for_ssh()
             try:
                 testlib.assert_true_within_long(
-                    lambda:
-                        self.service('ovirt-engine').alive()
+                    lambda: self.service('ovirt-engine').alive()
                 )
 
                 api = []

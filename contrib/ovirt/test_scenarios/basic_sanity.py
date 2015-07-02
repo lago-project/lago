@@ -91,7 +91,7 @@ def add_disk(api):
     api.vms.get(VM0_NAME).disks.add(disk_params)
     testlib.assert_true_within_short(
         lambda:
-            api.vms.get(VM0_NAME).disks.get(DISK0_NAME).status.state == 'ok'
+        api.vms.get(VM0_NAME).disks.get(DISK0_NAME).status.state == 'ok'
     )
 
 
@@ -111,7 +111,7 @@ def snapshot_merge(api):
     api.vms.get(VM0_NAME).snapshots.add(dead_snap1_params)
     testlib.assert_true_within_short(
         lambda:
-            api.vms.get(VM0_NAME).snapshots.list()[-1].snapshot_status == 'ok'
+        api.vms.get(VM0_NAME).snapshots.list()[-1].snapshot_status == 'ok'
     )
 
     dead_snap2_params = params.Snapshot(
@@ -128,15 +128,15 @@ def snapshot_merge(api):
     api.vms.get(VM0_NAME).snapshots.add(dead_snap2_params)
     testlib.assert_true_within_short(
         lambda:
-            api.vms.get(VM0_NAME).snapshots.list()[-1].snapshot_status == 'ok'
+        api.vms.get(VM0_NAME).snapshots.list()[-1].snapshot_status == 'ok'
     )
 
     api.vms.get(VM0_NAME).snapshots.list()[-2].delete()
     testlib.assert_true_within_short(
         lambda:
-            (len(api.vms.get(VM0_NAME).snapshots.list()) == 2) and
-            (api.vms.get(VM0_NAME).snapshots.list()[-1].snapshot_status
-             == 'ok'),
+        (len(api.vms.get(VM0_NAME).snapshots.list()) == 2) and
+        (api.vms.get(VM0_NAME).snapshots.list()[-1].snapshot_status
+         == 'ok'),
     )
 
 
@@ -162,7 +162,7 @@ def add_vm_template(api):
     disk_name = api.vms.get(VM1_NAME).disks.list()[0].name
     testlib.assert_true_within_long(
         lambda:
-            api.vms.get(VM1_NAME).disks.get(disk_name).status.state == 'ok'
+        api.vms.get(VM1_NAME).disks.get(disk_name).status.state == 'ok'
     )
 
 
@@ -223,7 +223,7 @@ def snapshot_live_merge(api):
     api.vms.get(VM1_NAME).snapshots.add(live_snap1_params)
     testlib.assert_true_within_short(
         lambda:
-            api.vms.get(VM1_NAME).snapshots.list()[-1].snapshot_status == 'ok'
+        api.vms.get(VM1_NAME).snapshots.list()[-1].snapshot_status == 'ok'
     )
 
     live_snap2_params = params.Snapshot(
@@ -241,8 +241,8 @@ def snapshot_live_merge(api):
     for i, _ in enumerate(api.vms.get(VM1_NAME).snapshots.list()):
         testlib.assert_true_within_short(
             lambda:
-                (api.vms.get(VM1_NAME).snapshots.list()[i].snapshot_status
-                 == 'ok')
+            (api.vms.get(VM1_NAME).snapshots.list()[i].snapshot_status
+             == 'ok')
         )
 
     api.vms.get(VM1_NAME).snapshots.list()[-2].delete()
@@ -254,16 +254,16 @@ def snapshot_live_merge(api):
     for i, _ in enumerate(api.vms.get(VM1_NAME).snapshots.list()):
         testlib.assert_true_within_long(
             lambda:
-                (api.vms.get(VM1_NAME).snapshots.list()[i].snapshot_status
-                 == 'ok'),
+            (api.vms.get(VM1_NAME).snapshots.list()[i].snapshot_status
+             == 'ok'),
         )
     testlib.assert_true_within_short(
-        lambda: api.vms.get(VM1_NAME).status.state == 'up',
+        lambda: api.vms.get(VM1_NAME).status.state == 'up'
     )
 
     testlib.assert_true_within_long(
         lambda:
-            api.vms.get(VM1_NAME).disks.get(disk_name).status.state == 'ok',
+        api.vms.get(VM1_NAME).disks.get(disk_name).status.state == 'ok'
     )
 
 
@@ -301,7 +301,7 @@ def hotplug_disk(api):
     api.vms.get(VM1_NAME).disks.add(disk2_params)
     testlib.assert_true_within_short(
         lambda:
-            api.vms.get(VM1_NAME).disks.get(DISK1_NAME).status.state == 'ok'
+        api.vms.get(VM1_NAME).disks.get(DISK1_NAME).status.state == 'ok'
     )
 
 _TEST_LIST = [
