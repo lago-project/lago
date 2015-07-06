@@ -176,14 +176,13 @@ class Prefix(object):
                     nic['ip'] = _create_ip(subnet, next_vacancy)
 
                 logging.info('Creating bridge...')
-                if 'mapping' not in net_spec:
-                    net_spec['mapping'] = {}
-                net_spec['mapping'].update(
-                    {
-                        dom: nic['ip']
-                        for nic, dom in nics_by_net[net_name]
-                    },
-                )
+                net_mapping = net_spec.setdefault('mapping', {})
+
+                for nic, dom in nics_by_net[net_name]:
+                    index = conf['domains'][dom]['nics'].index(nic)
+                    name = index == 0 and dom or '%s-eth%d' % (dom, index)
+                    net_mapping[name] = nic['ip']
+
             rollback.clear()
 
     def _create_disk(
