@@ -902,6 +902,11 @@ class VM(object):
                 bootstrap.set_selinux(mode='permissive'),
                 bootstrap.remove_persistent_nets(),
                 bootstrap.set_iscsi_initiator_name(name=self.iscsi_name()),
+            ] + [
+                bootstrap.config_net_interface_dhcp(
+                    'eth%d' % i,
+                    _ip_to_mac(nic['ip']),
+                ) for i, nic in enumerate(self._spec['nics'])
             ],
         )
         logging.debug('Bootstrapping %s end', self.name())

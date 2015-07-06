@@ -130,6 +130,7 @@ class Prefix(object):
 
                 if net_spec.setdefault('type', 'nat') == 'bridge':
                     continue
+
                 try:
                     subnet = net_spec['gw']
                     if subnet_lease.is_leasable_subnet(subnet):
@@ -174,7 +175,6 @@ class Prefix(object):
                     allocated_ips.add(next_vacancy)
                     nic['ip'] = _create_ip(subnet, next_vacancy)
 
-                # Here we will store the domain images:
                 logging.info('Creating bridge...')
                 if 'mapping' not in net_spec:
                     net_spec['mapping'] = {}

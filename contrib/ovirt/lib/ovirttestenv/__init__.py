@@ -46,7 +46,7 @@ def _with_repo_server(func):
 
 
 def _sync_rpm_repository(repo_path, yum_config, repos):
-    lock_path = os.path.join(repo_path, '.lock')
+    lock_path = os.path.join(repo_path, 'repolock')
 
     if not os.path.exists(repo_path):
         os.makedirs(repo_path)

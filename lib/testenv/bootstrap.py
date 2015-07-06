@@ -89,6 +89,29 @@ def remove_persistent_nets(gfs):
         gfs.rm(_PERSISTENT_NET_RULES)
 
 
+def _config_net_interface(gfs, iface, **kwargs):
+    gfs.write(
+        os.path.join(
+            '/etc/sysconfig/network-scripts',
+            'ifcfg-%s' % iface,
+        ),
+        '\n'.join(['%s="%s"' % (k.upper(), v) for k, v in kwargs.items()]),
+    )
+
+
+@_bootstrap_mod
+def config_net_interface_dhcp(gfs, iface, hwaddr):
+    return _config_net_interface(
+        gfs,
+        iface,
+        type='Ethernet',
+        bootproto='dhcp',
+        onboot='yes',
+        name=iface,
+        hwaddr=hwaddr,
+    )
+
+
 def bootstrap(disk_path, modifications):
     g = guestfs.GuestFS(python_return_dict=True)
     g.add_drive_opts(disk_path, format='qcow2', readonly=0)
