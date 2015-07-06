@@ -172,14 +172,14 @@ def add_iscsi_storage_domain(prefix):
     api = prefix.virt_env.engine_vm().get_api()
 
     # Find LUN GUIDs
-    ret = prefix.virt_env.get_vm('storage-iscsi').ssh(
+    ret, out, _ = prefix.virt_env.get_vm('storage-iscsi').ssh(
         ['multipath', '-ll'],
     )
-    nt.assert_equals(ret.code, 0)
+    nt.assert_equals(ret, 0)
 
     lun_guids = [
         line.split()[0]
-        for line in ret.out.split('\n')
+        for line in out.split('\n')
         if line.find('LIO-ORG') != -1
     ]
 
