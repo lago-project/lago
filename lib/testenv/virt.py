@@ -384,22 +384,26 @@ class _Service:
         if self._request_stop():
             raise RuntimeError('Failed to stop service')
 
+    @classmethod
+    def is_supported(cls, vm):
+        return vm.ssh(['test', '-e', cls.BIN_PATH]).code == 0
+
 
 class _SystemdService(_Service):
     BIN_PATH = '/usr/bin/systemctl'
 
     def _request_start(self):
-        return self._vm.ssh([self.BIN_PATH, 'start', self._name])[0]
+        return self._vm.ssh([self.BIN_PATH, 'start', self._name])
 
     def _request_stop(self):
-        return self._vm.ssh([self.BIN_PATH, 'stop', self._name])[0]
+        return self._vm.ssh([self.BIN_PATH, 'stop', self._name])
 
     def state(self):
-        ret, out, _ = self._vm.ssh([self.BIN_PATH, 'status', self._name])
-        if ret == 0:
+        ret = self._vm.ssh([self.BIN_PATH, 'status', self._name])
+        if not ret:
             return ServiceState.ACTIVE
 
-        lines = [l.strip() for l in out.split('\n')]
+        lines = [l.strip() for l in ret.out.split('\n')]
         loaded = [l for l in lines if l.startswith('Loaded:')].pop()
 
         if loaded.split()[1] == 'loaded':
@@ -412,17 +416,18 @@ class _SysVInitService(_Service):
     BIN_PATH = '/sbin/service'
 
     def _request_start(self):
-        return self._vm.ssh([self.BIN_PATH, self._name, 'start'])[0]
+        return self._vm.ssh([self.BIN_PATH, self._name, 'start'])
 
     def _request_stop(self):
-        return self._vm.ssh([self.BIN_PATH, self._name, 'stop'])[0]
+        return self._vm.ssh([self.BIN_PATH, self._name, 'stop'])
 
     def state(self):
-        ret, out, _ = self._vm.ssh([self.BIN_PATH, self._name, 'status'])
-        if ret == 0:
+        ret = self._vm.ssh([self.BIN_PATH, self._name, 'status'])
+
+        if ret.code == 0:
             return ServiceState.ACTIVE
 
-        if out.strip().endswith('is stopped'):
+        if ret.out.strip().endswith('is stopped'):
             return ServiceState.INACTIVE
 
         return ServiceState.MISSING
@@ -433,39 +438,42 @@ class _SystemdContainerService(_Service):
     HOST_BIN_PATH = '/usr/bin/systemctl'
 
     def _request_start(self):
-        ret, _, _ = self._vm.ssh(
+        ret = self._vm.ssh(
             [self.BIN_PATH, 'exec vdsmc systemctl start', self._name]
         )
 
-        if ret:
-            return self._vm.ssh([self.HOST_BIN_PATH, 'start', self._name])[0]
-        return 0
+        if ret.code == 0:
+            return ret
+
+        return self._vm.ssh([self.HOST_BIN_PATH, 'start', self._name])
 
     def _request_stop(self):
-        ret, _, _ = self._vm.ssh(
+        ret = self._vm.ssh(
             [self.BIN_PATH, 'exec vdsmc systemctl stop', self._name]
         )
-        if ret:
-            return self._vm.ssh([self.HOST_BIN_PATH, 'stop', self._name])[0]
-        return 0
+
+        if ret.code == 0:
+            return ret
+
+        return self._vm.ssh([self.HOST_BIN_PATH, 'stop', self._name])
 
     def state(self):
-        ret, out, _ = self._vm.ssh(
+        ret = self._vm.ssh(
             [self.BIN_PATH, 'exec vdsmc systemctl status', self._name])
-        if ret == 0:
+        if ret.code == 0:
             return ServiceState.ACTIVE
 
-        lines = [l.strip() for l in out.split('\n')]
+        lines = [l.strip() for l in ret.out.split('\n')]
         loaded = [l for l in lines if l.startswith('Loaded:')].pop()
 
         if loaded.split()[1] == 'loaded':
             return ServiceState.INACTIVE
 
-        ret, out, _ = self._vm.ssh([self.HOST_BIN_PATH, 'status', self._name])
-        if ret == 0:
+        ret = self._vm.ssh([self.HOST_BIN_PATH, 'status', self._name])
+        if ret.code == 0:
             return ServiceState.ACTIVE
 
-        lines = [l.strip() for l in out.split('\n')]
+        lines = [l.strip() for l in ret.out.split('\n')]
         loaded = [l for l in lines if l.startswith('Loaded:')].pop()
 
         if loaded.split()[1] == 'loaded':
@@ -608,7 +616,7 @@ class VM(object):
                 self.name(),
                 err,
             )
-        return rc, out, err
+        return utils.CommandStatus(rc, out, err)
 
     def wait_for_ssh(self, connect_retries=50):
         while connect_retries:
@@ -927,23 +935,24 @@ class VM(object):
         dom_xml = lxml.etree.fromstring(dom.XMLDesc())
         return dom_xml.xpath('devices/graphics').pop().attrib['port']
 
+    def _detect_service_manager(self):
+        logging.debug('Detecting service manager for %s', self.name())
+        for manager_name, service_class in _SERVICE_WRAPPERS.items():
+            if service_class.is_supported(self):
+                logging.debug(
+                    'Setting %s as service manager for %s',
+                    manager_name,
+                    self.name(),
+                )
+                self._service_class = service_class
+                self._spec['service_class'] = manager_name
+                self.save()
+                break
+
     @_check_alive
     def service(self, name):
         if self._service_class is None:
-            logging.debug('Detecting service manager for %s', self.name())
-            for manager_name, service_class in _SERVICE_WRAPPERS.items():
-                ret, _, _ = self.ssh(['test', '-e', service_class.BIN_PATH])
-                if not ret:
-                    logging.debug(
-                        'Setting %s as service manager for %s',
-                        manager_name,
-                        self.name(),
-                    )
-                    self._service_class = service_class
-                    self._spec['service_class'] = manager_name
-                    self.save()
-                    break
-
+            self._detect_service_manager()
         return self._service_class(self, name)
 
     def guest_agent(self):

@@ -115,10 +115,8 @@ class EngineVM(TestVM):
 
     def add_iso(self, path):
         iso_name = os.path.basename(path)
-        ret, _, _ = self.copy_to(path, '.')
-        if ret != 0:
-            raise RuntimeError('Failed to copy iso to engine')
-        ret, _, _ = self.ssh(
+        self.copy_to(path, '.')
+        ret = self.ssh(
             [
                 'ovirt-iso-uploader',
                 '--conf-file=/root/iso-uploader.conf',
@@ -126,9 +124,11 @@ class EngineVM(TestVM):
                 iso_name,
             ]
         )
-        if ret != 0:
+        if ret:
             raise RuntimeError('Failed to upload iso to ovirt')
-        self.ssh(['rm', iso_name])
+        ret = self.ssh(['rm', iso_name])
+        if ret:
+            raise RuntimeError('Failed to remove uploaded image')
 
     def engine_setup(self, config=None):
         self.wait_for_ssh()
