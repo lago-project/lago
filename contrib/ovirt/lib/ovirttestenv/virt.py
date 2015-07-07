@@ -139,7 +139,6 @@ class EngineVM(TestVM):
         self.interactive_ssh(
             [
                 'engine-setup',
-                '--jboss-home=/usr/share/ovirt-engine-jboss-as',
             ] + (config and ['--config=engine-answer-file'] or []),
         )
 
