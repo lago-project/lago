@@ -1,0 +1,5 @@
+[gerrit]
+host=gerrit.ovirt.org
+defaultbranch=master
+project=ovirt-testing-framework
+port=29418
