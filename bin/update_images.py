@@ -55,7 +55,7 @@ if __name__ == '__main__':
 
     working_dir = sys.argv[1]
     script_path = sys.argv[2]
-    images = sys.argv[3:]
+    images = map(os.path.abspath, sys.argv[3:])
 
     with utils.RollbackContext() as rollback:
         # We will use each image we update as a snapshot, and if the update
