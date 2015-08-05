@@ -25,7 +25,7 @@
 			/* NICs */
 			"nics": [
 				{
-					"type": TYPE, /* bridge or network */
+					"net": NAME, /* Network name */
 
 					/* Optional */
 					"ip": IP
@@ -49,6 +49,8 @@
 		/* Each key: value pair is a definition of a network */
 		"NETWORK_NAME": {
 			"manegment": BOOL, /* false if omitted */
+			"type": TYPE, /* network (default) or bridge */
+
 
 			/* Optional"/
 			"dhcp": {
