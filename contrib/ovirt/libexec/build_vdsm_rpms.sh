@@ -58,8 +58,11 @@ do
 		el7)
 			MOCK_CFG="epel-7-x86_64"
 			;;
-		fc20)
-			MOCK_CFG="fedora-20-x86_64"
+		fc21)
+			MOCK_CFG="fedora-21-x86_64"
+			;;
+		fc22)
+			MOCK_CFG="fedora-22-x86_64"
 			;;
 	esac
 	rm -rf "${RESULT_DIR?}/${DIST?}"
