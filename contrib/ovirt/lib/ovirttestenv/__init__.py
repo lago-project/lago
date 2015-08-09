@@ -426,6 +426,14 @@ class OvirtPrefix(testenv.Prefix):
         vt.start_all()
         vt.join_all()
 
+    @_with_repo_server
+    def serve(self):
+        try:
+            while True:
+                pass
+        except:
+            pass
+
     def _create_virt_env(self):
         return virt.OvirtVirtEnv.from_prefix(self)
 

@@ -127,6 +127,12 @@ def do_ovirt_collect(prefix, args):
     prefix.collect_artifacts(args.output)
 
 
+@in_prefix
+@with_logging
+def do_ovirt_serve(prefix, args):
+    prefix.serve()
+
+
 class Verbs:
     OVIRT_DEPLOY = 'deploy'
     OVIRT_REPOSETUP = 'reposetup'
@@ -137,6 +143,7 @@ class Verbs:
     OVIRT_STOP = 'stop'
     OVIRT_ENGINE_SETUP = 'engine-setup'
     OVIRT_COLLECT = 'collect'
+    OVIRT_SERVE = 'serve'
 
 ARGUMENTS = collections.OrderedDict()
 ARGUMENTS[Verbs.OVIRT_DEPLOY] = (
@@ -295,6 +302,11 @@ ARGUMENTS[Verbs.OVIRT_COLLECT] = (
         ),
     ),
     do_ovirt_collect,
+)
+ARGUMENTS[Verbs.OVIRT_SERVE] = (
+    'Start the repo server and do nothing',
+    (),
+    do_ovirt_serve,
 )
 
 
