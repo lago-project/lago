@@ -129,6 +129,16 @@ def _build_vdsm_jsonrpc_java_rpms(source_dir, output_dir, dists):
     )
 
 
+def _build_ioprocess_rpms(source_dir, output_dir, dists):
+    _build_rpms(
+        'ioprocess',
+        'build_ioprocess_rpms.sh',
+        source_dir,
+        output_dir,
+        dists
+    )
+
+
 def _git_revision_at(path):
     ret, out, _ = utils.run_command(
         ['git', 'rev-parse', 'HEAD'],
@@ -265,6 +275,23 @@ class OvirtPrefix(testenv.Prefix):
                 rpm_dirs.append(
                     os.path.join(self.paths.build_dir('ovirt-engine'), dist)
                 )
+
+            if os.path.exists(self.paths.build_dir('vdsm-jsonrpc-java')):
+                rpm_dirs.append(
+                    os.path.join(
+                        self.paths.build_dir('vdsm-jsonrpc-java'),
+                        dist,
+                    ),
+                )
+
+            if os.path.exists(self.paths.build_dir('ioprocess')):
+                rpm_dirs.append(
+                    os.path.join(
+                        self.paths.build_dir('ioprocess'),
+                        dist,
+                    ),
+                )
+
             rpm_dirs.extend(
                 [
                     os.path.join(repos_path, name)
@@ -286,6 +313,7 @@ class OvirtPrefix(testenv.Prefix):
         engine_dir=None,
         engine_build_gwt=None,
         vdsm_jsonrpc_java_dir=None,
+        ioprocess_dir=None,
     ):
         # Detect distros from template metadata
         engine_dists = []
@@ -349,10 +377,20 @@ class OvirtPrefix(testenv.Prefix):
             jobs.append(
                 functools.partial(
                     _build_engine_rpms,
-                    engine_dir=engine_dir,
-                    output_dir=self.paths.build_dir('ovirt-engine'),
+                    source_dir=engine_dir,
+                    output_dir=self.paths.build_dir('vdsm-jsonrpc-java'),
                     dists=engine_dists,
                     build_gwt=engine_build_gwt,
+                ),
+            )
+
+        if ioprocess_dir and engine_dists:
+            jobs.append(
+                functools.partial(
+                    _build_ioprocess_rpms,
+                    source_dir=ioprocess_dir,
+                    output_dir=self.paths.build_dir('ioprocess'),
+                    dists=vdsm_dists,
                 ),
             )
 

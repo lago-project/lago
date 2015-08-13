@@ -101,6 +101,8 @@ distutils.core.setup(
             [
                 'contrib/ovirt/libexec/build_engine_rpms.sh',
                 'contrib/ovirt/libexec/build_vdsm_rpms.sh',
+                'contrib/ovirt/libexec/build_vdsm-jsonrpc-java_rpms.sh',
+                'contrib/ovirt/libexec/build_ioprocess_rpms.sh',
             ],
         ),
         (

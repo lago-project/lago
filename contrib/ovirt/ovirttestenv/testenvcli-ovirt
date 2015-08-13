@@ -92,6 +92,7 @@ def do_ovirt_reposetup(prefix, args):
         skip_sync=args.skip_sync,
         engine_dir=args.engine_dir,
         engine_build_gwt=args.engine_with_gwt,
+        ioprocess_dir=args.ioprocess_dir,
         vdsm_dir=args.vdsm_dir,
         vdsm_jsonrpc_java_dir=args.vdsm_jsonrpc_java_dir,
     )
@@ -192,6 +193,12 @@ ARGUMENTS[Verbs.OVIRT_REPOSETUP] = (
             {
                 'help': 'Build GWT when build engine rpms',
                 'action': 'store_true',
+            },
+        ),
+        (
+            '--ioprocess-dir',
+            {
+                'help': 'Path to ioprocess source',
             },
         ),
         (
