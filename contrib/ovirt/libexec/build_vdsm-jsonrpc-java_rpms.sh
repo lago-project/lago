@@ -39,8 +39,8 @@ echo "Result directory: ${RESULT_DIR?}"
 echo "Build for following dists: ${DISTS?}"
 
 cd "${SOURCE_DIR?}"
-rm -rf "${PWD}/rpmbuild"
-rm -rf "${PWD}/*.tar.gz"
+rm -rf rpmbuild
+rm -r *.tar.gz
 
 ./autogen.sh
 ./configure --with-dist-only
