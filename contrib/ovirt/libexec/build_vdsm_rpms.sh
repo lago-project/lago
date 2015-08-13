@@ -25,6 +25,7 @@ then
 	echo "This builds VDSM from source provided in SOURCE_DIR"
 	echo "RPMs are built inside mock environment for each one of"
 	echo "specified distributions (DISTx)."
+	exit 1
 fi
 
 SOURCE_DIR=$1
