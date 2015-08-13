@@ -20,6 +20,7 @@
 import array
 import collections
 import fcntl
+import functools
 import json
 import logging
 import logging.config
@@ -46,8 +47,8 @@ def _ret_via_queue(func, queue):
         queue.put({'exception': sys.exc_info()})
 
 
-def func_vector(target, argss):
-    return map(lambda args: (lambda: target(*args)), argss)
+def func_vector(target, args_sequence):
+    return [functools.partial(target, *args) for args in args_sequence]
 
 
 class VectorThread:
@@ -79,6 +80,11 @@ class VectorThread:
                     raise exc_info[1], None, exc_info[2]
         return map(lambda x: x.get('return', None), self.results)
 
+
+def invoke_in_parallel(func, *args_sequences):
+    vt = VectorThread(func_vector(func, zip(*args_sequences)))
+    vt.start_all()
+    vt.join_all()
 
 _CommandStatus = collections.namedtuple(
     'CommandStatus',

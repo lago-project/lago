@@ -211,6 +211,4 @@ def verify_reposync(config_path, sync_dir, repo_whitelist=None):
                 blacklist,
             )
         )
-    vt = testenv.utils.VectorThread(jobs)
-    vt.start_all()
-    vt.join_all()
+    testenv.utils.invoke_in_parallel(lambda f: f(), jobs)

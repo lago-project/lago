@@ -237,13 +237,10 @@ class OvirtPrefix(testenv.Prefix):
                 host.service('supervdsmd').stop()
                 rollback.prependDefer(host.service('supervdsmd').start)
 
-            vec = testenv.utils.func_vector(
+            testenv.utils.invoke_in_parallel(
                 stop_host,
-                [(vm,) for vm in self.virt_env.host_vms()],
+                self.virt_env.host_vms()
             )
-            vt = testenv.utils.VectorThread(vec)
-            vt.start_all()
-            vt.join_all()
 
             super(OvirtPrefix, self).create_snapshots(name)
 
@@ -255,7 +252,7 @@ class OvirtPrefix(testenv.Prefix):
         self._activate()
 
     def _create_rpm_repository(self, dists, repos_path, repo_names):
-        for dist in dists:
+        def create_repo(dist):
             dist_output = self.paths.internal_repo(dist)
             rpm_dirs = []
 
@@ -277,6 +274,8 @@ class OvirtPrefix(testenv.Prefix):
             )
 
             merge_repos.merge(dist_output, rpm_dirs)
+
+        testenv.utils.invoke_in_parallel(create_repo, dists)
 
     def prepare_repo(
         self,
@@ -417,14 +416,10 @@ class OvirtPrefix(testenv.Prefix):
 
     @_with_repo_server
     def deploy(self):
-        jobs = []
-        for host in self.virt_env.get_vms().values():
-            jobs.append(
-                functools.partial(self._deploy_host, host=host)
-            )
-        vt = testenv.utils.VectorThread(jobs)
-        vt.start_all()
-        vt.join_all()
+        testenv.utils.invoke_in_parallel(
+            self._deploy_host,
+            self.virt_env.get_vms().values()
+        )
 
     @_with_repo_server
     def serve(self):
@@ -464,22 +459,12 @@ class OvirtPrefix(testenv.Prefix):
     def collect_artifacts(self, output_dir):
         os.makedirs(output_dir)
 
-        def _collect_artifacts(vm, path):
+        def _collect_artifacts(vm):
+            path = os.path.join(output_dir, vm.name())
             os.makedirs(path)
             vm.collect_artifacts(path)
 
-        vt = testenv.utils.VectorThread(
-            [
-                functools.partial(
-                    _collect_artifacts,
-                    vm,
-                    os.path.join(
-                        output_dir,
-                        vm.name(),
-                    ),
-                )
-                for vm in self.virt_env.get_vms().values()
-            ],
+        testenv.utils.invoke_in_parallel(
+            _collect_artifacts,
+            self.virt_env.get_vms().values(),
         )
-        vt.start_all()
-        vt.join_all()

@@ -119,10 +119,7 @@ class VirtEnv(object):
         return self.prefix.paths.virt(*args)
 
     def bootstrap(self):
-        vec = [vm.bootstrap for vm in self._vms.values()]
-        vt = utils.VectorThread(vec)
-        vt.start_all()
-        vt.join_all()
+        utils.invoke_in_parallel(lambda vm: vm.bootstrap(), self._vms.values())
 
     @property
     def libvirt_con(self):
@@ -200,22 +197,16 @@ class VirtEnv(object):
             utils.json_dump(spec, f)
 
     def create_snapshots(self, name):
-        vec = [
-            functools.partial(vm.create_snapshot, name)
-            for vm in self._vms.values()
-        ]
-        vt = utils.VectorThread(vec)
-        vt.start_all()
-        vt.join_all()
+        utils.invoke_in_parallel(
+            lambda vm: vm.create_snapshot(name),
+            self._vms.values(),
+        )
 
     def revert_snapshots(self, name):
-        vec = [
-            functools.partial(vm.revert_snapshot, name)
-            for vm in self._vms.values()
-        ]
-        vt = utils.VectorThread(vec)
-        vt.start_all()
-        vt.join_all()
+        utils.invoke_in_parallel(
+            lambda vm: vm.revert_snapshot(name),
+            self._vms.values(),
+        )
 
 
 class Network(object):
