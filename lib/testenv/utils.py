@@ -146,7 +146,7 @@ def service_is_enabled(name):
     return False
 
 
-# TODO (lib/vdsm/utils.py@VDSM)
+# Copied from VDSM: lib/vdsm/utils.py
 class RollbackContext(object):
     '''
     A context manager for recording and playing rollback.
@@ -160,7 +160,7 @@ class RollbackContext(object):
         step2()
         rollback.prependDefer(undoStep2, arg)
 
-    More examples see tests/utilsTests.py
+    More examples see tests/utilsTests.py @ vdsm code
     '''
     def __init__(self, *args):
         self._finally = []
