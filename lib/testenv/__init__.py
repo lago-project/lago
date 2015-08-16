@@ -199,12 +199,12 @@ class Prefix(object):
                 allocated = net['mapping'].values()
                 vacant = _create_ip(
                     net['gw'],
-                    set(range(255)).difference(
+                    set(range(2, 255)).difference(
                         set(
                             [
                                 int(ip.split('.')[-1]) for ip in allocated
                             ]
-                        ).union(set([1]))
+                        )
                     ).pop()
                 )
                 nic['ip'] = vacant
