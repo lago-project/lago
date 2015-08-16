@@ -111,79 +111,116 @@ class Prefix(object):
         # Remove uuid to drop all locks
         os.unlink(self.paths.uuid())
 
-    def _config_net_topology(self, conf):
-        all_nics = [
-            (nic, dom_name)
-            for dom_name, dom in conf['domains'].items()
-            for nic in dom['nics']
-        ]
-        nics_by_net = {}
-        for nic, dom in all_nics:
-            nics_by_net.setdefault(
-                nic['net'],
-                []
-            ).append((nic, dom))
+    def _init_net_specs(self, conf):
+        for net_name, net_spec in conf.get('nets', {}).items():
+            net_spec['name'] = net_name
+            net_spec['mapping'] = {}
+            net_spec.setdefault('type', 'nat')
 
-        with utils.RollbackContext() as rollback:
+    def _check_predefined_subnets(self, conf):
+        for net_name, net_spec in conf.get('nets', {}).items():
+            subnet = net_spec.get('gw')
+            if subnet is None:
+                continue
+
+            if subnet_lease.is_leasable_subnet(subnet):
+                raise RuntimeError(
+                    '%s subnet can only be dynamically allocated' % (subnet)
+                )
+
+    def _allocate_subnets(self, conf):
+        allocated_subnets = []
+        try:
             for net_name, net_spec in conf.get('nets', {}).items():
-                net_spec['name'] = net_name
+                if 'gw' in net_spec or net_spec['type'] != 'nat':
+                    continue
+                net_spec['gw'] = subnet_lease.acquire(self.paths.uuid())
+                allocated_subnets.append(net_spec['gw'])
+        except:
+            for subnet in allocated_subnets:
+                subnet_lease.release(subnet)
 
-                if net_spec.setdefault('type', 'nat') == 'bridge':
+        return allocated_subnets
+
+    def _add_nic_to_mapping(self, net, dom, nic):
+        dom_name = dom['name']
+        idx = dom['nics'].index(nic)
+        name = idx == 0 and dom_name or '%s-eth%d' % (dom_name, idx)
+        net['mapping'][name] = nic['ip']
+
+    def _register_preallocated_ips(self, conf):
+        for dom_name, dom_spec in conf.get('domains', {}).items():
+            for idx, nic in enumerate(dom_spec.get('nics', [])):
+                if 'ip' not in nic:
                     continue
 
-                try:
-                    subnet = net_spec['gw']
-                    if subnet_lease.is_leasable_subnet(subnet):
-                        raise RuntimeError(
-                            '%s subnet can only be dynamically allocated' % (
-                                subnet,
-                            )
-                        )
-                except KeyError:
-                    subnet = subnet_lease.acquire(self.paths.uuid())
-                    rollback.prependDefer(subnet_lease.release, subnet)
-                    net_spec['gw'] = subnet
+                net = conf['nets'][nic['net']]
+                if subnet_lease.is_leasable_subnet(net['gw']):
+                    nic['ip'] = _create_ip(
+                        net['gw'],
+                        int(nic['ip'].split('.')[-1])
+                    )
 
-                allocated_ips = set([1])
+                dom_name = dom_spec['name']
+                if not _ip_in_subnet(net['gw'], nic['ip']):
+                    raise RuntimeError(
+                        "%s:nic%d's IP [%s] is outside the subnet [%s]",
+                        dom_name,
+                        dom_spec['nics'].index(nic),
+                        nic['ip'],
+                        net['gw'],
+                    )
 
-                # Check all allocated IPs
-                for nic, dom in nics_by_net[net_name]:
-                    if 'ip' not in nic:
-                        continue
-
-                    if not _ip_in_subnet(subnet, nic['ip']):
-                        raise RuntimeError(
-                            "%s:nic%d's IP [%s] is outside the subnet [%s]",
-                            dom,
-                            dom['nics'].index(nic),
+                if nic['ip'] in net['mapping'].values():
+                    conflict_list = [
+                        name for name, ip in net['mapping'].items()
+                        if ip == net['ip']
+                    ]
+                    raise RuntimeError(
+                        'IP %s was to several domains: %s %s' % (
                             nic['ip'],
-                            subnet,
-                        )
+                            dom_name,
+                            ' '.join(conflict_list),
+                        ),
+                    )
 
-                    index = int(nic['ip'].split('.'))[3]
-                    allocated_ips.add(index)
-                    nic['ip'] = _create_ip(subnet, index)
+                self._add_nic_to_mapping(net, dom_spec, nic)
 
-                # Allocate IPs for domains without assigned IPs
-                for nic, _ in nics_by_net[net_name]:
-                    if 'ip' in nic:
-                        continue
+    def _allocate_ips_to_nics(self, conf):
+        for dom_name, dom_spec in conf.get('domains', {}).items():
+            for idx, nic in enumerate(dom_spec.get('nics', [])):
+                if 'ip' in nic:
+                    continue
 
-                    next_vacancy = set(
-                        set(range(1, 255)) ^ allocated_ips
+                net = conf['nets'][nic['net']]
+                if net['type'] != 'nat':
+                    continue
+
+                allocated = net['mapping'].values()
+                vacant = _create_ip(
+                    net['gw'],
+                    set(range(255)).difference(
+                        set(
+                            [
+                                int(ip.split('.')[-1]) for ip in allocated
+                            ]
+                        ).union(set([1]))
                     ).pop()
-                    allocated_ips.add(next_vacancy)
-                    nic['ip'] = _create_ip(subnet, next_vacancy)
+                )
+                nic['ip'] = vacant
+                self._add_nic_to_mapping(net, dom_spec, nic)
 
-                logging.info('Creating bridge...')
-                net_mapping = net_spec.setdefault('mapping', {})
-
-                for nic, dom in nics_by_net[net_name]:
-                    index = conf['domains'][dom]['nics'].index(nic)
-                    name = index == 0 and dom or '%s-eth%d' % (dom, index)
-                    net_mapping[name] = nic['ip']
-
-            rollback.clear()
+    def _config_net_topology(self, conf):
+        self._init_net_specs(conf)
+        self._check_predefined_subnets(conf)
+        allocated_subnets = self._allocate_subnets(conf)
+        try:
+            self._register_preallocated_ips(conf)
+            self._allocate_ips_to_nics(conf)
+        except:
+            for subnet in allocated_subnets:
+                subnet_lease.release(subnet)
+            raise
 
     def _create_disk(
         self,
@@ -273,8 +310,6 @@ class Prefix(object):
                 os.mkdir(self.paths.virt())
                 rollback.prependDefer(os.unlink, self.paths.virt())
 
-            self._config_net_topology(conf)
-
             for name, spec in conf['domains'].items():
                 new_disks = []
                 spec['name'] = name
@@ -294,6 +329,8 @@ class Prefix(object):
                         },
                     )
                 conf['domains'][name]['disks'] = new_disks
+
+            self._config_net_topology(conf)
 
             env = virt.VirtEnv(self, conf['domains'], conf['nets'])
             env.save()
