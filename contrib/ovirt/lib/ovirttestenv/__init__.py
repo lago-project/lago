@@ -36,6 +36,14 @@ import testlib
 import utils
 import virt
 
+# TODO: put it into some config
+PROJECTS_LIST = [
+    'vdsm',
+    'ovirt-engine',
+    'vdsm-jsonrpc-java',
+    'ioprocess',
+]
+
 
 def _with_repo_server(func):
     @functools.wraps(func)
@@ -261,36 +269,32 @@ class OvirtPrefix(testenv.Prefix):
         super(OvirtPrefix, self).revert_snapshots(name)
         self._activate()
 
-    def _create_rpm_repository(self, dists, repos_path, repo_names):
+    def _create_rpm_repository(
+        self,
+        dists,
+        repos_path,
+        repo_names,
+        projects_list=None,
+    ):
+
+        if not projects_list:
+            projects_list = PROJECTS_LIST
+
         def create_repo(dist):
             dist_output = self.paths.internal_repo(dist)
             rpm_dirs = []
+            project_roots = [
+                self.paths.build_dir(project_name)
+                for project_name in projects_list
+            ]
 
-            if os.path.exists(self.paths.build_dir('vdsm')):
-                rpm_dirs.append(
-                    os.path.join(self.paths.build_dir('vdsm'), dist)
-                )
-
-            if os.path.exists(self.paths.build_dir('ovirt-engine')):
-                rpm_dirs.append(
-                    os.path.join(self.paths.build_dir('ovirt-engine'), dist)
-                )
-
-            if os.path.exists(self.paths.build_dir('vdsm-jsonrpc-java')):
-                rpm_dirs.append(
-                    os.path.join(
-                        self.paths.build_dir('vdsm-jsonrpc-java'),
-                        dist,
-                    ),
-                )
-
-            if os.path.exists(self.paths.build_dir('ioprocess')):
-                rpm_dirs.append(
-                    os.path.join(
-                        self.paths.build_dir('ioprocess'),
-                        dist,
-                    ),
-                )
+            rpm_dirs.extend(
+                [
+                    os.path.join(folder, dist)
+                    for folder in project_roots
+                    if os.path.exists(folder)
+                ]
+            )
 
             rpm_dirs.extend(
                 [
@@ -316,15 +320,14 @@ class OvirtPrefix(testenv.Prefix):
         ioprocess_dir=None,
     ):
         # Detect distros from template metadata
-        engine_dists = []
-        if self.virt_env.engine_vm():
-            engine_dists.append(self.virt_env.engine_vm().distro())
-
-        vdsm_dists = []
-        for host in self.virt_env.host_vms():
-            if host.distro() not in vdsm_dists:
-                vdsm_dists.append(host.distro())
-
+        engine_dists = [self.virt_env.engine_vm().distro()] \
+            if self.virt_env.engine_vm() else []
+        vdsm_dists = list(set(
+            [
+                host.distro()
+                for host in self.virt_env.host_vms()
+            ]
+        ))
         all_dists = list(set(engine_dists + vdsm_dists))
 
         repos = []

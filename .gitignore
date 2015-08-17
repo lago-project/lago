@@ -1,8 +1,9 @@
-.*.swp
-*.pyc
+*.py[co]
+*.spec
+.*.sw[o-z]
 MANIFEST
-testenv.spec
 dist/
 build/
 automation-build/
 exported-artifacts/
+.idea
