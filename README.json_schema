@@ -34,10 +34,13 @@
 
 			/* Optional: */
 
+			/* Root password, if not specified, default is used */
+			"root-password": PASSWORD,
+
 			/* VCPUs allocated to the VMs */
 			"vcpu": NUM,
 
-			/* FIXME */
+			/* Number of cores visible to the VM */
 			"cpu": NUM,
 
 			/* Memory allocated to the VM in megabytes */
