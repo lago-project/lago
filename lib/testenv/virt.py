@@ -33,9 +33,10 @@ import libvirt
 import lxml.etree
 import paramiko
 
-import bootstrap
+import config
 import brctl
 import utils
+import sysprep
 
 
 def _gen_ssh_command_id():
@@ -505,6 +506,10 @@ class VM(object):
     def _normalize_spec(clazz, spec):
         spec['snapshots'] = spec.get('snapshots', {})
         spec['metadata'] = spec.get('metadata', {})
+
+        if 'root-password' not in spec:
+            spec['root-password'] = config.get('default_root_password')
+
         return spec
 
     def _open_ssh_client(self):
@@ -890,19 +895,16 @@ class VM(object):
     def bootstrap(self):
         logging.debug('Bootstrapping %s begin', self.name())
 
-        with open(self._env.prefix.paths.ssh_id_rsa_pub()) as f:
-            pub_key = f.read()
-
-        bootstrap.bootstrap(
+        sysprep.sysprep(
             self._spec['disks'][0]['path'],
             [
-                bootstrap.add_ssh_key(key=pub_key),
-                bootstrap.set_hostname(hostname=self.name()),
-                bootstrap.set_selinux(mode='permissive'),
-                bootstrap.remove_persistent_nets(),
-                bootstrap.set_iscsi_initiator_name(name=self.iscsi_name()),
+                sysprep.set_hostname(self.name()),
+                sysprep.set_root_password(self.root_password()),
+                sysprep.add_ssh_key(self._env.prefix.paths.ssh_id_rsa_pub()),
+                sysprep.set_iscsi_initiator_name(self.iscsi_name()),
+                sysprep.set_selinux_mode('enforcing'),
             ] + [
-                bootstrap.config_net_interface_dhcp(
+                sysprep.config_net_interface_dhcp(
                     'eth%d' % i,
                     _ip_to_mac(nic['ip']),
                 ) for i, nic in enumerate(self._spec['nics'])
@@ -979,4 +981,4 @@ class VM(object):
         return self._template_metadata().get('distro', None)
 
     def root_password(self):
-        return self._template_metadata()['root-password']
+        return self._spec['root-password']

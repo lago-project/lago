@@ -42,6 +42,7 @@ Summary:	Library to perform testenv operations
 BuildArch:	noarch
 BuildRequires:	python2-devel
 Requires:	python
+Requires:	libguestfs-tools
 Requires:	libvirt >= 1.2.8
 Requires:	libvirt-python
 Requires:	python-libguestfs
