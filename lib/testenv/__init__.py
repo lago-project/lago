@@ -17,6 +17,7 @@
 #
 # Refer to the README and COPYING files for full details of the license
 #
+import copy
 import json
 import logging
 import os
@@ -295,6 +296,18 @@ class Prefix(object):
         logging.info('Successfully created disk at %s', disk_path)
         return disk_path, disk_metadata
 
+    def _use_prototype(
+        self,
+        spec,
+        conf
+    ):
+        prototype = conf['prototypes'][spec['based-on']]
+        del spec['based-on']
+        for attr in prototype:
+            if attr not in spec:
+                spec[attr] = copy.deepcopy(prototype[attr])
+        return spec
+
     def virt_conf(
         self,
         conf,
@@ -311,6 +324,8 @@ class Prefix(object):
                 rollback.prependDefer(os.unlink, self.paths.virt())
 
             for name, spec in conf['domains'].items():
+                if 'based-on' in spec:
+                    spec = self._use_prototype(spec, conf)
                 new_disks = []
                 spec['name'] = name
                 for disk in spec['disks']:
