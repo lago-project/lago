@@ -22,6 +22,7 @@
 import argparse
 import collections
 import functools
+import grp
 import json
 import logging
 import os
@@ -513,7 +514,15 @@ def create_parser():
     return parser
 
 
+def check_group_membership():
+    if 'testenv' not in [grp.getgrgid(gid).gr_name for gid in os.getgroups()]:
+        sys.stderr.write(
+            'WARNING: current session does not belong to testenv group.\n'
+        )
+
+
 def main():
+    check_group_membership()
     parser = create_parser()
     args = parser.parse_args()
 
