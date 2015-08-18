@@ -91,7 +91,12 @@ def config_net_interface_dhcp(iface, hwaddr):
 
 
 def sysprep(disk, mods):
-    cmd = ['virt-sysprep', '-a', disk, '--selinux-relabel']
+    cmd = [
+        'virt-sysprep',
+        '--connect', 'qemu:///system',
+        '-a', disk,
+        '--selinux-relabel'
+    ]
     for mod in mods:
         cmd.extend(mod)
 
