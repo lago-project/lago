@@ -1,6 +1,0 @@
-[Add libvirt management permissions to testenv group]
-Identity=unix-group:testenv
-Action=org.libvirt.unix.manage
-ResultAny=yes
-ResultInactive=yes
-ResultActive=yes

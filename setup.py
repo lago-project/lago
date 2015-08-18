@@ -2,8 +2,8 @@ import os
 import distutils.core
 
 distutils.core.setup(
-    name='testenv',
-    version=os.environ['TESTENV_VERSION'],
+    name='lago',
+    version=os.environ['LAGO_VERSION'],
     description=(
         'Deploy and tear down environments of several virtual machines'
     ),
@@ -12,38 +12,38 @@ distutils.core.setup(
     author_email='dkuznets@redhat.com',
     url='redhat.com',
     package_dir={
-        'testenv': 'lib/testenv',
-        'ovirttestenv': 'contrib/ovirt/lib/ovirttestenv'
+        'lago': 'lib/lago',
+        'ovirtlago': 'contrib/ovirt/lib/ovirtlago'
     },
-    packages=['testenv', 'ovirttestenv'],
+    packages=['lago', 'ovirtlago'],
     package_data={
-        'testenv': [
+        'lago': [
             '*.xml',
             '*.log.conf',
         ],
     },
-    provides=['testenv', 'ovirttestenv'],
+    provides=['lago', 'ovirtlago'],
     scripts=[
-        'testenv/testenvcli',
-        'testenv/testenvcli-template-repo',
-        'contrib/ovirt/ovirttestenv/testenvcli-ovirt',
+        'lago/lagocli',
+        'lago/lagocli-template-repo',
+        'contrib/ovirt/ovirtlago/lagocli-ovirt',
     ],
     data_files=[
         (
-            'share/testenv',
+            'share/lago',
             [
                 'bin/sync_templates.py',
                 'bin/update_images.py',
             ],
         ),
         (
-            'share/testenv/setup_scripts',
+            'share/lago/setup_scripts',
             [
                 'scripts/update_if_needed.sh',
             ],
         ),
         (
-            'share/ovirttestenv/config/repos',
+            'share/ovirtlago/config/repos',
             [
                 'contrib/ovirt/config/repos/ovirt-3.5-external.repo',
                 ('contrib/ovirt/config/repos/'
@@ -52,7 +52,7 @@ distutils.core.setup(
             ],
         ),
         (
-            'share/ovirttestenv/config/virt',
+            'share/ovirtlago/config/virt',
             [
                 'contrib/ovirt/config/virt/centos6.json',
                 'contrib/ovirt/config/virt/centos7.json',
@@ -61,7 +61,7 @@ distutils.core.setup(
             ],
         ),
         (
-            'share/ovirttestenv/config/answer-files',
+            'share/ovirtlago/config/answer-files',
             [
                 'contrib/ovirt/config/answer-files/el6_master.conf',
                 'contrib/ovirt/config/answer-files/el7_master.conf',
@@ -70,7 +70,7 @@ distutils.core.setup(
             ],
         ),
         (
-            'share/ovirttestenv/setup_scripts',
+            'share/ovirtlago/setup_scripts',
             [
                 'contrib/ovirt/setup_scripts/add_local_repo.sh',
                 'contrib/ovirt/setup_scripts/setup_engine.sh',
@@ -82,7 +82,7 @@ distutils.core.setup(
             ],
         ),
         (
-            'share/ovirttestenv/test_scenarios',
+            'share/ovirtlago/test_scenarios',
             [
                 'contrib/ovirt/test_scenarios/initialize_engine_el7.py',
                 'contrib/ovirt/test_scenarios/bootstrap.py',
@@ -91,13 +91,13 @@ distutils.core.setup(
             ],
         ),
         (
-            'share/ovirttestenv/examples',
+            'share/ovirtlago/examples',
             [
                 'contrib/ovirt/examples/rhel7_with_master.sh',
             ],
         ),
         (
-            'libexec/ovirttestenv',
+            'libexec/ovirtlago',
             [
                 'contrib/ovirt/libexec/build_engine_rpms.sh',
                 'contrib/ovirt/libexec/build_vdsm_rpms.sh',
@@ -106,10 +106,10 @@ distutils.core.setup(
             ],
         ),
         (
-            '/etc/testenv.d/',
+            '/etc/lago.d/',
             [
-                'etc/testenv.d/testenv.conf',
-                'contrib/ovirt/etc/testenv.d/ovirt.conf',
+                'etc/lago.d/lago.conf',
+                'contrib/ovirt/etc/lago.d/ovirt.conf',
             ],
         ),
         (
@@ -122,35 +122,35 @@ distutils.core.setup(
         (
             '/etc/firewalld/services',
             [
-                'contrib/ovirt/firewalld/services/testenv.xml',
+                'contrib/ovirt/firewalld/services/lago.xml',
             ],
         ),
         (
             '/etc/polkit-1/localauthority/50-local.d/',
             [
-                'polkit/testenv.pkla',
+                'polkit/lago.pkla',
             ],
         ),
         (
             '/etc/sudoers.d',
             [
-                'sudo/testenv',
+                'sudo/lago',
             ],
         ),
         (
-            '/var/lib/testenv/subnets',
+            '/var/lib/lago/subnets',
             [],
         ),
         (
-            '/var/lib/testenv/store',
+            '/var/lib/lago/store',
             [],
         ),
         (
-            '/var/lib/testenv/repos',
+            '/var/lib/lago/repos',
             [],
         ),
         (
-            '/var/lib/testenv/reposync',
+            '/var/lib/lago/reposync',
             [],
         ),
     ],

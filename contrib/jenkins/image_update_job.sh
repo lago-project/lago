@@ -1,5 +1,5 @@
-export IMAGES_REPO=$WORKSPACE/testenv-images-repo
-export TESTENV=$WORKSPACE/testenv
+export IMAGES_REPO=$WORKSPACE/lago-images-repo
+export LAGO=$WORKSPACE/lago
 
 cd $IMAGES_REPO
 git reset --hard
@@ -15,14 +15,14 @@ done
 
 chmod 0666 $IMAGES
 
-cd $WORKSPACE/testenv
+cd $WORKSPACE/lago
 
 export PYTHONPATH=$PWD/lib:%PYTHONPATH
 export PATH=$PWD/libexec:$PATH
 
-$TESTENV/bin/update_images.py \
-	$TESTENV/update-deployment \
-	$WORKSPACE/testenv/scripts/update_if_needed.sh \
+$LAGO/bin/update_images.py \
+	$LAGO/update-deployment \
+	$WORKSPACE/lago/scripts/update_if_needed.sh \
 	$IMAGES
 
 if [ $? -ne 0 ]

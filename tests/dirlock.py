@@ -26,8 +26,8 @@ import uuid
 
 from nose import tools
 
-import testenv
-from testenv import dirlock
+import lago
+from lago import dirlock
 
 prefix = None
 testdir = None
@@ -35,7 +35,7 @@ testdir = None
 
 def setup_prefix():
     global prefix
-    prefix = testenv.Prefix(tempfile.mkdtemp())
+    prefix = lago.Prefix(tempfile.mkdtemp())
     with open(prefix.paths.uuid(), 'w') as f:
         f.write(uuid.uuid1().hex)
 

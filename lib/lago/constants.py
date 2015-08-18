@@ -17,15 +17,5 @@
 #
 # Refer to the README and COPYING files for full details of the license
 #
-import testenv.paths
-
-
-class OvirtPaths(testenv.paths.Paths):
-    def internal_repo(self, *path):
-        return self._prefixed('internal_repo', *path)
-
-    def build_dir(self, *path):
-        return self._prefixed('build', *path)
-
-    def test_logs(self, *args):
-        return self._prefixed('test_logs', *args)
+LIBEXEC_DIR = '/usr/libexec/lago/'
+SUBNET_LEASE_DIR = '/var/lib/lago/subnets/'

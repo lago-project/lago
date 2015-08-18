@@ -22,8 +22,8 @@ import functools
 import nose.tools as nt
 from ovirtsdk.xml import params
 
-from testenv import utils
-from ovirttestenv import testlib
+from lago import utils
+from ovirtlago import testlib
 
 # DC/Cluster
 DC_NAME = 'test-dc'

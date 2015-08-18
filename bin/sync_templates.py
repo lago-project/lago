@@ -25,8 +25,8 @@ import sys
 import tempfile
 import uuid
 
-import testenv.utils as utils
-import testenv.dirlock as dirlock
+import lago.utils as utils
+import lago.dirlock as dirlock
 
 USAGE = """
 %s [--create CLONE_URL] PATH

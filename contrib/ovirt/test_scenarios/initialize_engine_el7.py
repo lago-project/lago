@@ -19,8 +19,8 @@
 #
 import os
 
-from ovirttestenv import testlib
-from ovirttestenv import constants
+from ovirtlago import testlib
+from ovirtlago import constants
 
 
 @testlib.with_ovirt_prefix

@@ -3,7 +3,7 @@
         "engine": {
             "nics": [
                 {
-                    "net": "testenv"
+                    "net": "lago"
                 }
             ], 
             "disks": [
@@ -19,15 +19,15 @@
                 "ovirt-engine-password": "123", 
                 "ovirt-role": "engine",
                 "ovirt-scripts": [
-                    "/usr/share/ovirttestenv/setup_scripts/add_local_repo.sh",
-                    "/usr/share/ovirttestenv/setup_scripts/setup_engine.sh"
+                    "/usr/share/ovirtlago/setup_scripts/add_local_repo.sh",
+                    "/usr/share/ovirtlago/setup_scripts/setup_engine.sh"
                 ]
             }
         }, 
         "storage-iscsi": {
             "nics": [
                 {
-                    "net": "testenv"
+                    "net": "lago"
                 }
             ], 
             "disks": [
@@ -48,14 +48,14 @@
             ],
             "metadata": {
                 "ovirt-scripts": [
-                    "/usr/share/ovirttestenv/setup_scripts/setup_storage_iscsi.sh"
+                    "/usr/share/ovirtlago/setup_scripts/setup_storage_iscsi.sh"
                 ]
             }
         }, 
         "storage-nfs": {
             "nics": [
                 {
-                    "net": "testenv"
+                    "net": "lago"
                 }
             ], 
             "disks": [
@@ -83,14 +83,14 @@
             ],
             "metadata": {
                 "ovirt-scripts": [
-                    "/usr/share/ovirttestenv/setup_scripts/setup_storage_nfs.sh"
+                    "/usr/share/ovirtlago/setup_scripts/setup_storage_nfs.sh"
                 ]
             }
         }, 
         "host3": {
             "nics": [
                 {
-                    "net": "testenv"
+                    "net": "lago"
                 }
             ], 
             "disks": [
@@ -108,16 +108,16 @@
                 ], 
                 "ovirt-role": "host",
                 "ovirt-scripts": [
-                    "/usr/share/ovirttestenv/setup_scripts/add_local_repo.sh",
-                    "/usr/share/ovirttestenv/setup_scripts/setup_host.sh",
-                    "/usr/share/ovirttestenv/setup_scripts/bz_1195882_libvirt_workaround.sh"
+                    "/usr/share/ovirtlago/setup_scripts/add_local_repo.sh",
+                    "/usr/share/ovirtlago/setup_scripts/setup_host.sh",
+                    "/usr/share/ovirtlago/setup_scripts/bz_1195882_libvirt_workaround.sh"
                 ]
             }
         }, 
         "host2": {
             "nics": [
                 {
-                    "net": "testenv"
+                    "net": "lago"
                 }
             ], 
             "disks": [
@@ -135,16 +135,16 @@
                 ], 
                 "ovirt-role": "host",
                 "ovirt-scripts": [
-                    "/usr/share/ovirttestenv/setup_scripts/add_local_repo.sh",
-                    "/usr/share/ovirttestenv/setup_scripts/setup_host.sh",
-                    "/usr/share/ovirttestenv/setup_scripts/bz_1195882_libvirt_workaround.sh"
+                    "/usr/share/ovirtlago/setup_scripts/add_local_repo.sh",
+                    "/usr/share/ovirtlago/setup_scripts/setup_host.sh",
+                    "/usr/share/ovirtlago/setup_scripts/bz_1195882_libvirt_workaround.sh"
                 ]
             }
         }, 
         "host1": {
             "nics": [
                 {
-                    "net": "testenv"
+                    "net": "lago"
                 }
             ], 
             "disks": [
@@ -162,16 +162,16 @@
                 ], 
                 "ovirt-role": "host",
                 "ovirt-scripts": [
-                    "/usr/share/ovirttestenv/setup_scripts/add_local_repo.sh",
-                    "/usr/share/ovirttestenv/setup_scripts/setup_host.sh",
-                    "/usr/share/ovirttestenv/setup_scripts/bz_1195882_libvirt_workaround.sh"
+                    "/usr/share/ovirtlago/setup_scripts/add_local_repo.sh",
+                    "/usr/share/ovirtlago/setup_scripts/setup_host.sh",
+                    "/usr/share/ovirtlago/setup_scripts/bz_1195882_libvirt_workaround.sh"
                 ]
             }
         }, 
         "host0": {
             "nics": [
                 {
-                    "net": "testenv"
+                    "net": "lago"
                 }
             ], 
             "disks": [
@@ -189,15 +189,15 @@
                 ], 
                 "ovirt-role": "host",
                 "ovirt-scripts": [
-                    "/usr/share/ovirttestenv/setup_scripts/add_local_repo.sh",
-                    "/usr/share/ovirttestenv/setup_scripts/setup_host.sh",
-                    "/usr/share/ovirttestenv/setup_scripts/bz_1195882_libvirt_workaround.sh"
+                    "/usr/share/ovirtlago/setup_scripts/add_local_repo.sh",
+                    "/usr/share/ovirtlago/setup_scripts/setup_host.sh",
+                    "/usr/share/ovirtlago/setup_scripts/bz_1195882_libvirt_workaround.sh"
                 ]
             }
         }
     }, 
     "nets": {
-        "testenv": {
+        "lago": {
             "type": "nat",
             "dhcp": {
                 "start": 100, 

@@ -1,13 +1,13 @@
-TESTENVDIR=$(realpath $WORKSPACE/testenv)
-TESTENVCLI=$TESTENVDIR/testenv/testenvcli_local
+LAGODIR=$(realpath $WORKSPACE/lago)
+LAGOCLI=$LAGODIR/lago/lagocli_local
 PREFIX=$WORKSPACE/jenkins-deployment-$BUILD_NUMBER
-OVIRT_CONTRIB=$TESTENVDIR/contrib/ovirt
+OVIRT_CONTRIB=$LAGODIR/contrib/ovirt
 TEMPLATES_CLONE_URL="ssh://templates@66.187.230.22/~templates/templates.git"
 
-export PYTHONPATH=$WORKSPACE/testenv/lib:$PYTHONPATH
+export PYTHONPATH=$WORKSPACE/lago/lib:$PYTHONPATH
 
 
-testenv_run () {
+lago_run () {
 	set -e
 	chmod g+x $WORKSPACE
 
@@ -26,23 +26,23 @@ testenv_run () {
 	    ENGINE_PATH=$WORKSPACE/ovirt-engine
 	fi
 
-	cd $TESTENVDIR
+	cd $LAGODIR
 
 	# Clone templates
 	if [ ! -d $WORKSPACE/templates ]
 	then
-	    $TESTENVDIR/bin/sync_templates.py --create $TEMPLATES_CLONE_URL $WORKSPACE/templates
+	    $LAGODIR/bin/sync_templates.py --create $TEMPLATES_CLONE_URL $WORKSPACE/templates
 	else
-	    $TESTENVDIR/bin/sync_templates.py $WORKSPACE/templates
+	    $LAGODIR/bin/sync_templates.py $WORKSPACE/templates
 	fi
 
 	# Create $PREFIX for current run
-	$TESTENVCLI init $PREFIX
+	$LAGOCLI init $PREFIX
 	echo '[INIT_OK] Initialized successfully, need cleanup later'
 
 	# Build RPMs
 	cd $PREFIX
-	$TESTENVCLI ovirt reposetup \
+	$LAGOCLI ovirt reposetup \
 	    --rpm-repo=$REPOSYNC_DIR \
 	    --reposync-yum-config=$REPOSYNC_YUM_CONFIG \
 	    --engine-dir=$ENGINE_PATH \
@@ -51,15 +51,15 @@ testenv_run () {
 	    --vdsm-dist=$VDSM_DIST
 
 	# Start VMs
-	$TESTENVCLI start $VIRT_CONFIG \
+	$LAGOCLI start $VIRT_CONFIG \
 	    --templates-dir=$WORKSPACE/templates
 
 	# Install RPMs
-	$TESTENVCLI ovirt deploy $DEPLOY_SCRIPTS \
+	$LAGOCLI ovirt deploy $DEPLOY_SCRIPTS \
 	    $OVIRT_CONTRIB/setup_scripts
 
 	# Start testing
-	$TESTENVCLI ovirt runtest $OVIRT_CONTRIB/test_scenarios/bootstrap.py
-	$TESTENVCLI ovirt snapshot
-	$TESTENVCLI ovirt runtest $OVIRT_CONTRIB/test_scenarios/basic_sanity.py
+	$LAGOCLI ovirt runtest $OVIRT_CONTRIB/test_scenarios/bootstrap.py
+	$LAGOCLI ovirt snapshot
+	$LAGOCLI ovirt runtest $OVIRT_CONTRIB/test_scenarios/basic_sanity.py
 }

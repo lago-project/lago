@@ -217,10 +217,10 @@ def setup_logging(logdir):
     logging.config.fileConfig(
         os.path.join(
             os.path.dirname(__file__),
-            'testenv.log.conf',
+            'lago.log.conf',
         ),
         defaults={
-            'log_path': os.path.join(logdir, 'testenv.log'),
+            'log_path': os.path.join(logdir, 'lago.log'),
             'log_level': config.get('log_level', 'info').upper(),
         },
     )

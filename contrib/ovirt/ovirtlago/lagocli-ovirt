@@ -25,8 +25,8 @@ import logging
 import os
 import sys
 
-import testenv
-import ovirttestenv
+import lago
+import ovirtlago
 
 
 DISTS = ['el6', 'el7', 'fc20']
@@ -35,9 +35,9 @@ DISTS = ['el6', 'el7', 'fc20']
 def in_prefix(func):
     @functools.wraps(func)
     def wrapper(args):
-        if not os.path.exists('.testenv'):
+        if not os.path.exists('.lago'):
             raise RuntimeError('Not inside prefix')
-        prefix = ovirttestenv.OvirtPrefix(os.getcwd())
+        prefix = ovirtlago.OvirtPrefix(os.getcwd())
         return func(prefix, args)
     return wrapper
 
@@ -45,7 +45,7 @@ def in_prefix(func):
 def with_logging(func):
     @functools.wraps(func)
     def wrapper(prefix, args):
-        testenv.utils.setup_logging(prefix.paths.logs())
+        lago.utils.setup_logging(prefix.paths.logs())
         return func(prefix, args)
     return wrapper
 
@@ -77,13 +77,13 @@ def do_ovirt_reposetup(prefix, args):
     rpm_repo = (
         args.rpm_repo
         or
-        testenv.config.get('reposync_dir')
+        lago.config.get('reposync_dir')
     )
 
     reposync_config = (
         args.reposync_yum_config
         or
-        testenv.config.get('reposync_config')
+        lago.config.get('reposync_config')
     )
 
     prefix.prepare_repo(
@@ -319,7 +319,7 @@ ARGUMENTS[Verbs.OVIRT_SERVE] = (
 
 def create_parser():
     parser = argparse.ArgumentParser(
-        os.environ.get('TESTENV_PROG_NAME', sys.argv[0]),
+        os.environ.get('LAGO_PROG_NAME', sys.argv[0]),
         description='Command line interface to oVirt testing framework.'
     )
     verbs = parser.add_subparsers(dest='verb', metavar='VERB')

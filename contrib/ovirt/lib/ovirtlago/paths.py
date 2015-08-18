@@ -17,5 +17,15 @@
 #
 # Refer to the README and COPYING files for full details of the license
 #
-LIBEXEC_DIR = '/usr/libexec/testenv/'
-SUBNET_LEASE_DIR = '/var/lib/testenv/subnets/'
+import lago.paths
+
+
+class OvirtPaths(lago.paths.Paths):
+    def internal_repo(self, *path):
+        return self._prefixed('internal_repo', *path)
+
+    def build_dir(self, *path):
+        return self._prefixed('build', *path)
+
+    def test_logs(self, *args):
+        return self._prefixed('test_logs', *args)

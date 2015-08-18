@@ -1,5 +1,5 @@
 #!/bin/bash
-source $WORKSPACE/testenv/contrib/jenkins/testenv_common.sh
+source $WORKSPACE/lago/contrib/jenkins/lago_common.sh
 
 cd $WORKSPACE
 if [ -d $PREFIX ]
@@ -13,7 +13,7 @@ then
     fi
     if [ -d $PREFIX/logs/ ]
     then
-        cp -rav $PREFIX/logs/ $WORKSPACE/exported-archives/testenv_logs
+        cp -rav $PREFIX/logs/ $WORKSPACE/exported-archives/lago_logs
     fi
 
     if [ -d $PREFIX/build ]; then

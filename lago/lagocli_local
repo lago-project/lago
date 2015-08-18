@@ -11,6 +11,6 @@ for LIBEXEC in $(find $(realpath $SCRIPT_DIR/..) -type d -name libexec); do
 export PATH=$LIBEXEC:$PATH
 done
 
-export PATH=$SCRIPT_DIR:$SCRIPT_DIR/../contrib/ovirt/ovirttestenv/:$PATH
+export PATH=$SCRIPT_DIR:$SCRIPT_DIR/../contrib/ovirt/ovirtlago/:$PATH
 
-testenvcli $@
+lagocli $@

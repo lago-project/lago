@@ -18,7 +18,7 @@ on CentOS7 and with most of the dependencies of VDSM pre-installed).
 Having different version allows updating the template (by adding newer 
 versions: *v2 - added deps and updated installed packages*) while keeping in 
 under the same name (centos7_host) to avoid constantly updating virt config 
-manifests (that are provided to `testenvli init`).
+manifests (that are provided to `lagoli init`).
 
 All the information of a specific tempalte is stored inside its template
 repository.
@@ -100,15 +100,15 @@ framework) where the template disk images are going to be downloaded and stored
  * Template store can be specified as parameter to `init` verb or config values.
 
 ## Managing templates, repositores, and testing environments
-At the moment, `testenvcli` provides verbs for managing repositories. To allow 
+At the moment, `lagocli` provides verbs for managing repositories. To allow
 simple versioning and distribution, each repository is managed inside a 
 separate git repository.
- * `testenvcli template-repo add <URI>` - add a git repository (like 
+ * `lagocli template-repo add <URI>` - add a git repository (like
  `git clone <URI>`) with the JSON manifest
- * `testenvcli template-repo update`  - update all the added repositories
+ * `lagocli template-repo update`  - update all the added repositories
 
 All added repos are stored at a configurable path (default at 
-`/var/lib/testenv/repos/`). A path to a specific JSON manifest can be provided 
+`/var/lib/lago/repos/`). A path to a specific JSON manifest can be provided
 when creating an environment.
 
 Once an environment is initialized, the repository is no longer relevant (but the 

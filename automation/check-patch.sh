@@ -19,7 +19,7 @@ else
     yum install -y exported-artifacts/!(*.src).rpm
 fi
 echo "Making sure it's installed"
-testenvcli -h
+lagocli -h
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 

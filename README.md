@@ -9,11 +9,11 @@ In order to install the framework, you'll need to build RPMs or acquire them
 from a repository.
 
 Here is a repo file you can use to acquire up-to-date RPMs:
-https://dimak.fedorapeople.org/testenv.repo
+https://dimak.fedorapeople.org/lago.repo
 
 Once you have them, install the following packages:
 ```
-yum install testenv-ovirt testenv-ovirt-extras
+yum install lago-ovirt lago-ovirt-extras
 ```
 
 This will install all the needed packages.
@@ -76,9 +76,9 @@ SELINUX=permissive
 Running a testing framework environment requires certain permissions, so the
 user running it should be part of certain groups:
 
-Add yourself to testenv, mock and qemu groups:
+Add yourself to lago, mock and qemu groups:
 ```
-usermod -a -G testenv USERNAME
+usermod -a -G lago USERNAME
 usermod -a -G mock USERNAME
 usermod -a -G qemu USERNAME
 ```
@@ -100,11 +100,11 @@ Create a directory where you'll be working, make sure qemu user can access it.
 Clone the repository continaing template info:
 
 ```
-git clone https://github.com/dimakuz/testenv-template-repo-office.git testenv-template-repositories
+git clone https://github.com/dimakuz/lago-template-repo-office.git lago-template-repositories
 
 OR
 
-git clone https://github.com/dimakuz/testenv-template-repo-ci.git testenv-template-repositories
+git clone https://github.com/dimakuz/lago-template-repo-ci.git lago-template-repositories
 ```
 
 
@@ -115,7 +115,7 @@ obviouly you'll have to be in the network when downloading them for the first
 time.
 
 Run the example script:
-/usr/share/ovirttestenv/examples/rhel7_with_master.sh
+/usr/share/ovirtlago/examples/rhel7_with_master.sh
 
 This will take a while, as first time execution downloads a lot of stuff.
 
@@ -149,7 +149,7 @@ After creating the tunnel, web-ui will be available at `https://localhost:8443/`
 Once you're done with the environment, run
 ```
 cd test-deployment
-testenvcli cleanup
+lagocli cleanup
 ```
 
 
@@ -169,16 +169,16 @@ the following virtual machines:
 ### Step 1: Create the testing environment
 
 ```shell
-testenvcli init								\
+lagocli init								\
     $PWD/test-deployment 						\
-    /usr/share/ovirttestenv/config/virt/centos7.json 			\
-    --template-repo-path=$PWD/testenv-template-repositories/repo.json
+    /usr/share/ovirtlago/config/virt/centos7.json 			\
+    --template-repo-path=$PWD/lago-template-repositories/repo.json
 echo '[INIT_OK] Initialized successfully, need cleanup later'
 
 ```
 
 * This step creates a new environment at `$PWD/test-deployment` using the `init`
-verb of the testenvcli, see `testenvcli init --help` for more information on
+verb of the lagocli, see `lagocli init --help` for more information on
 the parameters.
 
 * After this step, no virtual resources are launched yet, but the environment
@@ -191,14 +191,14 @@ the templates have to be downloaded (only once).
 cd $PWD/test-deployment
 ```
 
-* All `testenvcli` verbs interacting with an existing environment assume that
+* All `lagocli` verbs interacting with an existing environment assume that
 the environment was created at the current working directory.
 
 ### Step 2: Build RPM repository
 
 ```shell
-testenvcli ovirt reposetup \
-    --reposync-yum-config=/usr/share/ovirttestenv/config/repos/ovirt-master-snapshot-external.repo
+lagocli ovirt reposetup \
+    --reposync-yum-config=/usr/share/ovirtlago/config/repos/ovirt-master-snapshot-external.repo
 ```
 
 The `reposetup` verb is responsible for construction of the internal repository.
@@ -227,7 +227,7 @@ types of sources:
 ### Step 3: Bring up the virtual resources
 
 ```shell
-testenvcli start
+lagocli start
 ```
 
 This starts all resources (VMs, bridges), at any time, you can use the `stop`
@@ -237,20 +237,20 @@ verb to stop any active resources.
 ### Step 4: Run initial setup scripts
 
 ```shell
-testenvcli ovirt deploy
+lagocli ovirt deploy
 ```
 
 ### Step 5: Configure the engine
 
 ```shell
-testenvcli ovirt runtest \
-	/usr/share/ovirttestenv/test_scenarios/initialize_engine_el7.py
+lagocli ovirt runtest \
+	/usr/share/ovirtlago/test_scenarios/initialize_engine_el7.py
 ```
 
 ### Step 6: Deploy hosts, and add storage domains
 
 ```shell
-testenvcli ovirt runtest /usr/share/ovirttestenv/test_scenarios/bootstrap.py
+lagocli ovirt runtest /usr/share/ovirtlago/test_scenarios/bootstrap.py
 ```
 
 This test runs a simple test case on the environment:

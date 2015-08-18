@@ -19,7 +19,7 @@
 #
 from ovirtsdk.xml import params
 
-from ovirttestenv import testlib
+from ovirtlago import testlib
 
 MB = 2 ** 20
 GB = 2 ** 30

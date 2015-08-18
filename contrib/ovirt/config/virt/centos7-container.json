@@ -4,7 +4,7 @@
             "memory":4096,
             "nics": [
                 {
-                    "net": "testenv"
+                    "net": "lago"
                 }
             ],
             "disks": [
@@ -20,8 +20,8 @@
                 "ovirt-engine-password": "123",
                 "ovirt-role": "engine",
                 "ovirt-scripts": [
-                    "/usr/share/ovirttestenv/setup_scripts/add_local_repo.sh",
-                    "/usr/share/ovirttestenv/setup_scripts/setup_engine.sh"
+                    "/usr/share/ovirtlago/setup_scripts/add_local_repo.sh",
+                    "/usr/share/ovirtlago/setup_scripts/setup_engine.sh"
                 ]
             }
         },
@@ -29,7 +29,7 @@
             "memory":4096,
             "nics": [
                 {
-                    "net": "testenv"
+                    "net": "lago"
                 }
             ],
             "disks": [
@@ -50,7 +50,7 @@
             ],
             "metadata": {
                 "ovirt-scripts": [
-                    "/usr/share/ovirttestenv/setup_scripts/setup_storage_iscsi.sh"
+                    "/usr/share/ovirtlago/setup_scripts/setup_storage_iscsi.sh"
                 ]
             }
         },
@@ -58,7 +58,7 @@
             "memory":4096,
             "nics": [
                 {
-                    "net": "testenv"
+                    "net": "lago"
                 }
             ],
             "disks": [
@@ -86,7 +86,7 @@
             ],
             "metadata": {
                 "ovirt-scripts": [
-                    "/usr/share/ovirttestenv/setup_scripts/setup_storage_nfs.sh"
+                    "/usr/share/ovirtlago/setup_scripts/setup_storage_nfs.sh"
                 ]
             }
         },
@@ -94,7 +94,7 @@
             "memory":4096,
             "nics": [
                 {
-                    "net": "testenv"
+                    "net": "lago"
                 }
             ],
             "disks": [
@@ -112,8 +112,8 @@
                 ],
                 "ovirt-role": "host",
                 "ovirt-scripts": [
-                    "/usr/share/ovirttestenv/setup_scripts/add_local_repo.sh",
-                    "/usr/share/ovirttestenv/setup_scripts/setup_container_host.sh"
+                    "/usr/share/ovirtlago/setup_scripts/add_local_repo.sh",
+                    "/usr/share/ovirtlago/setup_scripts/setup_container_host.sh"
                 ]
             }
         },
@@ -121,7 +121,7 @@
             "memory":4096,
             "nics": [
                 {
-                    "net": "testenv"
+                    "net": "lago"
                 }
             ],
             "disks": [
@@ -139,14 +139,14 @@
                 ],
                 "ovirt-role": "host",
                 "ovirt-scripts": [
-                    "/usr/share/ovirttestenv/setup_scripts/add_local_repo.sh",
-                    "/usr/share/ovirttestenv/setup_scripts/setup_container_host.sh"
+                    "/usr/share/ovirtlago/setup_scripts/add_local_repo.sh",
+                    "/usr/share/ovirtlago/setup_scripts/setup_container_host.sh"
                 ]
             }
         }
     },
     "nets": {
-        "testenv": {
+        "lago": {
             "dhcp": {
                 "start": 100,
                 "end": 254

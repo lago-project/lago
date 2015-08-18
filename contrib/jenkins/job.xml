@@ -28,7 +28,7 @@
           <defaultValue>refs/heads/master</defaultValue>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
-          <name>TESTENV_BRANCH</name>
+          <name>LAGO_BRANCH</name>
           <description></description>
           <defaultValue>origin/master</defaultValue>
         </hudson.model.StringParameterDefinition>
@@ -58,7 +58,7 @@
         </userRemoteConfigs>
         <branches>
           <hudson.plugins.git.BranchSpec>
-            <name>$TESTENV_BRANCH</name>
+            <name>$LAGO_BRANCH</name>
           </hudson.plugins.git.BranchSpec>
         </branches>
         <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
@@ -66,7 +66,7 @@
         <submoduleCfg class="list"/>
         <extensions>
           <hudson.plugins.git.extensions.impl.RelativeTargetDirectory>
-            <relativeTargetDir>testenv</relativeTargetDir>
+            <relativeTargetDir>lago</relativeTargetDir>
           </hudson.plugins.git.extensions.impl.RelativeTargetDirectory>
         </extensions>
       </hudson.plugins.git.GitSCM>
@@ -143,9 +143,9 @@ fi
     <hudson.tasks.Shell>
       <command>export PYTHONPATH=$PWD:$PYTHONPATH
 
-cd $WORKSPACE/testenv
+cd $WORKSPACE/lago
 
-LOCAL_CLONE_URL=&quot;/home/jenkins/workspace/ovirt_integration-test-poc2_created/testenv-images-repo&quot;
+LOCAL_CLONE_URL=&quot;/home/jenkins/workspace/ovirt_integration-test-poc2_created/lago-images-repo&quot;
 
 if [ ! -d $WORKSPACE/templates ]
 then
@@ -155,10 +155,10 @@ else
 fi</command>
     </hudson.tasks.Shell>
     <hudson.tasks.Shell>
-      <command>TESTENVDIR=$(realpath $WORKSPACE/testenv)
-TESTENVCLI=$TESTENVDIR/testenv/testenvcli_local
+      <command>LAGODIR=$(realpath $WORKSPACE/lago)
+LAGOCLI=$LAGODIR/lago/lagocli_local
 PREFIX=$WORKSPACE/jenkins-deployment
-OVIRT_CONTRIB=$TESTENVDIR/contrib/ovirt
+OVIRT_CONTRIB=$LAGODIR/contrib/ovirt
 
 if [ ! -z $VDSM_HEAD ]
 then
@@ -174,11 +174,11 @@ chmod g+x $WORKSPACE
 
 set -e
 
-$TESTENVCLI init $PREFIX
+$LAGOCLI init $PREFIX
 echo &apos;[INIT_OK] Initialized successfully, need cleanup later&apos; 
 
 cd $PREFIX
-$TESTENVCLI ovirt-reposetup \
+$LAGOCLI ovirt-reposetup \
     --rpm-repo=$WORKSPACE/ovirt-repo \
     --reposync-yum-config=$OVIRT_CONTRIB/config/repos/ovirt-master-snapshot-external.repo \
     --engine-dir=$ENGINE_PATH \
@@ -186,13 +186,13 @@ $TESTENVCLI ovirt-reposetup \
     --vdsm-dir=$VDSM_PATH \
     --vdsm-dist=el6 
 
-$TESTENVCLI start $OVIRT_CONTRIB/config/virt/centos65.json \
+$LAGOCLI start $OVIRT_CONTRIB/config/virt/centos65.json \
     --templates-dir=$WORKSPACE/templates \
     --scripts-dir=$OVIRT_CONTRIB/setup_scripts
 
-$TESTENVCLI ovirt-runtest $OVIRT_CONTRIB/test_scenarios/bootstrap.py
-$TESTENVCLI ovirt-snapshot
-$TESTENVCLI ovirt-runtest $OVIRT_CONTRIB/test_scenarios/basic_sanity.py</command>
+$LAGOCLI ovirt-runtest $OVIRT_CONTRIB/test_scenarios/bootstrap.py
+$LAGOCLI ovirt-snapshot
+$LAGOCLI ovirt-runtest $OVIRT_CONTRIB/test_scenarios/basic_sanity.py</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -213,12 +213,12 @@ $TESTENVCLI ovirt-runtest $OVIRT_CONTRIB/test_scenarios/basic_sanity.py</command
           </logTexts>
           <EscalateStatus>false</EscalateStatus>
           <RunIfJobSuccessful>false</RunIfJobSuccessful>
-          <script>TESTENVDIR=$(realpath $WORKSPACE/testenv)&#xd;
-TESTENVCLI=$TESTENVDIR/testenv/testenvcli_local&#xd;
+          <script>LAGODIR=$(realpath $WORKSPACE/lago)&#xd;
+LAGOCLI=$LAGODIR/lago/lagocli_local&#xd;
 PREFIX=$WORKSPACE/jenkins-deployment&#xd;
 &#xd;
 cd $PREFIX&#xd;
-$TESTENVCLI cleanup</script>
+$LAGOCLI cleanup</script>
         </hudson.plugins.postbuildtask.TaskProperties>
         <hudson.plugins.postbuildtask.TaskProperties>
           <logTexts>

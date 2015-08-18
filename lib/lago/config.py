@@ -22,8 +22,8 @@ import glob
 import functools
 import os
 
-_SYSTEM_CONFIG_DIR = '/etc/testenv.d'
-_USER_CONFIG = os.path.join(os.path.expanduser('~'), '.testenv')
+_SYSTEM_CONFIG_DIR = '/etc/lago.d'
+_USER_CONFIG = os.path.join(os.path.expanduser('~'), '.lago')
 
 
 def _get_environ():
@@ -31,14 +31,14 @@ def _get_environ():
 
 
 def _get_from_env(key):
-    return _get_environ()['TESTENV_%s' % key.upper()]
+    return _get_environ()['LAGO_%s' % key.upper()]
 
 
 def _get_from_files(paths, key):
     config = ConfigParser.ConfigParser()
     config.read(paths)
     try:
-        return config.get('testenv', key)
+        return config.get('lago', key)
     except ConfigParser.Error:
         raise KeyError(key)
 

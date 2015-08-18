@@ -29,7 +29,7 @@ import lxml.etree
 import rpmUtils.arch
 import rpmUtils.miscutils
 
-import testenv.utils
+import lago.utils
 
 
 def gen_to_list(func):
@@ -211,4 +211,4 @@ def verify_reposync(config_path, sync_dir, repo_whitelist=None):
                 blacklist,
             )
         )
-    testenv.utils.invoke_in_parallel(lambda f: f(), jobs)
+    lago.utils.invoke_in_parallel(lambda f: f(), jobs)

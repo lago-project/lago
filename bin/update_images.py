@@ -26,8 +26,8 @@ import sys
 import tempfile
 import time
 
-import testenv
-import testenv.utils as utils
+import lago
+import lago.utils as utils
 
 USAGE = """
 %s UPDATE_DIR UPDATE_SCRIPT IMG1 ... IMGn
@@ -90,7 +90,7 @@ if __name__ == '__main__':
             'domains': {},
         }
 
-        # Create a config we can use with testenv
+        # Create a config we can use with lago
         for img in images:
             rc, out, _ = utils.run_command(['qemu-img', 'info', img])
             if rc != 0:
@@ -132,7 +132,7 @@ if __name__ == '__main__':
         temp_dir = tempfile.mkdtemp(suffix='-domain-updater')
         rollback.prependDefer(shutil.rmtree, temp_dir)
 
-        prefix = testenv.Prefix(working_dir)
+        prefix = lago.Prefix(working_dir)
         prefix.initialize()
         rollback.prependDefer(shutil.rmtree, working_dir)
         rollback.prependDefer(prefix.cleanup)

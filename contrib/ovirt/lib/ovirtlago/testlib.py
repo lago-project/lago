@@ -24,9 +24,9 @@ import os
 import nose.plugins
 from nose.plugins.skip import SkipTest
 
-import testenv.utils as utils
+import lago.utils as utils
 
-import ovirttestenv
+import ovirtlago
 
 SHORT_TIMEOUT = 3 * 60
 LONG_TIMEOUT = 10 * 60
@@ -38,7 +38,7 @@ _test_prefix = None
 def get_test_prefix():
     if _test_prefix is None:
         global _test_prefix
-        _test_prefix = ovirttestenv.OvirtPrefix(os.getcwd())
+        _test_prefix = ovirtlago.OvirtPrefix(os.getcwd())
     return _test_prefix
 
 

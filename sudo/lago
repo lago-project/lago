@@ -1,0 +1,7 @@
+%lago ALL = (qemu) NOPASSWD: /usr/bin/chmod
+%lago ALL = NOPASSWD: /usr/sbin/brctl addbr *
+%lago ALL = NOPASSWD: /usr/sbin/brctl delbr *
+%lago ALL = NOPASSWD: /usr/sbin/brctl show *
+%lago ALL = NOPASSWD: /usr/sbin/brctl stp *
+%lago ALL = NOPASSWD: /usr/sbin/ip link set dev *
+%lago ALL = NOPASSWD: /usr/sbin/ip link set dev *

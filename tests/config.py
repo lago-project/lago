@@ -6,27 +6,27 @@ import tempfile
 
 import nose.tools as nt
 
-import testenv.config as config
+import lago.config as config
 
 _ENV = {
-    'TESTENV_ENV_VAR_1': 'env_val_1',
-    'TESTENV_USER_VAR_1': 'env_val_2',
+    'LAGO_ENV_VAR_1': 'env_val_1',
+    'LAGO_USER_VAR_1': 'env_val_2',
 }
 
 _USER_CONF = '''
-[testenv]
+[lago]
 user_var_1 = user_val_1
 user_var_2 = user_val_2
 system_var_3 = user_val_3
 '''
 
 _SYSTEM_CONF_1 = '''
-[testenv]
+[lago]
 system_var_1 = system_val_1
 '''
 
 _SYSTEM_CONF_2 = '''
-[testenv]
+[lago]
 system_var_2 = system_val_2
 system_var_3 = system_val_3
 '''

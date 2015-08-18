@@ -20,13 +20,13 @@
 import os
 
 import ovirtsdk.api
-import testenv
+import lago
 
 import constants
 import testlib
 
 
-class OvirtVirtEnv(testenv.virt.VirtEnv):
+class OvirtVirtEnv(lago.virt.VirtEnv):
     def __init__(self, prefix, vm_specs, net_spec):
         self._engine_vm = None
         self._host_vms = []
@@ -53,7 +53,7 @@ class OvirtVirtEnv(testenv.virt.VirtEnv):
         return self._host_vms[:]
 
 
-class TestVM(testenv.virt.VM):
+class TestVM(lago.virt.VM):
     def _artifact_paths(self):
         return []
 

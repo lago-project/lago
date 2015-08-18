@@ -24,25 +24,25 @@ import logging
 import os
 import sys
 
-import testenv
+import lago
 
 
 def do_add(args):
-    ret, _, _ = testenv.utils.run_command(
+    ret, _, _ = lago.utils.run_command(
         [
             'git',
             'clone',
             args.url,
         ],
-        cwd=testenv.config.get('template_repos'),
+        cwd=lago.config.get('template_repos'),
     )
     if ret:
         raise RuntimeError('Failed to clone the repository')
 
 
 def do_update(args):
-    repos_dir = testenv.config.get('template_repos')
-    ret, out, _ = testenv.utils.run_command(
+    repos_dir = lago.config.get('template_repos')
+    ret, out, _ = lago.utils.run_command(
         [
             'find',
             repos_dir,
@@ -60,7 +60,7 @@ def do_update(args):
             ['git', 'reset', '--hard'],
             ['git', 'checkout', 'origin/master'],
         ]:
-            ret, _, _ = testenv.utils.run_command(command, cwd=repo_path)
+            ret, _, _ = lago.utils.run_command(command, cwd=repo_path)
             if ret:
                 raise RuntimeError('Error running: %s' % (' '.join(command)))
 
@@ -93,7 +93,7 @@ ARGUMENTS[Verbs.UPDATE] = (
 
 def create_parser():
     parser = argparse.ArgumentParser(
-        os.environ.get('TESTENV_PROG_NAME', sys.argv[0]),
+        os.environ.get('LAGO_PROG_NAME', sys.argv[0]),
         description='Utility for system testing template management'
     )
     verbs = parser.add_subparsers(dest='verb', metavar='VERB')

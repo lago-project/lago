@@ -53,7 +53,7 @@ One of the ways to interact with the testing framework is the provided CLI. It c
 * `shell` - Run scripts and execute shell commands on the virtual machines.
 * `cleanup` - Cleans up the exection environment. Note: directory still needs to be deleted afterwards.
 
-For specific parameters run with `--help`, to run locally without installing the libraries, use `testenv/testenvcli_local`.
+For specific parameters run with `--help`, to run locally without installing the libraries, use `lago/lagocli_local`.
 
 ### oVirt CLI
 The above CLI also includes `ovirt` verb that has several *sub-verbs*:
@@ -66,13 +66,13 @@ The above CLI also includes `ovirt` verb that has several *sub-verbs*:
 Run with `--help` for more detailed help.
 
 ## Basic usage
-For basic usage, examine function `testenv_run` in `contrib/jenkins/testenv_common.sh`. This function demonstrates the way oVirt jenkins uses the testing framework (throught the CLI) to perform tests.
+For basic usage, examine function `lago_run` in `contrib/jenkins/lago_common.sh`. This function demonstrates the way oVirt jenkins uses the testing framework (throught the CLI) to perform tests.
 
 ## Setting up
 Currently the code relies on various configurations, this list might be incomplete.
 
 ### Libvirt authentication
-At the moment, library uses qemu:///system URL and authenticates with `testenv@ovirt` as username and `testenv` as password.
+At the moment, library uses qemu:///system URL and authenticates with `lago@ovirt` as username and `lago` as password.
 
 ### Nested virtualization
 Enable nested virtualization in the kernel on intel CPUs set kvm\_intel.nested parameter to 1, by either editing /etc/modprobe.d/modprobe.conf and adding this line: `options kvm_intel nested=1` or by adding `kvm_intel.nested=1` to kernel cmdline in grub
@@ -85,7 +85,7 @@ jenkins    ALL = (qemu) NOPASSWD: /bin/qemu-img
 ```
 
 ### Subnet lease directory
-To automatially allocate subnets, the library uses a global directory to manage leases. At the moment, this directory is `/var/lib/testenv/subnets/`. It must be writeable by current user in order for subnet allocation to succeed.
+To automatially allocate subnets, the library uses a global directory to manage leases. At the moment, this directory is `/var/lib/lago/subnets/`. It must be writeable by current user in order for subnet allocation to succeed.
 
 # Jenkins
 Most of jenkins scripts are located in `contrib/jenkins/`. 

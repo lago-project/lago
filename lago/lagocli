@@ -30,28 +30,28 @@ import shutil
 import stat
 import sys
 
-import testenv
-import testenv.config
-import testenv.templates
+import lago
+import lago.config
+import lago.templates
 
-CLI_PREFIX = 'testenvcli-'
+CLI_PREFIX = 'lagocli-'
 
 
 def do_init(args):
-    prefix = testenv.Prefix(args.prefix)
+    prefix = lago.Prefix(args.prefix)
     prefix.initialize()
 
     # FIXME
-    with open(os.path.join(args.prefix, '.testenv'), 'w') as f:
+    with open(os.path.join(args.prefix, '.lago'), 'w') as f:
         f.write('')
 
     with open(args.virt_config, 'r') as f:
         virt_conf = json.load(f)
-    testenv.utils.setup_logging(prefix.paths.logs())
+    lago.utils.setup_logging(prefix.paths.logs())
 
     try:
         if args.template_repo_path:
-            repo = testenv.templates.TemplateRepository.from_file(
+            repo = lago.templates.TemplateRepository.from_file(
                 args.template_repo_path
             )
         else:
@@ -59,21 +59,21 @@ def do_init(args):
                 repo_name = (
                     args.template_repo_name
                     or
-                    testenv.config.get('template_default_repo')
+                    lago.config.get('template_default_repo')
                 )
             except KeyError:
                 raise RuntimeError(
                     'No template repo was configured or specified'
                 )
 
-            repo = testenv.templates.find_repo_by_name(repo_name)
+            repo = lago.templates.find_repo_by_name(repo_name)
 
         template_store_path = (
             args.template_store
             or
-            testenv.config.get('template_store', default=None)
+            lago.config.get('template_store', default=None)
         )
-        store = testenv.templates.TemplateStore(template_store_path)
+        store = lago.templates.TemplateStore(template_store_path)
 
         prefix.virt_conf(virt_conf, repo, store)
     except:
@@ -84,16 +84,16 @@ def do_init(args):
 def in_prefix(func):
     @functools.wraps(func)
     def wrapper(args):
-        if not os.path.exists('.testenv'):
+        if not os.path.exists('.lago'):
             raise RuntimeError('Not inside prefix')
-        return func(testenv.Prefix(os.getcwd()), args)
+        return func(lago.Prefix(os.getcwd()), args)
     return wrapper
 
 
 def with_logging(func):
     @functools.wraps(func)
     def wrapper(prefix, args):
-        testenv.utils.setup_logging(prefix.paths.logs())
+        lago.utils.setup_logging(prefix.paths.logs())
         return func(prefix, args)
     return wrapper
 
@@ -447,7 +447,7 @@ ARGUMENTS[Verbs.COPY_TO_VM] = (
 
 def call_discovered_verb(path, verb_name, args):
     env = os.environ.copy()
-    env['TESTENV_PROG_NAME'] = 'testenvcli %s' % verb_name
+    env['LAGO_PROG_NAME'] = 'lagocli %s' % verb_name
     os.execve(path, [path] + args.args, env)
 
 
@@ -474,7 +474,7 @@ def discovered_verbs():
             unprefixed(name): (
                 {
                     'help': (
-                        "Invoke 'testenvcli %s --help' "
+                        "Invoke 'lagocli %s --help' "
                         "to see more" % unprefixed(name)
                     ),
                     'add_help': False,
@@ -515,9 +515,9 @@ def create_parser():
 
 
 def check_group_membership():
-    if 'testenv' not in [grp.getgrgid(gid).gr_name for gid in os.getgroups()]:
+    if 'lago' not in [grp.getgrgid(gid).gr_name for gid in os.getgroups()]:
         sys.stderr.write(
-            'WARNING: current session does not belong to testenv group.\n'
+            'WARNING: current session does not belong to lago group.\n'
         )
 
 

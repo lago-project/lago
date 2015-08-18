@@ -1,26 +1,26 @@
 #!/bin/bash -ex
 
 # Create prefix for current run
-testenvcli init 							\
+lagocli init 							\
 	$PWD/test-deployment						\
-	/usr/share/ovirttestenv/config/virt/centos7.json		\
-	--template-repo-path=$PWD/testenv-template-repositories/repo.json
+	/usr/share/ovirtlago/config/virt/centos7.json		\
+	--template-repo-path=$PWD/lago-template-repositories/repo.json
 
 echo '[INIT_OK] Initialized successfully, need cleanup later'
 
 # Build RPMs
 cd $PWD/test-deployment
 
-testenvcli ovirt reposetup 						\
-    --reposync-yum-config=/usr/share/ovirttestenv/config/repos/ovirt-master-snapshot-external.repo
+lagocli ovirt reposetup 						\
+    --reposync-yum-config=/usr/share/ovirtlago/config/repos/ovirt-master-snapshot-external.repo
 
 # Start VMs
-testenvcli start
+lagocli start
 
 # Install RPMs
-testenvcli ovirt deploy
+lagocli ovirt deploy
 
 # Configure engine
-testenvcli ovirt runtest /usr/share/ovirttestenv/test_scenarios/initialize_engine_el7.py
+lagocli ovirt runtest /usr/share/ovirtlago/test_scenarios/initialize_engine_el7.py
 # Start testing
-testenvcli ovirt runtest /usr/share/ovirttestenv/test_scenarios/bootstrap.py
+lagocli ovirt runtest /usr/share/ovirtlago/test_scenarios/bootstrap.py

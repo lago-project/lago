@@ -27,7 +27,7 @@ import nose.core
 import nose.config
 from ovirtsdk.infrastructure.errors import RequestError
 
-import testenv
+import lago
 
 import merge_repos
 import repoverify
@@ -230,12 +230,12 @@ def _activate_all_storage_domains(api):
         _activate_storage_domains(api, [sd for sd in sds if not sd.master])
 
 
-class OvirtPrefix(testenv.Prefix):
+class OvirtPrefix(lago.Prefix):
     def _create_paths(self):
         return paths.OvirtPaths(self._prefix)
 
     def create_snapshots(self, name, restore=True):
-        with testenv.utils.RollbackContext() as rollback:
+        with lago.utils.RollbackContext() as rollback:
             engine = self.virt_env.engine_vm()
 
             self._deactivate()
@@ -255,7 +255,7 @@ class OvirtPrefix(testenv.Prefix):
                 host.service('supervdsmd').stop()
                 rollback.prependDefer(host.service('supervdsmd').start)
 
-            testenv.utils.invoke_in_parallel(
+            lago.utils.invoke_in_parallel(
                 stop_host,
                 self.virt_env.host_vms()
             )
@@ -306,7 +306,7 @@ class OvirtPrefix(testenv.Prefix):
 
             merge_repos.merge(dist_output, rpm_dirs)
 
-        testenv.utils.invoke_in_parallel(create_repo, dists)
+        lago.utils.invoke_in_parallel(create_repo, dists)
 
     def prepare_repo(
         self,
@@ -397,7 +397,7 @@ class OvirtPrefix(testenv.Prefix):
                 ),
             )
 
-        vt = testenv.utils.VectorThread(jobs)
+        vt = lago.utils.VectorThread(jobs)
         vt.start_all()
         if engine_dir:
             metadata['ovirt-engine-revision'] = _git_revision_at(engine_dir)
@@ -412,7 +412,7 @@ class OvirtPrefix(testenv.Prefix):
     def run_test(self, path):
         logging.info('Running test: %s', path)
         env = os.environ.copy()
-        env['TESTENV_PREFIX'] = self.paths.prefix()
+        env['LAGO_PREFIX'] = self.paths.prefix()
 
         extra_args = [
             '--with-xunit',
@@ -457,7 +457,7 @@ class OvirtPrefix(testenv.Prefix):
 
     @_with_repo_server
     def deploy(self):
-        testenv.utils.invoke_in_parallel(
+        lago.utils.invoke_in_parallel(
             self._deploy_host,
             self.virt_env.get_vms().values()
         )
@@ -505,7 +505,7 @@ class OvirtPrefix(testenv.Prefix):
             os.makedirs(path)
             vm.collect_artifacts(path)
 
-        testenv.utils.invoke_in_parallel(
+        lago.utils.invoke_in_parallel(
             _collect_artifacts,
             self.virt_env.get_vms().values(),
         )

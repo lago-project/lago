@@ -1,0 +1,6 @@
+[Add libvirt management permissions to lago group]
+Identity=unix-group:lago
+Action=org.libvirt.unix.manage
+ResultAny=yes
+ResultInactive=yes
+ResultActive=yes

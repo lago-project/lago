@@ -657,7 +657,7 @@ class VM(object):
         return str(self._spec['name'])
 
     def iscsi_name(self):
-        return 'iqn.2014-07.org.testenv:%s' % self.name()
+        return 'iqn.2014-07.org.lago:%s' % self.name()
 
     def ip(self):
         return str(self._env.get_net().resolve(self.name()))

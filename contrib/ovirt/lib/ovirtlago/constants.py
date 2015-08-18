@@ -19,8 +19,8 @@
 #
 import os
 
-LIBEXEC_DIR = '/usr/libexec/ovirttestenv/'
-DATA_DIR = '/usr/share/ovirttestenv/'
+LIBEXEC_DIR = '/usr/libexec/ovirtlago/'
+DATA_DIR = '/usr/share/ovirtlago/'
 ANSWER_FILES_DIR = os.path.join(DATA_DIR, 'config', 'answer-files')
 
 REPO_SERVER_PORT = 8585
