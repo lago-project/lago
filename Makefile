@@ -30,7 +30,7 @@ check-local:
 	find . -name '*.py' | xargs flake8
 	PYTHONPATH=${PWD}/lib:${PYTHONPATH} nosetests -v tests/*.py
 
-dist: check ${TAR_DIST_LOCATION}
+dist: ${TAR_DIST_LOCATION}
 
 ${TAR_DIST_LOCATION}:
 	TESTENV_VERSION=${VERSION} python setup.py sdist --dist-dir ${DIST_DIR}

@@ -1,0 +1,10 @@
+git
+python2-devel
+python-flake8
+python-nose
+python-lockfile
+python-nose
+python-libguestfs
+python-lxml
+libvirt-python
+python-paramiko
