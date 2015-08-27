@@ -23,7 +23,9 @@ import utils
 
 _DOT_SSH = '/root/.ssh'
 _AUTHORIZED_KEYS = os.path.join(_DOT_SSH, 'authorized_keys')
-_SELINUX_CONF_PATH = '/etc/selinux/config'
+_SELINUX_CONF_DIR = '/etc/selinux'
+_SELINUX_CONF_PATH = os.path.join(_SELINUX_CONF_DIR, 'config')
+_ISCSI_DIR = '/etc/iscsi'
 
 
 def set_hostname(hostname):
@@ -43,26 +45,38 @@ def _upload_file(local_path, remote_path):
 
 
 def set_iscsi_initiator_name(name):
-    return _write_file(
-        '/etc/iscsi/initiatorname.iscsi',
+    return (
+        '--mkdir', _ISCSI_DIR,
+        '--chmod', '0755:%s' % _ISCSI_DIR,
+    ) + _write_file(
+        os.path.join(_ISCSI_DIR, 'initiatorname.iscsi'),
         'InitiatorName=%s' % name,
     )
 
 
 def add_ssh_key(key):
-    return (
+    extra_options = (
         '--mkdir', _DOT_SSH,
         '--chmod', '0700:%s' % _DOT_SSH,
     ) + _upload_file(
         _AUTHORIZED_KEYS,
         key
-    ) + (
-        '--run-command', 'chown root.root %s' % _AUTHORIZED_KEYS,
     )
+    if (
+        not os.stat(key).st_uid == 0
+        or not os.stat(key).st_gid == 0
+    ):
+        extra_options += (
+            '--run-command', 'chown root.root %s' % _AUTHORIZED_KEYS,
+        )
+    return extra_options
 
 
 def set_selinux_mode(mode):
-    return _write_file(
+    return (
+        '--mkdir', _SELINUX_CONF_DIR,
+        '--chmod', '0755:%s' % _SELINUX_CONF_DIR,
+    ) + _write_file(
         _SELINUX_CONF_PATH,
         ('SELINUX=%s\n'
          'SELINUXTYPE=targeted\n') % mode,
@@ -70,7 +84,10 @@ def set_selinux_mode(mode):
 
 
 def _config_net_interface(iface, **kwargs):
-    return _write_file(
+    return (
+        '--mkdir', '/etc/sysconfig/network-scripts',
+        '--chmod', '0755:/etc/sysconfig/network-scripts',
+    ) + _write_file(
         os.path.join(
             '/etc/sysconfig/network-scripts',
             'ifcfg-%s' % iface,

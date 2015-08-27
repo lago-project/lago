@@ -1,8 +1,4 @@
 #!/bin/bash -e
-echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-echo '~*          Running unit/static checks                 ~'
-echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 make check-local
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 echo '~*          Running build/installation tests           ~'
@@ -18,8 +14,17 @@ if hash dnf &>/dev/null; then
 else
     yum install -y exported-artifacts/!(*.src).rpm
 fi
-echo "Making sure it's installed"
-lagocli -h
+echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+echo '~*          Running basic functional tests             ~'
+echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+# Ugly fix to be able to run el* on fc*
+if ! [[ -e /usr/bin/qemu-kvm ]]; then
+    ln -s /usr/libexec/qemu-kvm /usr/bin/qemu-kvm
+fi
+bats tests/functional/*basic.bats \
+| tee exported-artifacts/basic_functional_tests.tap
+res=${PIPESTATUS[0]}
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+exit "$res"
 

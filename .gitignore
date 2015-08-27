@@ -7,3 +7,5 @@ build/
 automation-build/
 exported-artifacts/
 .idea
+logs*
+mock*

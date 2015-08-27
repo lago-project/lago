@@ -1,0 +1,30 @@
+{
+    "root-password": "cubswin:)", 
+    "name": "vm1", 
+    "memory": 1024, 
+    "service_class": "systemd", 
+    "nics": [
+        {
+            "ip": "192.168.201.3", 
+            "net": "n0"
+        }, 
+        {
+            "ip": "192.168.202.3", 
+            "net": "n1"
+        }
+    ], 
+    "disks": [
+        {
+            "path": "/home/dcaro/testenv/02_exercise/images/vm1_root.qcow2", 
+            "format": "qcow2",
+            "dev": "vda", 
+            "metadata": {
+                "root-password": "cubswin:)", 
+                "distro": "cirros"
+            }
+        }
+    ], 
+    "guest-agent": "qemu-guest-agent", 
+    "snapshots": {}, 
+    "metadata": {}
+}

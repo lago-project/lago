@@ -1,0 +1,38 @@
+WARNING: current session does not belong to lago group.
+[Prefix]:
+	Base directory: @@PREFIX@@
+	UUID: fe689d3c39d011e5b22b54ee755a00ca
+[Networks]:
+	[n0]
+		Gateway: 192.168.201.1
+		Status: down
+		Management: True
+	[n1]
+		Gateway: 192.168.202.1
+		Status: down
+		Management: False
+[VMs]:
+	[vm0]
+		Distro: cirros
+		Root password: 123456
+		Status: down
+		Snapshots: 
+		NICs:
+			[eth0]
+				Network: n0
+				IP 192.168.201.2
+			[eth1]
+				Network: n1
+				IP 192.168.202.2
+	[vm1]
+		Distro: cirros
+		Root password: cubswin:)
+		Status: down
+		Snapshots: 
+		NICs:
+			[eth0]
+				Network: n0
+				IP 192.168.201.3
+			[eth1]
+				Network: n1
+				IP 192.168.202.3

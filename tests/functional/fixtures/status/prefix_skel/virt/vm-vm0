@@ -1,0 +1,36 @@
+{
+    "root-password": "123456", 
+    "name": "vm0", 
+    "memory": 2048, 
+    "service_class": "systemd", 
+    "nics": [
+        {
+            "ip": "192.168.201.2", 
+            "net": "n0"
+        }, 
+        {
+            "ip": "192.168.202.2", 
+            "net": "n1"
+        }
+    ], 
+    "disks": [
+        {
+            "path": "/home/dcaro/testenv/02_exercise/images/vm0_root.qcow2", 
+            "format": "qcow2",
+            "dev": "vda", 
+            "metadata": {
+                "root-password": "cubswin:)", 
+                "distro": "cirros"
+            }
+        }, 
+        {
+            "path": "/home/dcaro/testenv/02_exercise/images/vm0_empty.qcow2", 
+            "format": "qcow2", 
+            "dev": "vdb", 
+            "metadata": {}
+        }
+    ], 
+    "guest-agent": "qemu-guest-agent", 
+    "snapshots": {}, 
+    "metadata": {}
+}

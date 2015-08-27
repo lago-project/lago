@@ -8,3 +8,5 @@ python-libguestfs
 python-lxml
 libvirt-python
 python-paramiko
+bats
+yum
