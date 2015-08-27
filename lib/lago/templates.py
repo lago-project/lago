@@ -15,7 +15,7 @@ import utils
 
 class FileSystemTemplateProvider:
     def __init__(self, root):
-        self._root = root
+        self._root = os.path.expanduser(os.path.expandvars(root))
 
     def _prefixed(self, *path):
         return os.path.join(self._root, *path)
@@ -24,10 +24,12 @@ class FileSystemTemplateProvider:
         shutil.copyfile(self._prefixed(handle), dest)
 
     def get_hash(self, handle):
+        handle = os.path.expanduser(os.path.expandvars(handle))
         with open(self._prefixed('%s.hash' % handle)) as f:
             return f.read()
 
     def get_metadata(self, handle):
+        handle = os.path.expanduser(os.path.expandvars(handle))
         with open(self._prefixed('%s.metadata' % handle)) as f:
             return json.load(f)
 
