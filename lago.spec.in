@@ -29,6 +29,104 @@ LAGO_VERSION=%{version} %{__python} setup.py build
 
 %install
 LAGO_VERSION=%{version} %{__python} setup.py install --root $RPM_BUILD_ROOT
+cd "$RPM_BUILD_DIR"
+install -d $RPM_BUILD_ROOT/usr/share/lago
+install \
+    bin/sync_templates.py \
+    bin/update_images.py \
+    "$RPM_BUILD_ROOT"/usr/share/lago
+
+install -d $RPM_BUILD_ROOT/usr/share/lago/setup_scripts
+install \
+    scripts/update_if_needed.sh \
+    "$RPM_BUILD_ROOT"/usr/share/lago/setup_scripts
+
+install -d "$RPM_BUILD_ROOT"/usr/share/ovirtlago/config/repos
+install \
+    contrib/ovirt/config/repos/ovirt-3.5-external.repo \
+    contrib/ovirt/config/repos/ovirt-master-snapshot-external.repo \
+    contrib/ovirt/config/repos/ovirt-master-snapshot.repo \
+    "$RPM_BUILD_ROOT"/usr/share/ovirtlago/config/repos
+
+install -d "$RPM_BUILD_ROOT"/usr/share/ovirtlago/config/virt
+install \
+    contrib/ovirt/config/virt/centos6.json \
+    contrib/ovirt/config/virt/centos7.json \
+    contrib/ovirt/config/virt/centos7-container.json \
+    contrib/ovirt/config/virt/rhel7.json \
+    "$RPM_BUILD_ROOT"/usr/share/ovirtlago/config/virt
+
+install -d "$RPM_BUILD_ROOT"/usr/share/ovirtlago/config/answer-files
+install \
+    contrib/ovirt/config/answer-files/el6_master.conf \
+    contrib/ovirt/config/answer-files/el7_master.conf \
+    contrib/ovirt/config/answer-files/el6_3.5.conf \
+    contrib/ovirt/config/answer-files/el7_3.5.conf \
+    "$RPM_BUILD_ROOT"/usr/share/ovirtlago/config/answer-files
+
+install -d "$RPM_BUILD_ROOT"/usr/share/ovirtlago/setup_scripts
+install \
+    contrib/ovirt/setup_scripts/add_local_repo.sh \
+    contrib/ovirt/setup_scripts/setup_engine.sh \
+    contrib/ovirt/setup_scripts/setup_host.sh \
+    contrib/ovirt/setup_scripts/setup_storage_iscsi.sh \
+    contrib/ovirt/setup_scripts/setup_storage_nfs.sh \
+    contrib/ovirt/setup_scripts/bz_1195882_libvirt_workaround.sh \
+    contrib/ovirt/setup_scripts/setup_container_host.sh \
+    "$RPM_BUILD_ROOT"/usr/share/ovirtlago/setup_scripts
+
+install -d "$RPM_BUILD_ROOT"/usr/share/ovirtlago/test_scenarios
+install \
+    contrib/ovirt/test_scenarios/initialize_engine_el7.py \
+    contrib/ovirt/test_scenarios/bootstrap.py \
+    contrib/ovirt/test_scenarios/create_clean_snapshot.py \
+    contrib/ovirt/test_scenarios/basic_sanity.py \
+    "$RPM_BUILD_ROOT"/usr/share/ovirtlago/test_scenarios
+
+install -d "$RPM_BUILD_ROOT"/usr/share/ovirtlago/examples
+install \
+    contrib/ovirt/examples/rhel7_with_master.sh \
+    "$RPM_BUILD_ROOT"/usr/share/ovirtlago/examples
+
+install -d "$RPM_BUILD_ROOT"/usr/libexec/ovirtlago
+install \
+    contrib/ovirt/libexec/build_engine_rpms.sh \
+    contrib/ovirt/libexec/build_vdsm_rpms.sh \
+    contrib/ovirt/libexec/build_vdsm-jsonrpc-java_rpms.sh \
+    contrib/ovirt/libexec/build_ioprocess_rpms.sh \
+    "$RPM_BUILD_ROOT"/usr/libexec/ovirtlago
+
+install -d "$RPM_BUILD_ROOT"/etc/lago.d/
+install \
+    etc/lago.d/lago.conf \
+    contrib/ovirt/etc/lago.d/ovirt.conf \
+    "$RPM_BUILD_ROOT"/etc/lago.d/
+
+install -d "$RPM_BUILD_ROOT"/etc/mock
+install \
+    contrib/ovirt/mock/epel-6-x86_64_ovirt.cfg \
+    contrib/ovirt/mock/epel-7-x86_64_ovirt.cfg \
+    "$RPM_BUILD_ROOT"/etc/mock
+
+install -d "$RPM_BUILD_ROOT"/etc/firewalld/services
+install \
+    contrib/ovirt/firewalld/services/lago.xml \
+    "$RPM_BUILD_ROOT"/etc/firewalld/services
+
+install -d "$RPM_BUILD_ROOT"/etc/polkit-1/localauthority/50-local.d
+install \
+    polkit/lago.pkla \
+    "$RPM_BUILD_ROOT"/etc/polkit-1/localauthority/50-local.d
+
+install -d "$RPM_BUILD_ROOT"/etc/sudoers.d
+install \
+    sudo/lago \
+    "$RPM_BUILD_ROOT"/etc/sudoers.d
+
+install -d "$RPM_BUILD_ROOT"/var/lib/lago/subnets
+install -d "$RPM_BUILD_ROOT"/var/lib/lago/store
+install -d "$RPM_BUILD_ROOT"/var/lib/lago/repos
+install -d "$RPM_BUILD_ROOT"/var/lib/lago/reposync
 
 %files
 %doc AUTHORS COPYING README.md
@@ -49,6 +147,7 @@ Requires:	python-libguestfs
 Requires:	python-lxml
 Requires:	python-lockfile
 Requires:	python-paramiko
+Requires:	python-setuptools
 Requires:	qemu-img >= 2.1.2
 Requires:	qemu-kvm >= 2.1.2
 Requires:	git

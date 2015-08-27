@@ -3,7 +3,8 @@ VERSION=$(shell echo $(_DESCRIBE) | sed 's/-.*//')
 RELEASE=$(shell echo $(_DESCRIBE) | sed 's/^[^-]*-//' | tr '-' '_')
 NAME=lago
 FULL_NAME=${NAME}-${VERSION}
-TAR_FILE=${FULL_NAME}.tar.gz
+TAR_FILE=${FULL_NAME}.tar
+TARBALL_FILE=${TAR_FILE}.gz
 SPECFILE=lago.spec
 
 OUTPUT_DIR=${PWD}
@@ -16,8 +17,9 @@ REPO_SSH_REMOTE_REL_PATH="public_html/lago"
 REPO_LOCAL_REL_PATH="repo"
 
 TAR_DIST_LOCATION=${DIST_DIR}/${TAR_FILE}
+TARBALL_DIST_LOCATION=${DIST_DIR}/${TARBALL_FILE}
 
-.PHONY: build rpm srpm ${TAR_DIST_LOCATION} check-local dist check repo upload upload-unstable ${SPECFILE}
+.PHONY: build rpm srpm ${TARBALL_DIST_LOCATION} check-local dist check repo upload upload-unstable ${SPECFILE}
 
 ${SPECFILE}: ${SPECFILE}.in
 	sed \
@@ -43,26 +45,35 @@ check-local:
 	@echo "-------------------------------------------------------------"
 	@echo "-------------------------------------------------------------"
 
-dist: ${TAR_DIST_LOCATION}
+dist: ${TARBALL_DIST_LOCATION}
 
-${TAR_DIST_LOCATION}:
+${TARBALL_DIST_LOCATION}:
 	LAGO_VERSION=${VERSION} python setup.py sdist --dist-dir ${DIST_DIR}
+	gunzip ${TARBALL_DIST_LOCATION}
+	tar rvf ${TAR_DIST_LOCATION} \
+		bin \
+		contrib \
+		etc \
+		scripts \
+		sudo \
+		polkit
+	gzip ${TAR_DIST_LOCATION}
 
-srpm: ${SPECFILE} ${TAR_DIST_LOCATION} dist
+srpm: ${SPECFILE} dist
 	rpmbuild 					\
 		--define "_topdir ${RPM_DIR}" 	\
 		--define "_sourcedir ${DIST_DIR}" 	\
 		-bs 					\
 		${SPECFILE}
 
-rpm: ${SPECFILE} ${TAR_DIST_LOCATION} dist
+rpm: ${SPECFILE} dist
 	rpmbuild 					\
 		--define "_topdir ${RPM_DIR}" 	\
 		--define "_sourcedir ${DIST_DIR}" 	\
 		-ba 					\
 		${SPECFILE}
 
-repo: dist rpm
+repo: rpm
 	rm -rf "${REPO_LOCAL_REL_PATH}/"
 	mkdir "${REPO_LOCAL_REL_PATH}"
 	find ${RPM_DIR} -name '*$(VERSION)-$(RELEASE)*.rpm' -exec cp '{}' "${REPO_LOCAL_REL_PATH}/" \;
