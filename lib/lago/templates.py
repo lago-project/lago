@@ -95,9 +95,9 @@ class TemplateRepository:
         }
 
     @classmethod
-    def from_file(clazz, path):
+    def from_file(cls, path):
         with open(path) as f:
-            return clazz(json.load(f))
+            return cls(json.load(f))
 
     def _get_provider(self, spec):
         provider_class = _PROVIDERS[spec['type']]

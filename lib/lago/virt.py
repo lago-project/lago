@@ -165,7 +165,7 @@ class VirtEnv(object):
         return self._vms[name]
 
     @classmethod
-    def from_prefix(clazz, prefix):
+    def from_prefix(cls, prefix):
         virt_path = lambda name: \
             os.path.join(prefix.paths.prefix(), 'virt', name)
         with open(virt_path('env'), 'r') as f:
@@ -181,7 +181,7 @@ class VirtEnv(object):
             with open(virt_path('vm-%s' % name), 'r') as f:
                 vm_specs[name] = json.load(f)
 
-        return clazz(prefix, vm_specs, net_specs)
+        return cls(prefix, vm_specs, net_specs)
 
     def save(self):
         for net in self._nets.values():
@@ -503,7 +503,7 @@ class VM(object):
         return self._env
 
     @classmethod
-    def _normalize_spec(clazz, spec):
+    def _normalize_spec(cls, spec):
         spec['snapshots'] = spec.get('snapshots', {})
         spec['metadata'] = spec.get('metadata', {})
 
