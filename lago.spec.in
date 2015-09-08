@@ -131,17 +131,6 @@ if [[ "$1" -eq 0 ]]; then
 	groupdel lago
 fi
 
-%package -n %{name}-ovirt
-Summary:	oVirt extension for lagocli
-BuildArch:	noarch
-BuildRequires:	python2-devel
-Requires:	%{name} = %{version}
-Requires:	python-%{name}-ovirt = %{version}
-
-%files -n %{name}-ovirt
-
-%description -n %{name}-ovirt
-
 %package -n python-%{name}-ovirt
 Summary:	Library for ovirt specific facitilies
 BuildArch:	noarch
@@ -156,7 +145,6 @@ Requires:	createrepo
 Requires:	yum-utils
 Requires:	rpm-build
 Requires:	xz
-
 
 %description -n python-%{name}-ovirt
 
