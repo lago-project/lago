@@ -38,10 +38,10 @@ name_index = 0
 
 
 def domain_name(image_path):
+    global name_index
     try:
         return 'update%02d-%s' % (name_index, os.path.basename(image_path))
     finally:
-        global name_index
         name_index += 1
 
 updating = lambda x: '%s.updating' % x
