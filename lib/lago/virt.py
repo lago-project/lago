@@ -907,7 +907,7 @@ class VM(object):
                 sysprep.config_net_interface_dhcp(
                     'eth%d' % i,
                     _ip_to_mac(nic['ip']),
-                ) for i, nic in enumerate(self._spec['nics'])
+                ) for i, nic in enumerate(self._spec['nics']) if 'ip' in nic
             ],
         )
         logging.debug('Bootstrapping %s end', self.name())
