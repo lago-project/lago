@@ -8,8 +8,10 @@ Hello, this describes how to get started with oVirt testing framework.
 In order to install the framework, you'll need to build RPMs or acquire them
 from a repository.
 
-Here is a repo file you can use to acquire up-to-date RPMs:
-https://dimak.fedorapeople.org/lago.repo
+Latest lago RPMs are built by jenkin job and you can find them here:
+http://jenkins.ovirt.org/job/lago_master_build-artifacts-[DIST]-x86_64
+
+Where [DIST] is either el7, fc21 or fc22
 
 Once you have them, install the following packages:
 ```
@@ -97,16 +99,19 @@ Make sure running `id` returns all the aforementioned groups.
 
 Create a directory where you'll be working, make sure qemu user can access it.
 
-Clone the repository continaing template info:
+Copy the json which contains the templates info:
 
 ```
-git clone https://github.com/dimakuz/lago-template-repo-office.git lago-template-repositories
+https://github.com/oVirt/ovirt-testing-framework-tests/blob/master/common/template-repos/office.json
 
 OR
 
-git clone https://github.com/dimakuz/lago-template-repo-ci.git lago-template-repositories
+https://github.com/oVirt/ovirt-testing-framework-tests/blob/master/common/template-repos/ci.json
 ```
 
+The example script will search for those jsons under lago-template-repositories
+directory, if you won't modify it you should have those json files over there
+while running the example script below.
 
 ## Running the testing framework
 
