@@ -87,7 +87,6 @@ install -d "$RPM_BUILD_ROOT"/var/lib/lago/reposync
 %files
 %doc AUTHORS COPYING README.md
 %{_bindir}/lagocli
-%{_bindir}/lagocli-template-repo
 %{_datadir}/%{name}/*
 %attr(0775, root, root) %{_sysconfdir}/sudoers.d/*
 
@@ -104,6 +103,7 @@ Requires:	python-lxml
 Requires:	python-lockfile
 Requires:	python-paramiko
 Requires:	python-setuptools
+Requires:	python-stevedore
 Requires:	qemu-img >= 2.1.2
 Requires:	qemu-kvm >= 2.1.2
 Requires:	git
@@ -112,6 +112,8 @@ Requires:	git
 
 %files -n python-%{name}
 %{python2_sitelib}/%{name}/*.py*
+%{python2_sitelib}/%{name}/plugins/*.py*
+%{python2_sitelib}/%{name}_template_repo/*.py*
 %{python2_sitelib}/%{name}/*.xml
 %{python2_sitelib}/%{name}-%{version}-py*.egg-info
 %{_sysconfdir}/polkit-1/localauthority/50-local.d/
@@ -139,7 +141,6 @@ Requires:	%{name} = %{version}
 Requires:	python-%{name}-ovirt = %{version}
 
 %files -n %{name}-ovirt
-%{_bindir}/lagocli-ovirt
 
 %description -n %{name}-ovirt
 

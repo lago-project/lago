@@ -22,9 +22,10 @@ Contents
 -------------
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
    lago
+   lago_template_repo
    ovirtlago
 
 

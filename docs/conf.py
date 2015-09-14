@@ -35,6 +35,14 @@ subprocess.call([
     '-o', os.path.dirname(__file__),
     '../contrib/ovirt/lib/ovirtlago'
 ])
+subprocess.call([
+    'sphinx-apidoc',
+    '--module-first',
+    '--no-toc',
+    '-f',
+    '-o', os.path.dirname(__file__),
+    '../lib/lago_template_repo'
+])
 
 # Mock all the modules that are included by lago, so autoimport works as
 # expected with no need to download them (some are not in pip even)
@@ -54,6 +62,7 @@ autodoc_mock_imports = [
     'rpmUtils',
     'rpmUtils.arch',
     'rpmUtils.miscutils',
+    'stevedore',
 ]
 
 autodoc_default_flags = [

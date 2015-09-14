@@ -30,8 +30,11 @@ import shutil
 import stat
 import sys
 
+from stevedore.extension import ExtensionManager
+
 import lago
 import lago.config
+import lago.plugins
 import lago.templates
 from lago import log_utils
 
@@ -465,41 +468,14 @@ def unprefixed(name):
     return name
 
 
-def discovered_verbs():
-    verbs = {}
-    for path in os.environ.get('PATH', '').split(':'):
-        if not os.path.isdir(path):
-            continue
-        verbs.update({
-            unprefixed(name): (
-                {
-                    'help': (
-                        "Invoke 'lagocli %s --help' "
-                        "to see more" % unprefixed(name)
-                    ),
-                    'add_help': False,
-                    'prefix_chars': '\x00',
-                },
-                (
-                    ('args', {'nargs': '*'}),
-                ),
-                functools.partial(
-                    call_discovered_verb,
-                    os.path.join(path, name),
-                    unprefixed(name),
-                ),
-            ) for name in os.listdir(path)
-            if (
-                name.startswith(CLI_PREFIX)
-                and
-                is_exec_file(os.path.join(path, name))
-            )
-        })
-    return verbs
+def load_verbs():
+    mgr = ExtensionManager(
+        namespace='lago.verbs',
+    )
+    return dict((ext.name, ext.plugin()) for ext in mgr)
 
 
-def create_parser():
-    ARGUMENTS.update(discovered_verbs())
+def create_parser(cli_plugins):
     parser = argparse.ArgumentParser(
         description='Command line interface to oVirt testing framework.'
     )
@@ -512,15 +488,22 @@ def create_parser():
         '--logdepth', default=3, type=int,
         help='How many task levels to show, by default %(default)s'
     )
-
-    verbs = parser.add_subparsers(dest='verb', metavar='VERB')
+    verbs_parser = parser.add_subparsers(dest='verb', metavar='VERB')
     for verb, (kwargs, verb_arguments, _) in ARGUMENTS.items():
-        verb_parser = verbs.add_parser(
+        verb_parser = verbs_parser.add_parser(
             verb,
             **kwargs
         )
         for arg_name, arg_kw in verb_arguments:
             verb_parser.add_argument(arg_name, **arg_kw)
+
+    for cli_plugin_name, cli_plugin in cli_plugins.items():
+        plugin_parser = verbs_parser.add_parser(
+            cli_plugin_name,
+            help=cli_plugin.help,
+        )
+        cli_plugin.populate_parser(plugin_parser)
+
     return parser
 
 
@@ -530,7 +513,10 @@ def check_group_membership():
 
 
 def main():
-    parser = create_parser()
+    cli_plugins = lago.plugins.load_plugins(
+        lago.plugins.PLUGIN_ENTRY_POINTS['cli']
+    )
+    parser = create_parser(cli_plugins)
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.DEBUG),
@@ -548,8 +534,12 @@ def main():
     check_group_membership()
 
     try:
-        _, _, func = ARGUMENTS[args.verb]
-        func(args)
+        if args.verb in ARGUMENTS:
+            _, _, func = ARGUMENTS[args.verb]
+            func(args)
+        else:
+            cli_plugins[args.verb].do_run(**vars(args))
+
     except Exception:
         LOGGER.exception('Error occured, aborting')
         sys.exit(1)

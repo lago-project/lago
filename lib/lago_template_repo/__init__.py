@@ -18,31 +18,34 @@
 #
 # Refer to the README and COPYING files for full details of the license
 #
-import argparse
 import collections
 import logging
 import os
 import sys
 
-import lago
+from lago import (
+    config,
+    utils
+)
+from lago.plugins.cli import CLIPlugin
 
 
 def do_add(args):
-    ret, _, _ = lago.utils.run_command(
+    ret, _, _ = utils.run_command(
         [
             'git',
             'clone',
             args.url,
         ],
-        cwd=lago.config.get('template_repos'),
+        cwd=config.get('template_repos'),
     )
     if ret:
         raise RuntimeError('Failed to clone the repository')
 
 
 def do_update(args):
-    repos_dir = lago.config.get('template_repos')
-    ret, out, _ = lago.utils.run_command(
+    repos_dir = config.get('template_repos')
+    ret, out, _ = utils.run_command(
         [
             'find',
             repos_dir,
@@ -60,7 +63,7 @@ def do_update(args):
             ['git', 'reset', '--hard'],
             ['git', 'checkout', 'origin/master'],
         ]:
-            ret, _, _ = lago.utils.run_command(command, cwd=repo_path)
+            ret, _, _ = utils.run_command(command, cwd=repo_path)
             if ret:
                 raise RuntimeError('Error running: %s' % (' '.join(command)))
 
@@ -91,29 +94,21 @@ ARGUMENTS[Verbs.UPDATE] = (
 )
 
 
-def create_parser():
-    parser = argparse.ArgumentParser(
-        os.environ.get('LAGO_PROG_NAME', sys.argv[0]),
-        description='Utility for system testing template management'
-    )
-    verbs = parser.add_subparsers(dest='verb', metavar='VERB')
-    for verb, (desc, args, _) in ARGUMENTS.items():
-        verb_parser = verbs.add_parser(verb, help=desc)
-        for arg_name, arg_kw in args:
-            verb_parser.add_argument(arg_name, **arg_kw)
-    return parser
+class TemplateRepoCLI(CLIPlugin):
+    help = 'Utility for system testing template management'
 
+    def populate_parser(self, parser):
+        verbs = parser.add_subparsers(dest='verb', metavar='VERB')
+        for verb, (desc, args, _) in ARGUMENTS.items():
+            verb_parser = verbs.add_parser(verb, help=desc)
+            for arg_name, arg_kw in args:
+                verb_parser.add_argument(arg_name, **arg_kw)
+        return parser
 
-def main():
-    parser = create_parser()
-    args = parser.parse_args()
-
-    try:
-        _, _, func = ARGUMENTS[args.verb]
-        func(args)
-    except Exception:
-        logging.exception('Error occured, aborting')
-        sys.exit(1)
-
-if __name__ == '__main__':
-    main()
+    def do_run(self, args):
+        try:
+            _, _, func = ARGUMENTS[args.verb]
+            func(args)
+        except Exception:
+            logging.exception('Error occured, aborting')
+            sys.exit(1)

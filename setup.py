@@ -13,9 +13,15 @@ setup(
     url='redhat.com',
     package_dir={
         'lago': 'lib/lago',
+        'lago_template_repo': 'lib/lago_template_repo',
         'ovirtlago': 'contrib/ovirt/lib/ovirtlago'
     },
-    packages=['lago', 'ovirtlago'],
+    packages=[
+        'lago',
+        'lago.plugins',
+        'lago_template_repo',
+        'ovirtlago',
+    ],
     package_data={
         'lago': [
             '*.xml',
@@ -25,7 +31,11 @@ setup(
     provides=['lago', 'ovirtlago'],
     scripts=[
         'lago/lagocli',
-        'lago/lagocli-template-repo',
-        'contrib/ovirt/ovirtlago/lagocli-ovirt',
     ],
+    entry_points={
+        'lago.plugins.cli': [
+            'ovirt=ovirtlago.cmd:OvirtCLI',
+            'template-repo=lago_template_repo:TemplateRepoCLI',
+        ],
+    },
 )

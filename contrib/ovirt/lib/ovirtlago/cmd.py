@@ -18,7 +18,6 @@
 #
 # Refer to the README and COPYING files for full details of the license
 #
-import argparse
 import collections
 import functools
 import logging
@@ -27,7 +26,7 @@ import sys
 
 import lago
 import ovirtlago
-from lago import log_utils
+from lago.plugins.cli import CLIPlugin
 
 
 LOGGER = logging.getLogger('ovirt-cli')
@@ -332,51 +331,21 @@ ARGUMENTS[Verbs.OVIRT_SERVE] = (
 )
 
 
-def create_parser():
-    parser = argparse.ArgumentParser(
-        os.environ.get('LAGO_PROG_NAME', sys.argv[0]),
-        description='Command line interface to oVirt testing framework.'
-    )
-    parser.add_argument(
-        '-l', '--loglevel', default='info',
-        choices=['info', 'debug', 'error', 'warning'],
-        help='Log level to use, by default %(default)s'
-    )
-    parser.add_argument(
-        '--logdepth', default=2, type=int,
-        help='How many task levels to show, by default %(default)s'
-    )
+class OvirtCLI(CLIPlugin):
+    help = 'oVirt related actions'
 
-    verbs = parser.add_subparsers(dest='verb', metavar='VERB')
-    for verb, (desc, args, _) in ARGUMENTS.items():
-        verb_parser = verbs.add_parser(verb, help=desc)
-        for arg_name, arg_kw in args:
-            verb_parser.add_argument(arg_name, **arg_kw)
-    return parser
+    def populate_parser(self, parser):
+        verbs = parser.add_subparsers(dest='verb', metavar='VERB')
+        for verb, (desc, args, _) in ARGUMENTS.items():
+            verb_parser = verbs.add_parser(verb, help=desc)
+            for arg_name, arg_kw in args:
+                verb_parser.add_argument(arg_name, **arg_kw)
+        return parser
 
-
-def main():
-    parser = create_parser()
-    args = parser.parse_args()
-
-    logging.basicConfig(level=logging.DEBUG),
-    logging.root.handlers = [
-        log_utils.TaskHandler(
-            task_tree_depth=args.logdepth,
-            level=getattr(logging, args.loglevel.upper()),
-            dump_level=logging.ERROR,
-            formatter=log_utils.ColorFormatter(
-                fmt='%(msg)s',
-            )
-        )
-    ]
-
-    try:
-        _, _, func = ARGUMENTS[args.verb]
-        func(args)
-    except Exception:
-        LOGGER.exception('Error occured, aborting')
-        sys.exit(1)
-
-if __name__ == '__main__':
-    main()
+    def do_run(self, args):
+        try:
+            _, _, func = ARGUMENTS[args.verb]
+            func(args)
+        except Exception:
+            logging.exception('Error occured, aborting')
+            sys.exit(1)
