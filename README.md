@@ -20,15 +20,15 @@ yum install lago-ovirt lago-ovirt-extras
 
 This will install all the needed packages.
 
-Note: on Fedora 20, you might need to enable `fedora-virt-preview` repository 
+Note: on Fedora 20, you might need to enable `fedora-virt-preview` repository
 to satisfy libvirt version requirement.
 
 ## Machine set-up
 
 ### Virtualization and nested virtualization support
 
-1. Make sure that virtualization extension is enabled on the CPU, otherwise, 
-you might need to enable it in the BIOS. Generally, if virtualization extension 
+1. Make sure that virtualization extension is enabled on the CPU, otherwise,
+you might need to enable it in the BIOS. Generally, if virtualization extension
 is disabled, `dmesg` log would contain a line similar to:
 
  ```
@@ -41,7 +41,7 @@ kvm: disabled by BIOS
 cat /sys/module/kvm_intel/parameters/nested
 ```
 
- This command should print `Y` if nested virtualization is enabled, otherwise, 
+ This command should print `Y` if nested virtualization is enabled, otherwise,
 enable it the following way:
 
  1. Edit `/etc/modprobe.d/kvm-intel.conf` and add the following line:
@@ -61,7 +61,7 @@ systemctl start libvirtd
 ```
 
 ### SELinux
-At the moment, this framework might encounter problems running while SELinux 
+At the moment, this framework might encounter problems running while SELinux
 policy is enforced.
 
 To disable SELinux on the running system, run ```setenforce 0```
@@ -102,11 +102,11 @@ Create a directory where you'll be working, make sure qemu user can access it.
 Copy the json which contains the templates info:
 
 ```
-https://github.com/oVirt/ovirt-testing-framework-tests/blob/master/common/template-repos/office.json
+https://raw.githubusercontent.com/oVirt/ovirt-testing-framework-tests/master/common/template-repos/office.json
 
 OR
 
-https://github.com/oVirt/ovirt-testing-framework-tests/blob/master/common/template-repos/ci.json
+https://raw.githubusercontent.com/oVirt/ovirt-testing-framework-tests/master/common/template-repos/ci.json
 ```
 
 The example script will search for those jsons under lago-template-repositories
@@ -128,7 +128,7 @@ Once it is done, the framework will contain the latest 3.5 engine with all the
 hosts and storage added, the environment itsel will be deployed in
 test-deployment directory.
 
-To access it, log in to the web-ui at 
+To access it, log in to the web-ui at
 * URL: `https://192.168.200.2/`
 * Username: `admin@internal`
 * Password: `123`
@@ -160,7 +160,7 @@ lagocli cleanup
 
 ## The example script
 
-The following example creates an environment at `$PWD/test-deployment`, with 
+The following example creates an environment at `$PWD/test-deployment`, with
 the following virtual machines:
 * `storage-iscsi`
   * Fedora 20 with an iSCSI target and 10 exposed LUNs
@@ -225,7 +225,7 @@ types of sources:
   * vdsm-jsonrpc-java
 
   All the builds are launched inside mock so mock permissions are required if
-  anything is to be built from source. That way host distro does not have to 
+  anything is to be built from source. That way host distro does not have to
   match the distro of the VMs.
   RPMs build from source take precedence over ones synced from external repos.
 
