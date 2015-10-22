@@ -1,6 +1,12 @@
 [main]
 reposdir=/etc/reposync.repos.d
 
+[ovirt-kvm-dependencies-el7]
+name=kvm dependencies
+baseurl=http://cbs.centos.org/repos/virt7-kvm-common-candidate/x86_64/os/
+enabled=1
+gpgcheck=0
+
 [ovirt-master-snapshot-el6]
 name=oVirt Master Nightly Test Releases
 baseurl=http://ovirt-mirror.eng.lab.tlv.redhat.com/pub/ovirt-master-snapshot/rpm/el6/
