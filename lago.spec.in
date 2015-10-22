@@ -10,8 +10,8 @@ BuildArch:	noarch
 
 Group:		System Environment/Libraries
 License:	GPLv2+
-URL:		redhat.com
-Source0:	https://dimak.fedorapeople.org/lago/%{name}-%{version}.tar.gz
+URL:		https://github.com/oVirt/lago
+Source0:	https://resources.ovirt.org/pub/src/%{name}/%{name}-%{version}.tar.gz
 
 BuildRequires:	python2-devel
 BuildRequires:	python-flake8
@@ -20,6 +20,8 @@ BuildRequires:	git
 Requires:	python-%{name} = %{version}
 
 %description
+LAGO System testing framework.
+Deploy and tear down environments of several virtual machines
 
 %prep
 %setup -q -n %{name}-%{version}
@@ -237,3 +239,8 @@ Requires:	%{name}-ovirt = %{version}
 
 
 %changelog
+* Thu Oct 22 2015 Sandro Bonazzola <sbonazzo@redhat.com> - 0.2
+- Fix lago.src: E: no-description-tag
+- Fix lago.src: E: no-changelogname-tag
+- Fix lago.src: W: invalid-url URL redhat.com
+- Fix lago.src: W: invalid-url Source0: https://dimak.fedorapeople.org/lago/lago-0.2.tar.gz HTTP Error 404: Not Found
