@@ -147,13 +147,14 @@ def do_shell(prefix, args):
     host.wait_for_ssh()
 
     if len(args.args) == 0:
-        host.interactive_ssh(['bash'])
+        result = host.interactive_ssh(['bash'])
     elif len(args.args) == 1:
         host.ssh_script(args.args[0])
     elif (len(args.args) > 1 and args.args[0] == '-c'):
-        host.interactive_ssh(args.args[1:])
+        result = host.interactive_ssh(args.args[1:])
     else:
         raise RuntimeError('Invalid arguments passed')
+    sys.exit(result.code)
 
 
 @in_prefix

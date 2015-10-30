@@ -136,11 +136,13 @@ class EngineVM(TestVM):
         if config:
             self.copy_to(config, 'engine-answer-file')
 
-        self.interactive_ssh(
+        result = self.interactive_ssh(
             [
                 'engine-setup',
             ] + (config and ['--config-append=engine-answer-file'] or []),
         )
+        if result.code != 0:
+            raise RuntimeError('Failed to setup the engine')
 
 
 class HostVM(TestVM):

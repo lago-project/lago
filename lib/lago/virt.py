@@ -581,11 +581,10 @@ class VM(object):
         if data is not None:
             channel.send(data)
         channel.shutdown_write()
-        out, err = utils.drain_ssh_channel(
+        rc, out, err = utils.drain_ssh_channel(
             channel,
             **(show_output and {} or {'stdout': None, 'stderr': None})
         )
-        rc = channel.exit_status
 
         channel.close()
         transport.close()
@@ -965,7 +964,7 @@ class VM(object):
         transport = client.get_transport()
         channel = transport.open_session()
         try:
-            utils.interactive_ssh_channel(channel, ' '.join(command))
+            return utils.interactive_ssh_channel(channel, ' '.join(command))
         finally:
             channel.close()
             transport.close()

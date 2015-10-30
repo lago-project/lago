@@ -309,7 +309,7 @@ def drain_ssh_channel(chan, stdin=None, stdout=sys.stdout, stderr=sys.stderr):
         if chan.closed and not out_queue and not err_queue:
             done = True
 
-    return (''.join(out_all), ''.join(err_all))
+    return (chan.exit_status, ''.join(out_all), ''.join(err_all))
 
 
 def interactive_ssh_channel(chan, command=None, stdin=sys.stdin):
@@ -329,7 +329,7 @@ def interactive_ssh_channel(chan, command=None, stdin=sys.stdin):
         if stdin_is_tty:
             tty.setraw(stdin.fileno())
             tty.setcbreak(stdin.fileno())
-        return drain_ssh_channel(chan, stdin)
+        return CommandStatus(*drain_ssh_channel(chan, stdin))
     finally:
         if stdin_is_tty:
             termios.tcsetattr(stdin, termios.TCSADRAIN, oldtty)
