@@ -1,0 +1,81 @@
+[main]
+reposdir=/etc/reposync.repos.d
+
+[ovirt-3.5-el6]
+name=oVirt 3.5
+baseurl=http://resources.ovirt.org/pub/ovirt-3.5/rpm/el6/
+exclude=ovirt-node-iso *-debuginfo
+enabled=1
+gpgcheck=0
+
+[ovirt-3.5-el7]
+name=oVirt 3.5
+baseurl=http://resources.ovirt.org/pub/ovirt-3.5/rpm/el7/
+exclude=ovirt-node-iso *-debuginfo
+enabled=1
+gpgcheck=0
+
+[ovirt-3.5-fc20]
+name=oVirt 3.5
+baseurl=http://resources.ovirt.org/pub/ovirt-3.5/rpm/fc20/
+exclude=ovirt-node-iso *-debuginfo
+enabled=1
+gpgcheck=0
+
+[ovirt-3.5-fc21]
+name=oVirt 3.5
+baseurl=http://resources.ovirt.org/pub/ovirt-3.5/rpm/fc21/
+exclude=ovirt-node-iso *-debuginfo
+enabled=1
+gpgcheck=0
+
+[ovirt-3.5-dependencies-el6]
+name=oVirt dependencies
+baseurl=http://copr-be.cloud.fedoraproject.org/results/patternfly/patternfly1/epel-6-x86_64/
+enabled=1
+gpgcheck=0
+
+[ovirt-3.5-dependencies-el7]
+name=oVirt dependencies
+baseurl=http://copr-be.cloud.fedoraproject.org/results/patternfly/patternfly1/epel-7-x86_64/
+enabled=1
+gpgcheck=0
+
+[ovirt-3.5-dependencies-fc20]
+name=oVirt dependencies
+baseurl=http://copr-be.cloud.fedoraproject.org/results/patternfly/patternfly1/fedora-20-x86_64/
+enabled=1
+gpgcheck=0
+
+[ovirt-3.5-dependencies-fc21]
+name=oVirt dependencies
+baseurl=http://copr-be.cloud.fedoraproject.org/results/patternfly/patternfly1/fedora-21-x86_64/
+enabled=1
+gpgcheck=0
+
+[epel-el6]
+name=EPEL repo
+baseurl=https://dl.fedoraproject.org/pub/epel/6/x86_64/
+enabled=1
+gpgcheck=0
+includepkgs=ioprocess python-ioprocess
+
+[epel-el7]
+name=EPEL repo
+baseurl=https://dl.fedoraproject.org/pub/epel/7/x86_64/
+enabled=1
+gpgcheck=0
+includepkgs=ioprocess python-ioprocess userspace-rcu
+
+[updates-fc21]
+name=Fedora updates repo
+baseurl=http://download.fedoraproject.org/pub/fedora/linux/updates/21/x86_64
+enabled=1
+gpgcheck=0
+includepkgs=ioprocess python-ioprocess
+
+[glusterfs-el7]
+name=GlusterFS repo
+baseurl=http://download.gluster.org/pub/gluster/glusterfs/nightly/glusterfs/epel-7-x86_64/
+enabled=1
+gpgcheck=0

@@ -45,8 +45,9 @@ install \
 
 install -d "$RPM_BUILD_ROOT"/usr/share/ovirtlago/config/repos
 install \
-    contrib/ovirt/config/repos/ovirt-3.5-external.repo \
-    contrib/ovirt/config/repos/ovirt-master-snapshot-external.repo \
+    contrib/ovirt/config/repos/ovirt-3.5-snapshot.repo \
+    contrib/ovirt/config/repos/ovirt-3.5.repo \
+    contrib/ovirt/config/repos/ovirt-master-snapshot-office.repo \
     contrib/ovirt/config/repos/ovirt-master-snapshot.repo \
     "$RPM_BUILD_ROOT"/usr/share/ovirtlago/config/repos
 
