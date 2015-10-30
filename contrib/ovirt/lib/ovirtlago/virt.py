@@ -139,7 +139,7 @@ class EngineVM(TestVM):
         self.interactive_ssh(
             [
                 'engine-setup',
-            ] + (config and ['--config=engine-answer-file'] or []),
+            ] + (config and ['--config-append=engine-answer-file'] or []),
         )
 
 
