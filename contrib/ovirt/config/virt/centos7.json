@@ -8,7 +8,7 @@
             ], 
             "disks": [
                 {
-                    "template_name": "centos7_engine", 
+                    "template_name": "centos6_engine", 
                     "type": "template", 
                     "name": "root", 
                     "dev": "vda", 
