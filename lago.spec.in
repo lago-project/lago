@@ -58,6 +58,12 @@ install \
     contrib/ovirt/config/virt/rhel7.json \
     "$RPM_BUILD_ROOT"/usr/share/ovirtlago/config/virt
 
+install -d "$RPM_BUILD_ROOT"/usr/share/ovirtlago/config/stores
+install \
+    contrib/ovirt/config/stores/ci.json \
+    contrib/ovirt/config/stores/office.json \
+    "$RPM_BUILD_ROOT"/usr/share/ovirtlago/config/stores
+
 install -d "$RPM_BUILD_ROOT"/usr/share/ovirtlago/config/answer-files
 install \
     contrib/ovirt/config/answer-files/el6_master.conf \
