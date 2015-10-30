@@ -170,10 +170,10 @@ Requires:	git
 %{python2_sitelib}/%{name}-%{version}-py*.egg-info
 %{_sysconfdir}/lago.d/lago.conf
 %{_sysconfdir}/polkit-1/localauthority/50-local.d/
-%dir %attr(0775, root, lago) /var/lib/lago/
-%dir %attr(0775, root, lago) /var/lib/lago/subnets/
-%dir %attr(0775, root, lago) /var/lib/lago/store/
-%dir %attr(0775, root, lago) /var/lib/lago/repos/
+%dir %attr(2775, root, lago) /var/lib/lago/
+%dir %attr(2775, root, lago) /var/lib/lago/subnets/
+%dir %attr(2775, root, lago) /var/lib/lago/store/
+%dir %attr(2775, root, lago) /var/lib/lago/repos/
 
 %pre -n python-%{name}
 if [[ "$1" -eq 1 ]]; then
@@ -219,7 +219,7 @@ Requires:	rpm-build
 %{_sysconfdir}/mock/*
 %{_sysconfdir}/firewalld/services/*
 %{_sysconfdir}/lago.d/ovirt.conf
-%dir %attr(0775, root, lago) /var/lib/lago/reposync/
+%dir %attr(2775, root, lago) /var/lib/lago/reposync/
 
 %post -n python-%{name}-ovirt
 if [ "$1" -eq 1 ]; then
