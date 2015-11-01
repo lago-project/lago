@@ -28,7 +28,7 @@ from ovirtlago import testlib
 # DC/Cluster
 DC_NAME = 'test-dc'
 DC_VER_MAJ = 3
-DC_VER_MIN = 6
+DC_VER_MIN = 5
 CLUSTER_NAME = 'test-cluster'
 CLUSTER_CPU_FAMILY = 'Intel Conroe Family'
 
@@ -69,8 +69,8 @@ def add_dc(api):
 def add_cluster(api):
     p = params.Cluster(
         name=CLUSTER_NAME,
-        cpu=params.Cpu(
-            type_=CLUSTER_CPU_FAMILY,
+        cpu=params.CPU(
+            id=CLUSTER_CPU_FAMILY,
         ),
         version=params.Version(
             major=DC_VER_MAJ,
