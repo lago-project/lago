@@ -88,6 +88,7 @@ install -d "$RPM_BUILD_ROOT"/usr/share/ovirtlago/test_scenarios
 install \
     contrib/ovirt/test_scenarios/initialize_engine_el7.py \
     contrib/ovirt/test_scenarios/bootstrap.py \
+    contrib/ovirt/test_scenarios/bootstrap_3_5.py \
     contrib/ovirt/test_scenarios/create_clean_snapshot.py \
     contrib/ovirt/test_scenarios/basic_sanity.py \
     "$RPM_BUILD_ROOT"/usr/share/ovirtlago/test_scenarios
