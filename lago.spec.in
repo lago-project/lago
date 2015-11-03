@@ -95,7 +95,7 @@ install \
 
 install -d "$RPM_BUILD_ROOT"/usr/share/ovirtlago/examples
 install \
-    contrib/ovirt/examples/rhel7_with_master.sh \
+    contrib/ovirt/examples/el6engine_el7hosts_ovirt3.5.sh \
     "$RPM_BUILD_ROOT"/usr/share/ovirtlago/examples
 
 install -d "$RPM_BUILD_ROOT"/usr/libexec/ovirtlago
