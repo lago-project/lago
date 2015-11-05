@@ -10,3 +10,6 @@ libvirt-python
 python-paramiko
 bats
 yum
+# needed for fc23
+# see http://pkgs.fedoraproject.org/cgit/libguestfs.git/tree/libguestfs.spec#n131
+grubby

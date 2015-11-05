@@ -69,6 +69,7 @@ teardown() {
     # and that is not seamlesly reachable from out of the chroot by
     # libvirt/kvm
     export LIBGUESTFS_BACKEND=direct
+    export LIBGUESTFS_DEBUG=1 LIBGUESTFS_TRACE=1
     helpers.run "$LAGOCLI" \
         init \
         --template-repo-path "$repo_conf" \
