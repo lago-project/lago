@@ -121,9 +121,20 @@ might want to create your own.
 
 ## Running the testing framework
 
-Run the example script:
+As an example, we will use the basic suite of the ovirt tests, so we have to
+download them, you can run the following to get a copy of the repository:
 
-`/usr/share/ovirtlago/examples/el6engine_el7hosts_ovirt3.5.sh`
+```shell
+$ git clone git://gerrit.ovirt.org/ovirt-system-tests
+```
+
+Once you have the code, you can run the run_suite.sh script to run any of the
+suites available (right now, only 3.5 and 3.6 basic_suites are fully working):
+
+```
+$ cd ovirt-system-tests
+$ ./run_suite.sh basic_suite_3.5
+```
 
 Remember that you don't need root access to run it, if you have permission
 issues, make sure you followed the guidelines in the section *user setup*
@@ -131,9 +142,9 @@ above
 
 This will take a while, as first time execution downloads a lot of stuff.
 
-Once it is done, the framework will contain a 3.5 engine with all the
-hosts and storage added, the environment itself will be deployed in
-test-deployment directory.
+Once it is done, you will get the results in the directory
+`deployment-basic_suite_3.5`, that will include an initialized prefix with a
+3.5 engine vm with all the hosts and storages added.
 
 To access it, log in to the web-ui at
 
@@ -164,7 +175,7 @@ After creating the tunnel, web-ui will be available at `https://localhost:8443/`
 You can now open a shell to any of the vms, start/stop them all, etc.
 
 ```shell
-$ cd lago-example-prefix
+$ cd deployment-basic_suite_3.5
 $ lagocli shell engine
 [root@engine ~]# exit
 
@@ -194,153 +205,205 @@ $ lagocli start
 
 Once you're done with the environment, run
 
-```
-$ cd test-deployment
+```shell
+$ cd deployment-basic_suite_3.5
 $ lagocli cleanup
 ```
 
-
-## The example script in detail
-
-This section explains step by step the contents of the example script at:
-`/usr/share/ovirtlago/examples/el6engine_el7hosts_ovirt3.5.sh`
-
-The following example creates an environment at `$PWD/lago-test-prefix`, with
-the following virtual machines:
-
-* `storage-iscsi`: Fedora 20 with an iSCSI target and 10 exposed LUNs
-* `storage-nfs`: Fedora 20 with several NFS exports
-* `engine`: CentOS 6 with 3.5 oVirt engine installed.
-* `host[0-3]`: CentOS 7 with 3.5 VDSM deployed and connected to the engine.
+That will stop any running vms and remove the lago metadata in the prefix, it
+will not remove any other files (like disk images) or anything though, so you
+can play with them for further investigation if needed, but once executed, it's
+safe to fully remove the prefix dir if you want to.
 
 
-### Preparation:
+## Step by step now
 
-```shell
-WORKSPACE=$PWD
+As the above script has become a bit complicated, and it's not (yet) part of
+lago itself, this section will do the same as the script, but step by step with
+lago only command to give you a better idea of what you have to do in a ususal
+project.
 
-# location where lago installed the ovirt extras files
-OVIRT_CONTRIB="/usr/share/ovirtlago"
-
-# file defining the environment layout (machines, nets, disks...)
-VIRT_CONFIG="${OVIRT_CONTRIB}/config/virt/centos7.json"
-
-# yum repo file containing all the needed extra repos (aside from base os)
-REPOSYNC_YUM_CONFIG="${OVIRT_CONTRIB}/config/repos/ovirt-3.5.repo"
-
-# file describing the vm images repository
-STORE_CONFIG="${OVIRT_CONTRIB}/config/stores/ci.json"
-
-# file with the responses for the ovirt engine setup process
-ANSWER_FILE="${OVIRT_CONTRIB}/config/answer-files/el6_3.5.conf"
-
-PREFIX="${WORKSPACE}/lago-example-prefix"
-chmod g+x "${WORKSPACE}"
-rm -rf "$PREFIX"
-```
-
-This will set the needed env vars, make sure the group has access (so qemu can
-access the prefix) and remove any leftovers from any previous run.
-
-
-### Step 1: Create the testing environment
+So, let's get back to the root of the ovirt-system-tests repo, and cd into the
+basic_suite_3.5 dir:
 
 ```shell
-lagocli init \
-    "${PREFIX}" \
-    "${VIRT_CONFIG}" \
-    --template-repo-path="$STORE_CONFIG"
-echo '[INIT_OK] Initialized successfully, will need cleanup later'
+cd ovirt-system-tests/basic_suite_3.5
 ```
 
-This step creates a new environment at `$PREFIX` using the `init`
-verb of the lagocli, see `lagocli init --help` for more information on
-the parameters.
-
-After this step, no virtual resources are launched yet, but the environment
-directory now contains all the information required to launch them later on.
-
-First time this command is ran, it might take a while to complete, because
-the templates have to be downloaded (only once) and prepared for the run.
+Let's take a look to what is in there:
 
 ```shell
-cd "${PREFIX}"
+$ tree
+.
+├── control.sh
+├── deploy-scripts
+│   ├── add_local_repo.sh
+│   ├── bz_1195882_libvirt_workaround.sh
+│   ├── setup_container_host.sh
+│   ├── setup_engine.sh
+│   ├── setup_host.sh
+│   ├── setup_storage_iscsi.sh
+│   └── setup_storage_nfs.sh
+├── engine-answer-file.conf
+├── init.json.in
+├── reposync-config.repo
+├── template-repo.json
+└── test-scenarios
+    ├── 001_initialize_engine.py
+    ├── 002_bootstrap.py
+    ├── 003_create_clean_snapshot.py
+    └── 004_basic_sanity.py
 ```
 
-All `lagocli` verbs interacting with an existing environment assume that
-the environment was created at the current working directory.
+We can ignore the `control.sh` script, as it's used by the `run_suite.sh` and
+we don't care about that in this readme.
 
 
-### Step 2: Build RPM repository
+### init.json.in: The heart of lago, virt configurations
+
+This init.json.in file, is where we will describe all the virtual elements of
+our test environment, usually, vms and networks.
+
+In this case, as the file is shared between suites, it's actually a template
+and we will have to change the `@SUITE@` string inside it by the path to the
+current suite:
 
 ```shell
-lagocli ovirt reposetup \
-    --reposync-yum-config="${REPOSYNC_YUM_CONFIG}"
+$ suite_path=$PWD
+$ sed -e "s/@SUITE@/$suite_path/g" init.json.in > init.json
 ```
 
-The `reposetup` verb is responsible for construction of the internal repository.
-The internal repository is served to the VMs during various steps.
+Now we have a full `init.json` file :), but we have to talk about another file
+before being able to create the prefix:
+
+
+### template-repo.json: Sources for templates
+
+This file contains information about the available disk templates and
+repositiories to get them from, we can use it as it is, but if you are in Red
+Hat office, you might want to use the `../common/template-repos/office.json`
+file instead.
+
+
+### Initializing the prefix
+
+Now we have seen all the files needed to initialize our test prefix (aka, the
+directory that will contain our env). To do so we have to run this:
+
+```shell
+$ lagocli init \
+     --template-repo-file=template-repo.json \
+     deployment-basic_suite_3.5 \
+     init.json
+```
+
+This will create the `deployment-basic_suite_3.5` directory and populate it
+with all the disks defined in the `init.json` file, and some other info
+(network info, uuid... not relevant now).
+
+This will take a while the first time, but the next time it will use locally
+cached images and will take only a few seconds!
+
+
+
+### reposync-config.repo: yum repositories to make available to the vms
+
+This file contains a valid yum repos definition, it's the list of all the yum
+repos that will be enabled on the vms to pull from. If you want to use any
+custom repos just add the yum repo entry of your choice there and it will be
+make accessible to the vms.
 
 The internal reposirtory is built from one or several 'sources', there are 2
 types of sources:
 
 * External RPM repositories:
 
-    A yum .repo file can be passed to the verb, and all the included repositories
-    will be downloaded using 'reposync' and added to the internal repo.
+    A yum .repo file can be passed to the verb, and all the included
+    repositories will be downloaded using 'reposync' and added to the internal
+    repo.
 
 * RPMs build from sources:
 
-    At the moment of writing, this utility knows to build 3 projects from source:
+    At the moment of writing, this utility knows to build 3 projects from
+    source:
 
     * ovirt-engine
     * vdsm
     * vdsm-jsonrpc-java
 
-    All the builds are launched inside mock so mock permissions are required if
-    anything is to be built from source. That way host distro does not have to
-    match the distro of the VMs.
-    RPMs build from source take precedence over ones synced from external repos.
+    All the builds are launched inside mock so mock permissions are required
+    if anything is to be built from source. That way host distro does not have
+    to match the distro of the VMs. RPMs build from source take precedence
+    over ones synced from external repos.
 
 
-### Step 3: Bring up the virtual resources
+This is used by the `ovirt reposetup` verb. To prefetch and generate the local
+repo, we have to run it:
 
 ```shell
-lagocli start
+$ lagocli ovirt reposetup --reposync-yum-config="reposync-config.repo"
+```
+
+This might take a while the first time too, as it has to fetch a few rpms from
+a few repos, next time it will also use a chache to speed things up
+considerably.
+
+**NOTE**: From now on, all the `lagocli` command will be run inside the
+prefix, so cd to it:
+
+```shell
+$ cd deployment-basic_suite_3.5
+```
+
+### Bring up the virtual resources
+
+We are ready to start powering up vms!
+
+```shell
+# make sure you are in the prefix
+$ pwd
+    /path/to/ovirt-system-tests/deployment-basic_suite_3.5
+
+$ lagocli start
 ```
 
 This starts all resources (VMs, bridges), at any time, you can use the `stop`
-verb to stop any active resources.
+verb to stop all active resources.
 
 
-### Step 4: Run initial setup scripts
+### Run oVirt initial setup scripts
+
+Once all of our vms and network are up and running, we have to run any setup
+scripts that will configure oVirt in the machines, as we already described in
+the `init.json` what scripts should be executed, the only thing left is to
+trigger it:
 
 ```shell
-lagocli ovirt deploy
+$ lagocli ovirt deploy
 ```
 
+This should be relatively fast, around a minute or two, for everything to get
+installed and configured
 
-### Step 5: Configure the engine
+
+### Running the tests
+
+Okok, so now we have our evironment ready for the tests!! \o/
+
+Lets get it on, remember that they should be executed in order:
 
 ```shell
-lagocli ovirt engine-setup \
-    --config="${ANSWER_FILE}"
-```
-
-
-### Step 6: Deploy hosts, and add storage domains (sanity tests)
-
-```shell
-lagocli ovirt runtest \
-    "${OVIRT_CONTRIB}/test_scenarios/bootstrap_3_5.py" \
+$ lagocli ovirt runtest 001_initialize_engine.py
 ...
-lagocli ovirt runtest \
-    "${OVIRT_CONTRIB}/test_scenarios/create_clean_snapshot.py" \
-&& lagocli ovirt runtest \
-    "${OVIRT_CONTRIB}/test_scenarios/basic_sanity.py"
+$ lagocli ovirt runtest 002_bootstrap.py
+...
+$ lagocli ovirt runtest 003_create_clean_snapshot.py
+...
+$ lagocli ovirt runtest 004_basic_sanity.py
+...
 ```
 
-This test runs a simple test case on the environment:
+This tests run a simple test suite on the environment:
 
 * Create a new DC and cluster
 * Deploy all the hosts
@@ -351,70 +414,80 @@ The tests are written in python and interact with the environment using the
 python SDK.
 
 
-### Step 6: Collect the logs
+### Collect the logs
 
+
+So now we want to collect all the logs from the vms, to troubleshoot and debug
+if needed (or just to see if they show what we expect). To do so, you can just:
 
 ```shell
-lagocli ovirt collect \
-    --output "${PREFIX}/test_logs/post_bootstrap"
-...
-lagocli ovirt collect \
-    --output "${PREFIX}/test_logs/post_basic_sanity"
+$ lagocli ovirt collect \
+    --output "test_logs"
 ```
 
-The `ovirt collect` verb connects to the virtual machines and collects any
-relevant logs from them and stores them into the directories specified. You can
-see all the logs now there:
+We can run that command anytime, you can run it in between the tests also,
+specifying different output directories if you want to see the logs during the
+process or compare later with the logs once the tests finish.
+
+You can see all the logs now in the dir we specified:
 
 ```shell
 $ tree test_logs
 test_logs/
-└── bootstrap.add_cluster-20151029093323
-    ├── engine
-    │   └── _var_log_ovirt-engine
-    │       ├── boot.log
-    │       ├── console.log
-    │       ├── dump
-    │       ├── engine.log
-    │       ├── host-deploy
-    │       ├── notifier
-    │       ├── ovirt-image-uploader
-    │       ├── ovirt-iso-uploader
-    │       ├── server.log
-    │       └── setup
-    │           └── ovirt-engine-setup-20151029122052-7g9q2k.log
-    ├── host0
-    │   └── _var_log_vdsm
-    │       ├── backup
-    │       ├── connectivity.log
-    │       ├── mom.log
-    │       ├── supervdsm.log
-    │       ├── upgrade.log
-    │       └── vdsm.log
-    ├── host1
-    │   └── _var_log_vdsm
-    │       ├── backup
-    │       ├── connectivity.log
-    │       ├── mom.log
-    │       ├── supervdsm.log
-    │       ├── upgrade.log
-    │       └── vdsm.log
-    ├── host2
-    │   └── _var_log_vdsm
-    │       ├── backup
-    │       ├── connectivity.log
-    │       ├── mom.log
-    │       ├── supervdsm.log
-    │       ├── upgrade.log
-    │       └── vdsm.log
-    ├── host3
-    │   └── _var_log_vdsm
-    │       ├── backup
-    │       ├── connectivity.log
-    │       ├── mom.log
-    │       ├── supervdsm.log
-    │       ├── upgrade.log
-    │       └── vdsm.log
-    ├── storage-iscsi
-    └── storage-nfs
+ ├── engine
+ │   └── _var_log_ovirt-engine
+ │       ├── boot.log
+ │       ├── console.log
+ │       ├── dump
+ │       ├── engine.log
+ │       ├── host-deploy
+ │       ├── notifier
+ │       ├── ovirt-image-uploader
+ │       ├── ovirt-iso-uploader
+ │       ├── server.log
+ │       └── setup
+ │           └── ovirt-engine-setup-20151029122052-7g9q2k.log
+ ├── host0
+ │   └── _var_log_vdsm
+ │       ├── backup
+ │       ├── connectivity.log
+ │       ├── mom.log
+ │       ├── supervdsm.log
+ │       ├── upgrade.log
+ │       └── vdsm.log
+ ├── host1
+ │   └── _var_log_vdsm
+ │       ├── backup
+ │       ├── connectivity.log
+ │       ├── mom.log
+ │       ├── supervdsm.log
+ │       ├── upgrade.log
+ │       └── vdsm.log
+ ├── host2
+ │   └── _var_log_vdsm
+ │       ├── backup
+ │       ├── connectivity.log
+ │       ├── mom.log
+ │       ├── supervdsm.log
+ │       ├── upgrade.log
+ │       └── vdsm.log
+ ├── host3
+ │   └── _var_log_vdsm
+ │       ├── backup
+ │       ├── connectivity.log
+ │       ├── mom.log
+ │       ├── supervdsm.log
+ │       ├── upgrade.log
+ │       └── vdsm.log
+ ├── storage-iscsi
+ └── storage-nfs
+```
+
+### Cleaning up
+
+As before, once you have finished playing with the prefix, you will want to
+clean it up (remember to play around!), to do so just:
+
+```shell
+$ lagocli cleanup
 ```
