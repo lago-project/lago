@@ -153,12 +153,12 @@ class RollbackContext(object):
     The first exception will be remembered and re-raised after rollback
 
     Sample usage:
-    with RollbackContext() as rollback:
-        step1()
-        rollback.prependDefer(lambda: undo step1)
-        def undoStep2(arg): pass
-        step2()
-        rollback.prependDefer(undoStep2, arg)
+    > with RollbackContext() as rollback:
+    >     step1()
+    >     rollback.prependDefer(lambda: undo step1)
+    >     def undoStep2(arg): pass
+    >     step2()
+    >     rollback.prependDefer(undoStep2, arg)
 
     More examples see tests/utilsTests.py @ vdsm code
     '''

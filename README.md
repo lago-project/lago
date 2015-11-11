@@ -1,6 +1,6 @@
-# System testing framework: getting started
+# Getting started
 
-Hello, this describes how to get started with oVirt testing framework.
+Hello, this describes how to get started with Lago.
 
 
 ## Installation
@@ -53,7 +53,7 @@ is disabled, `dmesg` log would contain a line similar to:
 
     1. Edit `/etc/modprobe.d/kvm-intel.conf` and add the following line:
 
-        ```
+        ```shell
         options kvm-intel nested=y
         ```
     1.  Reboot, and make sure nested virtualization is enabled.
@@ -93,7 +93,7 @@ user running it should be part of certain groups:
 Add yourself to lago, mock and qemu groups:
 
 
-```
+```shell
 $ usermod -a -G lago USERNAME
 $ usermod -a -G mock USERNAME
 $ usermod -a -G qemu USERNAME
@@ -103,7 +103,7 @@ It is also advised to add qemu user to your group (to be able to store VM files
 in home directory):
 
 
-```
+```shell
 $ usermod -a -G USERNAME qemu
 ```
 
@@ -131,7 +131,7 @@ $ git clone git://gerrit.ovirt.org/ovirt-system-tests
 Once you have the code, you can run the run_suite.sh script to run any of the
 suites available (right now, only 3.5 and 3.6 basic_suites are fully working):
 
-```
+```shell
 $ cd ovirt-system-tests
 $ ./run_suite.sh basic_suite_3.5
 ```

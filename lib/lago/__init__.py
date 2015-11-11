@@ -24,13 +24,10 @@ import os
 import shutil
 import uuid
 
-import config
 import paths
 import subnet_lease
 import utils
 import virt
-
-__all__ = ['config', 'paths', 'utils', 'virt']
 
 
 def _create_ip(subnet, index):

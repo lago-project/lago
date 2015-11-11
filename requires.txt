@@ -1,0 +1,4 @@
+# For the docs
+sphinx>1.0
+recommonmark
+nose

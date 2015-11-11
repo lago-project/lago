@@ -121,7 +121,8 @@ class LogCollectorPlugin(nose.plugins.Plugin):
         nose.plugins.Plugin.__init__(self)
         self._prefix = prefix
 
-    def options(self, parser, env=os.environ):
+    def options(self, parser, env=None):
+        env = env if env is not None else os.environ
         super(LogCollectorPlugin, self).options(parser, env)
 
     def configure(self, options, conf):
