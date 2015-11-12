@@ -38,66 +38,6 @@ install \
     bin/update_images.py \
     "$RPM_BUILD_ROOT"/usr/share/lago
 
-install -d $RPM_BUILD_ROOT/usr/share/lago/setup_scripts
-install \
-    scripts/update_if_needed.sh \
-    "$RPM_BUILD_ROOT"/usr/share/lago/setup_scripts
-
-install -d "$RPM_BUILD_ROOT"/usr/share/ovirtlago/config/repos
-install \
-    contrib/ovirt/config/repos/ovirt-3.5-snapshot.repo \
-    contrib/ovirt/config/repos/ovirt-3.5.repo \
-    contrib/ovirt/config/repos/ovirt-master-snapshot-office.repo \
-    contrib/ovirt/config/repos/ovirt-master-snapshot.repo \
-    "$RPM_BUILD_ROOT"/usr/share/ovirtlago/config/repos
-
-install -d "$RPM_BUILD_ROOT"/usr/share/ovirtlago/config/virt
-install \
-    contrib/ovirt/config/virt/centos6.json \
-    contrib/ovirt/config/virt/centos7.json \
-    contrib/ovirt/config/virt/centos7-container.json \
-    contrib/ovirt/config/virt/rhel7.json \
-    "$RPM_BUILD_ROOT"/usr/share/ovirtlago/config/virt
-
-install -d "$RPM_BUILD_ROOT"/usr/share/ovirtlago/config/stores
-install \
-    contrib/ovirt/config/stores/ci.json \
-    contrib/ovirt/config/stores/office.json \
-    "$RPM_BUILD_ROOT"/usr/share/ovirtlago/config/stores
-
-install -d "$RPM_BUILD_ROOT"/usr/share/ovirtlago/config/answer-files
-install \
-    contrib/ovirt/config/answer-files/el6_master.conf \
-    contrib/ovirt/config/answer-files/el7_master.conf \
-    contrib/ovirt/config/answer-files/el6_3.5.conf \
-    contrib/ovirt/config/answer-files/el7_3.5.conf \
-    "$RPM_BUILD_ROOT"/usr/share/ovirtlago/config/answer-files
-
-install -d "$RPM_BUILD_ROOT"/usr/share/ovirtlago/setup_scripts
-install \
-    contrib/ovirt/setup_scripts/add_local_repo.sh \
-    contrib/ovirt/setup_scripts/setup_engine.sh \
-    contrib/ovirt/setup_scripts/setup_host.sh \
-    contrib/ovirt/setup_scripts/setup_storage_iscsi.sh \
-    contrib/ovirt/setup_scripts/setup_storage_nfs.sh \
-    contrib/ovirt/setup_scripts/bz_1195882_libvirt_workaround.sh \
-    contrib/ovirt/setup_scripts/setup_container_host.sh \
-    "$RPM_BUILD_ROOT"/usr/share/ovirtlago/setup_scripts
-
-install -d "$RPM_BUILD_ROOT"/usr/share/ovirtlago/test_scenarios
-install \
-    contrib/ovirt/test_scenarios/initialize_engine_el7.py \
-    contrib/ovirt/test_scenarios/bootstrap.py \
-    contrib/ovirt/test_scenarios/bootstrap_3_5.py \
-    contrib/ovirt/test_scenarios/create_clean_snapshot.py \
-    contrib/ovirt/test_scenarios/basic_sanity.py \
-    "$RPM_BUILD_ROOT"/usr/share/ovirtlago/test_scenarios
-
-install -d "$RPM_BUILD_ROOT"/usr/share/ovirtlago/examples
-install \
-    contrib/ovirt/examples/el6engine_el7hosts_ovirt3.5.sh \
-    "$RPM_BUILD_ROOT"/usr/share/ovirtlago/examples
-
 install -d "$RPM_BUILD_ROOT"/usr/libexec/ovirtlago
 install \
     contrib/ovirt/libexec/build_engine_rpms.sh \
@@ -106,32 +46,37 @@ install \
     contrib/ovirt/libexec/build_ioprocess_rpms.sh \
     "$RPM_BUILD_ROOT"/usr/libexec/ovirtlago
 
-install -d "$RPM_BUILD_ROOT"/etc/lago.d/
-install \
-    etc/lago.d/lago.conf \
-    contrib/ovirt/etc/lago.d/ovirt.conf \
-    "$RPM_BUILD_ROOT"/etc/lago.d/
-
-install -d "$RPM_BUILD_ROOT"/etc/mock
+install -d "$RPM_BUILD_ROOT"%{_sysconfdir}/mock
 install \
     contrib/ovirt/mock/epel-6-x86_64_ovirt.cfg \
     contrib/ovirt/mock/epel-7-x86_64_ovirt.cfg \
-    "$RPM_BUILD_ROOT"/etc/mock
+    "$RPM_BUILD_ROOT"%{_sysconfdir}/mock
 
-install -d "$RPM_BUILD_ROOT"/etc/firewalld/services
+install -d "$RPM_BUILD_ROOT"%{_sysconfdir}/firewalld/services
 install \
     contrib/ovirt/firewalld/services/lago.xml \
-    "$RPM_BUILD_ROOT"/etc/firewalld/services
+    "$RPM_BUILD_ROOT"%{_sysconfdir}/firewalld/services
 
-install -d "$RPM_BUILD_ROOT"/etc/polkit-1/localauthority/50-local.d
+install -d "$RPM_BUILD_ROOT"%{_sysconfdir}/polkit-1/localauthority/50-local.d
 install \
     polkit/lago.pkla \
-    "$RPM_BUILD_ROOT"/etc/polkit-1/localauthority/50-local.d
+    "$RPM_BUILD_ROOT"%{_sysconfdir}/polkit-1/localauthority/50-local.d
 
-install -d "$RPM_BUILD_ROOT"/etc/sudoers.d
+install -d "$RPM_BUILD_ROOT"%{_sysconfdir}/sudoers.d
 install \
     sudo/lago \
-    "$RPM_BUILD_ROOT"/etc/sudoers.d
+    "$RPM_BUILD_ROOT"%{_sysconfdir}/sudoers.d
+
+install -d "$RPM_BUILD_ROOT"%{_sysconfdir}/lago.d
+install \
+    etc/lago.d/lago.conf \
+    "$RPM_BUILD_ROOT"%{_sysconfdir}/lago.d
+
+install -d "$RPM_BUILD_ROOT"%{_sysconfdir}/sudoers.d
+install \
+    sudo/lago \
+    "$RPM_BUILD_ROOT"%{_sysconfdir}/sudoers.d
+
 
 install -d "$RPM_BUILD_ROOT"/var/lib/lago/subnets
 install -d "$RPM_BUILD_ROOT"/var/lib/lago/store
@@ -169,8 +114,8 @@ Requires:	git
 %{python2_sitelib}/%{name}/*.xml
 %{python2_sitelib}/%{name}/*.log.conf
 %{python2_sitelib}/%{name}-%{version}-py*.egg-info
-%{_sysconfdir}/lago.d/lago.conf
 %{_sysconfdir}/polkit-1/localauthority/50-local.d/
+%config(noreplace) %{_sysconfdir}/lago.d/lago.conf
 %dir %attr(2775, root, lago) /var/lib/lago/
 %dir %attr(2775, root, lago) /var/lib/lago/subnets/
 %dir %attr(2775, root, lago) /var/lib/lago/store/
@@ -219,7 +164,6 @@ Requires:	rpm-build
 %{_libexecdir}/ovirt%{name}/*
 %{_sysconfdir}/mock/*
 %{_sysconfdir}/firewalld/services/*
-%{_sysconfdir}/lago.d/ovirt.conf
 %dir %attr(2775, root, lago) /var/lib/lago/reposync/
 
 %post -n python-%{name}-ovirt
@@ -234,17 +178,6 @@ if [ "$1" -eq 0 ]; then
 	firewall-cmd --permanent --zone=public --remove-service=lago
 	firewall-cmd --reload
 fi
-
-%package -n %{name}-ovirt-extras
-Summary:	Extra files for lago-ovirt package
-BuildArch:	noarch
-Requires:	%{name}-ovirt = %{version}
-
-%description -n %{name}-ovirt-extras
-
-%files -n %{name}-ovirt-extras
-%{_datadir}/ovirt%{name}/*
-
 
 %changelog
 * Thu Oct 22 2015 Sandro Bonazzola <sbonazzo@redhat.com> - 0.2

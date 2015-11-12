@@ -23,7 +23,7 @@ Where `$DIST` is either el7, fc21 or fc22
 Once you have them, install the following packages:
 
 ```shell
-$ yum install python-lago lago python-lago-ovirt lago-ovirt lago-ovirt-extras
+$ yum install python-lago lago python-lago-ovirt lago-ovirt
 ```
 
 This will install all the needed packages.
