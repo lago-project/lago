@@ -110,13 +110,13 @@ def do_cleanup(prefix, args):
 @in_prefix
 @with_logging
 def do_start(prefix, args):
-    prefix.start()
+    prefix.start(vm_names=args.vm_names)
 
 
 @in_prefix
 @with_logging
 def do_stop(prefix, args):
-    prefix.stop()
+    prefix.stop(vm_names=args.vm_names)
 
 
 @in_prefix
@@ -312,14 +312,32 @@ ARGUMENTS[Verbs.START] = (
     {
         'help': 'Deploy testing framework resources',
     },
-    (),
+    (
+        (
+            'vm_names',
+            {
+                'help': 'Name of the vm to start',
+                'metavar': 'VM_NAME',
+                'nargs': '*',
+            }
+        ),
+    ),
     do_start,
 )
 ARGUMENTS[Verbs.STOP] = (
     {
         'help': 'Destroy testing framework resources',
     },
-    (),
+    (
+        (
+            'vm_names',
+            {
+                'help': 'Name of the vm to start',
+                'metavar': 'VM_NAME',
+                'nargs': '*',
+            }
+        ),
+    ),
     do_stop,
 )
 ARGUMENTS[Verbs.SNAPSHOT] = (

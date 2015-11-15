@@ -134,28 +134,59 @@ class VirtEnv(object):
             self._libvirt_con = libvirt.open('qemu:///system')
         return self._libvirt_con
 
-    @log_task('Start prefix')
-    def start(self):
-        with utils.RollbackContext() as rollback:
+    def start(self, vm_names=None):
+        if not vm_names:
+            log_msg = 'Start Prefix'
+            vms = self._vms.values()
+            nets = self._nets.values()
+        else:
+            log_msg = 'Start specified VMs'
+            vms = [self._vms[vm_name] for vm_name in vm_names]
+            nets = set()
+            for vm in vms:
+                nets = nets.union(set(
+                    self._nets[net_name]
+                    for net_name in
+                    vm.nets()
+                ))
+
+        with LogTask(log_msg), utils.RollbackContext() as rollback:
             with LogTask('Start nets'):
-                for net in self._nets.values():
+                for net in nets:
                     net.start()
                     rollback.prependDefer(net.stop)
 
             with LogTask('Start vms'):
-                for vm in self._vms.values():
+                for vm in vms:
                     vm.start()
                     rollback.prependDefer(vm.stop)
                 rollback.clear()
 
-    @log_task('Stop prefix')
-    def stop(self):
-        with LogTask('Stop vms'):
+    def stop(self, vm_names=None):
+        if not vm_names:
+            log_msg = 'Stop prefix'
+            vms = self._vms.values()
+            nets = self._nets.values()
+        else:
+            log_msg = 'Stop specified VMs'
+            vms = [self._vms[vm_name] for vm_name in vm_names]
+            stoppable_nets = set()
+            for vm in vms:
+                stoppable_nets = stoppable_nets.union(vm.nets())
             for vm in self._vms.values():
-                vm.stop()
-        with LogTask('Stop nets'):
-            for net in self._nets.values():
-                net.stop()
+                if not vm.alive() or vm.name() in vm_names:
+                    continue
+                for net in vm.nets():
+                    stoppable_nets.discard(net)
+            nets = [self._nets[net] for net in stoppable_nets]
+
+        with LogTask(log_msg):
+            with LogTask('Stop vms'):
+                for vm in vms:
+                    vm.stop()
+            with LogTask('Stop nets'):
+                for net in nets:
+                    net.stop()
 
     def get_nets(self):
         return self._nets.copy()
@@ -291,7 +322,6 @@ class Network(object):
 
 
 class NATNetwork(Network):
-
     def _libvirt_xml(self):
         with open(_path_to_xml('net_nat_template.xml')) as f:
             net_raw_xml = f.read()
@@ -338,7 +368,6 @@ class NATNetwork(Network):
 
 
 class BridgeNetwork(Network):
-
     def _libvirt_xml(self):
         with open(_path_to_xml('net_br_template.xml')) as f:
             net_raw_xml = f.read()
@@ -1056,6 +1085,9 @@ class VM(object):
 
     def nics(self):
         return self._spec['nics'][:]
+
+    def nets(self):
+        return [nic['net'] for nic in self._spec['nics']]
 
     def _template_metadata(self):
         return self._spec['disks'][0].get('metadata', {})

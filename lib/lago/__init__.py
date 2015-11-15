@@ -371,7 +371,7 @@ class Prefix(object):
                             nic['ip'],
                             dom_name,
                             ' '.join(conflict_list),
-                        )
+                        ),
                     )
 
                 self._add_nic_to_mapping(net, dom_spec, nic)
@@ -728,23 +728,29 @@ class Prefix(object):
             env.bootstrap()
             rollback.clear()
 
-    def start(self):
+    def start(self, vm_names=None):
         """
         Start this prefix
 
+        Args:
+            vm_names(list of str): List of the vms to start
+
         Returns:
             None
         """
-        self.virt_env.start()
+        self.virt_env.start(vm_names=vm_names)
 
-    def stop(self):
+    def stop(self, vm_names=None):
         """
         Stop this prefix
 
+        Args:
+            vm_names(list of str): List of the vms to stop
+
         Returns:
             None
         """
-        self.virt_env.stop()
+        self.virt_env.stop(vm_names=vm_names)
 
     def create_snapshots(self, name):
         """
