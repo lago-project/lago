@@ -11,14 +11,13 @@ from a repository.
 Latest lago RPMs are built by jenkin job and you can find them here:
 http://jenkins.ovirt.org/job/lago_master_build-artifacts-$DIST-x86_64
 
-Where `$DIST` is either el7, fc21 or fc22
+Where `$DIST` is either el7, fc21, fc22 or fc23 (this list might be outdated,
+take a look at the repo te see the supported distros)
 
 
 Or you can use the yum repo (it's updated often right now, and a buit unstable):
 
 http://resources.ovirt.org/repos/lago/rpm/$DIST
-
-Where `$DIST` is either el7, fc21 or fc22
 
 Once you have them, install the following packages:
 
