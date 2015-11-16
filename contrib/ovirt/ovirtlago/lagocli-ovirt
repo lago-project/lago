@@ -29,6 +29,14 @@ import lago
 import ovirtlago
 
 
+# TODO: Remove this, and properly complain on unset config values
+CONF_DEFAULTS = {
+    'reposync_dir': '/var/lib/lago/reposync',
+    'reposync_config': (
+        '/usr/share/ovirtlago/config/repos/'
+        'ovirt-master-snapshot-external.repo'
+    ),
+}
 DISTS = ['el6', 'el7', 'fc20']
 
 
@@ -77,13 +85,16 @@ def do_ovirt_reposetup(prefix, args):
     rpm_repo = (
         args.rpm_repo
         or
-        lago.config.get('reposync_dir')
+        lago.config.get('reposync_dir', CONF_DEFAULTS['reposync_dir'])
     )
 
     reposync_config = (
         args.reposync_yum_config
         or
-        lago.config.get('reposync_config')
+        lago.config.get(
+            'reposync_config',
+            CONF_DEFAULTS['reposync_config'],
+        )
     )
 
     prefix.prepare_repo(
