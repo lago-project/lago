@@ -135,9 +135,17 @@ $ cd ovirt-system-tests
 $ ./run_suite.sh basic_suite_3.5
 ```
 
+**NOTE**: this will download a lot of vm images the first time it runs, check
+the section ["template-repo.json: Sources for templates"][templates-section]
+on how to use local mirrors if available.
+
+  [templates-section]: README.html#if-you-are-using-run-suite-sh
+
 Remember that you don't need root access to run it, if you have permission
-issues, make sure you followed the guidelines in the section *user setup*
-above
+issues, make sure you followed the guidelines in the section
+["user setup"][user-setup-section] above
+
+  [user-setup-section]: README.html#user-setup
 
 This will take a while, as first time execution downloads a lot of stuff,
 like downloading OS templates, where each one takes at least 1G of data.
@@ -285,8 +293,14 @@ before being able to create the prefix:
 
 This file contains information about the available disk templates and
 repositiories to get them from, we can use it as it is, but if you are in Red
-Hat office, you might want to use the `../common/template-repos/office.json`
-file instead.
+Hat office in Israel, you might want to use the redhat internal mirrors there,
+for that use the `common/template-repos/office.json` file instead, see next for
+the full command line.
+
+**NOTE**: You can use any other template repo if you specify your own json file
+there
+
+**TODO**: document the repo store json file format
 
 
 ### Initializing the prefix
@@ -296,7 +310,17 @@ directory that will contain our env). To do so we have to run this:
 
 ```shell
 $ lagocli init \
-     --template-repo-file=template-repo.json \
+     --template-repo-path=template-repo.json \
+     deployment-basic_suite_3.5 \
+     init.json
+```
+
+Remember that if you are in the Red Hat office, you might want to use the repo
+mirror that's hosted there, if so, run this command instead:
+
+```shell
+$ lagocli init \
+     --template-repo-path=common/template-repos/office.json \
      deployment-basic_suite_3.5 \
      init.json
 ```
@@ -309,6 +333,33 @@ This will take a while the first time, but the next time it will use locally
 cached images and will take only a few seconds!
 
 
+#### If you are using run_suite.sh
+
+To use an alternate repository template file when running `run_suite.sh`,
+you'll have to edit it for now, search for the init command invocation and
+modify it there, at the time of writing this, if you want to use the Red Hat
+Israel office mirror, you have to change this:
+
+
+```shell
+38 env_init () {
+39     $CLI init \
+40         $PREFIX \
+41         $SUITE/init.json \
+42         --template-repo-path $SUITE/template-repo.json
+43 }
+```
+
+by:
+
+```shell
+env_init () {
+    $CLI init \
+        $PREFIX \
+        $SUITE/init.json \
+        --template-repo-path common/template-repo/office.json
+}
+```
 
 ### reposync-config.repo: yum repositories to make available to the vms
 
