@@ -18,6 +18,7 @@ BuildRequires:	python-flake8
 BuildRequires:	python-nose
 BuildRequires:	git
 Requires:	python-%{name} = %{version}
+Requires:	sudo
 
 %description
 LAGO System testing framework.
