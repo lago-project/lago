@@ -41,10 +41,6 @@ def do_init(args):
     prefix = lago.Prefix(args.prefix)
     prefix.initialize()
 
-    # FIXME
-    with open(os.path.join(args.prefix, '.lago'), 'w') as f:
-        f.write('')
-
     with open(args.virt_config, 'r') as f:
         virt_conf = json.load(f)
     lago.utils.setup_logging(prefix.paths.logs())

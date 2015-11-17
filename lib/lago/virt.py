@@ -140,6 +140,7 @@ class VirtEnv(object):
             rollback.clear()
 
     def stop(self):
+        logging.info("Stopping prefix")
         for vm in self._vms.values():
             vm.stop()
         for net in self._nets.values():

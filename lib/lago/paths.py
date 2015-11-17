@@ -50,3 +50,7 @@ class Paths(object):
 
     def metadata(self):
         return self._prefixed('metadata')
+
+    def prefix_lagofile(self):
+        "This file represents a prefix that's initialized"
+        return self._prefixed('.lago')

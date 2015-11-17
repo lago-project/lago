@@ -99,15 +99,19 @@ class Prefix(object):
 
             with open(self.paths.uuid(), 'w') as f:
                 f.write(uuid.uuid1().hex)
-            self._create_ssh_keys()
 
+            with open(self.paths.prefix_lagofile(), 'w') as f:
+                f.write('')
+
+            self._create_ssh_keys()
             rollback.clear()
 
     def cleanup(self):
+        logging.info("Cleaning up prefix")
         self.stop()
-
-        # Remove uuid to drop all locks
-        os.unlink(self.paths.uuid())
+        logging.info("Tagging prefix as uninitialized")
+        os.unlink(self.paths.prefix_lagofile())
+        logging.info("Done")
 
     def _init_net_specs(self, conf):
         for net_name, net_spec in conf.get('nets', {}).items():
