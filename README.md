@@ -127,8 +127,17 @@ download them, you can run the following to get a copy of the repository:
 $ git clone git://gerrit.ovirt.org/ovirt-system-tests
 ```
 
-Once you have the code, you can run the run_suite.sh script to run any of the
-suites available (right now, only 3.5 and 3.6 basic_suites are fully working):
+As the tests that we are going to run are for ovirt-engine 3.5, we have to add
+the oVirt 3.5 release repository to our system so it will pull in the sdk
+package, the following works for any centos/fedora distro:
+
+```shell
+$ yum install -y http://resources.ovirt.org/pub/yum-repo/ovirt-release35.rpm
+```
+
+Once you have the code and the repo, you can run the run_suite.sh script to
+run any of the suites available (right now, only 3.5 and 3.6 basic_suites are
+fully working):
 
 ```shell
 $ cd ovirt-system-tests
