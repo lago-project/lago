@@ -139,6 +139,10 @@ might want to create your own.
 
 ## Running the testing framework
 
+
+**This tests require that you have at least 36GB of free space under the
+/var/lib/lago directory and an extra 200MB wherever you are running them**
+
 As an example, we will use the basic suite of the ovirt tests, so we have to
 download them, you can run the following to get a copy of the repository:
 
