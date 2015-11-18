@@ -1,21 +1,22 @@
 Welcome to Lago's documentation!
 ================================
 
-Contents:
-
-.. toctree::
-   :maxdepth: 2
-
-   lago
-   ovirtlago
-
-
 Getting started
 ----------------
 
 Check out the awesome `README`_!
 
  .. _README: README.html
+
+
+Contents
+-------------
+
+.. toctree::
+   :maxdepth: 2
+
+   lago
+   ovirtlago
 
 
 Indices and tables
