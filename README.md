@@ -15,9 +15,31 @@ Where `$DIST` is either el7, fc21, fc22 or fc23 (this list might be outdated,
 take a look at the repo te see the supported distros)
 
 
-Or you can use the yum repo (it's updated often right now, and a buit unstable):
+Or you can use the yum repo (it's updated often right now, and a buit
+unstable), you can add it as a repository creating a file under
+`/etc/yum.repos.d/lago.repo` with the following content:
 
-http://resources.ovirt.org/repos/lago/rpm/$DIST
+For Fedora:
+
+```shell
+[lago]
+baseurl=http://resources.ovirt.org/repos/lago/rpm/fc$releasever
+name=Lago
+enabled=1
+gpgcheck=0
+```
+
+For CentOS:
+
+```shell
+[lago]
+baseurl=http://resources.ovirt.org/repos/lago/rpm/el$releasever
+name=Lago
+enabled=1
+gpgcheck=0
+```
+
+**TODO**: point to the release rpm once it's implemented, and use gpgcheck=1
 
 Once you have them, install the following packages:
 
