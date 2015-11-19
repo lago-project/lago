@@ -139,7 +139,12 @@ Remember that you don't need root access to run it, if you have permission
 issues, make sure you followed the guidelines in the section *user setup*
 above
 
-This will take a while, as first time execution downloads a lot of stuff.
+This will take a while, as first time execution downloads a lot of stuff,
+like downloading OS templates, where each one takes at least 1G of data.
+If you are still worried that its stuck, please refer to the [FAQ]
+to see if the issue you're seeing is documented.
+
+[FAQ]: README.html#faq
 
 Once it is done, you will get the results in the directory
 `deployment-basic_suite_3.5`, that will include an initialized prefix with a
@@ -490,3 +495,19 @@ clean it up (remember to play around!), to do so just:
 ```shell
 $ lagocli cleanup
 ```
+
+
+### FAQ
+1. How do I know if the ``run_suite.sh`` is stuck or still running?
+
+   Sometimes the script is downloading very big files which might
+   Seem to someone as the script is stuck.
+   One hacky way of making sure the script is still working is
+   to check the size and content of the store dir
+
+```shell
+$ ls -la /var/lib/lago/store
+```
+
+   This will show any templates being downloaded and file size
+   changes.
