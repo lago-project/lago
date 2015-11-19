@@ -151,6 +151,8 @@ $ sudo service libvirtd restart
 ```
 
 
+**NOTE**: if you just added your user, make sure to restart libvirtd service
+
 ## Preparing the workspace
 
 Create a directory where you'll be working, *make sure qemu user can access it*.
