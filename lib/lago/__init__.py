@@ -246,6 +246,10 @@ class Prefix(object):
             )
 
             if template_version not in template_store:
+                logging.debug(
+                    " Template %s not in cache, downloading",
+                    template_version,
+                )
                 template_store.download(template_version)
             template_store.mark_used(template_version, self.paths.uuid())
 
