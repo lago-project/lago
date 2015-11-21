@@ -109,6 +109,25 @@ $ usermod -a -G USERNAME qemu
 For the group changes to take place, you'll need to re-login to the shell.
 Make sure running `id` returns all the aforementioned groups.
 
+Make sure that the qemu user has execution rights to the dir where you will be
+creating the prefixes, you can try it out with:
+
+```shell
+$ sudo -u qemu ls /path/to/the/destination/dir
+```
+
+If it can't access it, make sure that all the dirs in the path have your user
+or qemu groups and execution rights for the group, or execution rights for
+other (higly recommended to use the group instead, if the dir did not have
+execuiton rights for others already)
+
+And, just to be sure, let's refresh libvirtd service to ensure that it
+refreshes it's permissions and picks up any newly created users:
+
+```shell
+$ sudo service libvirtd restart
+```
+
 
 ## Preparing the workspace
 
