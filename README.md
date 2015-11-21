@@ -366,7 +366,7 @@ env_init () {
     $CLI init \
         $PREFIX \
         $SUITE/init.json \
-        --template-repo-path common/template-repo/office.json
+        --template-repo-path common/template-repos/office.json
 }
 ```
 
