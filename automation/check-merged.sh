@@ -1,5 +1,19 @@
 #!/bin/bash -e
+EXPORTED_DIR="$PWD/exported-artifacts"
+DOCS_DIR="$PWD/exported-artifacts/docs"
+
+echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+echo '~*          Building docs                              ~'
+echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+rm -rf "$DOCS_DIR"
+pushd docs
+pip install recommonmark sphinx
+make html
+mv _build "$DOCS_DIR"
+popd
+
 make check-local
+
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 echo '~*          Running build/installation tests           ~'
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
@@ -14,6 +28,7 @@ if hash dnf &>/dev/null; then
 else
     yum install -y exported-artifacts/!(*.src).rpm
 fi
+
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 echo '~*          Running functional tests                   ~'
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'

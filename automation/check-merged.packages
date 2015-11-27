@@ -1,13 +1,1 @@
-bats
-git
-libvirt-python
-python-flake8
-python-libguestfs
-python-lockfile
-python-lxml
-python-nose
-python-paramiko
-python2-devel
-# needed for fc23
-# see http://pkgs.fedoraproject.org/cgit/libguestfs.git/tree/libguestfs.spec#n131
-grubby
+check-patch.packages

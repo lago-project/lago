@@ -12,3 +12,8 @@ yum
 # needed for fc23
 # see http://pkgs.fedoraproject.org/cgit/libguestfs.git/tree/libguestfs.spec#n131
 grubby
+# needed for the docs build
+# this is needed to be able to install recommonmark and latest sphinx, that's
+# required to bu able to use markdown files, will be needed until we move the
+# readme to rst
+python-pip

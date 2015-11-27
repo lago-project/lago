@@ -1,4 +1,35 @@
 #!/bin/bash -e
+EXPORTED_DIR="$PWD/exported-artifacts"
+DOCS_DIR="$PWD/exported-artifacts/docs"
+
+code_changed() {
+    if ! [[ -d .git ]]; then
+        echo "Not in a git dir, will run all the tests"
+        return 0
+    fi
+    git diff-tree --no-commit-id --name-only -r HEAD \
+    | grep --quiet -v -e '\(docs/\|README.md\)'
+    return $?
+}
+
+
+[[ -d "$EXPORTED_DIR" ]] || mkdir -p "$EXPORTED_DIR"
+
+echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+echo '~*          Building docs                              ~'
+echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+rm -rf "$DOCS_DIR"
+pip install -r requires.txt
+pushd docs
+make html
+mv _build "$DOCS_DIR"
+popd
+
+if ! code_changed; then
+    echo " No code changes, skipping code tests"
+    exit 0
+fi
+
 make check-local
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 echo '~*          Running build/installation tests           ~'

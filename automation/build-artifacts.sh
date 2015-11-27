@@ -2,7 +2,7 @@
 BUILDS=$PWD/automation-build
 EXPORTS=$PWD/exported-artifacts
 
-rm -rf "$BUILDS" "$EXPORTS"
+rm -rf "$BUILDS" "$EXPORTS"/*{.rpm,.tar.gz}
 mkdir -p "$BUILDS"
 mkdir -p "$EXPORTS"
 
