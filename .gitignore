@@ -9,3 +9,5 @@ exported-artifacts/
 .idea
 logs*
 mock*
+docs/ovirtlago.rst
+docs/lago.rst
