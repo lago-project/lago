@@ -14,9 +14,27 @@
 
 import os
 import sys
+import subprocess
 
 from recommonmark.parser import CommonMarkParser
 
+
+subprocess.call([
+    'sphinx-apidoc',
+    '--module-first',
+    '--no-toc',
+    '-f',
+    '-o', os.path.dirname(__file__),
+    '../lib/lago'
+])
+subprocess.call([
+    'sphinx-apidoc',
+    '--module-first',
+    '--no-toc',
+    '-f',
+    '-o', os.path.dirname(__file__),
+    '../contrib/ovirt/lib/ovirtlago'
+])
 
 # Mock all the modules that are included by lago, so autoimport works as
 # expected with no need to download them (some are not in pip even)
@@ -44,6 +62,7 @@ autodoc_default_flags = [
     'undoc-members',
 ]
 
+
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
@@ -64,7 +83,13 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.coverage',
     'sphinx.ext.viewcode',
+    'sphinx.ext.napoleon',
 ]
+
+
+napoleon_google_docstring = True
+napoleon_include_private_with_doc = False
+napoleon_include_special_with_doc = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

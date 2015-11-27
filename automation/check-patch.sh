@@ -1,6 +1,6 @@
 #!/bin/bash -e
 EXPORTED_DIR="$PWD/exported-artifacts"
-DOCS_DIR="$PWD/exported-artifacts/docs"
+DOCS_DIR="$EXPORTED_DIR/docs"
 
 code_changed() {
     if ! [[ -d .git ]]; then
@@ -19,11 +19,9 @@ echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 echo '~*          Building docs                              ~'
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 rm -rf "$DOCS_DIR"
-pip install -r requires.txt
-pushd docs
-make html
-mv _build "$DOCS_DIR"
-popd
+pip install -r docs/requires.txt
+make docs
+mv docs/_build "$DOCS_DIR"
 
 if ! code_changed; then
     echo " No code changes, skipping code tests"

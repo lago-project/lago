@@ -1,19 +1,19 @@
 #!/bin/bash -e
 EXPORTED_DIR="$PWD/exported-artifacts"
-DOCS_DIR="$PWD/exported-artifacts/docs"
+DOCS_DIR="$EXPORTED_DIR/docs"
+
+
+[[ -d "$EXPORTED_DIR" ]] || mkdir -p "$EXPORTED_DIR"
 
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 echo '~*          Building docs                              ~'
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 rm -rf "$DOCS_DIR"
-pushd docs
-pip install recommonmark sphinx
-make html
-mv _build "$DOCS_DIR"
-popd
+pip install -r docs/requires.txt
+make docs
+mv docs/_build "$DOCS_DIR"
 
 make check-local
-
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 echo '~*          Running build/installation tests           ~'
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'

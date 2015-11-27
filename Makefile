@@ -19,7 +19,7 @@ REPO_LOCAL_REL_PATH="repo"
 TAR_DIST_LOCATION=${DIST_DIR}/${TAR_FILE}
 TARBALL_DIST_LOCATION=${DIST_DIR}/${TARBALL_FILE}
 
-.PHONY: build rpm srpm ${TARBALL_DIST_LOCATION} check-local dist check repo upload upload-unstable ${SPECFILE}
+.PHONY: build rpm srpm ${TARBALL_DIST_LOCATION} check-local dist check repo upload upload-unstable ${SPECFILE} docs
 
 ${SPECFILE}: ${SPECFILE}.in
 	sed \
@@ -96,3 +96,6 @@ clean:
 	rm -rf build "$(REPO_LOCAL_REL_PATH)"
 	rm -f ${SPECFILE}
 
+docs:
+	$(MAKE) -C docs clean
+	$(MAKE) -C docs html
