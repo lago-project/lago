@@ -29,6 +29,19 @@ import constants
 
 
 def run_command(command, **kwargs):
+    """
+    Wrapper around :func:`lago.utils.run_command` that prepends the ovirtlago
+    LIBEXEC_DIR to the path if needed
+
+    Args:
+    command (?): parameter to send as the command parameter to
+        :func:`lago.utils.run_command`
+    **kwargs (?): keyword parameters to send as the command parameter to
+        :func:`lago.utils.run_command`
+
+    Returns:
+        ?: Whatever :func:`lago.utils.run_command` returns
+    """
     # add libexec to PATH if needed
     if constants.LIBEXEC_DIR not in os.environ['PATH'].split(':'):
         os.environ['PATH'] = '%s:%s' % (
@@ -39,6 +52,16 @@ def run_command(command, **kwargs):
 
 
 def _BetterHTTPRequestHandler(root_dir):
+    """
+    Factory for _BetterHTTPRequestHandler classes
+
+    Args:
+        root_dir (path): Path to the dir to serve
+
+    Returns:
+        _BetterHTTPRequestHandler: A ready to be used improved http request
+            handler
+    """
     _SimpleHTTPRequestHandler = SimpleHTTPServer.SimpleHTTPRequestHandler
 
     class _BetterHTTPRequestHandler(_SimpleHTTPRequestHandler):
@@ -59,6 +82,18 @@ def _BetterHTTPRequestHandler(root_dir):
 
 
 def _create_http_server(ip, port, root_dir):
+    """
+    Starts an http server with an improved request handler
+
+    Args:
+        ip (str): Ip to listen on
+        port (int): Port to register on
+        root_dir (str): path to the directory to serve
+
+    Returns:
+        BaseHTTPServer: instance of the http server, already running on a
+            thread
+    """
     server = BaseHTTPServer.HTTPServer(
         (ip, port),
         _BetterHTTPRequestHandler(root_dir),
@@ -69,6 +104,17 @@ def _create_http_server(ip, port, root_dir):
 
 @contextlib.contextmanager
 def repo_server_context(prefix):
+    """
+    Context manager that starts an http server that serves the given prefix's
+    yum repository. Will listen on :class:`constants.REPO_SERVER_PORT` and on
+    the first network defined in the previx virt config
+
+    Args:
+        prefix(ovirtlago.OvirtPrefix): prefix to start the server for
+
+    Returns:
+        None
+    """
     gw_ip = prefix.virt_env.get_net().gw()
     port = constants.REPO_SERVER_PORT
     server = _create_http_server(gw_ip, port, prefix.paths.internal_repo())
