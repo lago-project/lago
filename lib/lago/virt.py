@@ -900,7 +900,10 @@ class VM(object):
             [
                 sysprep.set_hostname(self.name()),
                 sysprep.set_root_password(self.root_password()),
-                sysprep.add_ssh_key(self._env.prefix.paths.ssh_id_rsa_pub()),
+                sysprep.add_ssh_key(
+                    self._env.prefix.paths.ssh_id_rsa_pub(),
+                    with_restorecon_fix=(self.distro() == 'fc23'),
+                ),
                 sysprep.set_iscsi_initiator_name(self.iscsi_name()),
                 sysprep.set_selinux_mode('enforcing'),
             ] + [

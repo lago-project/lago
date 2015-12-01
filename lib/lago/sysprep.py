@@ -54,7 +54,7 @@ def set_iscsi_initiator_name(name):
     )
 
 
-def add_ssh_key(key):
+def add_ssh_key(key, with_restorecon_fix=False):
     extra_options = (
         '--mkdir', _DOT_SSH,
         '--chmod', '0700:%s' % _DOT_SSH,
@@ -68,6 +68,12 @@ def add_ssh_key(key):
     ):
         extra_options += (
             '--run-command', 'chown root.root %s' % _AUTHORIZED_KEYS,
+        )
+    if with_restorecon_fix:
+        # Fix for fc23 not relabeling on boot
+        # https://bugzilla.redhat.com/1049656
+        extra_options += (
+            '--firstboot-command', 'restorecon -R /root/.ssh',
         )
     return extra_options
 
