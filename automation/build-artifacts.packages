@@ -1,5 +1,6 @@
 git
 python2-devel
+python-dulwich
 python-flake8
 python-nose
 python-lockfile

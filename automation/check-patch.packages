@@ -1,6 +1,7 @@
 bats
 git
 libvirt-python
+python-dulwich
 python-flake8
 python-libguestfs
 python-lockfile

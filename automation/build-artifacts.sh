@@ -7,7 +7,7 @@ mkdir -p "$BUILDS"
 mkdir -p "$EXPORTS"
 
 make clean
-make srpm rpm OUTPUT_DIR="$BUILDS"
+make rpm OUTPUT_DIR="$BUILDS"
 
 find "$BUILDS" \
     \( -iname \*.rpm -or -iname \*.tar.gz \) \

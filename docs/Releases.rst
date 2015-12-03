@@ -6,13 +6,13 @@ Versioning
 
 For lago we use a similar approach to semantic versioning, that is::
 
-    X.Y[.Z]
+    X.Y.Z
 
 For example::
 
-    0.1
+    0.1.0
     1.2.123
-    2.0
+    2.0.0
     2.0.1
 
 Where:
@@ -40,21 +40,19 @@ For example::
     v1
 
 
+There's a helper script to resolve the current version, based on the last tag
+and the compatibility breaking commits since then, to get the version for the
+current repo run::
+
+    $ scripts/version_manager.py . version
+
+
 RPM Versioning
 ----------------
 The rpm versions differ from the generic version in that they have the
-``-release`` suffix, that has the value:
-
-  * If not in a tagged commit:
-        version = ``X.Y.Z-1.git_hash`` (if it bothers anyone, we can drop the
-        hash easily)
-
-  * If in a tagged commit:
-        version = ``X.Y.Z-1``
-
-Where the ``-1`` is the release for that rpm (usually will never change, only
-when repackaging without any code change, something that is not so easy for us
-but if there's any external packagers is helpful for them)
+``-1`` suffix, where the ``-1`` is the release for that rpm (usually will
+never change, only when repackaging without any code change, something that is
+not so easy for us but if there's any external packagers is helpful for them)
 
 
 Repository layout
@@ -128,6 +126,22 @@ The promotion of the artifacts is done in these cases:
     (``X.Y.Z+n``, for example ``1.0.1 -> 1.0.2``)
   * If there are blocking/important bugfixes (``X.Y.Z+n``)
   * If there are important new features (``X.Y+1`` or ``X.Y.Z+n``)
+
+
+How to mark a major version
+----------------------------
+
+Whenever there's a commit that breaks the backwards compatibility, you should
+add to it the pseudo-header::
+
+    Sem-Ver: api-breaking
+
+And that will force a major version bump for any package built from it, that is
+done so in the moment when you submit the commit in gerrit, the packages that
+are build from it have the correct version.
+
+After that, make sure that you tag that commit too, so it will be easy to look
+for it in the future.
 
 The release procedure on the maintainer side
 ---------------------------------------------
