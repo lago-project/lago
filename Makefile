@@ -1,6 +1,6 @@
 _DESCRIBE=$(shell git describe --tags)
-VERSION=$(shell echo $(_DESCRIBE) | sed 's/-.*//')
-RELEASE=$(shell echo $(_DESCRIBE) | sed 's/^[^-]*-//' | tr '-' '_')
+VERSION=$(shell echo $(_DESCRIBE) | sed -e 's/-/./' -e 's/-.*//')
+RELEASE=$(shell echo $(_DESCRIBE) | sed -e 's/-/./' -e 's/^[^-]*-//')
 NAME=lago
 FULL_NAME=${NAME}-${VERSION}
 TAR_FILE=${FULL_NAME}.tar
@@ -22,10 +22,17 @@ TARBALL_DIST_LOCATION=${DIST_DIR}/${TARBALL_FILE}
 .PHONY: build rpm srpm ${TARBALL_DIST_LOCATION} check-local dist check repo upload upload-unstable ${SPECFILE} docs
 
 ${SPECFILE}: ${SPECFILE}.in
-	sed \
-		-e s/@VERSION@/${VERSION}/g \
-		-e s/@RELEASE@/${RELEASE}/g \
-		$< > $@
+	if [[ "${VERSION}" == "${RELEASE}" ]]; then \
+		sed \
+			-e s/@VERSION@/${VERSION}/g \
+			-e s/@RELEASE@//g \
+			$< > $@; \
+	else \
+		sed \
+			-e s/@VERSION@/${VERSION}/g \
+			-e s/@RELEASE@/.${RELEASE}/g \
+			$< > $@; \
+	fi
 
 build:
 	LAGO_VERSION=${VERSION} python setup.py build
