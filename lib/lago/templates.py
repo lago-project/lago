@@ -22,6 +22,7 @@ import errno
 import functools
 import hashlib
 import json
+import magic
 import os
 import shutil
 import time
@@ -112,21 +113,86 @@ class HttpTemplateProvider:
         Args:
            baseurl (str): Url to prepend to every handle
         """
-        self._baseurl = baseurl
+        self.baseurl = baseurl
+
+    def open_url(self, url, suffix='', dest=None):
+        """
+        Opens the given url, trying the compressed version first.
+        The compressed version url is generated adding the ``.xz`` extension
+        to the ``url`` and adding the given suffix **after** that ``.xz``
+        extension.
+        If dest passed, it will download the data to that path if able
+
+        Args:
+            url (str): relative url from the ``self.baseurl`` to retrieve
+            suffix (str): optional suffix to append to the url after adding
+                the compressed extension to the path
+            dest (str or None): Path to save the data to
+
+        Returns:
+            urllib.addinfourl: response object to read from (lazy read), closed
+                if no dest passed
+
+        Raises:
+            RuntimeError: if the url gave http error when retrieving it
+        """
+        if not url.endswith('.xz'):
+            try:
+                return self.open_url(
+                    url=url + '.xz',
+                    suffix=suffix,
+                    dest=dest,
+                )
+            except RuntimeError:
+                pass
+        full_url = self.baseurl + url + suffix
+        response = urllib.urlopen(full_url)
+        if response.code >= 300:
+            raise RuntimeError(
+                'Failed no retrieve URL %s:\nCode: %d'
+                % (full_url, response.code)
+            )
+        if dest:
+            response.close()
+            urllib.urlretrieve(full_url, dest)
+        return response
 
     def download_image(self, handle, dest):
         """
         Downloads the image from the http server
 
         Args:
-            handle (str): url from the `self._baseurl` to the remote template
+            handle (str): url from the `self.baseurl` to the remote template
             dest (str): Path to store the downloaded url to, must be a file
                 path
 
         Returns:
             None
         """
-        urllib.urlretrieve(self._baseurl + handle, dest)
+        self.open_url(url=handle, dest=dest)
+        self.extract_if_needed(dest)
+
+    @staticmethod
+    def extract_if_needed(path):
+        type_guesser = magic.open(magic.MAGIC_MIME)
+        type_guesser.load()
+        if 'application/x-xz' not in type_guesser.file(path):
+            return
+
+        if not path.endswith('.xz'):
+            os.rename(path, path + '.xz')
+
+        ret = utils.run_command(
+            [
+                'xz',
+                '--threads=0',
+                '--decompress',
+                path + '.xz',
+            ],
+        )
+
+        if ret:
+            raise RuntimeError('Failed to decompress %s' % path)
 
     def get_hash(self, handle):
         """
@@ -139,16 +205,18 @@ class HttpTemplateProvider:
         Returns:
             str: Hash for the given handle
         """
-        f = urllib.urlopen(self._baseurl + handle + '.hash')
+        response = self.open_url(url=handle, suffix='.hash')
         try:
-            return f.read()
+            return response.read()
         finally:
-            f.close()
+            response.close()
 
     def get_metadata(self, handle):
         """
         Returns the associated metadata info for the given handle, the metadata
-        file must exist (``handle + '.metadata'``).
+        file must exist (``handle + '.metadata'``). If the given handle has an
+        ``.xz`` extension, it will get removed when calculating the handle
+        metadata path
 
         Args:
             handle (str): Path to the template to get the metadata from
@@ -156,11 +224,11 @@ class HttpTemplateProvider:
         Returns:
             dict: Metadata for the given handle
         """
-        f = urllib.urlopen(self._baseurl + handle + '.metadata')
+        response = self.open_url(url=handle, suffix='.metadata')
         try:
-            return json.load(f)
+            return json.load(response)
         finally:
-            f.close()
+            response.close()
 
 
 #: Registry for template providers

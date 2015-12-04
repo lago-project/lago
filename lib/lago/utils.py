@@ -97,7 +97,14 @@ class CommandStatus(_CommandStatus):
         return self.code
 
 
-def run_command(command, input_data=None, env=None, **kwargs):
+def run_command(
+    command,
+    input_data=None,
+    out_pipe=subprocess.PIPE,
+    err_pipe=subprocess.PIPE,
+    env=None,
+    **kwargs
+):
     logging.debug('Running command: %s', str(command))
 
     # add libexec to PATH if needed
@@ -125,8 +132,8 @@ def run_command(command, input_data=None, env=None, **kwargs):
 
     popen = subprocess.Popen(
         command,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        stdout=out_pipe,
+        stderr=err_pipe,
         env=env,
         **kwargs
     )

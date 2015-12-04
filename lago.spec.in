@@ -151,11 +151,13 @@ BuildRequires:	python2-devel
 Requires:	python
 Requires:	python-%{name} = %{version}
 Requires:	python-nose
+Requires:	python-magic
 Requires:	mock
 Requires:	ovirt-engine-sdk-python
 Requires:	createrepo
 Requires:	yum-utils
 Requires:	rpm-build
+Requires:	xz
 
 
 %description -n python-%{name}-ovirt

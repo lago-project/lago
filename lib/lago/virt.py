@@ -868,11 +868,26 @@ class VM(object):
         dom.fsFreeze()
         try:
             disk_path = self._spec['disks'][0]['path']
+            disk_root_part = self._spec['disks'][0].get(
+                'root-partition',
+                'root',
+            )
             g = guestfs.GuestFS(python_return_dict=True)
             g.add_drive_opts(disk_path, format='qcow2', readonly=1)
             g.set_backend('direct')
             g.launch()
-            rootfs = filter(lambda x: 'root' in x, g.list_filesystems())[0]
+            rootfs = [
+                filesystem
+                for filesystem in g.list_filesystems()
+                if disk_root_part in filesystem
+            ]
+            if not rootfs:
+                raise RuntimeError(
+                    'No root fs (%s) could be found for %s form list %s'
+                    % (disk_root_part, disk_path, str(g.list_filesystems()))
+                )
+            else:
+                rootfs = rootfs[0]
             g.mount_ro(rootfs, '/')
             for (guest_path, host_path) in paths:
                 try:
