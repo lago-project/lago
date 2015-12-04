@@ -47,7 +47,7 @@ def do_init(args):
 
     try:
         if args.template_repo_path:
-            repo = lago.templates.TemplateRepository.from_file(
+            repo = lago.templates.TemplateRepository.from_url(
                 args.template_repo_path
             )
         else:
@@ -272,7 +272,6 @@ ARGUMENTS[Verbs.INIT] = (
                 'help': (
                     'Repo file describing the templates'
                 ),
-                'type': os.path.abspath,
             },
         ),
         (

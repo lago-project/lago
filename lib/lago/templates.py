@@ -198,7 +198,7 @@ def find_repo_by_name(name, repo_dir=None):
     )
 
     repos = [
-        TemplateRepository.from_file(line.strip())
+        TemplateRepository.from_url(line.strip())
         for line in out.split('\n')
         if len(line.strip())
     ]
@@ -224,7 +224,7 @@ class TemplateRepository:
     def __init__(self, dom):
         """
         You would usually use the
-        :func:`TemplateRepository.from_file` method instead of
+        :func:`TemplateRepository.from_url` method instead of
         directly using this
 
         Args:
@@ -238,19 +238,29 @@ class TemplateRepository:
         }
 
     @classmethod
-    def from_file(cls, path):
+    def from_url(cls, path):
         """
         Instantiate a :class:`TemplateRepository` instance from the data in a
-        file
+        file or url
 
         Args:
-            path (str): Path to the json file to load
+            path (str): Path or url to the json file to load
 
         Returns:
             TemplateRepository: A new instance
         """
-        with open(path) as f:
-            return cls(json.load(f))
+        if os.path.isfile(path):
+            with open(path) as fd:
+                data = fd.read()
+        else:
+            response = urllib.urlopen(path)
+            if response.code >= 300:
+                raise RuntimeError('Unable to load repo from %s' % path)
+
+            data = response.read()
+            response.close()
+
+        return cls(json.loads(data))
 
     def _get_provider(self, spec):
         """
