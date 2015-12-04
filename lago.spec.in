@@ -1,8 +1,5 @@
-%global _name lago
-%global _version @VERSION@
-
-Name:		%{_name}
-Version:	%{_version}
+Name:		lago
+Version:	@VERSION@
 Release:	1%{?dist}
 Summary:	System testing framework
 BuildArch:	noarch
