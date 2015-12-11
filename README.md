@@ -23,7 +23,7 @@ For Fedora:
 
 ```shell
 [lago]
-baseurl=http://resources.ovirt.org/repos/lago/rpm/fc$releasever
+baseurl=http://resources.ovirt.org/repos/lago/stable/0.0/rpm/fc$releasever
 name=Lago
 enabled=1
 gpgcheck=0
@@ -33,7 +33,7 @@ For CentOS:
 
 ```shell
 [lago]
-baseurl=http://resources.ovirt.org/repos/lago/rpm/el$releasever
+baseurl=http://resources.ovirt.org/repos/lago/stable/0.0/rpm/el$releasever
 name=Lago
 enabled=1
 gpgcheck=0
