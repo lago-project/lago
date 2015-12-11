@@ -9,6 +9,15 @@ Check out the awesome `README`_!
  .. _README: README.html
 
 
+Releases
+-----------
+
+.. toctree::
+    :maxdepth: 2
+
+    Releases
+
+
 Contents
 -------------
 
