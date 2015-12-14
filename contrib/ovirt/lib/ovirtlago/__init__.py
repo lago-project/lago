@@ -28,6 +28,7 @@ import nose.config
 from ovirtsdk.infrastructure.errors import RequestError
 
 import lago
+from lago import log_utils
 
 import merge_repos
 import repoverify
@@ -36,6 +37,7 @@ import testlib
 import utils
 import virt
 
+
 # TODO: put it into some config
 PROJECTS_LIST = [
     'vdsm',
@@ -43,6 +45,9 @@ PROJECTS_LIST = [
     'vdsm-jsonrpc-java',
     'ioprocess',
 ]
+LOGGER = logging.getLogger(__name__)
+LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
+log_task = functools.partial(log_utils.log_task, logger=LOGGER)
 
 
 def _with_repo_server(func):
@@ -77,34 +82,30 @@ def _sync_rpm_repository(repo_path, yum_config, repos):
 
 
 def _build_rpms(name, script, source_dir, output_dir, dists, env=None):
-    logging.info(
-        'Building %s(%s) from %s, for %s, storing results in %s',
-        name,
-        script,
-        source_dir,
-        ', '.join(dists),
-        output_dir,
-    )
-    ret, out, err = utils.run_command(
-        [
-            script,
-            source_dir,
-            output_dir,
-        ] + dists,
-        env=env,
-    )
-
-    if ret:
-        logging.error(
-            '%s returned with error %d',
-            script,
-            ret,
+    with LogTask(
+        'Build %s(%s) from %s, for %s, store results in %s'
+        % (name, script, source_dir, ', '.join(dists), output_dir),
+    ):
+        ret, out, err = utils.run_command(
+            [
+                script,
+                source_dir,
+                output_dir,
+            ] + dists,
+            env=env,
         )
-        logging.error('Output was: \n%s', out)
-        logging.error('Errors were: \n%s', err)
-        raise RuntimeError('%s failed, see logs' % script)
 
-    return ret
+        if ret:
+            LOGGER.error(
+                '%s returned with error %d',
+                script,
+                ret,
+            )
+            LOGGER.error('Output was: \n%s', out)
+            LOGGER.error('Errors were: \n%s', err)
+            raise RuntimeError('%s failed, see logs' % script)
+
+        return ret
 
 
 def _build_vdsm_rpms(vdsm_dir, output_dir, dists):
@@ -196,16 +197,19 @@ def _deactivate_all_hosts(api):
         host = hosts.pop()
         try:
             host.deactivate()
-            logging.info('Sent host %s to maintenance', host.name)
+            LOGGER.info('Sent host %s to maintenance', host.name)
         except RequestError:
-            logging.exception('Failed to maintenance host %s', host.name)
+            LOGGER.exception('Failed to maintenance host %s', host.name)
             hosts.insert(0, host)
 
     for host in api.hosts.list():
-        logging.debug('Waiting for %s to go into maintenance', host.name)
-        testlib.assert_true_within_short(
-            lambda: api.hosts.get(host.name).status.state == 'maintenance',
-        )
+        with LogTask(
+            'Wait for %s to go into maintenance' % host.name,
+            level='debug',
+        ):
+            testlib.assert_true_within_short(
+                lambda: api.hosts.get(host.name).status.state == 'maintenance',
+            )
 
 
 def _activate_all_hosts(api):
@@ -235,13 +239,13 @@ class OvirtPrefix(lago.Prefix):
         return paths.OvirtPaths(self._prefix)
 
     def create_snapshots(self, name, restore=True):
-        with lago.utils.RollbackContext() as rollback:
+        with lago.utils.RollbackContext() as rollback, \
+                LogTask('Create snapshots'):
             engine = self.virt_env.engine_vm()
 
             self._deactivate()
             rollback.prependDefer(self._activate)
 
-            logging.info('Creating snapshots')
             # stop engine:
             engine.service('ovirt-engine').stop()
             rollback.prependDefer(engine.get_api)
@@ -308,6 +312,7 @@ class OvirtPrefix(lago.Prefix):
 
         lago.utils.invoke_in_parallel(create_repo, dists)
 
+    @log_task('Create prefix internal repo')
     def prepare_repo(
         self,
         rpm_repo=None,
@@ -410,51 +415,73 @@ class OvirtPrefix(lago.Prefix):
 
     @_with_repo_server
     def run_test(self, path):
-        logging.info('Running test: %s', path)
-        env = os.environ.copy()
-        env['LAGO_PREFIX'] = self.paths.prefix()
-
-        extra_args = [
-            '--with-xunit',
-            '--xunit-file=%s' % (
-                os.path.abspath(
-                    os.path.join(
-                        self.paths.prefix(),
-                        'nosetests-%s.xml' % os.path.basename(path),
-                    )
+        with LogTask('Run test: %s' % os.path.basename(path)):
+            env = os.environ.copy()
+            env['LAGO_PREFIX'] = self.paths.prefix()
+            results_path = os.path.abspath(
+                os.path.join(
+                    self.paths.prefix(),
+                    'nosetests-%s.xml' % os.path.basename(path),
                 )
-            ),
-            '--with-log-collector-plugin',
-        ]
+            )
+            extra_args = [
+                '--with-xunit',
+                '--xunit-file=%s' % results_path,
+                '--with-tasklog-plugin',
+                '--with-log-collector-plugin',
+            ]
 
-        config = nose.config.Config(
-            verbosity=3,
-            env=env,
-            plugins=nose.core.DefaultPluginManager(),
-        )
-        addplugins = [
-            testlib.LogCollectorPlugin(self),
-        ]
+            class DummyStream(object):
+                def write(self, *args):
+                    pass
 
-        return nose.core.run(
-            argv=['testrunner', path] + extra_args,
-            config=config,
-            addplugins=addplugins,
-        )
+                def writeln(self, *args):
+                    pass
+
+                def flush(self):
+                    pass
+
+            config = nose.config.Config(
+                verbosity=3,
+                env=env,
+                plugins=nose.core.DefaultPluginManager(),
+                stream=DummyStream(),
+            )
+            addplugins = [
+                log_utils.TaskLogNosePlugin(),
+                testlib.LogCollectorPlugin(self),
+            ]
+            result = nose.core.run(
+                argv=['testrunner', path] + extra_args,
+                config=config,
+                addplugins=addplugins,
+            )
+
+            LOGGER.info('Results located at %s' % results_path)
+
+            return result
 
     def _deploy_host(self, host):
-        host.wait_for_ssh()
-        for script in host.metadata.get('ovirt-scripts', []):
-            ret, _, _ = host.ssh_script(script, show_output=False)
-            if ret != 0:
-                raise RuntimeError(
-                    '%s failed with status %d on %s' % (
-                        script,
-                        ret,
-                        host.name(),
-                    ),
-                )
+        with LogTask('Deploy VM %s' % host.name()):
+            with LogTask('Wait for ssh connectivity'):
+                host.wait_for_ssh()
 
+            for script in host.metadata.get('ovirt-scripts', []):
+                with LogTask('Run script %s' % os.path.basename(script)):
+                    ret, out, err = host.ssh_script(script, show_output=False)
+
+                if ret != 0:
+                    LOGGER.debug('STDOUT:\n%s' % out)
+                    LOGGER.error('STDERR\n%s' % err)
+                    raise RuntimeError(
+                        '%s failed with status %d on %s' % (
+                            script,
+                            ret,
+                            host.name(),
+                        ),
+                    )
+
+    @log_task('Deploy oVirt environment')
     @_with_repo_server
     def deploy(self):
         lago.utils.invoke_in_parallel(
@@ -474,36 +501,45 @@ class OvirtPrefix(lago.Prefix):
         return virt.OvirtVirtEnv.from_prefix(self)
 
     def _activate(self):
-        for vm in self.virt_env.get_vms().values():
-            vm.wait_for_ssh()
-        logging.info('Hosts up')
+        with LogTask('Wait for ssh connectivity'):
+            for vm in self.virt_env.get_vms().values():
+                vm.wait_for_ssh()
+
         api = self.virt_env.engine_vm().get_api()
-        _activate_all_hosts(api)
-        logging.info('Hosts activated')
-        _activate_all_storage_domains(api)
-        logging.info('Storage domains activated')
+        with LogTask('Activate hosts'):
+            _activate_all_hosts(api)
+        with LogTask('Activate storage domains'):
+            _activate_all_storage_domains(api)
 
     def _deactivate(self):
         api = self.virt_env.engine_vm().get_api()
 
-        _deactivate_all_storage_domains(api)
-        _deactivate_all_hosts(api)
+        with LogTask('Deactivate storage domains'):
+            _deactivate_all_storage_domains(api)
+
+        with LogTask('Deactivate hosts'):
+            _deactivate_all_hosts(api)
 
     def start(self):
         super(OvirtPrefix, self).start()
-        self._activate()
+        with LogTask('Activate'):
+            self._activate()
 
     def stop(self):
-        self._deactivate()
+        with LogTask('Deactivate'):
+            self._deactivate()
+
         super(OvirtPrefix, self).stop()
 
+    @log_task('Collect artifacts')
     def collect_artifacts(self, output_dir):
         os.makedirs(output_dir)
 
         def _collect_artifacts(vm):
-            path = os.path.join(output_dir, vm.name())
-            os.makedirs(path)
-            vm.collect_artifacts(path)
+            with LogTask('%s' % vm.name()):
+                path = os.path.join(output_dir, vm.name())
+                os.makedirs(path)
+                vm.collect_artifacts(path)
 
         lago.utils.invoke_in_parallel(
             _collect_artifacts,

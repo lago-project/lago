@@ -20,7 +20,9 @@ load env_setup
     echo "DIFF:Checking if the output differs from the expected"
     expected_file="$PREFIX/expected"
     current_file="$PREFIX/current"
-    echo "$output" > "$current_file"
+    echo "$output" \
+    | tail -n+2 \
+    > "$current_file"
     sed \
         -i \
         -e "s|@@PREFIX@@|$PREFIX|g" \

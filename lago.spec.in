@@ -113,7 +113,6 @@ Requires:	git
 %files -n python-%{name}
 %{python2_sitelib}/%{name}/*.py*
 %{python2_sitelib}/%{name}/*.xml
-%{python2_sitelib}/%{name}/*.log.conf
 %{python2_sitelib}/%{name}-%{version}-py*.egg-info
 %{_sysconfdir}/polkit-1/localauthority/50-local.d/
 %config(noreplace) %{_sysconfdir}/lago.d/lago.conf

@@ -27,6 +27,10 @@ import sys
 
 import lago
 import ovirtlago
+from lago import log_utils
+
+
+LOGGER = logging.getLogger('ovirt-cli')
 
 
 # TODO: Remove this, and properly complain on unset config values
@@ -53,7 +57,7 @@ def in_prefix(func):
 def with_logging(func):
     @functools.wraps(func)
     def wrapper(prefix, args):
-        lago.utils.setup_logging(prefix.paths.logs())
+        lago.log_utils.setup_prefix_logging(prefix.paths.logs())
         return func(prefix, args)
     return wrapper
 
@@ -333,6 +337,16 @@ def create_parser():
         os.environ.get('LAGO_PROG_NAME', sys.argv[0]),
         description='Command line interface to oVirt testing framework.'
     )
+    parser.add_argument(
+        '-l', '--loglevel', default='info',
+        choices=['info', 'debug', 'error', 'warning'],
+        help='Log level to use, by default %(default)s'
+    )
+    parser.add_argument(
+        '--logdepth', default=2, type=int,
+        help='How many task levels to show, by default %(default)s'
+    )
+
     verbs = parser.add_subparsers(dest='verb', metavar='VERB')
     for verb, (desc, args, _) in ARGUMENTS.items():
         verb_parser = verbs.add_parser(verb, help=desc)
@@ -345,11 +359,23 @@ def main():
     parser = create_parser()
     args = parser.parse_args()
 
+    logging.basicConfig(level=logging.DEBUG),
+    logging.root.handlers = [
+        log_utils.TaskHandler(
+            task_tree_depth=args.logdepth,
+            level=getattr(logging, args.loglevel.upper()),
+            dump_level=logging.ERROR,
+            formatter=log_utils.ColorFormatter(
+                fmt='%(msg)s',
+            )
+        )
+    ]
+
     try:
         _, _, func = ARGUMENTS[args.verb]
         func(args)
     except Exception:
-        logging.exception('Error occured, aborting')
+        LOGGER.exception('Error occured, aborting')
         sys.exit(1)
 
 if __name__ == '__main__':

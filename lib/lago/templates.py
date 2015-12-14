@@ -22,6 +22,7 @@ import errno
 import functools
 import hashlib
 import json
+import logging
 import magic
 import os
 import shutil
@@ -32,6 +33,10 @@ import lockfile
 
 import config
 import utils
+from . import log_utils
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 class FileSystemTemplateProvider:
@@ -169,7 +174,9 @@ class HttpTemplateProvider:
         Returns:
             None
         """
-        self.open_url(url=handle, dest=dest)
+        with log_utils.LogTask('Download image %s' % handle, logger=LOGGER):
+            self.open_url(url=handle, dest=dest)
+
         self.extract_if_needed(dest)
 
     @staticmethod
@@ -182,14 +189,15 @@ class HttpTemplateProvider:
         if not path.endswith('.xz'):
             os.rename(path, path + '.xz')
 
-        ret = utils.run_command(
-            [
-                'xz',
-                '--threads=0',
-                '--decompress',
-                path + '.xz',
-            ],
-        )
+        with log_utils.LogTask('Decompress local image', logger=LOGGER):
+            ret = utils.run_command(
+                [
+                    'xz',
+                    '--threads=0',
+                    '--decompress',
+                    path + '.xz',
+                ],
+            )
 
         if ret:
             raise RuntimeError('Failed to decompress %s' % path)
@@ -274,7 +282,7 @@ def find_repo_by_name(name, repo_dir=None):
     for repo in repos:
         if repo.name == name:
             return repo
-    raise RuntimeError('Could not find repo %s' % (name))
+    raise RuntimeError('Could not find repo %s' % name)
 
 
 class TemplateRepository:
@@ -549,6 +557,7 @@ class TemplateStore:
             os.makedirs(path)
         except OSError as e:
             if e.errno != errno.EEXIST:
+                LOGGER.error('Failed to create store dir')
                 raise
 
     def _prefixed(self, *path):
@@ -635,15 +644,16 @@ class TemplateStore:
             with open('%s.hash' % dest, 'w') as f:
                 f.write(sha1.hexdigest())
 
-            utils.run_command(
-                [
-                    'qemu-img',
-                    'convert',
-                    '-O', 'raw',
-                    temp_dest,
-                    dest,
-                ],
-            )
+            with log_utils.LogTask('Convert image', logger=LOGGER):
+                utils.run_command(
+                    [
+                        'qemu-img',
+                        'convert',
+                        '-O', 'raw',
+                        temp_dest,
+                        dest,
+                    ],
+                )
 
             os.unlink(temp_dest)
 

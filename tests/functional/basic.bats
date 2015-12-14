@@ -100,7 +100,9 @@ load env_setup
     [[ -e '.lago' ]] || skip "prefix not initiated"
     helpers.run "$LAGOCLI" status
     helpers.equals "$status" '0'
-    echo "$output" > "$prefix/current"
+    echo "$output" \
+    | tail -n+2 \
+    > "$prefix/current"
     echo "DIFF:Checking if the output differs from the expected"
     echo "CURRENT                  | EXPECTED"
     expected_content="$FIXTURES/expected_down_status"
@@ -134,7 +136,9 @@ load env_setup
     [[ -e '.lago' ]] || skip "prefix not initiated"
     helpers.run "$LAGOCLI" status
     helpers.equals "$status" '0'
-    echo "$output" > "$prefix/current"
+    echo "$output" \
+    | tail -n+2 \
+    > "$prefix/current"
     # the vnc port is not always 5900, for example, if there's another vm
     # running already
     echo "Extracting vnc port from the current status"
@@ -183,7 +187,7 @@ load env_setup
     [[ -e '.lago' ]] || skip "prefix not initiated"
     helpers.run "$LAGOCLI" cleanup
     helpers.equals "$status" '0'
-    helpers.contains "$output" "Stopping prefix"
+    helpers.contains "$output" "Stop prefix"
     helpers.is_file "$prefix/uuid"
     ! helpers.is_file "$prefix/.lago"
 }

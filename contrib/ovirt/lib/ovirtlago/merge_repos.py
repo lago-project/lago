@@ -21,11 +21,17 @@
 import logging
 import os
 import shutil
+from functools import partial
 
 import rpmUtils.arch
 import rpmUtils.miscutils
 
 import utils
+from lago import log_utils
+
+LOGGER = logging.getLogger(__name__)
+
+LogTask = partial(log_utils.LogTask, logger=LOGGER)
 
 
 def _fastcopy(source, dest):
@@ -60,58 +66,58 @@ def merge(output_dir, input_dirs):
     rpms_by_name = {}
 
     for input_dir in input_dirs:
-        logging.info('Processing directory %s', input_dir)
-        ret = utils.run_command(
-            [
-                'find',
-                input_dir,
-                '-type', 'f',
-                '-name', '*.rpm',
-            ]
-        )
+        with LogTask('Processing directory %s' % input_dir):
+            ret = utils.run_command(
+                [
+                    'find',
+                    input_dir,
+                    '-type', 'f',
+                    '-name', '*.rpm',
+                ]
+            )
 
-        if ret:
-            raise RuntimeError('Could not find the RPMs in %s' % input_dir)
+            if ret:
+                raise RuntimeError('Could not find the RPMs in %s' % input_dir)
 
-        rpm_paths = ret.out.strip().split('\n')
-        pkgs_by_name = {}
+            rpm_paths = ret.out.strip().split('\n')
+            pkgs_by_name = {}
 
-        for path in rpm_paths:
-            hdr = _get_header(path)
+            for path in rpm_paths:
+                hdr = _get_header(path)
 
-            if path.endswith('.src.rpm'):
-                continue
+                if path.endswith('.src.rpm'):
+                    continue
 
-            if hdr['Architecture'] not in rpmUtils.arch.getArchList():
-                continue
+                if hdr['Architecture'] not in rpmUtils.arch.getArchList():
+                    continue
 
-            pkgs_by_name.setdefault(
-                hdr['Name'],
-                [],
-            ).append((path, hdr))
+                pkgs_by_name.setdefault(
+                    hdr['Name'],
+                    [],
+                ).append((path, hdr))
 
-        for name, pkgs in pkgs_by_name.items():
-            if name in rpms_by_name:
-                continue
+            for name, pkgs in pkgs_by_name.items():
+                if name in rpms_by_name:
+                    continue
 
-            cand_path, cand_hdr = pkgs[0]
+                cand_path, cand_hdr = pkgs[0]
 
-            for other_path, other_hdr in pkgs[1:]:
-                if rpmUtils.miscutils.compareEVR(
-                    (
-                        None,
-                        cand_hdr['Version'],
-                        cand_hdr['Release'],
-                    ),
-                    (
-                        None,
-                        other_hdr['Version'],
-                        other_hdr['Release'],
-                    )
-                ) < 0:
-                    cand_path, cand_hdr = other_path, other_hdr
+                for other_path, other_hdr in pkgs[1:]:
+                    if rpmUtils.miscutils.compareEVR(
+                        (
+                            None,
+                            cand_hdr['Version'],
+                            cand_hdr['Release'],
+                        ),
+                        (
+                            None,
+                            other_hdr['Version'],
+                            other_hdr['Release'],
+                        )
+                    ) < 0:
+                        cand_path, cand_hdr = other_path, other_hdr
 
-            rpms_by_name[name] = cand_path
+                rpms_by_name[name] = cand_path
 
     try:
         shutil.rmtree(output_dir)
@@ -120,7 +126,7 @@ def merge(output_dir, input_dirs):
 
     os.makedirs(output_dir)
     for path in rpms_by_name.values():
-        logging.debug('Copying %s to output directory', path)
+        LOGGER.debug('Copying %s to output directory', path)
         _fastcopy(path, os.path.join(output_dir, os.path.basename(path)))
 
     ret = utils.run_command(['createrepo', '.'], cwd=output_dir)

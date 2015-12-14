@@ -23,7 +23,6 @@ import fcntl
 import functools
 import json
 import logging
-import logging.config
 import os
 import select
 import socket
@@ -35,15 +34,18 @@ import time
 import tty
 import Queue
 
-import config
 import constants
+from .log_utils import LogTask
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 def _ret_via_queue(func, queue):
     try:
         queue.put({'return': func()})
     except Exception:
-        logging.exception('Error while running thread')
+        LOGGER.exception('Error while running thread')
         queue.put({'exception': sys.exc_info()})
 
 
@@ -105,45 +107,49 @@ def run_command(
     env=None,
     **kwargs
 ):
-    logging.debug('Running command: %s', str(command))
+    with LogTask(
+        'Run command: %s' % str(command[0]),
+        logger=LOGGER,
+        level='debug',
+    ):
 
-    # add libexec to PATH if needed
-    if constants.LIBEXEC_DIR not in os.environ['PATH'].split(':'):
-        os.environ['PATH'] = '%s:%s' % (
-            constants.LIBEXEC_DIR,
-            os.environ['PATH']
-        )
+        # add libexec to PATH if needed
+        if constants.LIBEXEC_DIR not in os.environ['PATH'].split(':'):
+            os.environ['PATH'] = '%s:%s' % (
+                constants.LIBEXEC_DIR,
+                os.environ['PATH']
+            )
 
-    if input_data:
-        kwargs['stdin'] = subprocess.PIPE
+        if input_data:
+            kwargs['stdin'] = subprocess.PIPE
 
-    if env is None:
-        env = os.environ.copy()
-    else:
-        env['PATH'] = ':'.join(
-            list(
-                set(
-                    env.get('PATH', '').split(':')
-                    +
-                    os.environ['PATH'].split(':')
+        if env is None:
+            env = os.environ.copy()
+        else:
+            env['PATH'] = ':'.join(
+                list(
+                    set(
+                        env.get('PATH', '').split(':')
+                        +
+                        os.environ['PATH'].split(':')
+                    ),
                 ),
-            ),
-        )
+            )
 
-    popen = subprocess.Popen(
-        command,
-        stdout=out_pipe,
-        stderr=err_pipe,
-        env=env,
-        **kwargs
-    )
-    out, err = popen.communicate(input_data)
-    logging.debug('command exit with %d', popen.returncode)
-    if out:
-        logging.debug('command stdout: %s', out)
-    if err:
-        logging.debug('command stderr: %s', err)
-    return CommandStatus(popen.returncode, out, err)
+        popen = subprocess.Popen(
+            command,
+            stdout=out_pipe,
+            stderr=err_pipe,
+            env=env,
+            **kwargs
+        )
+        out, err = popen.communicate(input_data)
+        LOGGER.debug('command exit with %d', popen.returncode)
+        if out:
+            LOGGER.debug('command stdout: %s', out)
+        if err:
+            LOGGER.debug('command stderr: %s', err)
+        return CommandStatus(popen.returncode, out, err)
 
 
 def service_is_enabled(name):
@@ -216,21 +222,6 @@ class EggTimer:
 
     def elapsed(self):
         return (time.time() - self.start_time) > self.timeout
-
-
-def setup_logging(logdir):
-    if not os.path.exists(logdir):
-        os.mkdir(logdir)
-    logging.config.fileConfig(
-        os.path.join(
-            os.path.dirname(__file__),
-            'lago.log.conf',
-        ),
-        defaults={
-            'log_path': os.path.join(logdir, 'lago.log'),
-            'log_level': config.get('log_level', 'info').upper(),
-        },
-    )
 
 
 def _read_nonblocking(f):

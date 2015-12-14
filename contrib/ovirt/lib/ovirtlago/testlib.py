@@ -36,8 +36,8 @@ _test_prefix = None
 
 
 def get_test_prefix():
+    global _test_prefix
     if _test_prefix is None:
-        global _test_prefix
         _test_prefix = ovirtlago.OvirtPrefix(os.getcwd())
     return _test_prefix
 

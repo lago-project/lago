@@ -33,17 +33,21 @@ import sys
 import lago
 import lago.config
 import lago.templates
+from lago import log_utils
 
 CLI_PREFIX = 'lagocli-'
+LOGGER = logging.getLogger('cli')
 
 
+@log_utils.log_task('Initialize and populate prefix', LOGGER)
 def do_init(args):
     prefix = lago.Prefix(args.prefix)
     prefix.initialize()
 
     with open(args.virt_config, 'r') as f:
         virt_conf = json.load(f)
-    lago.utils.setup_logging(prefix.paths.logs())
+
+    log_utils.setup_prefix_logging(prefix.paths.logs())
 
     try:
         if args.template_repo_path:
@@ -89,7 +93,7 @@ def in_prefix(func):
 def with_logging(func):
     @functools.wraps(func)
     def wrapper(prefix, args):
-        lago.utils.setup_logging(prefix.paths.logs())
+        log_utils.setup_prefix_logging(prefix.paths.logs())
         return func(prefix, args)
     return wrapper
 
@@ -130,8 +134,8 @@ def do_shell(prefix, args):
     try:
         host = prefix.virt_env.get_vm(args.host)
     except KeyError:
-        logging.error('Unable to find VM %s', args.host)
-        logging.info(
+        LOGGER.error('Unable to find VM %s', args.host)
+        LOGGER.info(
             'Available VMs: %s',
             prefix.virt_env.get_vms().keys()
         )
@@ -195,8 +199,8 @@ def do_copy_from_vm(prefix, args):
     try:
         host = prefix.virt_env.get_vm(args.host)
     except KeyError:
-        logging.error('Unable to find VM %s', args.host)
-        logging.info(
+        LOGGER.error('Unable to find VM %s', args.host)
+        LOGGER.info(
             'Available VMs: %s',
             prefix.virt_env.get_vms().keys()
         )
@@ -217,8 +221,8 @@ def do_copy_to_vm(prefix, args):
     try:
         host = prefix.virt_env.get_vm(args.host)
     except KeyError:
-        logging.error('Unable to find VM %s', args.host)
-        logging.info(
+        LOGGER.error('Unable to find VM %s', args.host)
+        LOGGER.info(
             'Available VMs: %s',
             prefix.virt_env.get_vms().keys()
         )
@@ -499,6 +503,16 @@ def create_parser():
     parser = argparse.ArgumentParser(
         description='Command line interface to oVirt testing framework.'
     )
+    parser.add_argument(
+        '-l', '--loglevel', default='info',
+        choices=['info', 'debug', 'error', 'warning'],
+        help='Log level to use, by default %(default)s'
+    )
+    parser.add_argument(
+        '--logdepth', default=3, type=int,
+        help='How many task levels to show, by default %(default)s'
+    )
+
     verbs = parser.add_subparsers(dest='verb', metavar='VERB')
     for verb, (kwargs, verb_arguments, _) in ARGUMENTS.items():
         verb_parser = verbs.add_parser(
@@ -512,21 +526,32 @@ def create_parser():
 
 def check_group_membership():
     if 'lago' not in [grp.getgrgid(gid).gr_name for gid in os.getgroups()]:
-        sys.stderr.write(
-            'WARNING: current session does not belong to lago group.\n'
-        )
+        LOGGER.warning('current session does not belong to lago group.')
 
 
 def main():
-    check_group_membership()
     parser = create_parser()
     args = parser.parse_args()
+
+    logging.basicConfig(level=logging.DEBUG),
+    logging.root.handlers = [
+        log_utils.TaskHandler(
+            task_tree_depth=args.logdepth,
+            level=getattr(logging, args.loglevel.upper()),
+            dump_level=logging.ERROR,
+            formatter=log_utils.ColorFormatter(
+                fmt='%(msg)s',
+            )
+        )
+    ]
+
+    check_group_membership()
 
     try:
         _, _, func = ARGUMENTS[args.verb]
         func(args)
     except Exception:
-        logging.exception('Error occured, aborting')
+        LOGGER.exception('Error occured, aborting')
         sys.exit(1)
 
 

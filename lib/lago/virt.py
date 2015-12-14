@@ -37,6 +37,12 @@ import config
 import brctl
 import utils
 import sysprep
+from . import log_utils
+
+
+LOGGER = logging.getLogger(__name__)
+LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
+log_task = functools.partial(log_utils.log_task, logger=LOGGER)
 
 
 def _gen_ssh_command_id():
@@ -128,23 +134,28 @@ class VirtEnv(object):
             self._libvirt_con = libvirt.open('qemu:///system')
         return self._libvirt_con
 
+    @log_task('Start prefix')
     def start(self):
         with utils.RollbackContext() as rollback:
-            for net in self._nets.values():
-                net.start()
-                rollback.prependDefer(net.stop)
+            with LogTask('Start nets'):
+                for net in self._nets.values():
+                    net.start()
+                    rollback.prependDefer(net.stop)
 
-            for vm in self._vms.values():
-                vm.start()
-                rollback.prependDefer(vm.stop)
-            rollback.clear()
+            with LogTask('Start vms'):
+                for vm in self._vms.values():
+                    vm.start()
+                    rollback.prependDefer(vm.stop)
+                rollback.clear()
 
+    @log_task('Stop prefix')
     def stop(self):
-        logging.info("Stopping prefix")
-        for vm in self._vms.values():
-            vm.stop()
-        for net in self._nets.values():
-            net.stop()
+        with LogTask('Stop vms'):
+            for vm in self._vms.values():
+                vm.stop()
+        with LogTask('Stop nets'):
+            for net in self._nets.values():
+                net.stop()
 
     def get_nets(self):
         return self._nets.copy()
@@ -184,26 +195,33 @@ class VirtEnv(object):
 
         return cls(prefix, vm_specs, net_specs)
 
+    @log_task('Save prefix')
     def save(self):
-        for net in self._nets.values():
-            net.save()
-        for vm in self._vms.values():
-            vm.save()
+        with LogTask('Save nets'):
+            for net in self._nets.values():
+                net.save()
+
+        with LogTask('Save VMs'):
+            for vm in self._vms.values():
+                vm.save()
 
         spec = {
             'nets': self._nets.keys(),
             'vms': self._vms.keys(),
         }
 
-        with open(self.virt_path('env'), 'w') as f:
-            utils.json_dump(spec, f)
+        with LogTask('Save env'):
+            with open(self.virt_path('env'), 'w') as f:
+                utils.json_dump(spec, f)
 
+    @log_task('Create VMs snapshots')
     def create_snapshots(self, name):
         utils.invoke_in_parallel(
             lambda vm: vm.create_snapshot(name),
             self._vms.values(),
         )
 
+    @log_task('Revert VMs snapshots')
     def revert_snapshots(self, name):
         utils.invoke_in_parallel(
             lambda vm: vm.revert_snapshot(name),
@@ -251,15 +269,21 @@ class Network(object):
 
     def start(self):
         if not self.alive():
-            logging.info('Creating network %s', self.name())
-            self._env.libvirt_con.networkCreateXML(self._libvirt_xml())
+            with LogTask(
+                'Create network %s' % self.name(),
+                level='debug',
+            ):
+                self._env.libvirt_con.networkCreateXML(self._libvirt_xml())
 
     def stop(self):
         if self.alive():
-            logging.info('Destroying network %s', self.name())
-            self._env.libvirt_con.networkLookupByName(
-                self._libvirt_name(),
-            ).destroy()
+            with LogTask(
+                'Destroy network %s' % self.name(),
+                level='debug',
+            ):
+                self._env.libvirt_con.networkLookupByName(
+                    self._libvirt_name(),
+                ).destroy()
 
     def save(self):
         with open(self._env.virt_path('net-%s' % self.name()), 'w') as f:
@@ -570,7 +594,7 @@ class VM(object):
 
         joined_command = ' '.join(command)
         command_id = _gen_ssh_command_id()
-        logging.debug(
+        LOGGER.debug(
             'Running %s on %s: %s%s',
             command_id,
             self.name(),
@@ -591,7 +615,7 @@ class VM(object):
         transport.close()
         client.close()
 
-        logging.debug(
+        LOGGER.debug(
             'Command %s on %s returned with %d',
             command_id,
             self.name(),
@@ -599,14 +623,14 @@ class VM(object):
         )
 
         if out:
-            logging.debug(
+            LOGGER.debug(
                 'Command %s on %s output:\n %s',
                 command_id,
                 self.name(),
                 out,
             )
         if err:
-            logging.debug(
+            LOGGER.debug(
                 'Command %s on %s  errors:\n %s',
                 command_id,
                 self.name(),
@@ -642,8 +666,11 @@ class VM(object):
             client.close()
 
     def copy_to(self, local_path, remote_path):
-        with self._sftp() as sftp:
-            sftp.put(local_path, remote_path)
+        with LogTask(
+                'Copy %s to %s:%s' % (local_path, self.name(), remote_path),
+        ):
+            with self._sftp() as sftp:
+                sftp.put(local_path, remote_path)
 
     def copy_from(self, remote_path, local_path):
         with self._sftp() as sftp:
@@ -752,16 +779,22 @@ class VM(object):
 
     def start(self):
         if not self.alive():
-            logging.info('Starting VM %s', self.name())
-            self._env.libvirt_con.createXML(self._libvirt_xml())
+            with LogTask(
+                'Starting VM %s' % self.name(),
+                level='debug',
+            ):
+                self._env.libvirt_con.createXML(self._libvirt_xml())
 
     def stop(self):
         if self.alive():
             self._ssh_client = None
-            logging.info('Destroying VM %s', self.name())
-            self._env.libvirt_con.lookupByName(
-                self._libvirt_name(),
-            ).destroy()
+            with LogTask(
+                'Destroying VM %s' % self.name(),
+                level='debug',
+            ):
+                self._env.libvirt_con.lookupByName(
+                    self._libvirt_name(),
+                ).destroy()
 
     def alive(self):
         dom_names = [
@@ -782,55 +815,58 @@ class VM(object):
         raise RuntimeError('Dead snapshots are not implemented yet')
 
     def _create_live_snapshot(self, name):
-        logging.info(
-            'Creating live snapshot named %s for %s',
-            name,
-            self.name(),
-        )
+        with LogTask(
+            'Creating live snapshot named %s for %s' % (name, self.name()),
+            level='debug',
+        ):
 
-        self.wait_for_ssh()
-        self.guest_agent().start()
-        self.ssh('sync'.split(' '))
+            self.wait_for_ssh()
+            self.guest_agent().start()
+            self.ssh('sync'.split(' '))
 
-        dom = self._env.libvirt_con.lookupByName(self._libvirt_name())
-        dom_xml = lxml.etree.fromstring(dom.XMLDesc())
-        disks = dom_xml.xpath('devices/disk')
+            dom = self._env.libvirt_con.lookupByName(self._libvirt_name())
+            dom_xml = lxml.etree.fromstring(dom.XMLDesc())
+            disks = dom_xml.xpath('devices/disk')
 
-        with open(_path_to_xml('snapshot_template.xml')) as f:
-            snapshot_xml = lxml.etree.fromstring(f.read())
-        snapshot_disks = snapshot_xml.xpath('disks')[0]
+            with open(_path_to_xml('snapshot_template.xml')) as f:
+                snapshot_xml = lxml.etree.fromstring(f.read())
+            snapshot_disks = snapshot_xml.xpath('disks')[0]
 
-        for disk in disks:
-            target_dev = disk.xpath('target')[0].attrib['dev']
-            snapshot_disks.append(lxml.etree.Element('disk', name=target_dev))
+            for disk in disks:
+                target_dev = disk.xpath('target')[0].attrib['dev']
+                snapshot_disks.append(
+                    lxml.etree.Element('disk', name=target_dev)
+                )
 
-        try:
-            dom.snapshotCreateXML(
-                lxml.etree.tostring(snapshot_xml),
-                libvirt.VIR_DOMAIN_SNAPSHOT_CREATE_DISK_ONLY |
-                libvirt.VIR_DOMAIN_SNAPSHOT_CREATE_QUIESCE,
-            )
-        except libvirt.libvirtError:
-            logging.exception(
-                'Failed to create snapshot %s for %s', name, self.name(),
-            )
-            raise
+            try:
+                dom.snapshotCreateXML(
+                    lxml.etree.tostring(snapshot_xml),
+                    libvirt.VIR_DOMAIN_SNAPSHOT_CREATE_DISK_ONLY |
+                    libvirt.VIR_DOMAIN_SNAPSHOT_CREATE_QUIESCE,
+                )
+            except libvirt.libvirtError:
+                LOGGER.exception(
+                    'Failed to create snapshot %s for %s', name, self.name(),
+                )
+                raise
 
-        snap_info = []
-        new_disks = lxml.etree.fromstring(dom.XMLDesc()).xpath('devices/disk')
-        for disk, xml_node in zip(self._spec['disks'], new_disks):
-            disk['path'] = xml_node.xpath('source')[0].attrib['file']
-            disk['format'] = 'qcow2'
-            snap_disk = disk.copy()
-            snap_disk['path'] = xml_node.xpath(
-                'backingStore',
-            )[0].xpath(
-                'source',
-            )[0].attrib['file']
-            snap_info.append(snap_disk)
+            snap_info = []
+            new_disks = lxml.etree.fromstring(
+                dom.XMLDesc()
+            ).xpath('devices/disk')
+            for disk, xml_node in zip(self._spec['disks'], new_disks):
+                disk['path'] = xml_node.xpath('source')[0].attrib['file']
+                disk['format'] = 'qcow2'
+                snap_disk = disk.copy()
+                snap_disk['path'] = xml_node.xpath(
+                    'backingStore',
+                )[0].xpath(
+                    'source',
+                )[0].attrib['file']
+                snap_info.append(snap_disk)
 
-        self._reclaim_disks()
-        self._spec['snapshots'][name] = snap_info
+            self._reclaim_disks()
+            self._spec['snapshots'][name] = snap_info
 
     def revert_snapshot(self, name):
         try:
@@ -838,29 +874,29 @@ class VM(object):
         except KeyError:
             raise RuntimeError('No snapshot %s for %s' % (name, self.name()))
 
-        logging.info('Reverting %s to snapshot %s', self.name(), name)
+        with LogTask('Reverting %s to snapshot %s' % (self.name(), name)):
 
-        was_alive = self.alive()
-        if was_alive:
-            self.stop()
-        for disk, disk_template in zip(self._spec['disks'], snap_info):
-            os.unlink(disk['path'])
-            ret, _, _ = utils.run_command(
-                [
-                    'qemu-img',
-                    'create',
-                    '-f', 'qcow2',
-                    '-b', disk_template['path'],
-                    disk['path'],
-                ],
-                cwd=os.path.dirname(disk['path']),
-            )
-            if ret != 0:
-                raise RuntimeError('Failed to revert disk')
+            was_alive = self.alive()
+            if was_alive:
+                self.stop()
+            for disk, disk_template in zip(self._spec['disks'], snap_info):
+                os.unlink(disk['path'])
+                ret, _, _ = utils.run_command(
+                    [
+                        'qemu-img',
+                        'create',
+                        '-f', 'qcow2',
+                        '-b', disk_template['path'],
+                        disk['path'],
+                    ],
+                    cwd=os.path.dirname(disk['path']),
+                )
+                if ret != 0:
+                    raise RuntimeError('Failed to revert disk')
 
-        self._reclaim_disks()
-        if was_alive:
-            self.start()
+            self._reclaim_disks()
+            if was_alive:
+                self.start()
 
     def extract_paths(self, paths):
         self.guest_agent().start()
@@ -893,7 +929,7 @@ class VM(object):
                 try:
                     _guestfs_copy_path(g, guest_path, host_path)
                 except Exception:
-                    logging.exception(
+                    LOGGER.exception(
                         'Failed to copy %s from %s', guest_path, self.name(),
                     )
             g.shutdown()
@@ -908,27 +944,27 @@ class VM(object):
             utils.json_dump(self._spec, f)
 
     def bootstrap(self):
-        logging.debug('Bootstrapping %s begin', self.name())
-
-        sysprep.sysprep(
-            self._spec['disks'][0]['path'],
-            [
-                sysprep.set_hostname(self.name()),
-                sysprep.set_root_password(self.root_password()),
-                sysprep.add_ssh_key(
-                    self._env.prefix.paths.ssh_id_rsa_pub(),
-                    with_restorecon_fix=(self.distro() == 'fc23'),
-                ),
-                sysprep.set_iscsi_initiator_name(self.iscsi_name()),
-                sysprep.set_selinux_mode('enforcing'),
-            ] + [
-                sysprep.config_net_interface_dhcp(
-                    'eth%d' % i,
-                    _ip_to_mac(nic['ip']),
-                ) for i, nic in enumerate(self._spec['nics']) if 'ip' in nic
-            ],
-        )
-        logging.debug('Bootstrapping %s end', self.name())
+        with LogTask('Bootstrapping %s' % self.name()):
+            sysprep.sysprep(
+                self._spec['disks'][0]['path'],
+                [
+                    sysprep.set_hostname(self.name()),
+                    sysprep.set_root_password(self.root_password()),
+                    sysprep.add_ssh_key(
+                        self._env.prefix.paths.ssh_id_rsa_pub(),
+                        with_restorecon_fix=(self.distro() == 'fc23'),
+                    ),
+                    sysprep.set_iscsi_initiator_name(self.iscsi_name()),
+                    sysprep.set_selinux_mode('enforcing'),
+                ] + [
+                    sysprep.config_net_interface_dhcp(
+                        'eth%d' % index,
+                        _ip_to_mac(nic['ip']),
+                    )
+                    for index, nic
+                    in enumerate(self._spec['nics']) if 'ip' in nic
+                ],
+            )
 
     def _reclaim_disk(self, path):
         if pwd.getpwuid(os.stat(path).st_uid).pw_name == 'qemu':
@@ -947,10 +983,10 @@ class VM(object):
         return dom_xml.xpath('devices/graphics').pop().attrib['port']
 
     def _detect_service_manager(self):
-        logging.debug('Detecting service manager for %s', self.name())
+        LOGGER.debug('Detecting service manager for %s', self.name())
         for manager_name, service_class in _SERVICE_WRAPPERS.items():
             if service_class.is_supported(self):
-                logging.debug(
+                LOGGER.debug(
                     'Setting %s as service manager for %s',
                     manager_name,
                     self.name(),
