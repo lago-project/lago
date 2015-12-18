@@ -523,6 +523,7 @@ class TemplateStore:
         └── phx_repo:storage-nfs:v1.tmp
 
     There you can see the files:
+
     * \*.tmp
         Temporary file created while downloading the template from the
         repository (depends on the provider)

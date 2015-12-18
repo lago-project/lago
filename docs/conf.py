@@ -44,6 +44,7 @@ autodoc_mock_imports = [
     'lockfile',
     'lxml',
     'lxml.etree',
+    'magic',
     'ovirtsdk',
     'ovirtsdk.api',
     'ovirtsdk.infrastructure',

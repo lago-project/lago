@@ -252,7 +252,7 @@ def discard_older_rpms(rpms):
     Gets the list of the newest rpms from the given list
 
     Args:
-        rpms (list of dict): List of rpms as returned by :fun:`get_packages`
+        rpms (list of dict): List of rpms as returned by :func:`get_packages`
 
     Returns:
         list of dict: list of the newest rpms from the list that was passed

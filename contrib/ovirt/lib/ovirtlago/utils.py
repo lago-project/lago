@@ -34,10 +34,10 @@ def run_command(command, **kwargs):
     LIBEXEC_DIR to the path if needed
 
     Args:
-    command (?): parameter to send as the command parameter to
-        :func:`lago.utils.run_command`
-    **kwargs (?): keyword parameters to send as the command parameter to
-        :func:`lago.utils.run_command`
+        command (?): parameter to send as the command parameter to
+            :func:`lago.utils.run_command`
+        **kwargs (?): keyword parameters to send as the command parameter to
+            :func:`lago.utils.run_command`
 
     Returns:
         ?: Whatever :func:`lago.utils.run_command` returns
