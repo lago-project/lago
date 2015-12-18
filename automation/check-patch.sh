@@ -54,6 +54,23 @@ bats tests/functional/*basic.bats \
 | tee exported-artifacts/basic_functional_tests.tap
 res=${PIPESTATUS[0]}
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+echo '~*          Generating html report                     ~'
+echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+cat  >exported-artifacts/index.html <<EOR
+<html>
+<body>
+<ul>
+<li>
+  <a href="docs/html/index.html">Docs page</a>
+</li>
+<li>
+  <a href="basic_functional_tests.tap">TAP tests result</a>
+</li>
+</ul
+</body>
+</html>
+EOR
+echo "~ Report at file://$PWD/exported-artifacts/index.html  ~"
+echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 exit "$res"
-
