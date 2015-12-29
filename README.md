@@ -8,14 +8,13 @@ Hello, this describes how to get started with Lago.
 In order to install the framework, you'll need to build RPMs or acquire them
 from a repository.
 
-Latest lago RPMs are built by jenkin job and you can find them here:
+Latest lago RPMs are built by jenkins job and you can find them here:
 http://jenkins.ovirt.org/job/lago_master_build-artifacts-$DIST-x86_64
 
 Where `$DIST` is either el7, fc21, fc22 or fc23 (this list might be outdated,
-take a look at the repo te see the supported distros)
+take a look at the repo to see the supported distros).
 
-
-Or you can use the yum repo (it's updated often right now, and a buit
+Or you can use the yum repo (it's updated often right now, and a bit
 unstable), you can add it as a repository creating a file under
 `/etc/yum.repos.d/lago.repo` with the following content:
 
@@ -140,8 +139,8 @@ $ sudo -u qemu ls /path/to/the/destination/dir
 
 If it can't access it, make sure that all the dirs in the path have your user
 or qemu groups and execution rights for the group, or execution rights for
-other (higly recommended to use the group instead, if the dir did not have
-execuiton rights for others already)
+other (highly recommended to use the group instead, if the dir did not have
+execution rights for others already)
 
 And, just to be sure, let's refresh libvirtd service to ensure that it
 refreshes it's permissions and picks up any newly created users:
@@ -288,7 +287,7 @@ safe to fully remove the prefix dir if you want to.
 
 As the above script has become a bit complicated, and it's not (yet) part of
 lago itself, this section will do the same as the script, but step by step with
-lago only command to give you a better idea of what you have to do in a ususal
+lago only command to give you a better idea of what you have to do in a usual
 project.
 
 So, let's get back to the root of the ovirt-system-tests repo, and cd into the
@@ -348,8 +347,8 @@ before being able to create the prefix:
 ### template-repo.json: Sources for templates
 
 This file contains information about the available disk templates and
-repositiories to get them from, we can use it as it is, but if you are in Red
-Hat office in Israel, you might want to use the redhat internal mirrors there,
+repositories to get them from, we can use it as it is, but if you are in Red
+Hat office in Israel, you might want to use the Red Hat internal mirrors there,
 for that use the `common/template-repos/office.json` file instead, see next for
 the full command line.
 
@@ -424,7 +423,7 @@ repos that will be enabled on the vms to pull from. If you want to use any
 custom repos just add the yum repo entry of your choice there and it will be
 make accessible to the vms.
 
-The internal reposirtory is built from one or several 'sources', there are 2
+The internal repository is built from one or several 'sources', there are 2
 types of sources:
 
 * External RPM repositories:
@@ -456,7 +455,7 @@ $ lagocli ovirt reposetup --reposync-yum-config="reposync-config.repo"
 ```
 
 This might take a while the first time too, as it has to fetch a few rpms from
-a few repos, next time it will also use a chache to speed things up
+a few repos, next time it will also use a cache to speed things up
 considerably.
 
 **NOTE**: From now on, all the `lagocli` command will be run inside the
@@ -499,7 +498,7 @@ installed and configured
 
 ### Running the tests
 
-Okok, so now we have our evironment ready for the tests!! \o/
+Okok, so now we have our environment ready for the tests!! \o/
 
 Lets get it on, remember that they should be executed in order:
 
