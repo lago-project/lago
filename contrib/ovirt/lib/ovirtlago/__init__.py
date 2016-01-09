@@ -72,6 +72,7 @@ def _sync_rpm_repository(repo_path, yum_config, repos):
                 '--download_path=%s' % repo_path,
                 '--newest-only',
                 '--delete',
+                '--cachedir=%s' % repo_path,
             ] + [
                 '--repoid=%s' % repo
                 for repo in repos
