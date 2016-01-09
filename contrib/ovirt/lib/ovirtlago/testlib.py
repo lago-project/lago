@@ -20,6 +20,7 @@
 import datetime
 import functools
 import os
+import time
 
 import nose.plugins
 from nose.plugins.skip import SkipTest
@@ -146,9 +147,10 @@ def assert_true_within(func, timeout):
             try:
                 if func():
                     return
+                time.sleep(3)
             except Exception:
                 pass
-    raise AssertionError('Timed out')
+    raise AssertionError('Timed out after %s seconds' % timeout)
 
 
 def assert_true_within_short(func):
