@@ -291,6 +291,7 @@ class Network(object):
 
 
 class NATNetwork(Network):
+
     def _libvirt_xml(self):
         with open(_path_to_xml('net_nat_template.xml')) as f:
             net_raw_xml = f.read()
@@ -337,6 +338,7 @@ class NATNetwork(Network):
 
 
 class BridgeNetwork(Network):
+
     def _libvirt_xml(self):
         with open(_path_to_xml('net_br_template.xml')) as f:
             net_raw_xml = f.read()
@@ -721,12 +723,26 @@ class VM(object):
         disk = devices.xpath('disk')[0]
         devices.remove(disk)
 
-        for dev_spec in self._spec['disks']:
+        for disk_order, dev_spec in enumerate(self._spec['disks']):
+
+            # we have to make some adjustments
+            # we use iso to indicate cdrom
+            # but the ilbvirt wants it named raw
+            # and we need to use cdrom device
+            disk_device = 'disk'
+            bus = 'virtio'
+            if dev_spec['format'] == 'iso':
+                disk_device = 'cdrom'
+                dev_spec['format'] = 'raw'
+                bus = 'ide'
+            # names converted
+
             disk = lxml.etree.Element(
                 'disk',
                 type='file',
-                device='disk',
+                device=disk_device,
             )
+
             disk.append(
                 lxml.etree.Element(
                     'driver',
@@ -734,6 +750,14 @@ class VM(object):
                     type=dev_spec['format'],
                 ),
             )
+
+            disk.append(
+                lxml.etree.Element(
+                    'boot',
+                    order="{}".format(disk_order + 1)
+                ),
+            )
+
             disk.append(
                 lxml.etree.Element(
                     'source',
@@ -744,7 +768,7 @@ class VM(object):
                 lxml.etree.Element(
                     'target',
                     dev=dev_spec['dev'],
-                    bus='virtio',
+                    bus=bus,
                 ),
             )
             devices.append(disk)
@@ -945,26 +969,28 @@ class VM(object):
 
     def bootstrap(self):
         with LogTask('Bootstrapping %s' % self.name()):
-            sysprep.sysprep(
-                self._spec['disks'][0]['path'],
-                [
-                    sysprep.set_hostname(self.name()),
-                    sysprep.set_root_password(self.root_password()),
-                    sysprep.add_ssh_key(
-                        self._env.prefix.paths.ssh_id_rsa_pub(),
-                        with_restorecon_fix=(self.distro() == 'fc23'),
-                    ),
-                    sysprep.set_iscsi_initiator_name(self.iscsi_name()),
-                    sysprep.set_selinux_mode('enforcing'),
-                ] + [
-                    sysprep.config_net_interface_dhcp(
-                        'eth%d' % index,
-                        _ip_to_mac(nic['ip']),
-                    )
-                    for index, nic
-                    in enumerate(self._spec['nics']) if 'ip' in nic
-                ],
-            )
+            if self._spec['disks'][0]['type'] != 'empty' and self._spec[
+                    'disks'][0]['format'] != 'iso':
+                sysprep.sysprep(
+                    self._spec['disks'][0]['path'],
+                    [
+                        sysprep.set_hostname(self.name()),
+                        sysprep.set_root_password(self.root_password()),
+                        sysprep.add_ssh_key(
+                            self._env.prefix.paths.ssh_id_rsa_pub(),
+                            with_restorecon_fix=(self.distro() == 'fc23'),
+                        ),
+                        sysprep.set_iscsi_initiator_name(self.iscsi_name()),
+                        sysprep.set_selinux_mode('enforcing'),
+                    ] + [
+                        sysprep.config_net_interface_dhcp(
+                            'eth%d' % index,
+                            _ip_to_mac(nic['ip']),
+                        )
+                        for index, nic
+                        in enumerate(self._spec['nics']) if 'ip' in nic
+                    ],
+                )
 
     def _reclaim_disk(self, path):
         if pwd.getpwuid(os.stat(path).st_uid).pw_name == 'qemu':

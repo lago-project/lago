@@ -716,6 +716,7 @@ class Prefix(object):
                                 'dev': disk['dev'],
                                 'format': disk['format'],
                                 'metadata': metadata,
+                                'type': disk['type']
                             },
                         )
                 conf['domains'][name]['disks'] = new_disks
