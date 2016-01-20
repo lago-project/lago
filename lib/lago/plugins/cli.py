@@ -45,7 +45,7 @@ You can also use decorators instead, an equivalent is::
 
     @cli_plugin_add_argument('--dummy-flag', action='store_true')
     @cli_plugin_add_help('dummy help string')
-    def my_fancy_plugin_func(dummy_flag):
+    def my_fancy_plugin_func(dummy_flag, **kwargs):
         if dummy_flag:
             print "Dummy flag passed to noop subcommand!"
         else:
@@ -54,7 +54,7 @@ You can also use decorators instead, an equivalent is::
 Or::
 
     @cli_plugin_add_argument('--dummy-flag', action='store_true')
-    def my_fancy_plugin_func(dummy_flag):
+    def my_fancy_plugin_func(dummy_flag, **kwargs):
         "dummy help string"
         if dummy_flag:
             print "Dummy flag passed to noop subcommand!"
@@ -88,6 +88,8 @@ as::
 
     $ lagocli noop
     Dummy flag not passed to noop subcommand!
+
+TODO: Allow per-plugin namespacing to get rid of the `**kwargs` parameter
 """
 
 from abc import (
@@ -122,12 +124,12 @@ class CLIPlugin(object):
         """
 
     @abstractmethod
-    def do_run(self, **kwargs):
+    def do_run(self, args):
         """
         Execute any actions given the arguments
 
         Args:
-            kwargs (dict): with the arguments
+            args (Namespace): with the arguments
 
         Returns:
             None
@@ -138,8 +140,12 @@ class CLIPluginFuncWrapper(CLIPlugin):
     """
     Special class to handle decorated cli plugins, take into account that the
     decorated functions have some limitations on what arguments can they
-    define actually, if you need samething complicated, used the abstract class
+    define actually, if you need something complicated, used the abstract class
     :class:`CLIPlugin` instead.
+
+    Keep in mind that right now the decorated function must use `**kwargs` as
+    param, as it will be passed all the members of the parser, not just
+    whatever it defined
     """
     def __init__(self, do_run=None):
         self._help = None
@@ -164,8 +170,8 @@ class CLIPluginFuncWrapper(CLIPlugin):
         for argument_args, argument_kwargs in self._parser_args:
             parser.add_argument(*argument_args, **argument_kwargs)
 
-    def do_run(self, **kwargs):
-        self._do_run(**kwargs)
+    def do_run(self, args):
+        self._do_run(**vars(args))
 
     def __call__(self, *args, **kwargs):
         """
@@ -192,7 +198,7 @@ def cli_plugin_add_argument(*args, **kwargs):
 
     Examples:
         >>> @cli_plugin_add_argument('-m', '--mogambo', action='store_true')
-        ... def test():
+        ... def test(**kwargs):
         ...     print 'test'
         ...
         >>> print test.__class__
@@ -203,7 +209,7 @@ def cli_plugin_add_argument(*args, **kwargs):
         >>> @cli_plugin_add_argument('-m', '--mogambo', action='store_true')
         ... @cli_plugin_add_argument('-b', '--bogabmo', action='store_false')
         ... @cli_plugin
-        ... def test():
+        ... def test(**kwargs):
         ...     print 'test'
         ...
         >>> print test.__class__
@@ -236,7 +242,7 @@ def cli_plugin_add_help(help):
             decorated function, setting the given help
     Examples:
         >>> @cli_plugin_add_help('my help string')
-        ... def test():
+        ... def test(**kwargs):
         ...     print 'test'
         ...
         >>> print test.__class__
@@ -246,7 +252,7 @@ def cli_plugin_add_help(help):
 
         >>> @cli_plugin_add_help('my help string')
         ... @cli_plugin()
-        ... def test():
+        ... def test(**kwargs):
         ...     print 'test'
         >>> print test.__class__
         <class 'cli.CLIPluginFuncWrapper'>
@@ -281,14 +287,14 @@ def cli_plugin(func=None):
 
     Examples:
         >>> @cli_plugin
-        ... def test():
+        ... def test(**kwargs):
         ...     print 'test'
         ...
         >>> print test.__class__
         <class 'cli.CLIPluginFuncWrapper'>
 
         >>> @cli_plugin()
-        ... def test():
+        ... def test(**kwargs):
         ...     print 'test'
         >>> print test.__class__
         <class 'cli.CLIPluginFuncWrapper'>

@@ -538,7 +538,7 @@ def main():
             _, _, func = ARGUMENTS[args.verb]
             func(args)
         else:
-            cli_plugins[args.verb].do_run(**vars(args))
+            cli_plugins[args.verb].do_run(args)
 
     except Exception:
         LOGGER.exception('Error occured, aborting')

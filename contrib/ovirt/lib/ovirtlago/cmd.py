@@ -335,7 +335,7 @@ class OvirtCLI(CLIPlugin):
     help = 'oVirt related actions'
 
     def populate_parser(self, parser):
-        verbs = parser.add_subparsers(dest='verb', metavar='VERB')
+        verbs = parser.add_subparsers(dest='ovirtverb', metavar='VERB')
         for verb, (desc, args, _) in ARGUMENTS.items():
             verb_parser = verbs.add_parser(verb, help=desc)
             for arg_name, arg_kw in args:
@@ -344,7 +344,7 @@ class OvirtCLI(CLIPlugin):
 
     def do_run(self, args):
         try:
-            _, _, func = ARGUMENTS[args.verb]
+            _, _, func = ARGUMENTS[args.ovirtverb]
             func(args)
         except Exception:
             logging.exception('Error occured, aborting')

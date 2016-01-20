@@ -98,7 +98,7 @@ class TemplateRepoCLI(CLIPlugin):
     help = 'Utility for system testing template management'
 
     def populate_parser(self, parser):
-        verbs = parser.add_subparsers(dest='verb', metavar='VERB')
+        verbs = parser.add_subparsers(dest='tplverb', metavar='VERB')
         for verb, (desc, args, _) in ARGUMENTS.items():
             verb_parser = verbs.add_parser(verb, help=desc)
             for arg_name, arg_kw in args:
@@ -107,7 +107,7 @@ class TemplateRepoCLI(CLIPlugin):
 
     def do_run(self, args):
         try:
-            _, _, func = ARGUMENTS[args.verb]
+            _, _, func = ARGUMENTS[args.tplverb]
             func(args)
         except Exception:
             logging.exception('Error occured, aborting')
