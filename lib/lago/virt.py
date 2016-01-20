@@ -418,7 +418,7 @@ class _SystemdService(_Service):
         return self._vm.ssh([self.BIN_PATH, 'stop', self._name])
 
     def state(self):
-        ret = self._vm.ssh([self.BIN_PATH, 'status', self._name])
+        ret = self._vm.ssh([self.BIN_PATH, 'status --lines=0', self._name])
         if not ret:
             return ServiceState.ACTIVE
 
@@ -478,7 +478,10 @@ class _SystemdContainerService(_Service):
 
     def state(self):
         ret = self._vm.ssh(
-            [self.BIN_PATH, 'exec vdsmc systemctl status', self._name])
+            [self.BIN_PATH,
+                'exec vdsmc systemctl status --lines=0',
+                self._name]
+        )
         if ret.code == 0:
             return ServiceState.ACTIVE
 
@@ -708,8 +711,8 @@ class VM(object):
 
         replacements = {
             '@NAME@': self._libvirt_name(),
-            '@VCPU@': self._spec.get('vcpu', 4),
-            '@CPU@': self._spec.get('cpu', 4),
+            '@VCPU@': self._spec.get('vcpu', 2),
+            '@CPU@': self._spec.get('cpu', 2),
             '@MEM_SIZE@': self._spec.get('memory', 16 * 1024),
             '@QEMU_KVM@': qemu_kvm_path,
         }
