@@ -505,9 +505,13 @@ class Prefix(object):
             elif spec['type'] == 'file':
                 url = spec.get('url', '')
                 if url:
-                    shutil.move(
-                        self.fetch_url(self.path.prefixed(url)), spec['path']
-                    )
+                    downloaded_path = self.fetch_url(url)
+                    if 'path' in spec:
+                        shutil.move(downloaded_path, spec['path'])
+                    else:
+                        spec['path'] = downloaded_path
+
+                    return self.fetch_url(url), disk_metadata
                 # If we're using raw file, just return it's path
                 return spec['path'], disk_metadata
             else:
