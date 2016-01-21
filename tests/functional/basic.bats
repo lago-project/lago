@@ -106,7 +106,7 @@ load env_setup
     echo "DIFF:Checking if the output differs from the expected"
     echo "CURRENT                  | EXPECTED"
     expected_content="$FIXTURES/expected_down_status"
-    expected_file="$prefix/expected_down_status"
+    expected_file="expected_down_status"
     sed \
         -e "s|@@BATS_TEST_DIRNAME@@|$BATS_TEST_DIRNAME|g" \
         "$expected_content" \
@@ -114,7 +114,7 @@ load env_setup
     diff \
         --suppress-common-lines \
         --side-by-side \
-        "$prefix/current" \
+        "current" \
         "$expected_file"
 }
 
@@ -146,7 +146,7 @@ load env_setup
     echo "DIFF:Checking if the output differs from the expected"
     echo "CURRENT                  | EXPECTED"
     expected_content="$FIXTURES/expected_up_status"
-    expected_file="$prefix/expected_up_status"
+    expected_file="expected_up_status"
     sed \
         -e "s|@@BATS_TEST_DIRNAME@@|$BATS_TEST_DIRNAME|g" \
         -e "s|@@VNC_PORT@@|${vnc_port:-no port found}|g" \
@@ -155,7 +155,7 @@ load env_setup
     diff \
         --suppress-common-lines \
         --side-by-side \
-        "$prefix/current" \
+        "current" \
         "$expected_file"
 }
 
