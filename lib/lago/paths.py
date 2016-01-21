@@ -27,30 +27,30 @@ class Paths(object):
     def prefix(self):
         return self._prefix
 
-    def _prefixed(self, *args):
+    def prefixed(self, *args):
         return os.path.join(self.prefix(), *args)
 
     def uuid(self):
-        return self._prefixed('uuid')
+        return self.prefixed('uuid')
 
     def ssh_id_rsa(self):
-        return self._prefixed('id_rsa')
+        return self.prefixed('id_rsa')
 
     def ssh_id_rsa_pub(self):
-        return self._prefixed('id_rsa.pub')
+        return self.prefixed('id_rsa.pub')
 
     def images(self, *path):
-        return self._prefixed('images', *path)
+        return self.prefixed('images', *path)
 
     def virt(self, *path):
-        return self._prefixed('virt', *path)
+        return self.prefixed('virt', *path)
 
     def logs(self):
-        return self._prefixed('logs')
+        return self.prefixed('logs')
 
     def metadata(self):
-        return self._prefixed('metadata')
+        return self.prefixed('metadata')
 
     def prefix_lagofile(self):
         "This file represents a prefix that's initialized"
-        return self._prefixed('.lago')
+        return self.prefixed('.lago')

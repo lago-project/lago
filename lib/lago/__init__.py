@@ -23,6 +23,8 @@ import json
 import logging
 import os
 import shutil
+import urlparse
+import urllib
 import uuid
 
 import paths
@@ -494,6 +496,12 @@ class Prefix(object):
                                 disk_path, spec['size']]
                 task_message = 'Create empty disk image'
             elif spec['type'] == 'file':
+                url = spec.get('url', '')
+                if url:
+                    shutil.move(
+                        self.fetch_url(self.path.prefixed(url)),
+                        spec['path']
+                    )
                 # If we're using raw file, just return it's path
                 return spec['path'], disk_metadata
             else:
@@ -534,6 +542,23 @@ class Prefix(object):
             if attr not in spec:
                 spec[attr] = copy.deepcopy(prototype[attr])
         return spec
+
+    def fetch_url(self, url):
+        """
+        Retrieves the given url to the prefix
+
+        Args:
+            url(str): Url to retrieve
+
+        Returns:
+            str: path to the downloaded file
+        """
+        url_path = urlparse.urlsplit(url).path
+        dst_path = os.path.basename(url_path)
+        with LogTask('Downloading %s' % url):
+            urllib.urlretrieve(url=url, filename=self.path.prefixed(dst_path))
+
+        return dst_path
 
     def virt_conf(
         self,

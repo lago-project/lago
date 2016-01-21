@@ -22,10 +22,10 @@ import lago.paths
 
 class OvirtPaths(lago.paths.Paths):
     def internal_repo(self, *path):
-        return self._prefixed('internal_repo', *path)
+        return self.prefixed('internal_repo', *path)
 
     def build_dir(self, *path):
-        return self._prefixed('build', *path)
+        return self.prefixed('build', *path)
 
     def test_logs(self, *args):
-        return self._prefixed('test_logs', *args)
+        return self.prefixed('test_logs', *args)
