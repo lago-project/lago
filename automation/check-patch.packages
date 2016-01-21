@@ -6,8 +6,10 @@ python-flake8
 python-libguestfs
 python-lockfile
 python-lxml
+python-magic
 python-nose
 python-paramiko
+python-xmltodict
 python2-devel
 yum
 # needed for fc23

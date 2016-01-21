@@ -99,6 +99,7 @@ Requires:	python-libguestfs
 Requires:	python-lxml
 Requires:	python-lockfile
 Requires:	python-paramiko
+Requires:	python-xmltodict
 Requires:	python-setuptools
 Requires:	python-stevedore
 Requires:	qemu-img >= 2.1.2

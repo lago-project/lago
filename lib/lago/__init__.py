@@ -19,13 +19,17 @@
 #
 import copy
 import functools
+import glob
 import json
 import logging
 import os
 import shutil
+import subprocess
 import urlparse
 import urllib
 import uuid
+
+import xmltodict
 
 import paths
 import subnet_lease
@@ -521,6 +525,98 @@ class Prefix(object):
 
             return disk_path, disk_metadata
 
+    def _ova_to_spec(self, filename):
+        """
+        Retrieve the given ova and makes a template of it.
+        Creates a disk from network provided ova.
+        Calculates the needed memory from the ovf.
+        The disk will be cached in the template repo
+
+        Args:
+            filename(str): the url to retrive the data from
+
+        TODO:
+            * Add hash checking against the server
+              for faster download and latest version
+            * Add config script running on host - other place
+            * Add cloud init support - by using cdroms in other place
+            * Handle cpu in some way - some other place need to pick it up
+            * Handle the memory units properly - we just assume MegaBytes
+
+        Returns:
+            list of dict: list with the disk specification
+            int: VM memory, None if none defined
+            int: Number of virtual cpus, None if none defined
+
+        Raises:
+            RuntimeError: If the ova format is not supported
+            TypeError: If the memory units in the ova are noot supported
+                (currently only 'MegaBytes')
+        """
+        # extract if needed
+        ova_extracted_dir = os.path.splitext(filename)[0]
+
+        if not os.path.exists(ova_extracted_dir):
+            os.makedirs(ova_extracted_dir)
+            subprocess.check_output(
+                ["tar", "-xvf",
+                 filename, "-C",
+                 ova_extracted_dir],
+                stderr=subprocess.STDOUT)
+
+        # lets find the ovf file
+        # we expect only one to be
+        ovf = glob.glob(ova_extracted_dir + "/master/vms/*/*.ovf")
+        if len(ovf) != 1:
+            raise RuntimeError("We support only one vm in ova")
+
+        image_file = None
+        memory = None
+        vcpus = None
+        # we found our ovf
+        # lets extract the resources
+        with open(ovf[0]) as fd:
+            # lets extract the items
+            obj = xmltodict.parse(fd.read())
+            hardware_items = [section for section in obj["ovf:Envelope"]
+                              ["Content"]["Section"]
+                              if section["@xsi:type"] ==
+                              "ovf:VirtualHardwareSection_Type"]
+
+            if len(hardware_items) != 1:
+                raise RuntimeError("We support only one machine desc in ova")
+            hardware_items = hardware_items[0]
+
+            for item in hardware_items["Item"]:
+                # lets test resource types
+                CPU_RESOURCE = 3
+                MEMORY_RESOURCE = 4
+                DISK_RESOURCE = 17
+
+                resource_type = int(item["rasd:ResourceType"])
+                if resource_type == CPU_RESOURCE:
+                    vcpus = int(item["rasd:cpu_per_socket"]) * \
+                        int(item["rasd:num_of_sockets"])
+
+                elif resource_type == MEMORY_RESOURCE:
+                    memory = int(item["rasd:VirtualQuantity"])
+                    if item["rasd:AllocationUnits"] != "MegaBytes":
+                        raise TypeError(
+                            "Fix me : we need to suport other units too")
+
+                elif resource_type == DISK_RESOURCE:
+                    image_file = item["rasd:HostResource"]
+
+        if image_file is not None:
+            disk_spec = [{"type": "file",
+                          "format": "qcow2",
+                          "dev": "vda",
+                          "name": os.path.basename(image_file),
+                          "path": ova_extracted_dir +
+                                 "/images/" + image_file}]
+
+        return disk_spec, memory, vcpus
+
     def _use_prototype(
         self,
         spec,
@@ -555,8 +651,9 @@ class Prefix(object):
         """
         url_path = urlparse.urlsplit(url).path
         dst_path = os.path.basename(url_path)
+        dst_path = self.paths.prefixed(dst_path)
         with LogTask('Downloading %s' % url):
-            urllib.urlretrieve(url=url, filename=self.path.prefixed(dst_path))
+            urllib.urlretrieve(url=url, filename=dst_path)
 
         return dst_path
 
@@ -591,6 +688,18 @@ class Prefix(object):
             for name, spec in conf['domains'].items():
                 if 'based-on' in spec:
                     spec = self._use_prototype(spec, conf)
+
+                if spec.get('type', '') == 'ova':
+                    # we import the ova to template
+                    spec['type'] = 'template'
+                    ova_file = self.fetch_url(spec['url'])
+                    ova_disk, spec["memory"], spec[
+                        "vcpu"] = self._ova_to_spec(ova_file)
+                    if "disks" not in spec.keys():
+                        spec["disks"] = ova_disk
+                    else:
+                        spec["disks"] = spec["disks"] + ova_disk
+
                 new_disks = []
                 spec['name'] = name
                 with LogTask('Create disks for VM %s' % name):
