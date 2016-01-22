@@ -8,10 +8,7 @@ import nose.tools as nt
 
 import lago.config as config
 
-_ENV = {
-    'LAGO_ENV_VAR_1': 'env_val_1',
-    'LAGO_USER_VAR_1': 'env_val_2',
-}
+_ENV = {'LAGO_ENV_VAR_1': 'env_val_1', 'LAGO_USER_VAR_1': 'env_val_2', }
 
 _USER_CONF = '''
 [lago]
@@ -66,7 +63,7 @@ def config_context():
             ('test2.conf', _SYSTEM_CONF_2),
         ]:
             with open(mkpath(dest), 'w') as f:
-                    f.write(conts)
+                f.write(conts)
 
         with monkey_patch(
             config,
@@ -85,6 +82,7 @@ def _config_test(func):
     def wrapper(*args, **kwargs):
         with config_context():
             return func(*args, **kwargs)
+
     return wrapper
 
 
@@ -96,51 +94,30 @@ def test_nonexistent_throws():
 
 @_config_test
 def test_nonexistent_default():
-    nt.assert_equals(
-        config.get('i_dont_exist', 'foo'),
-        'foo',
-    )
+    nt.assert_equals(config.get('i_dont_exist', 'foo'), 'foo', )
 
 
 @_config_test
 def test_get_from_env():
-    nt.assert_equals(
-        config.get('env_var_1'),
-        'env_val_1',
-    )
+    nt.assert_equals(config.get('env_var_1'), 'env_val_1', )
 
 
 @_config_test
 def test_env_shadows_user():
-    nt.assert_equals(
-        config.get('user_var_1'),
-        'env_val_2',
-    )
+    nt.assert_equals(config.get('user_var_1'), 'env_val_2', )
 
 
 @_config_test
 def test_get_from_user():
-    nt.assert_equals(
-        config.get('user_var_2'),
-        'user_val_2',
-    )
+    nt.assert_equals(config.get('user_var_2'), 'user_val_2', )
 
 
 @_config_test
 def test_user_shadows_system():
-    nt.assert_equals(
-        config.get('system_var_3'),
-        'user_val_3',
-    )
+    nt.assert_equals(config.get('system_var_3'), 'user_val_3', )
 
 
 @_config_test
 def test_get_from_system():
-    nt.assert_equals(
-        config.get('system_var_1'),
-        'system_val_1',
-    )
-    nt.assert_equals(
-        config.get('system_var_2'),
-        'system_val_2',
-    )
+    nt.assert_equals(config.get('system_var_1'), 'system_val_1', )
+    nt.assert_equals(config.get('system_var_2'), 'system_val_2', )

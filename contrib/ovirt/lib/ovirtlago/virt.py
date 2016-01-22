@@ -78,9 +78,7 @@ class EngineVM(TestVM):
         self._api = None
 
     def _artifact_paths(self):
-        return [
-            '/var/log/ovirt-engine',
-        ]
+        return ['/var/log/ovirt-engine', ]
 
     def _create_api(self):
         url = 'https://%s/ovirt-engine/api' % self.ip()
@@ -147,6 +145,4 @@ class EngineVM(TestVM):
 
 class HostVM(TestVM):
     def _artifact_paths(self):
-        return [
-            '/var/log/vdsm',
-        ]
+        return ['/var/log/vdsm', ]

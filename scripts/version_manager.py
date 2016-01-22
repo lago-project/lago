@@ -9,7 +9,6 @@ from collections import defaultdict
 
 import dulwich.repo
 
-
 BUG_URL_REG = re.compile(
     r'.*Bug-Url: https?://bugzilla.*/[^\d]*(?P<bugid>\d+)'
 )
@@ -75,10 +74,14 @@ def pretty_commit(commit, version=''):
 def get_tags(repo):
     return {
         commit: os.path.basename(tag_ref)
-        for tag_ref, commit
-        in repo.get_refs().items()
-        if tag_ref.startswith('refs/tags/')
-        and VALID_TAG.match(tag_ref[len('refs/tags/'):])
+        for tag_ref, commit in repo.get_refs().items()
+        if tag_ref.startswith('refs/tags/') and VALID_TAG.match(
+            tag_ref[
+                len(
+                    'refs/tags/'
+                ):
+            ]
+        )
     }
 
 
@@ -93,19 +96,14 @@ def get_refs(repo):
 def fuzzy_matches_ref(fuzzy_ref, ref):
     cur_section = ''
     for path_section in reversed(ref.split('/')):
-        cur_section = os.path.normpath(
-            os.path.join(path_section, cur_section)
-        )
+        cur_section = os.path.normpath(os.path.join(path_section, cur_section))
         if fuzzy_ref == cur_section:
             return True
     return False
 
 
 def fuzzy_matches_refs(fuzzy_ref, refs):
-    return any(
-        fuzzy_matches_ref(fuzzy_ref, ref)
-        for ref in refs
-    )
+    return any(fuzzy_matches_ref(fuzzy_ref, ref) for ref in refs)
 
 
 def get_changelog(repo_path, from_commit=None):
@@ -153,8 +151,7 @@ def get_changelog(repo_path, from_commit=None):
         version = '%s.%s.%s' % (maj_version, feat_version, fix_version)
 
         if (
-            not start_including
-            and not commit_sha.startswith(from_commit)
+            not start_including and not commit_sha.startswith(from_commit)
             and not fuzzy_matches_refs(from_commit, refs.get(commit_sha, []))
         ):
             continue
@@ -215,7 +212,8 @@ def main(args):
     subparsers = parser.add_subparsers()
     changelog_parser = subparsers.add_parser('changelog')
     changelog_parser.add_argument(
-        '--from-commit', default=None,
+        '--from-commit',
+        default=None,
         help='Commit to start the changelog from'
     )
     changelog_parser.set_defaults(func=get_changelog)

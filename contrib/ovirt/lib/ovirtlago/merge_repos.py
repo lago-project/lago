@@ -42,13 +42,7 @@ def _fastcopy(source, dest):
 
 
 def _get_header(path):
-    ret = utils.run_command(
-        [
-            'rpm',
-            '-qpi',
-            path,
-        ],
-    )
+    ret = utils.run_command(['rpm', '-qpi', path, ], )
 
     if ret:
         raise RuntimeError('Failed to query RPM %s' % path)
@@ -71,8 +65,10 @@ def merge(output_dir, input_dirs):
                 [
                     'find',
                     input_dir,
-                    '-type', 'f',
-                    '-name', '*.rpm',
+                    '-type',
+                    'f',
+                    '-name',
+                    '*.rpm',
                 ]
             )
 
@@ -91,10 +87,7 @@ def merge(output_dir, input_dirs):
                 if hdr['Architecture'] not in rpmUtils.arch.getArchList():
                     continue
 
-                pkgs_by_name.setdefault(
-                    hdr['Name'],
-                    [],
-                ).append((path, hdr))
+                pkgs_by_name.setdefault(hdr['Name'], [], ).append((path, hdr))
 
             for name, pkgs in pkgs_by_name.items():
                 if name in rpms_by_name:
@@ -108,8 +101,7 @@ def merge(output_dir, input_dirs):
                             None,
                             cand_hdr['Version'],
                             cand_hdr['Release'],
-                        ),
-                        (
+                        ), (
                             None,
                             other_hdr['Version'],
                             other_hdr['Release'],

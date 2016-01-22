@@ -18,31 +18,24 @@ import subprocess
 
 from recommonmark.parser import CommonMarkParser
 
-
-subprocess.call([
-    'sphinx-apidoc',
-    '--module-first',
-    '--no-toc',
-    '-f',
-    '-o', os.path.dirname(__file__),
-    '../lib/lago'
-])
-subprocess.call([
-    'sphinx-apidoc',
-    '--module-first',
-    '--no-toc',
-    '-f',
-    '-o', os.path.dirname(__file__),
-    '../contrib/ovirt/lib/ovirtlago'
-])
-subprocess.call([
-    'sphinx-apidoc',
-    '--module-first',
-    '--no-toc',
-    '-f',
-    '-o', os.path.dirname(__file__),
-    '../lib/lago_template_repo'
-])
+subprocess.call(
+    [
+        'sphinx-apidoc', '--module-first', '--no-toc', '-f', '-o',
+        os.path.dirname(__file__), '../lib/lago'
+    ]
+)
+subprocess.call(
+    [
+        'sphinx-apidoc', '--module-first', '--no-toc', '-f', '-o',
+        os.path.dirname(__file__), '../contrib/ovirt/lib/ovirtlago'
+    ]
+)
+subprocess.call(
+    [
+        'sphinx-apidoc', '--module-first', '--no-toc', '-f', '-o',
+        os.path.dirname(__file__), '../lib/lago_template_repo'
+    ]
+)
 
 # Mock all the modules that are included by lago, so autoimport works as
 # expected with no need to download them (some are not in pip even)
@@ -72,7 +65,6 @@ autodoc_default_flags = [
     'undoc-members',
 ]
 
-
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
@@ -96,7 +88,6 @@ extensions = [
     'sphinx.ext.napoleon',
 ]
 
-
 napoleon_google_docstring = True
 napoleon_include_private_with_doc = False
 napoleon_include_special_with_doc = True
@@ -104,11 +95,8 @@ napoleon_include_special_with_doc = True
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
-
 # Support for markdown files
-source_parsers = {
-    '.md': CommonMarkParser,
-}
+source_parsers = {'.md': CommonMarkParser, }
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
@@ -178,7 +166,6 @@ pygments_style = 'sphinx'
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
-
 
 # -- Options for HTML output ----------------------------------------------
 
@@ -311,10 +298,11 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
-latex_documents = [(
-    master_doc, 'Lago.tex', u'Lago Documentation',
-    u'David Caro', 'manual'
-)]
+latex_documents = [
+    (
+        master_doc, 'Lago.tex', u'Lago Documentation', u'David Caro', 'manual'
+    )
+]
 
 # The name of an image file (relative to this directory) to place at the top of
 # the title page.
@@ -336,30 +324,26 @@ latex_documents = [(
 # If false, no module index is generated.
 # latex_domain_indices = True
 
-
 # -- Options for manual page output ---------------------------------------
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [
-    (master_doc, 'lago', u'Lago Documentation',
-     [author], 1)
-]
+man_pages = [(master_doc, 'lago', u'Lago Documentation', [author], 1)]
 
 # If true, show URL addresses after external links.
 # man_show_urls = False
-
 
 # -- Options for Texinfo output -------------------------------------------
 
 # Grouping the document tree into Texinfo files. List of tuples
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
-texinfo_documents = [(
-    master_doc, 'Lago', u'Lago Documentation',
-    author, 'Lago', 'One line description of project.',
-    'Miscellaneous'
-)]
+texinfo_documents = [
+    (
+        master_doc, 'Lago', u'Lago Documentation', author, 'Lago',
+        'One line description of project.', 'Miscellaneous'
+    )
+]
 
 # Documents to append as an appendix to all manuals.
 # texinfo_appendices = []
@@ -372,7 +356,6 @@ texinfo_documents = [(
 
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 # texinfo_no_detailmenu = False
-
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {

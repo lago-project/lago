@@ -28,9 +28,7 @@ import lago
 import ovirtlago
 from lago.plugins.cli import CLIPlugin
 
-
 LOGGER = logging.getLogger('ovirt-cli')
-
 
 # TODO: Remove this, and properly complain on unset config values
 CONF_DEFAULTS = {
@@ -50,6 +48,7 @@ def in_prefix(func):
             raise RuntimeError('Not inside prefix')
         prefix = ovirtlago.OvirtPrefix(os.getcwd())
         return func(prefix, args)
+
     return wrapper
 
 
@@ -58,6 +57,7 @@ def with_logging(func):
     def wrapper(prefix, args):
         lago.log_utils.setup_prefix_logging(prefix.paths.logs())
         return func(prefix, args)
+
     return wrapper
 
 
@@ -87,14 +87,11 @@ def do_ovirt_runtest(prefix, args):
 def do_ovirt_reposetup(prefix, args):
     rpm_repo = (
         args.rpm_repo
-        or
-        lago.config.get('reposync_dir', CONF_DEFAULTS['reposync_dir'])
+        or lago.config.get('reposync_dir', CONF_DEFAULTS['reposync_dir'])
     )
 
     reposync_config = (
-        args.reposync_yum_config
-        or
-        lago.config.get(
+        args.reposync_yum_config or lago.config.get(
             'reposync_config',
             CONF_DEFAULTS['reposync_config'],
         )
@@ -159,6 +156,7 @@ class Verbs:
     OVIRT_ENGINE_SETUP = 'engine-setup'
     OVIRT_COLLECT = 'collect'
     OVIRT_SERVE = 'serve'
+
 
 ARGUMENTS = collections.OrderedDict()
 ARGUMENTS[Verbs.OVIRT_DEPLOY] = (

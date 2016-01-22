@@ -37,7 +37,6 @@ import utils
 import virt
 import log_utils
 
-
 LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
 log_task = functools.partial(log_utils.log_task, logger=LOGGER)
@@ -77,8 +76,7 @@ def _ip_in_subnet(subnet, ip):
     """
     return (
         _create_ip(subnet, 1) == _create_ip(ip, 1)
-        or
-        '0.0.0.1' == _create_ip(ip, 1)
+        or '0.0.0.1' == _create_ip(ip, 1)
     )
 
 
@@ -93,6 +91,7 @@ class Prefix(object):
         _virt_env (lago.virt.VirtEnv): Lazily loaded virtual env handler
         _metadata (dict): Lazily loaded metadata
     """
+
     def __init__(self, prefix):
         """
         Args:
@@ -170,9 +169,12 @@ class Prefix(object):
         ret, _, _ = utils.run_command(
             [
                 'ssh-keygen',
-                '-t', 'rsa',
-                '-N', '',
-                '-f', self.paths.ssh_id_rsa(),
+                '-t',
+                'rsa',
+                '-N',
+                '',
+                '-f',
+                self.paths.ssh_id_rsa(),
             ]
         )
         if ret != 0:
@@ -345,15 +347,13 @@ class Prefix(object):
                 net = conf['nets'][nic['net']]
                 if subnet_lease.is_leasable_subnet(net['gw']):
                     nic['ip'] = _create_ip(
-                        net['gw'],
-                        int(nic['ip'].split('.')[-1])
+                        net['gw'], int(nic['ip'].split('.')[-1])
                     )
 
                 dom_name = dom_spec['name']
                 if not _ip_in_subnet(net['gw'], nic['ip']):
                     raise RuntimeError(
-                        "%s:nic%d's IP [%s] is outside the subnet [%s]"
-                        % (
+                        "%s:nic%d's IP [%s] is outside the subnet [%s]" % (
                             dom_name,
                             dom_spec['nics'].index(nic),
                             nic['ip'],
@@ -363,7 +363,8 @@ class Prefix(object):
 
                 if nic['ip'] in net['mapping'].values():
                     conflict_list = [
-                        name for name, ip in net['mapping'].items()
+                        name
+                        for name, ip in net['mapping'].items()
                         if ip == net['ip']
                     ]
                     raise RuntimeError(
@@ -398,8 +399,7 @@ class Prefix(object):
 
                 allocated = net['mapping'].values()
                 vacant = _create_ip(
-                    net['gw'],
-                    set(range(2, 255)).difference(
+                    net['gw'], set(range(2, 255)).difference(
                         set(
                             [
                                 int(ip.split('.')[-1]) for ip in allocated
@@ -491,20 +491,22 @@ class Prefix(object):
                 )
 
                 base = template_store.get_path(template_version)
-                qemu_img_cmd = ['qemu-img', 'create', '-f', 'qcow2',
-                                '-b', base, disk_path]
+                qemu_img_cmd = [
+                    'qemu-img', 'create', '-f', 'qcow2', '-b', base, disk_path
+                ]
 
                 task_message = 'Create disk %s(%s)' % (name, spec['name'])
             elif spec['type'] == 'empty':
-                qemu_img_cmd = ['qemu-img', 'create', '-f', spec['format'],
-                                disk_path, spec['size']]
+                qemu_img_cmd = [
+                    'qemu-img', 'create', '-f', spec['format'], disk_path,
+                    spec['size']
+                ]
                 task_message = 'Create empty disk image'
             elif spec['type'] == 'file':
                 url = spec.get('url', '')
                 if url:
                     shutil.move(
-                        self.fetch_url(self.path.prefixed(url)),
-                        spec['path']
+                        self.fetch_url(self.path.prefixed(url)), spec['path']
                     )
                 # If we're using raw file, just return it's path
                 return spec['path'], disk_metadata
@@ -559,10 +561,11 @@ class Prefix(object):
         if not os.path.exists(ova_extracted_dir):
             os.makedirs(ova_extracted_dir)
             subprocess.check_output(
-                ["tar", "-xvf",
-                 filename, "-C",
-                 ova_extracted_dir],
-                stderr=subprocess.STDOUT)
+                [
+                    "tar", "-xvf", filename, "-C", ova_extracted_dir
+                ],
+                stderr=subprocess.STDOUT
+            )
 
         # lets find the ovf file
         # we expect only one to be
@@ -578,10 +581,11 @@ class Prefix(object):
         with open(ovf[0]) as fd:
             # lets extract the items
             obj = xmltodict.parse(fd.read())
-            hardware_items = [section for section in obj["ovf:Envelope"]
-                              ["Content"]["Section"]
-                              if section["@xsi:type"] ==
-                              "ovf:VirtualHardwareSection_Type"]
+            hardware_items = [
+                section
+                for section in obj["ovf:Envelope"]["Content"]["Section"]
+                if section["@xsi:type"] == "ovf:VirtualHardwareSection_Type"
+            ]
 
             if len(hardware_items) != 1:
                 raise RuntimeError("We support only one machine desc in ova")
@@ -602,7 +606,8 @@ class Prefix(object):
                     memory = int(item["rasd:VirtualQuantity"])
                     if item["rasd:AllocationUnits"] != "MegaBytes":
                         raise TypeError(
-                            "Fix me : we need to suport other units too")
+                            "Fix me : we need to suport other units too"
+                        )
 
                 elif resource_type == DISK_RESOURCE:
                     image_file = item["rasd:HostResource"]
@@ -617,11 +622,7 @@ class Prefix(object):
 
         return disk_spec, memory, vcpus
 
-    def _use_prototype(
-        self,
-        spec,
-        conf
-    ):
+    def _use_prototype(self, spec, conf):
         """
         Populates the given spec with the values of it's declared prototype
 
@@ -657,12 +658,7 @@ class Prefix(object):
 
         return dst_path
 
-    def virt_conf(
-        self,
-        conf,
-        template_repo=None,
-        template_store=None,
-    ):
+    def virt_conf(self, conf, template_repo=None, template_store=None, ):
         """
         Initializes all the virt infrastructure of the prefix, creating the
         domains disks, doing any network leases and creating all the virt
@@ -694,7 +690,8 @@ class Prefix(object):
                     spec['type'] = 'template'
                     ova_file = self.fetch_url(spec['url'])
                     ova_disk, spec["memory"], spec[
-                        "vcpu"] = self._ova_to_spec(ova_file)
+                        "vcpu"
+                    ] = self._ova_to_spec(ova_file)
                     if "disks" not in spec.keys():
                         spec["disks"] = ova_disk
                     else:

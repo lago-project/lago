@@ -35,7 +35,6 @@ import config
 import utils
 from . import log_utils
 
-
 LOGGER = logging.getLogger(__name__)
 
 
@@ -44,6 +43,7 @@ class FileSystemTemplateProvider:
     Handles file type templates, that is, getting a disk template from the
     host's filesystem
     """
+
     def __init__(self, root):
         """
         Args:
@@ -113,6 +113,7 @@ class HttpTemplateProvider:
     """
     This provider allows the usage of http urls for templates
     """
+
     def __init__(self, baseurl):
         """
         Args:
@@ -154,8 +155,8 @@ class HttpTemplateProvider:
         response = urllib.urlopen(full_url)
         if response.code >= 300:
             raise RuntimeError(
-                'Failed no retrieve URL %s:\nCode: %d'
-                % (full_url, response.code)
+                'Failed no retrieve URL %s:\nCode: %d' %
+                (full_url, response.code)
             )
         if dest:
             response.close()
@@ -238,7 +239,6 @@ class HttpTemplateProvider:
         finally:
             response.close()
 
-
 #: Registry for template providers
 _PROVIDERS = {
     'file': FileSystemTemplateProvider,
@@ -265,18 +265,11 @@ def find_repo_by_name(name, repo_dir=None):
     if repo_dir is None:
         repo_dir = config.get('template_repos')
 
-    ret, out, _ = utils.run_command(
-        [
-            'find',
-            repo_dir,
-            '-name', '*.json',
-        ],
-    )
+    ret, out, _ = utils.run_command(['find', repo_dir, '-name', '*.json', ], )
 
     repos = [
         TemplateRepository.from_url(line.strip())
-        for line in out.split('\n')
-        if len(line.strip())
+        for line in out.split('\n') if len(line.strip())
     ]
 
     for repo in repos:
@@ -297,6 +290,7 @@ class TemplateRepository:
         _dom (dict): Specification of the template
         _providers (dict): Providers instances for any source in the spec
     """
+
     def __init__(self, dom):
         """
         You would usually use the
@@ -395,6 +389,7 @@ class Template:
         name (str): Name of this template
         _versions (dict(str:TemplateVersion)): versions for this template
     """
+
     def __init__(self, name, versions):
         """
         Args:
@@ -436,6 +431,7 @@ class TemplateVersion:
     Each template can have multiple versions, each of those is actually a
     different disk template file representation, under the same base name.
     """
+
     def __init__(self, name, source, handle, timestamp):
         """
 
@@ -504,6 +500,7 @@ def _locked(func):
     repo while running, meant to decorate only bound functions for classes that
     have `lock_path` method.
     """
+
     @functools.wraps(func)
     def wrapper(self, *args, **kwargs):
         with lockfile.LockFile(self.lock_path()):
@@ -546,6 +543,7 @@ class TemplateStore:
         Metadata for this template image in json format, usually this includes
         the `distro` and `root-password`
     """
+
     def __init__(self, path):
         """
         :param str path: Path to a local dir for this store, will be created if
@@ -649,7 +647,8 @@ class TemplateStore:
                     [
                         'qemu-img',
                         'convert',
-                        '-O', 'raw',
+                        '-O',
+                        'raw',
                         temp_dest,
                         dest,
                     ],

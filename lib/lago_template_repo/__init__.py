@@ -23,10 +23,7 @@ import logging
 import os
 import sys
 
-from lago import (
-    config,
-    utils
-)
+from lago import (config, utils)
 from lago.plugins.cli import CLIPlugin
 
 
@@ -47,10 +44,7 @@ def do_update(args):
     repos_dir = config.get('template_repos')
     ret, out, _ = utils.run_command(
         [
-            'find',
-            repos_dir,
-            '-type', 'd',
-            '-name', '.git'
+            'find', repos_dir, '-type', 'd', '-name', '.git'
         ],
     )
 
@@ -71,6 +65,7 @@ def do_update(args):
 class Verbs:
     ADD = 'add'
     UPDATE = 'update'
+
 
 ARGUMENTS = collections.OrderedDict()
 ARGUMENTS[Verbs.ADD] = (

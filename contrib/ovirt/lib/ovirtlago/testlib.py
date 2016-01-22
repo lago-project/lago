@@ -32,7 +32,6 @@ import ovirtlago
 SHORT_TIMEOUT = 3 * 60
 LONG_TIMEOUT = 10 * 60
 
-
 _test_prefix = None
 
 
@@ -47,6 +46,7 @@ def with_ovirt_prefix(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         return func(get_test_prefix(), *args, **kwargs)
+
     return wrapper
 
 
@@ -54,11 +54,8 @@ def with_ovirt_api(func):
     @functools.wraps(func)
     @with_ovirt_prefix
     def wrapper(prefix, *args, **kwargs):
-        return func(
-            prefix.virt_env.engine_vm().get_api(),
-            *args,
-            **kwargs
-        )
+        return func(prefix.virt_env.engine_vm().get_api(), *args, **kwargs)
+
     return wrapper
 
 
@@ -81,7 +78,9 @@ def engine_capability(caps):
             if not _vms_capable([prefix.virt_env.engine_vm()], caps):
                 raise SkipTest()
             return func()
+
         return wrapper
+
     return decorator
 
 
@@ -93,13 +92,16 @@ def host_capability(caps):
             if not _vms_capable(prefix.virt_env.host_vms(), caps):
                 raise SkipTest()
             return func()
+
         return wrapper
+
     return decorator
 
 
 def test_sequence_gen(test_list):
     failure_occured = [False]
     for test in test_list:
+
         def wrapped_test():
             if failure_occured[0]:
                 raise SkipTest()
@@ -111,6 +113,7 @@ def test_sequence_gen(test_list):
                 if not getattr(test, 'continue_on_failure', False):
                     failure_occured[0] = True
                 raise
+
         wrapped_test.description = test.__name__
         yield wrapped_test
 

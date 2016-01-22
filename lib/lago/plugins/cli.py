@@ -92,11 +92,7 @@ as::
 TODO: Allow per-plugin namespacing to get rid of the `**kwargs` parameter
 """
 
-from abc import (
-    abstractmethod,
-    abstractproperty,
-    ABCMeta,
-)
+from abc import (abstractmethod, abstractproperty, ABCMeta, )
 
 
 class CLIPlugin(object):
@@ -147,6 +143,7 @@ class CLIPluginFuncWrapper(CLIPlugin):
     param, as it will be passed all the members of the parser, not just
     whatever it defined
     """
+
     def __init__(self, do_run=None):
         self._help = None
         self._parser_args = []
@@ -154,11 +151,7 @@ class CLIPluginFuncWrapper(CLIPlugin):
 
     @property
     def help(self):
-        return (
-            self._help
-            if self._help is not None
-            else self._do_run.__doc__
-        )
+        return (self._help if self._help is not None else self._do_run.__doc__)
 
     def set_help(self, help):
         self._help = help
@@ -219,6 +212,7 @@ def cli_plugin_add_argument(*args, **kwargs):
          (('-m', '--mogambo'), {'action': 'store_true'})]
 
     """
+
     def decorator(func):
         if not isinstance(func, CLIPluginFuncWrapper):
             func = CLIPluginFuncWrapper(do_run=func)

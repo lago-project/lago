@@ -83,12 +83,12 @@ def gen_to_list(func):
     """
     Decorator to wrap the results of the decorated function in a list
     """
+
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         return list(func(*args, **kwargs))
 
     return wrapper
-
 
 #: Randomly chosen rpm xml name spaces (I swear, we used a dice)
 RPMNS = {
@@ -265,16 +265,13 @@ def discard_older_rpms(rpms):
             name = 'src-%s' % name
 
         if (
-                (
-                    name not in rpms_by_name
-                )
-                or
-                (
-                    rpmUtils.miscutils.compareEVR(
-                        rpms_by_name[name]['version'],
-                        rpm['version']
-                    ) < 0
-                )
+            (
+                name not in rpms_by_name
+            ) or (
+                rpmUtils.miscutils.compareEVR(
+                    rpms_by_name[name]['version'], rpm['version']
+                ) < 0
+            )
         ):
             rpms_by_name[name] = rpm
 

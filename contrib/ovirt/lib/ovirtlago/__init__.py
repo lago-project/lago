@@ -37,14 +37,8 @@ import testlib
 import utils
 import virt
 
-
 # TODO: put it into some config
-PROJECTS_LIST = [
-    'vdsm',
-    'ovirt-engine',
-    'vdsm-jsonrpc-java',
-    'ioprocess',
-]
+PROJECTS_LIST = ['vdsm', 'ovirt-engine', 'vdsm-jsonrpc-java', 'ioprocess', ]
 LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
 log_task = functools.partial(log_utils.log_task, logger=LOGGER)
@@ -55,6 +49,7 @@ def _with_repo_server(func):
     def wrapper(*args, **kwargs):
         with utils.repo_server_context(args[0]):
             return func(*args, **kwargs)
+
     return wrapper
 
 
@@ -74,8 +69,7 @@ def _sync_rpm_repository(repo_path, yum_config, repos):
                 '--delete',
                 '--cachedir=%s' % repo_path,
             ] + [
-                '--repoid=%s' % repo
-                for repo in repos
+                '--repoid=%s' % repo for repo in repos
             ],
         )
         if ret:
@@ -84,8 +78,8 @@ def _sync_rpm_repository(repo_path, yum_config, repos):
 
 def _build_rpms(name, script, source_dir, output_dir, dists, env=None):
     with LogTask(
-        'Build %s(%s) from %s, for %s, store results in %s'
-        % (name, script, source_dir, ', '.join(dists), output_dir),
+        'Build %s(%s) from %s, for %s, store results in %s' %
+        (name, script, source_dir, ', '.join(dists), output_dir),
     ):
         ret, out, err = utils.run_command(
             [
@@ -97,11 +91,7 @@ def _build_rpms(name, script, source_dir, output_dir, dists, env=None):
         )
 
         if ret:
-            LOGGER.error(
-                '%s returned with error %d',
-                script,
-                ret,
-            )
+            LOGGER.error('%s returned with error %d', script, ret, )
             LOGGER.error('Output was: \n%s', out)
             LOGGER.error('Errors were: \n%s', err)
             raise RuntimeError('%s failed, see logs' % script)
@@ -120,40 +110,26 @@ def _build_engine_rpms(engine_dir, output_dir, dists, build_gwt=False):
     else:
         env['BUILD_GWT'] = '0'
     _build_rpms(
-        'ovirt-engine',
-        'build_engine_rpms.sh',
-        engine_dir,
-        output_dir,
-        dists,
+        'ovirt-engine', 'build_engine_rpms.sh', engine_dir, output_dir, dists,
         env
     )
 
 
 def _build_vdsm_jsonrpc_java_rpms(source_dir, output_dir, dists):
     _build_rpms(
-        'vdsm-jsonrpc-java',
-        'build_vdsm-jsonrpc-java_rpms.sh',
-        source_dir,
-        output_dir,
-        dists
+        'vdsm-jsonrpc-java', 'build_vdsm-jsonrpc-java_rpms.sh', source_dir,
+        output_dir, dists
     )
 
 
 def _build_ioprocess_rpms(source_dir, output_dir, dists):
     _build_rpms(
-        'ioprocess',
-        'build_ioprocess_rpms.sh',
-        source_dir,
-        output_dir,
-        dists
+        'ioprocess', 'build_ioprocess_rpms.sh', source_dir, output_dir, dists
     )
 
 
 def _git_revision_at(path):
-    ret, out, _ = utils.run_command(
-        ['git', 'rev-parse', 'HEAD'],
-        cwd=path
-    )
+    ret, out, _ = utils.run_command(['git', 'rev-parse', 'HEAD'], cwd=path)
     if ret:
         return 'unknown'
     return out.strip()
@@ -164,9 +140,7 @@ def _activate_storage_domains(api, sds):
         sd.activate()
 
     for sd in sds:
-        dc = api.datacenters.get(
-            id=sd.get_data_center().get_id(),
-        )
+        dc = api.datacenters.get(id=sd.get_data_center().get_id(), )
         testlib.assert_true_within_long(
             lambda: dc.storagedomains.get(sd.name).status.state == 'active',
         )
@@ -179,8 +153,10 @@ def _deactivate_storage_domains(api, sds):
     for sd in sds:
         dc = api.datacenters.get(id=sd.get_data_center().get_id())
         testlib.assert_true_within_long(
-            lambda:
-            dc.storagedomains.get(sd.name).status.state == 'maintenance',
+            lambda: (
+                dc.storagedomains.get(sd.name).status.state
+                == 'maintenance'
+            ),
         )
 
 
@@ -260,10 +236,7 @@ class OvirtPrefix(lago.Prefix):
                 host.service('supervdsmd').stop()
                 rollback.prependDefer(host.service('supervdsmd').start)
 
-            lago.utils.invoke_in_parallel(
-                stop_host,
-                self.virt_env.host_vms()
-            )
+            lago.utils.invoke_in_parallel(stop_host, self.virt_env.host_vms())
 
             super(OvirtPrefix, self).create_snapshots(name)
 
@@ -296,16 +269,14 @@ class OvirtPrefix(lago.Prefix):
             rpm_dirs.extend(
                 [
                     os.path.join(folder, dist)
-                    for folder in project_roots
-                    if os.path.exists(folder)
+                    for folder in project_roots if os.path.exists(folder)
                 ]
             )
 
             rpm_dirs.extend(
                 [
                     os.path.join(repos_path, name)
-                    for name in repo_names
-                    if name.endswith(dist)
+                    for name in repo_names if name.endswith(dist)
                 ],
             )
 
@@ -328,12 +299,13 @@ class OvirtPrefix(lago.Prefix):
         # Detect distros from template metadata
         engine_dists = [self.virt_env.engine_vm().distro()] \
             if self.virt_env.engine_vm() else []
-        vdsm_dists = list(set(
-            [
-                host.distro()
-                for host in self.virt_env.host_vms()
-            ]
-        ))
+        vdsm_dists = list(
+            set(
+                [
+                    host.distro() for host in self.virt_env.host_vms()
+                ]
+            )
+        )
         all_dists = list(set(engine_dists + vdsm_dists))
 
         repos = []
@@ -486,8 +458,7 @@ class OvirtPrefix(lago.Prefix):
     @_with_repo_server
     def deploy(self):
         lago.utils.invoke_in_parallel(
-            self._deploy_host,
-            self.virt_env.get_vms().values()
+            self._deploy_host, self.virt_env.get_vms().values()
         )
 
     @_with_repo_server

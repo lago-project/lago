@@ -28,7 +28,11 @@ if ! code_changed; then
     exit 0
 fi
 
+# Style and unit tests
+# required for the formatting
+pip install yapf
 make check-local
+
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 echo '~*          Running build/installation tests           ~'
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'

@@ -39,7 +39,6 @@ import utils
 import sysprep
 from . import log_utils
 
-
 LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
 log_task = functools.partial(log_utils.log_task, logger=LOGGER)
@@ -70,21 +69,16 @@ def _guestfs_copy_path(g, guest_path, host_path):
                     path,
                 ),
                 os.path.join(
-                    host_path,
-                    os.path.basename(path)
+                    host_path, os.path.basename(path)
                 ),
             )
 
 
 def _path_to_xml(basename):
-    return os.path.join(
-        os.path.dirname(__file__),
-        basename,
-    )
+    return os.path.join(os.path.dirname(__file__), basename, )
 
 
 class VirtEnv(object):
-
     '''Env properties:
     * prefix
     * vms
@@ -144,11 +138,11 @@ class VirtEnv(object):
             vms = [self._vms[vm_name] for vm_name in vm_names]
             nets = set()
             for vm in vms:
-                nets = nets.union(set(
-                    self._nets[net_name]
-                    for net_name in
-                    vm.nets()
-                ))
+                nets = nets.union(
+                    set(
+                        self._nets[net_name] for net_name in vm.nets()
+                    )
+                )
 
         with LogTask(log_msg), utils.RollbackContext() as rollback:
             with LogTask('Start nets'):
@@ -196,9 +190,7 @@ class VirtEnv(object):
             return self.get_nets().get(name)
         else:
             return [
-                net
-                for net in self.get_nets().values()
-                if net.is_management()
+                net for net in self.get_nets().values() if net.is_management()
             ].pop()
 
     def get_vms(self):
@@ -236,10 +228,7 @@ class VirtEnv(object):
             for vm in self._vms.values():
                 vm.save()
 
-        spec = {
-            'nets': self._nets.keys(),
-            'vms': self._vms.keys(),
-        }
+        spec = {'nets': self._nets.keys(), 'vms': self._vms.keys(), }
 
         with LogTask('Save env'):
             with open(self.virt_path('env'), 'w') as f:
@@ -261,7 +250,6 @@ class VirtEnv(object):
 
 
 class Network(object):
-
     def __init__(self, env, spec):
         self._env = env
         self._spec = spec
@@ -293,25 +281,18 @@ class Network(object):
 
     def alive(self):
         net_names = [
-            net.name()
-            for net in self._env.libvirt_con.listAllNetworks()
+            net.name() for net in self._env.libvirt_con.listAllNetworks()
         ]
         return self._libvirt_name() in net_names
 
     def start(self):
         if not self.alive():
-            with LogTask(
-                'Create network %s' % self.name(),
-                level='debug',
-            ):
+            with LogTask('Create network %s' % self.name(), level='debug', ):
                 self._env.libvirt_con.networkCreateXML(self._libvirt_xml())
 
     def stop(self):
         if self.alive():
-            with LogTask(
-                'Destroy network %s' % self.name(),
-                level='debug',
-            ):
+            with LogTask('Destroy network %s' % self.name(), level='debug', ):
                 self._env.libvirt_con.networkLookupByName(
                     self._libvirt_name(),
                 ).destroy()
@@ -339,9 +320,7 @@ class NATNetwork(Network):
             ip = net_xml.xpath('/network/ip')[0]
 
             def make_ip(last):
-                return '.'.join(
-                    self.gw().split('.')[:-1] + [str(last)]
-                )
+                return '.'.join(self.gw().split('.')[:-1] + [str(last)])
 
             dhcp = lxml.etree.Element('dhcp')
             ip.append(dhcp)
@@ -401,7 +380,6 @@ class ServiceState:
 
 
 class _Service:
-
     def __init__(self, vm, name):
         self._vm = vm
         self._name = name
@@ -507,9 +485,10 @@ class _SystemdContainerService(_Service):
 
     def state(self):
         ret = self._vm.ssh(
-            [self.BIN_PATH,
-                'exec vdsmc systemctl status --lines=0',
-                self._name]
+            [
+                self.BIN_PATH, 'exec vdsmc systemctl status --lines=0',
+                self._name
+            ]
         )
         if ret.code == 0:
             return ServiceState.ACTIVE
@@ -532,6 +511,7 @@ class _SystemdContainerService(_Service):
 
         return ServiceState.MISSING
 
+
 _SERVICE_WRAPPERS = collections.OrderedDict()
 _SERVICE_WRAPPERS['systemd_container'] = _SystemdContainerService
 _SERVICE_WRAPPERS['systemd'] = _SystemdService
@@ -539,7 +519,6 @@ _SERVICE_WRAPPERS['sysvinit'] = _SysVInitService
 
 
 class VM(object):
-
     '''VM properties:
     * name
     * cpus
@@ -575,9 +554,7 @@ class VM(object):
         while self._ssh_client is None:
             try:
                 client = paramiko.SSHClient()
-                client.set_missing_host_key_policy(
-                    paramiko.AutoAddPolicy(),
-                )
+                client.set_missing_host_key_policy(paramiko.AutoAddPolicy(), )
                 client.connect(
                     self.ip(),
                     username='root',
@@ -596,6 +573,7 @@ class VM(object):
             if not self.alive():
                 raise RuntimeError('VM is not running')
             return func(self, *args, **kwargs)
+
         return wrapper
 
     @_check_alive
@@ -603,9 +581,7 @@ class VM(object):
         while True:
             try:
                 client = paramiko.SSHClient()
-                client.set_missing_host_key_policy(
-                    paramiko.AutoAddPolicy(),
-                )
+                client.set_missing_host_key_policy(paramiko.AutoAddPolicy(), )
                 client.connect(
                     self.ip(),
                     username='root',
@@ -641,8 +617,12 @@ class VM(object):
             channel.send(data)
         channel.shutdown_write()
         rc, out, err = utils.drain_ssh_channel(
-            channel,
-            **(show_output and {} or {'stdout': None, 'stderr': None})
+            channel, **(
+                show_output and {} or {
+                    'stdout': None,
+                    'stderr': None
+                }
+            )
         )
 
         channel.close()
@@ -701,7 +681,7 @@ class VM(object):
 
     def copy_to(self, local_path, remote_path):
         with LogTask(
-                'Copy %s to %s:%s' % (local_path, self.name(), remote_path),
+            'Copy %s to %s:%s' % (local_path, self.name(), remote_path),
         ):
             with self._sftp() as sftp:
                 sftp.put(local_path, remote_path)
@@ -806,22 +786,14 @@ class VM(object):
             devices.append(disk)
 
         for dev_spec in self._spec['nics']:
-            interface = lxml.etree.Element(
-                'interface',
-                type='network',
-            )
+            interface = lxml.etree.Element('interface', type='network', )
             interface.append(
                 lxml.etree.Element(
                     'source',
                     network=self._env.prefixed_name(dev_spec['net']),
                 ),
             )
-            interface.append(
-                lxml.etree.Element(
-                    'model',
-                    type='virtio',
-                ),
-            )
+            interface.append(lxml.etree.Element('model', type='virtio', ), )
             if 'ip' in dev_spec:
                 interface.append(
                     lxml.etree.Element(
@@ -835,27 +807,20 @@ class VM(object):
 
     def start(self):
         if not self.alive():
-            with LogTask(
-                'Starting VM %s' % self.name(),
-                level='debug',
-            ):
+            with LogTask('Starting VM %s' % self.name(), level='debug', ):
                 self._env.libvirt_con.createXML(self._libvirt_xml())
 
     def stop(self):
         if self.alive():
             self._ssh_client = None
-            with LogTask(
-                'Destroying VM %s' % self.name(),
-                level='debug',
-            ):
+            with LogTask('Destroying VM %s' % self.name(), level='debug', ):
                 self._env.libvirt_con.lookupByName(
                     self._libvirt_name(),
                 ).destroy()
 
     def alive(self):
         dom_names = [
-            dom.name()
-            for dom in self._env.libvirt_con.listAllDomains()
+            dom.name() for dom in self._env.libvirt_con.listAllDomains()
         ]
         return self._libvirt_name() in dom_names
 
@@ -891,7 +856,10 @@ class VM(object):
             for disk in disks:
                 target_dev = disk.xpath('target')[0].attrib['dev']
                 snapshot_disks.append(
-                    lxml.etree.Element('disk', name=target_dev)
+                    lxml.etree.Element(
+                        'disk',
+                        name=target_dev
+                    )
                 )
 
             try:
@@ -902,7 +870,9 @@ class VM(object):
                 )
             except libvirt.libvirtError:
                 LOGGER.exception(
-                    'Failed to create snapshot %s for %s', name, self.name(),
+                    'Failed to create snapshot %s for %s',
+                    name,
+                    self.name(),
                 )
                 raise
 
@@ -941,8 +911,10 @@ class VM(object):
                     [
                         'qemu-img',
                         'create',
-                        '-f', 'qcow2',
-                        '-b', disk_template['path'],
+                        '-f',
+                        'qcow2',
+                        '-b',
+                        disk_template['path'],
                         disk['path'],
                     ],
                     cwd=os.path.dirname(disk['path']),
@@ -975,8 +947,8 @@ class VM(object):
             ]
             if not rootfs:
                 raise RuntimeError(
-                    'No root fs (%s) could be found for %s form list %s'
-                    % (disk_root_part, disk_path, str(g.list_filesystems()))
+                    'No root fs (%s) could be found for %s form list %s' %
+                    (disk_root_part, disk_path, str(g.list_filesystems()))
                 )
             else:
                 rootfs = rootfs[0]
@@ -986,7 +958,9 @@ class VM(object):
                     _guestfs_copy_path(g, guest_path, host_path)
                 except Exception:
                     LOGGER.exception(
-                        'Failed to copy %s from %s', guest_path, self.name(),
+                        'Failed to copy %s from %s',
+                        guest_path,
+                        self.name(),
                     )
             g.shutdown()
             g.close()
@@ -1002,7 +976,8 @@ class VM(object):
     def bootstrap(self):
         with LogTask('Bootstrapping %s' % self.name()):
             if self._spec['disks'][0]['type'] != 'empty' and self._spec[
-                    'disks'][0]['format'] != 'iso':
+                'disks'
+            ][0]['format'] != 'iso':
                 sysprep.sysprep(
                     self._spec['disks'][0]['path'],
                     [
@@ -1019,8 +994,8 @@ class VM(object):
                             'eth%d' % index,
                             _ip_to_mac(nic['ip']),
                         )
-                        for index, nic
-                        in enumerate(self._spec['nics']) if 'ip' in nic
+                        for index, nic in enumerate(self._spec['nics'])
+                        if 'ip' in nic
                     ],
                 )
 

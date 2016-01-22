@@ -61,8 +61,7 @@ def do_init(args):
             try:
                 repo_name = (
                     args.template_repo_name
-                    or
-                    lago.config.get('template_default_repo')
+                    or lago.config.get('template_default_repo')
                 )
             except KeyError:
                 raise RuntimeError(
@@ -72,9 +71,8 @@ def do_init(args):
             repo = lago.templates.find_repo_by_name(repo_name)
 
         template_store_path = (
-            args.template_store
-            or
-            lago.config.get('template_store', default=None)
+            args.template_store or lago.config.get('template_store',
+                                                   default=None)
         )
         store = lago.templates.TemplateStore(template_store_path)
 
@@ -90,6 +88,7 @@ def in_prefix(func):
         if not os.path.exists('.lago'):
             raise RuntimeError('Not inside prefix')
         return func(lago.Prefix(os.getcwd()), args)
+
     return wrapper
 
 
@@ -98,6 +97,7 @@ def with_logging(func):
     def wrapper(prefix, args):
         log_utils.setup_prefix_logging(prefix.paths.logs())
         return func(prefix, args)
+
     return wrapper
 
 
@@ -138,10 +138,7 @@ def do_shell(prefix, args):
         host = prefix.virt_env.get_vm(args.host)
     except KeyError:
         LOGGER.error('Unable to find VM %s', args.host)
-        LOGGER.info(
-            'Available VMs: %s',
-            prefix.virt_env.get_vms().keys()
-        )
+        LOGGER.info('Available VMs: %s', prefix.virt_env.get_vms().keys())
         raise
 
     if not host.alive():
@@ -203,10 +200,7 @@ def do_copy_from_vm(prefix, args):
         host = prefix.virt_env.get_vm(args.host)
     except KeyError:
         LOGGER.error('Unable to find VM %s', args.host)
-        LOGGER.info(
-            'Available VMs: %s',
-            prefix.virt_env.get_vms().keys()
-        )
+        LOGGER.info('Available VMs: %s', prefix.virt_env.get_vms().keys())
         raise
 
     if not host.alive():
@@ -225,10 +219,7 @@ def do_copy_to_vm(prefix, args):
         host = prefix.virt_env.get_vm(args.host)
     except KeyError:
         LOGGER.error('Unable to find VM %s', args.host)
-        LOGGER.info(
-            'Available VMs: %s',
-            prefix.virt_env.get_vms().keys()
-        )
+        LOGGER.info('Available VMs: %s', prefix.virt_env.get_vms().keys())
         raise
 
     if not host.alive():
@@ -314,8 +305,7 @@ ARGUMENTS[Verbs.START] = (
     },
     (
         (
-            'vm_names',
-            {
+            'vm_names', {
                 'help': 'Name of the vm to start',
                 'metavar': 'VM_NAME',
                 'nargs': '*',
@@ -330,8 +320,7 @@ ARGUMENTS[Verbs.STOP] = (
     },
     (
         (
-            'vm_names',
-            {
+            'vm_names', {
                 'help': 'Name of the vm to start',
                 'metavar': 'VM_NAME',
                 'nargs': '*',
@@ -487,9 +476,7 @@ def unprefixed(name):
 
 
 def load_verbs():
-    mgr = ExtensionManager(
-        namespace='lago.verbs',
-    )
+    mgr = ExtensionManager(namespace='lago.verbs', )
     return dict((ext.name, ext.plugin()) for ext in mgr)
 
 
@@ -498,20 +485,21 @@ def create_parser(cli_plugins):
         description='Command line interface to oVirt testing framework.'
     )
     parser.add_argument(
-        '-l', '--loglevel', default='info',
+        '-l',
+        '--loglevel',
+        default='info',
         choices=['info', 'debug', 'error', 'warning'],
         help='Log level to use, by default %(default)s'
     )
     parser.add_argument(
-        '--logdepth', default=3, type=int,
+        '--logdepth',
+        default=3,
+        type=int,
         help='How many task levels to show, by default %(default)s'
     )
     verbs_parser = parser.add_subparsers(dest='verb', metavar='VERB')
     for verb, (kwargs, verb_arguments, _) in ARGUMENTS.items():
-        verb_parser = verbs_parser.add_parser(
-            verb,
-            **kwargs
-        )
+        verb_parser = verbs_parser.add_parser(verb, **kwargs)
         for arg_name, arg_kw in verb_arguments:
             verb_parser.add_argument(arg_name, **arg_kw)
 

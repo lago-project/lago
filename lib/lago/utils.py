@@ -37,7 +37,6 @@ import Queue
 import constants
 from .log_utils import LogTask
 
-
 LOGGER = logging.getLogger(__name__)
 
 
@@ -62,8 +61,7 @@ class VectorThread:
         self.thread_handles = []
         for target in self.targets:
             q = Queue.Queue()
-            t = threading.Thread(target=_ret_via_queue,
-                                 args=(target, q))
+            t = threading.Thread(target=_ret_via_queue, args=(target, q))
             self.thread_handles.append((t, q))
             t.start()
 
@@ -88,9 +86,9 @@ def invoke_in_parallel(func, *args_sequences):
     vt.start_all()
     vt.join_all()
 
+
 _CommandStatus = collections.namedtuple(
-    'CommandStatus',
-    ('code', 'out', 'err')
+    'CommandStatus', ('code', 'out', 'err')
 )
 
 
@@ -116,8 +114,7 @@ def run_command(
         # add libexec to PATH if needed
         if constants.LIBEXEC_DIR not in os.environ['PATH'].split(':'):
             os.environ['PATH'] = '%s:%s' % (
-                constants.LIBEXEC_DIR,
-                os.environ['PATH']
+                constants.LIBEXEC_DIR, os.environ['PATH']
             )
 
         if input_data:
@@ -129,9 +126,9 @@ def run_command(
             env['PATH'] = ':'.join(
                 list(
                     set(
-                        env.get('PATH', '').split(':')
-                        +
-                        os.environ['PATH'].split(':')
+                        env.get('PATH', '').split(':') + os.environ[
+                            'PATH'
+                        ].split(':')
                     ),
                 ),
             )
@@ -175,6 +172,7 @@ class RollbackContext(object):
 
     More examples see tests/utilsTests.py @ vdsm code
     '''
+
     def __init__(self, *args):
         self._finally = []
 
@@ -268,12 +266,7 @@ def drain_ssh_channel(chan, stdin=None, stdout=sys.stdout, stderr=sys.stderr):
         if stderr and err_queue:
             write_streams.append(stderr)
 
-        read, write, _ = select.select(
-            read_streams,
-            write_streams,
-            [],
-            0.1,
-        )
+        read, write, _ = select.select(read_streams, write_streams, [], 0.1, )
 
         if stdin in read:
             c = _read_nonblocking(stdin)

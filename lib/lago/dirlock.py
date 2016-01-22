@@ -36,10 +36,7 @@ def trylock(path, excl, key_path):
             with open(_lock_path(path)) as f:
                 lock_obj = json.load(f)
         else:
-            lock_obj = {
-                'excl': False,
-                'users': {}
-            }
+            lock_obj = {'excl': False, 'users': {}}
         for other_key_path in lock_obj['users'].copy():
             if not os.path.isfile(other_key_path):
                 del lock_obj['users'][other_key_path]
@@ -50,11 +47,10 @@ def trylock(path, excl, key_path):
                 del lock_obj['users'][other_key_path]
 
         if (
-                (excl and len(lock_obj['users']) != 0)
-                or
-                (not excl and lock_obj['excl'] and len(lock_obj['users']) != 0)
+            (excl and len(lock_obj['users']) != 0)
+            or (not excl and lock_obj['excl'] and len(lock_obj['users']) != 0)
         ):
-                success = False
+            success = False
         else:
             lock_obj['excl'] = excl
             with open(key_path) as f:

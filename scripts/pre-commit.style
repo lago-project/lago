@@ -1,0 +1,44 @@
+#!/bin/bash
+
+files="$( \
+    git diff \
+        --cached \
+        --name-status \
+    | grep -v "^D" \
+    | grep "\.py$" \
+    | awk '{ print $2 }' \
+)"
+
+if [[ "$files" == "" ]]; then
+    exit 0
+fi
+
+git diff \
+    --cached \
+    --name-status \
+| grep -v "^D" \
+| grep "\.py$" \
+| awk '{ print $2 }' \
+| xargs yapf \
+    --style .style.yapf \
+    --in-place \
+2>/dev/null
+
+git diff \
+    --cached \
+    --name-status \
+| grep -v "^D" \
+| grep "\.py$" \
+| awk '{ print $2 }' \
+| xargs git add
+
+
+res=$?
+case $res in
+    123) exit 0;;
+    0|1|2) exit 0;;
+    *)
+        echo "Failed to run yapf, make sure you have it installed"
+        exit $res
+        ;;
+esac

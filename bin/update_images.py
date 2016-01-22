@@ -44,6 +44,7 @@ def domain_name(image_path):
     finally:
         name_index += 1
 
+
 updating = lambda x: '%s.updating' % x
 
 if __name__ == '__main__':
@@ -63,11 +64,9 @@ if __name__ == '__main__':
         for img in images:
             ret, _, _ = utils.run_command(
                 [
-                    'qemu-img',
-                    'create',
-                    '-f', 'qcow2',
-                    '-b', img,
-                    updating(img)
+                    'qemu-img', 'create', '-f', 'qcow2', '-b', img, updating(
+                        img
+                    )
                 ]
             )
             if ret:
@@ -97,14 +96,12 @@ if __name__ == '__main__':
                 raise RuntimeError('Failed to discover image format')
             image_format = [
                 line.split()[-1]
-                for line in out.split('\n')
-                if line.startswith('file format:')
+                for line in out.split('\n') if line.startswith('file format:')
             ].pop()
 
             qemu_to_libvirt_formats = {'raw': 'file'}
             libvirt_format = qemu_to_libvirt_formats.get(
-                image_format,
-                image_format
+                image_format, image_format
             )
 
             dom_name = domain_name(img)
@@ -143,6 +140,7 @@ if __name__ == '__main__':
         jobs = []
         images_to_merge = []
         for vm in prefix.virt_env.get_vms().values():
+
             def update_domain(vm):
                 vm.wait_for_ssh()
                 ret, _, _ = vm.ssh_script(script_path)

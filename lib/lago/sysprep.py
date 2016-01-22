@@ -46,8 +46,10 @@ def _upload_file(local_path, remote_path):
 
 def set_iscsi_initiator_name(name):
     return (
-        '--mkdir', _ISCSI_DIR,
-        '--chmod', '0755:%s' % _ISCSI_DIR,
+        '--mkdir',
+        _ISCSI_DIR,
+        '--chmod',
+        '0755:%s' % _ISCSI_DIR,
     ) + _write_file(
         os.path.join(_ISCSI_DIR, 'initiatorname.iscsi'),
         'InitiatorName=%s' % name,
@@ -56,43 +58,46 @@ def set_iscsi_initiator_name(name):
 
 def add_ssh_key(key, with_restorecon_fix=False):
     extra_options = (
-        '--mkdir', _DOT_SSH,
-        '--chmod', '0700:%s' % _DOT_SSH,
+        '--mkdir',
+        _DOT_SSH,
+        '--chmod',
+        '0700:%s' % _DOT_SSH,
     ) + _upload_file(
-        _AUTHORIZED_KEYS,
-        key
+        _AUTHORIZED_KEYS, key
     )
-    if (
-        not os.stat(key).st_uid == 0
-        or not os.stat(key).st_gid == 0
-    ):
+    if (not os.stat(key).st_uid == 0 or not os.stat(key).st_gid == 0):
         extra_options += (
-            '--run-command', 'chown root.root %s' % _AUTHORIZED_KEYS,
+            '--run-command',
+            'chown root.root %s' % _AUTHORIZED_KEYS,
         )
     if with_restorecon_fix:
         # Fix for fc23 not relabeling on boot
         # https://bugzilla.redhat.com/1049656
-        extra_options += (
-            '--firstboot-command', 'restorecon -R /root/.ssh',
-        )
+        extra_options += ('--firstboot-command', 'restorecon -R /root/.ssh', )
     return extra_options
 
 
 def set_selinux_mode(mode):
     return (
-        '--mkdir', _SELINUX_CONF_DIR,
-        '--chmod', '0755:%s' % _SELINUX_CONF_DIR,
+        '--mkdir',
+        _SELINUX_CONF_DIR,
+        '--chmod',
+        '0755:%s' % _SELINUX_CONF_DIR,
     ) + _write_file(
         _SELINUX_CONF_PATH,
-        ('SELINUX=%s\n'
-         'SELINUXTYPE=targeted\n') % mode,
+        (
+            'SELINUX=%s\n'
+            'SELINUXTYPE=targeted\n'
+        ) % mode,
     )
 
 
 def _config_net_interface(iface, **kwargs):
     return (
-        '--mkdir', '/etc/sysconfig/network-scripts',
-        '--chmod', '0755:/etc/sysconfig/network-scripts',
+        '--mkdir',
+        '/etc/sysconfig/network-scripts',
+        '--chmod',
+        '0755:/etc/sysconfig/network-scripts',
     ) + _write_file(
         os.path.join(
             '/etc/sysconfig/network-scripts',
@@ -115,9 +120,7 @@ def config_net_interface_dhcp(iface, hwaddr):
 
 def sysprep(disk, mods):
     cmd = [
-        'virt-sysprep',
-        '--connect', 'qemu:///system',
-        '-a', disk,
+        'virt-sysprep', '--connect', 'qemu:///system', '-a', disk,
         '--selinux-relabel'
     ]
     for mod in mods:

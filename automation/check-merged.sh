@@ -13,7 +13,11 @@ pip install -r docs/requires.txt
 make docs
 mv docs/_build "$DOCS_DIR"
 
+# Style and unit test
+# required for the formatting
+pip install yapf
 make check-local
+
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 echo '~*          Running build/installation tests           ~'
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'

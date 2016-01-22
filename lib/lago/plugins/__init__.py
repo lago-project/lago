@@ -22,11 +22,8 @@
 """
 from stevedore import ExtensionManager
 
-
 #: Map of plugin type string -> setuptools entry point
-PLUGIN_ENTRY_POINTS = {
-    'cli': 'lago.plugins.cli',
-}
+PLUGIN_ENTRY_POINTS = {'cli': 'lago.plugins.cli', }
 
 
 def load_plugins(namespace):
@@ -40,7 +37,5 @@ def load_plugins(namespace):
         dict of str, object: Returns the list of loaded plugins already
             instantiated
     """
-    mgr = ExtensionManager(
-        namespace=namespace,
-    )
+    mgr = ExtensionManager(namespace=namespace, )
     return dict((ext.name, ext.plugin()) for ext in mgr)

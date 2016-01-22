@@ -28,12 +28,8 @@ import re
 import sys
 import datetime
 import threading
-from collections import (
-    OrderedDict,
-    deque,
-)
+from collections import (OrderedDict, deque, )
 from functools import wraps
-
 
 #: Message to be shown when a task is started
 START_TASK_MSG = 'Starting'
@@ -129,6 +125,7 @@ class Task(deque):
         force_show (bool): If set, will show any log records generated inside
             this task even if it's out of nested depth limit
     """
+
     def __init__(self, name, *args, **kwargs):
         """
         Args:
@@ -144,8 +141,8 @@ class Task(deque):
 
     def __str__(self):
         return (
-            '%s(failed=%s, force_show=%s, len=%d)'
-            % (self.name, self.failed, self.force_show, len(self))
+            '%s(failed=%s, force_show=%s, len=%d)' %
+            (self.name, self.failed, self.force_show, len(self))
         )
 
     def elapsed_time(self):
@@ -156,6 +153,7 @@ class ContextLock(object):
     """
     Context manager to thread lock a block of code
     """
+
     def __init__(self):
         self.lock = threading.Lock()
 
@@ -218,8 +216,7 @@ class TaskHandler(logging.StreamHandler):
         level=logging.NOTSET,
         formatter=ColorFormatter,
     ):
-        super(TaskHandler, self).__init__(
-        )
+        super(TaskHandler, self).__init__()
         self.formatter = formatter
         self.initial_depth = initial_depth
         self.tasks_by_thread = {}
@@ -267,7 +264,7 @@ class TaskHandler(logging.StreamHandler):
         """
         if thread_name not in self.tasks_by_thread:
             with self._tasks_lock:
-                    self.tasks_by_thread[thread_name] = OrderedDict()
+                self.tasks_by_thread[thread_name] = OrderedDict()
 
         return self.tasks_by_thread[thread_name]
 
@@ -302,7 +299,7 @@ class TaskHandler(logging.StreamHandler):
             return
 
         with self._main_thread_lock:
-                self.main_failed = True
+            self.main_failed = True
 
     def should_show_by_depth(self, cur_level=None):
         """
@@ -316,10 +313,7 @@ class TaskHandler(logging.StreamHandler):
         if cur_level is None:
             cur_level = self.cur_depth_level
 
-        return (
-            self.task_tree_depth < 0
-            or self.task_tree_depth >= cur_level
-        )
+        return (self.task_tree_depth < 0 or self.task_tree_depth >= cur_level)
 
     def should_show_by_level(self, record_level, base_level=None):
         """
@@ -351,10 +345,7 @@ class TaskHandler(logging.StreamHandler):
         record.msg = ColorFormatter.colored('default', START_TASK_MSG)
         record.task = task_name
 
-        self.tasks[task_name] = Task(
-            name=task_name,
-            maxlen=self.buffer_size
-        )
+        self.tasks[task_name] = Task(name=task_name, maxlen=self.buffer_size)
         if self.should_show_by_depth():
             self.pretty_emit(record, is_header=True)
 
@@ -444,10 +435,7 @@ class TaskHandler(logging.StreamHandler):
             return
 
         # All the parents inherit the failure
-        self.mark_parent_tasks_as_failed(
-            self.cur_task,
-            flush_logs=True,
-        )
+        self.mark_parent_tasks_as_failed(self.cur_task, flush_logs=True, )
 
         # Show the start headers for all the parent tasks if they were not
         # shown by the depth level limit
@@ -486,9 +474,7 @@ class TaskHandler(logging.StreamHandler):
         """
         if task_level is None:
             task_level = len(self.tasks)
-        return self.TASK_INDICATORS[
-            task_level % len(self.TASK_INDICATORS)
-        ]
+        return self.TASK_INDICATORS[task_level % len(self.TASK_INDICATORS)]
 
     def pretty_emit(self, record, is_header=False, task_level=None):
         """
@@ -511,12 +497,9 @@ class TaskHandler(logging.StreamHandler):
 
         if is_header:
             extra_prefix = (
-                self.get_task_indicator(task_level - 1) + ' '
-                + (
+                self.get_task_indicator(task_level - 1) + ' ' + (
                     '' if self.am_i_main_thread else '[%s] ' % self.cur_thread
-                )
-                + task
-                + ': '
+                ) + task + ': '
             )
             record.levelno = logging.INFO
         else:
@@ -524,9 +507,7 @@ class TaskHandler(logging.StreamHandler):
 
         if task:
             record.msg = (
-                '  ' * (task_level - 1)
-                + extra_prefix
-                + str(record.msg)
+                '  ' * (task_level - 1) + extra_prefix + str(record.msg)
             )
 
         super(TaskHandler, self).emit(record)
@@ -566,8 +547,7 @@ class TaskHandler(logging.StreamHandler):
             self.pretty_emit(record)
 
         if (
-            not force_show_record
-            and self.should_show_by_level(record)
+            not force_show_record and self.should_show_by_level(record)
             and self.should_show_by_depth()
         ):
             self.pretty_emit(record)
@@ -585,24 +565,21 @@ class LogTask(object):
         >>> with LogTask('mytask'):
         ...     pass
     """
+
     def __init__(self, task, logger=logging, level='info'):
         self.task = task
         self.logger = logger
         self.level = level
 
     def __enter__(self):
-        getattr(
-            self.logger, self.level
-        )(START_TASK_TRIGGER_MSG % self.task)
+        getattr(self.logger, self.level)(START_TASK_TRIGGER_MSG % self.task)
 
     def __exit__(self, *args, **kwargs):
         exc_type, _, _ = sys.exc_info()
         if exc_type:
             end_log_task(self.task, level='error')
         else:
-            getattr(
-                self.logger, self.level
-            )(END_TASK_TRIGGER_MSG % self.task)
+            getattr(self.logger, self.level)(END_TASK_TRIGGER_MSG % self.task)
 
 
 def log_task(task, logger=logging, level='info'):
@@ -614,14 +591,15 @@ def log_task(task, logger=logging, level='info'):
         ... def do_something():
         ...     pass
     """
-    def decorator(func):
 
+    def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
             with LogTask(task, logger=logger, level=level):
                 func(*args, **kwargs)
 
         return wrapper
+
     return decorator
 
 
@@ -692,10 +670,7 @@ class TaskLogNosePlugin(nose.plugins.Plugin):
         )
 
     def stopTest(self, test):
-        end_log_task(
-            test.shortDescription() or str(test),
-            logger=self.logger
-        )
+        end_log_task(test.shortDescription() or str(test), logger=self.logger)
 
 
 def hide_paramiko_logs():

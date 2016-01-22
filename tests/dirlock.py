@@ -93,6 +93,7 @@ def test_wlock_twice_with_unlock():
 def test_prune_exipred():
     tempdir = tempfile.mkdtemp()
     try:
+
         def target_wlock():
             setup_prefix()
             try:
@@ -100,9 +101,7 @@ def test_prune_exipred():
             finally:
                 teardown_prefix()
 
-        proc = multiprocessing.Process(
-            target=target_wlock
-        )
+        proc = multiprocessing.Process(target=target_wlock)
         proc.start()
         proc.join()
 
@@ -129,9 +128,7 @@ def test_lock_blocking():
                 teardown_prefix()
                 sys.exit(0)
 
-        proc = multiprocessing.Process(
-            target=target_wlock
-        )
+        proc = multiprocessing.Process(target=target_wlock)
         start = time.time()
         cond.acquire()
         proc.start()

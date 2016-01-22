@@ -75,11 +75,13 @@ def _validate_lease_dir_present(func):
     Decorator that will ensure that the lease dir exists, creating it if
     necessary
     """
+
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         if not os.path.isdir(LEASE_DIR):
             os.makedirs(LEASE_DIR)
         return func(*args, **kwargs)
+
     return wrapper
 
 
@@ -88,10 +90,12 @@ def _locked(func):
     Decorator that will make sure that you have the exclusive lock for the
     leases
     """
+
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         with lockfile.LockFile(LOCK_FILE):
             return func(*args, **kwargs)
+
     return wrapper
 
 

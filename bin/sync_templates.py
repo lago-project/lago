@@ -41,16 +41,20 @@ def initialize(templates_dir, clone_url):
     os.makedirs(templates_dir)
 
     # Clone remote repo:
-    ret, _, _ = utils.run_command(['git', 'clone', clone_url, 'git-repo'],
-                                  cwd=templates_dir)
+    ret, _, _ = utils.run_command(
+        ['git', 'clone', clone_url, 'git-repo'],
+        cwd=templates_dir
+    )
     if ret != 0:
         raise RuntimeError('Failed to clone remote repository')
 
 
 def qemu_img_convert(frm, frm_format, to, to_format):
-    return utils.run_command(['qemu-img', 'convert',
-                              '-f', frm_format, frm,
-                              '-O', to_format, to])
+    return utils.run_command(
+        [
+            'qemu-img', 'convert', '-f', frm_format, frm, '-O', to_format, to
+        ]
+    )
 
 
 def update(templates_dir):
@@ -64,20 +68,26 @@ def update(templates_dir):
         return
 
     ret, local_head, _ = utils.run_command(
-        ['git', 'rev-parse', 'master'], cwd=git_repo)
+        ['git', 'rev-parse', 'master'],
+        cwd=git_repo
+    )
     if ret != 0:
         raise RuntimeError('Failed to retrieve current revision')
 
     logging.debug('Fetching from remote repository')
     ret, remote_head, _ = utils.run_command(
-        ['git', 'rev-parse', 'origin/master'], cwd=git_repo)
+        ['git', 'rev-parse', 'origin/master'],
+        cwd=git_repo
+    )
     if ret != 0:
         raise RuntimeError('Failed to retrieve remote revision')
 
     if remote_head != local_head:
         logging.debug('Local repository is not up to date, rebasing')
         ret, _, _ = utils.run_command(
-            ['git', 'rebase', 'origin/master'], cwd=git_repo)
+            ['git', 'rebase', 'origin/master'],
+            cwd=git_repo
+        )
         if ret != 0:
             raise RuntimeError('Failed to rebase on remote master')
 
@@ -97,9 +107,12 @@ def update(templates_dir):
                 current_rev = ''
 
             ret, updated_rev, _ = utils.run_command(
-                ['git', 'log', '-n', '1',
-                 '--pretty=format:%H', '--', rel_path],
-                cwd=git_repo)
+                [
+                    'git', 'log', '-n', '1', '--pretty=format:%H', '--',
+                    rel_path
+                ],
+                cwd=git_repo
+            )
             if ret != 0:
                 raise RuntimeError('Failed to retrieve image revision')
 
@@ -109,8 +122,9 @@ def update(templates_dir):
                     os.unlink(path_outside_git)
                 elif not os.path.exists(os.path.dirname(path_outside_git)):
                     os.makedirs(os.path.dirname(path_outside_git))
-                ret, _, _ = qemu_img_convert(path_in_git, 'qcow2',
-                                             path_outside_git, 'raw')
+                ret, _, _ = qemu_img_convert(
+                    path_in_git, 'qcow2', path_outside_git, 'raw'
+                )
 
                 if ret != 0:
                     raise RuntimeError('Failed to convert image')
@@ -121,8 +135,10 @@ def update(templates_dir):
 
 if __name__ == '__main__':
     logging.basicConfig(
-        stream=sys.stdout, level=logging.DEBUG,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        stream=sys.stdout,
+        level=logging.DEBUG,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
 
     optlist, args = getopt.gnu_getopt(sys.argv[1:], '', ['create='])
 

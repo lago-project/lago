@@ -45,8 +45,7 @@ def run_command(command, **kwargs):
     # add libexec to PATH if needed
     if constants.LIBEXEC_DIR not in os.environ['PATH'].split(':'):
         os.environ['PATH'] = '%s:%s' % (
-            constants.LIBEXEC_DIR,
-            os.environ['PATH']
+            constants.LIBEXEC_DIR, os.environ['PATH']
         )
     return utils.run_command(command, **kwargs)
 
@@ -69,15 +68,14 @@ def _BetterHTTPRequestHandler(root_dir):
 
         def translate_path(self, path):
             return os.path.join(
-                self.__root_dir,
-                _SimpleHTTPRequestHandler.translate_path(
-                    self,
-                    path
+                self.__root_dir, _SimpleHTTPRequestHandler.translate_path(
+                    self, path
                 )[len(os.getcwd()):].lstrip('/')
             )
 
         def log_message(self, *args, **kwargs):
             pass
+
     return _BetterHTTPRequestHandler
 
 
