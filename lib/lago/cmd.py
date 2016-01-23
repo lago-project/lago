@@ -71,8 +71,10 @@ def do_init(args):
             repo = lago.templates.find_repo_by_name(repo_name)
 
         template_store_path = (
-            args.template_store or lago.config.get('template_store',
-                                                   default=None)
+            args.template_store or lago.config.get(
+                'template_store',
+                default=None
+            )
         )
         store = lago.templates.TemplateStore(template_store_path)
 

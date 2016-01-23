@@ -27,6 +27,16 @@ load env_setup
     helpers.contains "$output" 'usage:'
 }
 
+@test "basic: lago and lagocli are both accepted" {
+    helpers.run \
+        "lago" -h
+    helpers.equals "$status" '0'
+    helpers.contains "$output" 'usage:'
+    helpers.run \
+        "lagocli" -h
+    helpers.equals "$status" '0'
+    helpers.contains "$output" 'usage:'
+}
 
 @test "basic: command fails and shows help on wrong option" {
     helpers.run \

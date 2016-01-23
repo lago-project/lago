@@ -84,6 +84,7 @@ install -d "$RPM_BUILD_ROOT"/var/lib/lago/reposync
 %files
 %doc AUTHORS COPYING README.md
 %{_bindir}/lagocli
+%{_bindir}/lago
 %{_datadir}/%{name}/*
 %attr(0775, root, root) %{_sysconfdir}/sudoers.d/*
 

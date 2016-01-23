@@ -56,6 +56,7 @@ autodoc_mock_imports = [
     'rpmUtils.arch',
     'rpmUtils.miscutils',
     'stevedore',
+    'stevedore.extension',
 ]
 
 autodoc_default_flags = [
