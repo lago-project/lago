@@ -32,7 +32,7 @@ from collections import (OrderedDict, deque, )
 from functools import wraps
 
 #: Message to be shown when a task is started
-START_TASK_MSG = 'Starting'
+START_TASK_MSG = ''
 #: Message template that will trigger a task
 START_TASK_TRIGGER_MSG = 'start task %s'
 #: Regexp that will match the above template
