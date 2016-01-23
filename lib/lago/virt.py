@@ -287,12 +287,12 @@ class Network(object):
 
     def start(self):
         if not self.alive():
-            with LogTask('Create network %s' % self.name(), level='debug', ):
+            with LogTask('Create network %s' % self.name()):
                 self._env.libvirt_con.networkCreateXML(self._libvirt_xml())
 
     def stop(self):
         if self.alive():
-            with LogTask('Destroy network %s' % self.name(), level='debug', ):
+            with LogTask('Destroy network %s' % self.name()):
                 self._env.libvirt_con.networkLookupByName(
                     self._libvirt_name(),
                 ).destroy()
@@ -807,13 +807,13 @@ class VM(object):
 
     def start(self):
         if not self.alive():
-            with LogTask('Starting VM %s' % self.name(), level='debug', ):
+            with LogTask('Starting VM %s' % self.name()):
                 self._env.libvirt_con.createXML(self._libvirt_xml())
 
     def stop(self):
         if self.alive():
             self._ssh_client = None
-            with LogTask('Destroying VM %s' % self.name(), level='debug', ):
+            with LogTask('Destroying VM %s' % self.name()):
                 self._env.libvirt_con.lookupByName(
                     self._libvirt_name(),
                 ).destroy()
