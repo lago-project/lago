@@ -29,10 +29,11 @@ setup(
         ],
     },
     provides=['lago', 'ovirtlago'],
-    scripts=[
-        'lago/lagocli',
-    ],
     entry_points={
+        'console_scripts': [
+            'lagocli=lago.cmd:main',
+            'lago=lago.cmd:main',
+        ],
         'lago.plugins.cli': [
             'ovirt=ovirtlago.cmd:OvirtCLI',
             'template-repo=lago_template_repo:TemplateRepoCLI',
