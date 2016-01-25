@@ -504,11 +504,18 @@ class Prefix(object):
                 task_message = 'Create empty disk image'
             elif spec['type'] == 'file':
                 url = spec.get('url', '')
+                path = spec.get('path', '')
+
+                if not url and not path:
+                    raise RuntimeError('Partial drive spec %s' % str(spec))
+
                 if url:
-                    shutil.move(
-                        self.fetch_url(self.path.prefixed(url)), spec['path']
-                    )
-                # If we're using raw file, just return it's path
+                    disk_in_prefix = self.fetch_url(url)
+                    if path:
+                        shutil.move(disk_in_prefix, spec['path'])
+                    else:
+                        spec['path'] = disk_in_prefix
+                # If we're using raw file, return it's path
                 return spec['path'], disk_metadata
             else:
                 raise RuntimeError('Unknown drive spec %s' % str(spec))
