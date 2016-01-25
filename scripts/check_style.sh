@@ -4,7 +4,7 @@
 
 files="$( \
     git diff \
-        --cached \
+        HEAD^ \
         --name-status \
     | grep -v "^D" \
     | grep "\.py$" \
@@ -16,7 +16,7 @@ if [[ "$files" == "" ]]; then
 fi
 
 git diff \
-    --cached \
+    HEAD^ \
     --name-status \
 | grep -v "^D" \
 | grep "\.py$" \
