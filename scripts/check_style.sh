@@ -2,12 +2,28 @@
 
 [[ "$1" == "-v" ]] && shift && set -x
 
-git diff-tree \
-    --no-commit-id \
-    --name-only \
-    -r HEAD \
+files="$( \
+    git diff \
+        --cached \
+        --name-status \
+    | grep -v "^D" \
+    | grep "\.py$" \
+    | awk '{ print $2 }' \
+)"
+
+if [[ "$files" == "" ]]; then
+    exit 0
+fi
+
+git diff \
+    --cached \
+    --name-status \
+| grep -v "^D" \
 | grep "\.py$" \
-| xargs yapf --style .style.yapf --diff  \
+| awk '{ print $2 }' \
+| xargs yapf \
+    --style .style.yapf \
+    --diff \
 || {
     cat <<EOF
 Yapf failed, make sure to run:
