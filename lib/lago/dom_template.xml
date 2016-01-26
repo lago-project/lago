@@ -2,17 +2,18 @@
     <name>@NAME@</name>
     <memory unit='MiB'>@MEM_SIZE@</memory>
     <vcpu>@VCPU@</vcpu>
-    <cpu mode='host-passthrough'>
+    <cpu mode='host-model'>
       <topology sockets='@CPU@' cores='1' threads='1'/>
     </cpu>
     <os>
       <type arch='x86_64' machine='pc'>hvm</type>
-      <bootmenu enable='yes'/>
+      <bootmenu enable='no'/>
     </os>
     <features>
       <acpi/>
       <apic/>
       <pae/>
+      <hap/>
     </features>
     <devices>
       <emulator>@QEMU_KVM@</emulator>
