@@ -932,7 +932,7 @@ class VM(object):
         dom.fsFreeze()
         try:
             disk_path = self._spec['disks'][0]['path']
-            disk_root_part = self._spec['disks'][0].get(
+            disk_root_part = self._spec['disks'][0]['metadata'].get(
                 'root-partition',
                 'root',
             )
