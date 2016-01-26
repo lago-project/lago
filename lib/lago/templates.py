@@ -28,6 +28,7 @@ import os
 import shutil
 import time
 import urllib
+import sys
 
 import lockfile
 
@@ -158,9 +159,23 @@ class HttpTemplateProvider:
                 'Failed no retrieve URL %s:\nCode: %d' %
                 (full_url, response.code)
             )
+
+        meta = response.info()
+        file_size_kb = int(meta.getheaders("Content-Length")[0]) / 1024
+        if file_size_kb > 0:
+            sys.stdout.write("Downloading %s Kilobytes from %s \n" %
+                             (file_size_kb, full_url))
+
+        def report(count, block_size, total_size):
+            percent = (count*block_size*100/float(total_size))
+            sys.stdout.write("\r% 3.1f%%" % percent + " complete (%d " %
+                             (count*block_size/1024) + "Kilobytes)")
+            sys.stdout.flush()
+
         if dest:
             response.close()
-            urllib.urlretrieve(full_url, dest)
+            urllib.urlretrieve(full_url, dest, report)
+            sys.stdout.write("\n")
         return response
 
     def download_image(self, handle, dest):
