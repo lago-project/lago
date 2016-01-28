@@ -25,6 +25,7 @@ import json
 import logging
 import magic
 import os
+import posixpath
 import shutil
 import time
 import urllib
@@ -152,7 +153,7 @@ class HttpTemplateProvider:
                 )
             except RuntimeError:
                 pass
-        full_url = self.baseurl + url + suffix
+        full_url = posixpath.join(self.baseurl, url) + suffix
         response = urllib.urlopen(full_url)
         if response.code >= 300:
             raise RuntimeError(
