@@ -23,13 +23,19 @@
       </disk>
       <graphics type='vnc' port='-1' autoport='yes' listen='0.0.0.0' keymap='en-us'/>
       <channel type='unix'>
-	<source mode='bind'/>
-	<target type='virtio' name='org.qemu.guest_agent.0'/>
+        <source mode='bind'/>
+        <target type='virtio' name='org.qemu.guest_agent.0'/>
       </channel>
       <rng model='virtio'>
         <backend model='random'>/dev/random</backend>
         <address type='pci' domain='0x0000' bus='0x00' slot='0x09' function='0x0'/>
       </rng>
+      <serial type='pty'>
+        <target port='0'/>
+      </serial>
+      <console type='pty'>
+        <target type='serial' port='0'/>
+      </console>
     </devices>
     <clock offset='utc'>
       <timer name='kvmclock'>
