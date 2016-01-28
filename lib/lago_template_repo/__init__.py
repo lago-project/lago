@@ -90,7 +90,7 @@ ARGUMENTS[Verbs.UPDATE] = (
 
 
 class TemplateRepoCLI(CLIPlugin):
-    help = 'Utility for system testing template management'
+    init_args = {'help': 'Utility for system testing template management', }
 
     def populate_parser(self, parser):
         verbs = parser.add_subparsers(dest='tplverb', metavar='VERB')

@@ -330,7 +330,7 @@ ARGUMENTS[Verbs.OVIRT_SERVE] = (
 
 
 class OvirtCLI(CLIPlugin):
-    help = 'oVirt related actions'
+    init_args = {'help': 'oVirt related actions', }
 
     def populate_parser(self, parser):
         verbs = parser.add_subparsers(dest='ovirtverb', metavar='VERB')
