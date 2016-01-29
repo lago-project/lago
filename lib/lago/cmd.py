@@ -20,21 +20,18 @@
 #
 
 import argparse
-import collections
 import functools
 import grp
 import json
 import logging
 import os
 import shutil
-import stat
 import sys
-
-from stevedore.extension import ExtensionManager
 
 import lago
 import lago.config
 import lago.plugins
+import lago.plugins.cli
 import lago.templates
 from lago import log_utils
 
@@ -42,25 +39,60 @@ CLI_PREFIX = 'lagocli-'
 LOGGER = logging.getLogger('cli')
 
 
+@lago.plugins.cli.cli_plugin(
+    help='Initialize a directory for framework deployment'
+)
+@lago.plugins.cli.cli_plugin_add_argument(
+    'virt_config',
+    help='Configuration of resources to deploy',
+    metavar='VIRT_CONFIG',
+    type=os.path.abspath,
+)
+@lago.plugins.cli.cli_plugin_add_argument(
+    'prefix',
+    help='Prefix directory of the deployment',
+    metavar='PREFIX',
+    type=os.path.abspath,
+)
+@lago.plugins.cli.cli_plugin_add_argument(
+    '--template-repo-path',
+    help='Repo file describing the templates',
+)
+@lago.plugins.cli.cli_plugin_add_argument(
+    '--template-repo-name',
+    help='Name of the repo from the template repos dir',
+)
+@lago.plugins.cli.cli_plugin_add_argument(
+    '--template-store',
+    help='Location to store templates at',
+    type=os.path.abspath,
+)
 @log_utils.log_task('Initialize and populate prefix', LOGGER)
-def do_init(args):
-    prefix = lago.Prefix(args.prefix)
+def do_init(
+    prefix,
+    virt_config,
+    template_repo_path=None,
+    template_repo_name=None,
+    template_store=None,
+    **kwargs
+):
+    prefix = lago.Prefix(prefix)
     prefix.initialize()
 
-    with open(args.virt_config, 'r') as f:
+    with open(virt_config, 'r') as f:
         virt_conf = json.load(f)
 
     log_utils.setup_prefix_logging(prefix.paths.logs())
 
     try:
-        if args.template_repo_path:
+        if template_repo_path:
             repo = lago.templates.TemplateRepository.from_url(
-                args.template_repo_path
+                template_repo_path
             )
         else:
             try:
                 repo_name = (
-                    args.template_repo_name
+                    template_repo_name
                     or lago.config.get('template_default_repo')
                 )
             except KeyError:
@@ -71,7 +103,7 @@ def do_init(args):
             repo = lago.templates.find_repo_by_name(repo_name)
 
         template_store_path = (
-            args.template_store or lago.config.get(
+            template_store or lago.config.get(
                 'template_store',
                 default=None
             )
@@ -80,67 +112,122 @@ def do_init(args):
 
         prefix.virt_conf(virt_conf, repo, store)
     except:
-        shutil.rmtree(args.prefix)
+        shutil.rmtree(prefix)
         raise
 
 
 def in_prefix(func):
     @functools.wraps(func)
-    def wrapper(args):
+    def wrapper(*args, **kwargs):
         if not os.path.exists('.lago'):
             raise RuntimeError('Not inside prefix')
-        return func(lago.Prefix(os.getcwd()), args)
+        return func(*args, prefix=lago.Prefix(os.getcwd()), **kwargs)
 
     return wrapper
 
 
 def with_logging(func):
     @functools.wraps(func)
-    def wrapper(prefix, args):
+    def wrapper(prefix, *args, **kwargs):
         log_utils.setup_prefix_logging(prefix.paths.logs())
-        return func(prefix, args)
+        return func(*args, prefix=prefix, **kwargs)
 
     return wrapper
 
 
+@lago.plugins.cli.cli_plugin(help='Clean up deployed resources')
 @in_prefix
 @with_logging
-def do_cleanup(prefix, args):
+def do_cleanup(prefix, **kwargs):
     prefix.cleanup()
 
 
+@lago.plugins.cli.cli_plugin(help='Deploy lago resources')
+@lago.plugins.cli.cli_plugin_add_argument(
+    'vm_names',
+    help='Name of the vm to start',
+    metavar='VM_NAME',
+    nargs='*',
+)
 @in_prefix
 @with_logging
-def do_start(prefix, args):
-    prefix.start(vm_names=args.vm_names)
+def do_start(prefix, vm_names=None, **kwargs):
+    prefix.start(vm_names=vm_names)
 
 
+@lago.plugins.cli.cli_plugin(help='Destroy lago resources')
+@lago.plugins.cli.cli_plugin_add_argument(
+    'vm_names',
+    help='Name of the vm to stop',
+    metavar='VM_NAME',
+    nargs='*',
+)
 @in_prefix
 @with_logging
-def do_stop(prefix, args):
-    prefix.stop(vm_names=args.vm_names)
+def do_stop(prefix, vm_names, **kwargs):
+    prefix.stop(vm_names=vm_names)
 
 
+@lago.plugins.cli.cli_plugin(
+    help='Create snapshots for all deployed resources'
+)
+@lago.plugins.cli.cli_plugin_add_argument(
+    'snapshot_name',
+    help='Name of the snapshot to create',
+    metavar='SNAPSHOT_NAME'
+)
 @in_prefix
 @with_logging
-def do_snapshot(prefix, args):
-    prefix.create_snapshots(args.snapshot_name)
+def do_snapshot(prefix, snapshot_name, **kwargs):
+    prefix.create_snapshots(snapshot_name)
 
 
+@lago.plugins.cli.cli_plugin(help='Revert resources to a snapshot')
+@lago.plugins.cli.cli_plugin_add_argument(
+    'snapshot_name',
+    help='Name of the snapshot to revert to',
+    metavar='SNAPSHOT_NAME',
+)
 @in_prefix
 @with_logging
-def do_revert(prefix, args):
-    prefix.revert_snapshots(args.snapshot_name)
+def do_revert(prefix, snapshot_name, **kwargs):
+    prefix.revert_snapshots(snapshot_name)
 
 
+@lago.plugins.cli.cli_plugin(
+    help='Open shell on the domain or run as script/command',
+    prefix_chars='\x00',
+)
+@lago.plugins.cli.cli_plugin_add_argument(
+    'args',
+    help=(
+        'If none provided, an interactive shell will be started.\n'
+        'If arguments start with -c, what follows will be '
+        'executes as a command.\n'
+        'Otherwise, if a single provided, it will be ran as script'
+        ' on the domain.'
+    ),
+    nargs='*',
+)
+@lago.plugins.cli.cli_plugin_add_argument(
+    'host',
+    help='Host to connect to',
+    metavar='HOST',
+)
 @in_prefix
 @with_logging
-def do_shell(prefix, args):
+def do_shell(prefix, host, args=None, **kwargs):
+    args = args or []
     try:
-        host = prefix.virt_env.get_vm(args.host)
+        host = prefix.virt_env.get_vm(host)
     except KeyError:
-        LOGGER.error('Unable to find VM %s', args.host)
-        LOGGER.info('Available VMs: %s', prefix.virt_env.get_vms().keys())
+        LOGGER.error('Unable to find VM %s', host)
+        LOGGER.info(
+            'Available VMs:\n\t' + '\n\t'.join(
+                prefix.virt_env.get_vms().keys(
+                )
+            )
+        )
         raise
 
     if not host.alive():
@@ -148,20 +235,25 @@ def do_shell(prefix, args):
 
     host.wait_for_ssh()
 
-    if len(args.args) == 0:
+    if len(args) == 0:
         result = host.interactive_ssh(['bash'])
-    elif len(args.args) == 1:
-        host.ssh_script(args.args[0])
-    elif (len(args.args) > 1 and args.args[0] == '-c'):
-        result = host.interactive_ssh(args.args[1:])
+    elif len(args) == 1 and os.path.isfile(args[0]):
+        result = host.ssh_script(args[0])
     else:
-        raise RuntimeError('Invalid arguments passed')
+        if args[0] == '-c':
+            args = args[1:]
+
+        result = host.interactive_ssh(args)
+
     sys.exit(result.code)
 
 
+@lago.plugins.cli.cli_plugin(
+    help='Show status of the deployed virtual resources'
+)
 @in_prefix
 @with_logging
-def do_status(prefix, args):
+def do_status(prefix, **kwargs):
     print '[Prefix]:'
     print '\tBase directory:', prefix.paths.prefix()
     with open(prefix.paths.uuid()) as f:
@@ -193,16 +285,22 @@ def do_status(prefix, args):
             print '\t\t\t\tIP', nic.get('ip', 'N/A')
 
 
+@lago.plugins.cli.cli_plugin(
+    help='Copy file from a virtual machine to local machine'
+)
 @in_prefix
 @with_logging
-def do_copy_from_vm(prefix, args):
-    remote_path = args.remote_path
-    local_path = args.local_path
+def do_copy_from_vm(prefix, host, remote_path, local_path, **kwargs):
     try:
-        host = prefix.virt_env.get_vm(args.host)
+        host = prefix.virt_env.get_vm(host)
     except KeyError:
-        LOGGER.error('Unable to find VM %s', args.host)
-        LOGGER.info('Available VMs: %s', prefix.virt_env.get_vms().keys())
+        LOGGER.error('Unable to find VM %s', host)
+        LOGGER.info(
+            'Available VMs:\n\t' + '\n\t'.join(
+                prefix.virt_env.get_vms().keys(
+                )
+            )
+        )
         raise
 
     if not host.alive():
@@ -212,16 +310,37 @@ def do_copy_from_vm(prefix, args):
     host.copy_from(remote_path, local_path)
 
 
+@lago.plugins.cli.cli_plugin(
+    help='Copy file/dir to a virtual machine from the local host'
+)
+@lago.plugins.cli.cli_plugin_add_argument(
+    'host',
+    help='Host to copy files from',
+    metavar='HOST',
+)
+@lago.plugins.cli.cli_plugin_add_argument(
+    'remote_path',
+    help='Path of the file/dir to copy from the host',
+    metavar='REMOTE_PATH',
+)
+@lago.plugins.cli.cli_plugin_add_argument(
+    'local_path',
+    help='Path on the local host to copy the file/dir to',
+    metavar='LOCAL_PATH',
+)
 @in_prefix
 @with_logging
-def do_copy_to_vm(prefix, args):
-    local_path = args.local_path
-    remote_path = args.remote_path
+def do_copy_to_vm(prefix, host, remote_path, local_path, **kwargs):
     try:
-        host = prefix.virt_env.get_vm(args.host)
+        host = prefix.virt_env.get_vm(host)
     except KeyError:
-        LOGGER.error('Unable to find VM %s', args.host)
-        LOGGER.info('Available VMs: %s', prefix.virt_env.get_vms().keys())
+        LOGGER.error('Unable to find VM %s', host)
+        LOGGER.info(
+            'Available VMs:\n\t' + '\n\t'.join(
+                prefix.virt_env.get_vms().keys(
+                )
+            )
+        )
         raise
 
     if not host.alive():
@@ -229,257 +348,6 @@ def do_copy_to_vm(prefix, args):
 
     host.wait_for_ssh()
     host.copy_to(local_path, remote_path)
-
-
-class Verbs:
-    INIT = 'init'
-    START = 'start'
-    STOP = 'stop'
-    SNAPSHOT = 'snapshot'
-    REVERT = 'revert'
-    CLEANUP = 'cleanup'
-    SHELL = 'shell'
-    STATUS = 'status'
-    COPY_FROM_VM = 'copy-from-vm'
-    COPY_TO_VM = 'copy-to-vm'
-
-
-ARGUMENTS = collections.OrderedDict()
-ARGUMENTS[Verbs.INIT] = (
-    {
-        'help': 'Initialize a directory for framework deployment',
-    },
-    (
-        (
-            'prefix',
-            {
-                'help': 'Prefix directory of the deployment',
-                'metavar': 'PREFIX',
-                'type': os.path.abspath,
-            },
-        ),
-        (
-            'virt_config',
-            {
-                'help': 'Configuration of resources to deploy',
-                'type': os.path.abspath,
-                'metavar': 'VIRT_CONFIG',
-            },
-        ),
-        (
-            '--template-repo-path',
-            {
-                'help': (
-                    'Repo file describing the templates'
-                ),
-            },
-        ),
-        (
-            '--template-repo-name',
-            {
-                'help': (
-                    'Name of repo from the template repos dir'
-                ),
-            },
-        ),
-        (
-            '--template-store',
-            {
-                'help': (
-                    'Location to store templates at'
-                ),
-                'type': os.path.abspath,
-            },
-        ),
-    ),
-    do_init,
-)
-ARGUMENTS[Verbs.CLEANUP] = (
-    {
-        'help': 'Clean up deployed resources',
-    },
-    (),
-    do_cleanup,
-)
-ARGUMENTS[Verbs.START] = (
-    {
-        'help': 'Deploy testing framework resources',
-    },
-    (
-        (
-            'vm_names', {
-                'help': 'Name of the vm to start',
-                'metavar': 'VM_NAME',
-                'nargs': '*',
-            }
-        ),
-    ),
-    do_start,
-)
-ARGUMENTS[Verbs.STOP] = (
-    {
-        'help': 'Destroy testing framework resources',
-    },
-    (
-        (
-            'vm_names', {
-                'help': 'Name of the vm to start',
-                'metavar': 'VM_NAME',
-                'nargs': '*',
-            }
-        ),
-    ),
-    do_stop,
-)
-ARGUMENTS[Verbs.SNAPSHOT] = (
-    {
-        'help': 'Create snapshots for all deployed resources',
-    },
-    (
-        (
-            'snapshot_name',
-            {
-                'help': 'Snapshot name to create',
-                'metavar': 'SNAPSHOT_NAME',
-            },
-        ),
-    ),
-    do_snapshot,
-)
-ARGUMENTS[Verbs.REVERT] = (
-    {
-        'help': 'Revert resources to snapshot',
-    },
-    (
-        (
-            'snapshot_name',
-            {
-                'help': 'Snapshot name to revert to',
-                'metavar': 'SNAPSHOT_NAME',
-            },
-        ),
-    ),
-    do_revert,
-)
-ARGUMENTS[Verbs.SHELL] = (
-    {
-        'help': 'Open shell on the domain or run as script/command',
-        'prefix_chars': '\x00',
-    },
-    (
-        (
-            'host',
-            {
-                'help': 'Host to connect to',
-                'metavar': 'HOST',
-            },
-        ),
-        (
-            'args',
-            {
-                'help': (
-                    'If none provided, an interactive shell will be started.\n'
-                    'If arguments start with -c, what follows will be '
-                    'executes as a command.\n'
-                    'Otherwise, if a single provided, it will be ran as script'
-                    ' on the domain.'
-                ),
-                'nargs': '*',
-            },
-        ),
-    ),
-    do_shell,
-)
-ARGUMENTS[Verbs.STATUS] = (
-    {
-        'help': 'Show status of deployed virtual resources',
-    },
-    (),
-    do_status,
-)
-ARGUMENTS[Verbs.COPY_FROM_VM] = (
-    {
-        'help': 'Copy file from a virtual machine to local machine',
-    },
-    (
-        (
-            'host',
-            {
-                'help': 'Host to connect to',
-                'metavar': 'HOST',
-            },
-        ),
-        (
-            'remote_path',
-            {
-                'help': 'Source path the exists on the host',
-                'metavar': 'REMOTE_PATH',
-            },
-        ),
-        (
-            'local_path',
-            {
-                'help': 'Destination path on the local host',
-                'metavar': 'LOCAL_PATH',
-            },
-        ),
-    ),
-    do_copy_from_vm,
-)
-ARGUMENTS[Verbs.COPY_TO_VM] = (
-    {
-        'help': 'Copy file to a virtual machine from a local machine',
-    },
-    (
-        (
-            'host',
-            {
-                'help': 'Host to connect to',
-                'metavar': 'HOST',
-            },
-        ),
-        (
-            'local_path',
-            {
-                'help': 'Source path on the local host',
-                'metavar': 'LOCAL_PATH',
-            },
-        ),
-        (
-            'remote_path',
-            {
-                'help': 'Destination path the exists on the host',
-                'metavar': 'REMOTE_PATH',
-            },
-        ),
-    ),
-    do_copy_to_vm,
-)
-
-
-def call_discovered_verb(path, verb_name, args):
-    env = os.environ.copy()
-    env['LAGO_PROG_NAME'] = 'lagocli %s' % verb_name
-    os.execve(path, [path] + args.args, env)
-
-
-def is_exec_file(path):
-    try:
-        mode = os.stat(path).st_mode
-    except OSError:
-        return False
-    return (mode & stat.S_IEXEC) and (mode & stat.S_IFREG)
-
-
-def unprefixed(name):
-    if name.startswith(CLI_PREFIX):
-        return name[len(CLI_PREFIX):]
-    return name
-
-
-def load_verbs():
-    mgr = ExtensionManager(namespace='lago.verbs', )
-    return dict((ext.name, ext.plugin()) for ext in mgr)
 
 
 def create_parser(cli_plugins):
@@ -500,15 +368,9 @@ def create_parser(cli_plugins):
         help='How many task levels to show, by default %(default)s'
     )
     verbs_parser = parser.add_subparsers(dest='verb', metavar='VERB')
-    for verb, (kwargs, verb_arguments, _) in ARGUMENTS.items():
-        verb_parser = verbs_parser.add_parser(verb, **kwargs)
-        for arg_name, arg_kw in verb_arguments:
-            verb_parser.add_argument(arg_name, **arg_kw)
-
     for cli_plugin_name, cli_plugin in cli_plugins.items():
         plugin_parser = verbs_parser.add_parser(
-            cli_plugin_name,
-            help=cli_plugin.help,
+            cli_plugin_name, **cli_plugin.init_args
         )
         cli_plugin.populate_parser(plugin_parser)
 
@@ -542,11 +404,7 @@ def main():
     check_group_membership()
 
     try:
-        if args.verb in ARGUMENTS:
-            _, _, func = ARGUMENTS[args.verb]
-            func(args)
-        else:
-            cli_plugins[args.verb].do_run(args)
+        cli_plugins[args.verb].do_run(args)
 
     except Exception:
         LOGGER.exception('Error occured, aborting')

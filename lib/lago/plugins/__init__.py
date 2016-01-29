@@ -26,6 +26,13 @@ from stevedore import ExtensionManager
 PLUGIN_ENTRY_POINTS = {'cli': 'lago.plugins.cli', }
 
 
+class Plugin(object):
+    """
+    Base class for all the plugins
+    """
+    pass
+
+
 def load_plugins(namespace):
     """
     Loads all the plugins for the given namespace
@@ -38,4 +45,9 @@ def load_plugins(namespace):
             instantiated
     """
     mgr = ExtensionManager(namespace=namespace, )
-    return dict((ext.name, ext.plugin()) for ext in mgr)
+    return dict(
+        (
+            ext.name, ext.plugin if isinstance(ext.plugin, Plugin) else
+            ext.plugin()
+        ) for ext in mgr
+    )

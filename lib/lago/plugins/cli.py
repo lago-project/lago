@@ -29,7 +29,9 @@ CLIPlugin abstract class and declare it in the setuptools as an entry_point,
 see this module's setup.py/setup.cfg for an example::
 
     class NoopCLIplugin(CLIPlugin):
-        help = 'dummy help string'
+        init_args = {
+            'help': 'dummy help string',
+        }
 
         def populate_parser(self, parser):
             parser.addArgument('--dummy-flag', action='store_true')
@@ -44,7 +46,7 @@ see this module's setup.py/setup.cfg for an example::
 You can also use decorators instead, an equivalent is::
 
     @cli_plugin_add_argument('--dummy-flag', action='store_true')
-    @cli_plugin_add_help('dummy help string')
+    @cli_plugin(help='dummy help string')
     def my_fancy_plugin_func(dummy_flag, **kwargs):
         if dummy_flag:
             print "Dummy flag passed to noop subcommand!"
@@ -92,19 +94,23 @@ as::
 TODO: Allow per-plugin namespacing to get rid of the `**kwargs` parameter
 """
 
+import functools
 from abc import (abstractmethod, abstractproperty, ABCMeta, )
 
+from . import Plugin
 
-class CLIPlugin(object):
+
+class CLIPlugin(Plugin):
     __metaclass__ = ABCMeta
 
     def __init__(self):
         pass
 
     @abstractproperty
-    def help(self):
+    def init_args(self):
         """
-        Help string for the subcommand (as shown in the command line help)
+        Dictionary with the argument to initialize the cli parser (for
+        example, the help argument)
         """
 
     @abstractmethod
@@ -144,17 +150,24 @@ class CLIPluginFuncWrapper(CLIPlugin):
     whatever it defined
     """
 
-    def __init__(self, do_run=None):
-        self._help = None
+    def __init__(self, do_run=None, init_args=None):
+        self._init_args = init_args or {}
         self._parser_args = []
         self._do_run = do_run
+        if do_run:
+            self.set_help()
 
     @property
-    def help(self):
-        return (self._help if self._help is not None else self._do_run.__doc__)
+    def init_args(self):
+        return self._init_args
 
-    def set_help(self, help):
-        self._help = help
+    def set_help(self, help=None):
+        self._init_args['help'] = (
+            help if help is not None else self._do_run.__doc__
+        )
+
+    def set_init_args(self, init_args):
+        self._init_args.update(init_args)
 
     def add_argument(self, *argument_args, **argument_kwargs):
         self._parser_args.append((argument_args, argument_kwargs))
@@ -265,12 +278,14 @@ def cli_plugin_add_help(help):
     return decorator
 
 
-def cli_plugin(func=None):
+def cli_plugin(func=None, **kwargs):
     """
     Decorator that wraps the given function in a :class:`CLIPlugin`
 
     Args:
         func (callable): function/class to decorate
+        **kwargs: Any other arg to use when initializing the parser (like help,
+            or prefix_chars)
 
     Returns:
         CLIPlugin: cli plugin that handles that method
@@ -292,9 +307,23 @@ def cli_plugin(func=None):
         ...     print 'test'
         >>> print test.__class__
         <class 'cli.CLIPluginFuncWrapper'>
+
+        >>> @cli_plugin(help='dummy help')
+        ... def test(**kwargs):
+        ...     print 'test'
+        >>> print test.__class__
+        <class 'cli.CLIPluginFuncWrapper'>
+        >>> print test.init_args['help']
+        'dummy help'
+
     """
     # this allows calling this function as a decorator generator
     if func is None:
-        return cli_plugin
+        return functools.partial(cli_plugin, **kwargs)
 
-    return CLIPluginFuncWrapper(do_run=func)
+    if not isinstance(func, CLIPluginFuncWrapper):
+        func = CLIPluginFuncWrapper(do_run=func, init_args=kwargs)
+    else:
+        func.set_init_args(kwargs)
+
+    return func
