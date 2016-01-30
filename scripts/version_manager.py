@@ -162,8 +162,8 @@ def get_merged_commits(repo, commit, first_parents, children_per_parent):
         next_commit = repo.get_object(next_sha)
         if (
             next_sha not in first_parents and not has_firstparent_child(
-                next_sha, first_parents, children_per_parent)
-            or next_sha in commit.parents
+                next_sha, first_parents, children_per_parent
+            ) or next_sha in commit.parents
         ):
             merge_children.add(next_sha)
 

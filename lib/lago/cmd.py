@@ -112,7 +112,7 @@ def do_init(
 
         prefix.virt_conf(virt_conf, repo, store)
     except:
-        shutil.rmtree(prefix)
+        shutil.rmtree(prefix.paths.prefixed(''))
         raise
 
 
