@@ -288,6 +288,21 @@ def do_status(prefix, **kwargs):
 @lago.plugins.cli.cli_plugin(
     help='Copy file from a virtual machine to local machine'
 )
+@lago.plugins.cli.cli_plugin_add_argument(
+    'local_path',
+    help='Path on the local host to copy the file/dir to',
+    metavar='LOCAL_PATH',
+)
+@lago.plugins.cli.cli_plugin_add_argument(
+    'remote_path',
+    help='Path of the file/dir to copy from the host',
+    metavar='REMOTE_PATH',
+)
+@lago.plugins.cli.cli_plugin_add_argument(
+    'host',
+    help='Host to copy files from',
+    metavar='HOST',
+)
 @in_prefix
 @with_logging
 def do_copy_from_vm(prefix, host, remote_path, local_path, **kwargs):
@@ -314,19 +329,19 @@ def do_copy_from_vm(prefix, host, remote_path, local_path, **kwargs):
     help='Copy file/dir to a virtual machine from the local host'
 )
 @lago.plugins.cli.cli_plugin_add_argument(
-    'host',
-    help='Host to copy files from',
-    metavar='HOST',
-)
-@lago.plugins.cli.cli_plugin_add_argument(
     'remote_path',
-    help='Path of the file/dir to copy from the host',
+    help='Local path to copy the file/dir to',
     metavar='REMOTE_PATH',
 )
 @lago.plugins.cli.cli_plugin_add_argument(
     'local_path',
-    help='Path on the local host to copy the file/dir to',
+    help='Path of the file/dir to copy from the host',
     metavar='LOCAL_PATH',
+)
+@lago.plugins.cli.cli_plugin_add_argument(
+    'host',
+    help='Host to copy files to',
+    metavar='HOST',
 )
 @in_prefix
 @with_logging
