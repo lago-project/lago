@@ -702,7 +702,7 @@ class Prefix(object):
                     if "disks" not in spec.keys():
                         spec["disks"] = ova_disk
                     else:
-                        spec["disks"] = spec["disks"] + ova_disk
+                        spec["disks"] = ova_disk + spec["disks"]
 
                 new_disks = []
                 spec['name'] = name
