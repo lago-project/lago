@@ -531,6 +531,7 @@ class VM(object):
     def __init__(self, env, spec):
         self._env = env
         self._spec = self._normalize_spec(spec.copy())
+
         self._service_class = _SERVICE_WRAPPERS.get(
             self._spec.get('service_class', None),
             None,
@@ -652,7 +653,8 @@ class VM(object):
             )
         return utils.CommandStatus(rc, out, err)
 
-    def wait_for_ssh(self, connect_retries=50):
+    def wait_for_ssh(self):
+        connect_retries = self._spec.get('boot_time_sec', 50)
         while connect_retries:
             ret, _, _ = self.ssh(['true'])
             if ret == 0:
