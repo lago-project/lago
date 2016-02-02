@@ -30,6 +30,7 @@ import shutil
 import time
 import urllib
 import sys
+from progress.bar import IncrementalBar
 
 import lockfile
 
@@ -169,18 +170,16 @@ class HttpTemplateProvider:
                 (file_size_kb, full_url)
             )
 
+        bar = IncrementalBar('Downloading', max=100, suffix='%(percent).1f%%')
         def report(count, block_size, total_size):
             percent = (count * block_size * 100 / float(total_size))
-            sys.stdout.write(
-                "\r% 3.1f%%" % percent + " complete (%d " % (
-                    count * block_size / 1024
-                ) + "Kilobytes)"
-            )
-            sys.stdout.flush()
+            if bar.percent != percent:
+                bar.goto(percent)
 
         if dest:
             response.close()
             urllib.urlretrieve(full_url, dest, report)
+            bar.finish()
             sys.stdout.write("\n")
         return response
 
