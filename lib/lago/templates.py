@@ -28,8 +28,6 @@ import os
 import posixpath
 import shutil
 import time
-import urllib
-import sys
 
 import lockfile
 
@@ -138,8 +136,8 @@ class HttpTemplateProvider:
             dest (str or None): Path to save the data to
 
         Returns:
-            urllib.addinfourl: response object to read from (lazy read), closed
-                if no dest passed
+            requests.Response: response object to read from (lazy read), closed
+                if dest passed
 
         Raises:
             RuntimeError: if the url gave http error when retrieving it
@@ -153,35 +151,9 @@ class HttpTemplateProvider:
                 )
             except RuntimeError:
                 pass
+
         full_url = posixpath.join(self.baseurl, url) + suffix
-        response = urllib.urlopen(full_url)
-        if response.code >= 300:
-            raise RuntimeError(
-                'Failed no retrieve URL %s:\nCode: %d' %
-                (full_url, response.code)
-            )
-
-        meta = response.info()
-        file_size_kb = int(meta.getheaders("Content-Length")[0]) / 1024
-        if file_size_kb > 0:
-            sys.stdout.write(
-                "Downloading %s Kilobytes from %s \n" %
-                (file_size_kb, full_url)
-            )
-
-        def report(count, block_size, total_size):
-            percent = (count * block_size * 100 / float(total_size))
-            sys.stdout.write(
-                "\r% 3.1f%%" % percent + " complete (%d " % (
-                    count * block_size / 1024
-                ) + "Kilobytes)"
-            )
-            sys.stdout.flush()
-
-        if dest:
-            response.close()
-            urllib.urlretrieve(full_url, dest, report)
-            sys.stdout.write("\n")
+        response = utils.download(url=full_url, dest_path=dest)
         return response
 
     def download_image(self, handle, dest):
@@ -203,6 +175,18 @@ class HttpTemplateProvider:
 
     @staticmethod
     def extract_if_needed(path):
+        """
+        If the given file is a compressed file, it decompresses it
+
+        Args:
+            path(str): Path to decompress
+
+        Returns:
+            None
+
+        Raises:
+            RuntimeError: if it failed to decompress the file
+        """
         type_guesser = magic.open(magic.MAGIC_MIME)
         type_guesser.load()
         if 'application/x-xz' not in type_guesser.file(path):
@@ -237,7 +221,7 @@ class HttpTemplateProvider:
         """
         response = self.open_url(url=handle, suffix='.hash')
         try:
-            return response.read()
+            return response.content
         finally:
             response.close()
 
@@ -256,7 +240,7 @@ class HttpTemplateProvider:
         """
         response = self.open_url(url=handle, suffix='.metadata')
         try:
-            return json.load(response)
+            return response.json()
         finally:
             response.close()
 
@@ -344,14 +328,11 @@ class TemplateRepository:
             with open(path) as fd:
                 data = fd.read()
         else:
-            response = urllib.urlopen(path)
-            if response.code >= 300:
-                raise RuntimeError('Unable to load repo from %s' % path)
-
-            data = response.read()
+            response = utils.download(url=path)
+            data = response.json()
             response.close()
 
-        return cls(json.loads(data))
+        return cls(data)
 
     def _get_provider(self, spec):
         """

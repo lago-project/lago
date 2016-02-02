@@ -674,7 +674,15 @@ class TaskLogNosePlugin(nose.plugins.Plugin):
 
 
 def hide_paramiko_logs():
+    "Hide most paramiko logs"
     paramiko_logger = logging.getLogger('paramiko.transport')
+    paramiko_logger.propagate = False
+    paramiko_logger.setLevel(logging.ERROR)
+
+
+def hide_requests_logs():
+    "Hides most requests package logs"
+    paramiko_logger = logging.getLogger('requests')
     paramiko_logger.propagate = False
     paramiko_logger.setLevel(logging.ERROR)
 
@@ -707,3 +715,4 @@ def setup_prefix_logging(logdir):
     file_handler.setFormatter(file_formatter)
     logging.root.addHandler(file_handler)
     hide_paramiko_logs()
+    hide_requests_logs()

@@ -2,6 +2,12 @@
 EXPORTED_DIR="$PWD/exported-artifacts"
 DOCS_DIR="$EXPORTED_DIR/docs"
 
+if hash dnf &>/dev/null; then
+    YUM="dnf"
+else
+    YUM="yum"
+fi
+
 
 [[ -d "$EXPORTED_DIR" ]] || mkdir -p "$EXPORTED_DIR"
 
@@ -14,8 +20,7 @@ make docs
 mv docs/_build "$DOCS_DIR"
 
 # Style and unit test
-# required for the formatting
-pip install yapf
+pip install -r tests-requires.txt
 make check-local
 
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
@@ -27,11 +32,7 @@ shopt -s extglob
 # fail if a glob turns out empty
 shopt -s failglob
 echo "Installing..."
-if hash dnf &>/dev/null; then
-    dnf install -y exported-artifacts/!(*.src).rpm
-else
-    yum install -y exported-artifacts/!(*.src).rpm
-fi
+$YUM install -y exported-artifacts/!(*.src).rpm
 
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 echo '~*          Running functional tests                   ~'

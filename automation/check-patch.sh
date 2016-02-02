@@ -13,6 +13,13 @@ code_changed() {
 }
 
 
+if hash dnf &>/dev/null; then
+    YUM="dnf"
+else
+    YUM="yum"
+fi
+
+
 [[ -d "$EXPORTED_DIR" ]] || mkdir -p "$EXPORTED_DIR"
 
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
@@ -29,8 +36,7 @@ if ! code_changed; then
 fi
 
 # Style and unit tests
-# required for the formatting
-pip install yapf
+pip install -r tests-requires.txt
 make check-local
 
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
@@ -42,11 +48,7 @@ shopt -s extglob
 # fail if a glob turns out empty
 shopt -s failglob
 echo "Installing..."
-if hash dnf &>/dev/null; then
-    dnf install -y exported-artifacts/!(*.src).rpm
-else
-    yum install -y exported-artifacts/!(*.src).rpm
-fi
+$YUM install -y exported-artifacts/!(*.src).rpm
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 echo '~*          Running basic functional tests             ~'
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
