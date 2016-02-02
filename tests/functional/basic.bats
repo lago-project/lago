@@ -170,6 +170,19 @@ load env_setup
 }
 
 
+@test "basic.full_run: shell to a vm" {
+    local prefix="$FIXTURES"/prefix1
+    local expected_hostname="cirros"
+
+    pushd "$prefix" >/dev/null
+    [[ -e ".lago" ]] || skip "prefix not initialized"
+    helpers.run "$LAGOCLI" shell "lago_functional_tests_vm01" hostname
+    output="$(echo "$output"| tail -n1)"
+    helpers.contains "$output" "$expected_hostname"
+    helpers.equals "$status" '0'
+}
+
+
 @test "basic.full_run: whole stop" {
     local prefix="$FIXTURES"/prefix1
 

@@ -38,7 +38,9 @@ helpers.is_link() {
 helpers.run() {
     echo "RUNNING:$@"
     run "$@"
+    echo "---"
     echo "$output"
+    echo "---"
     return 0
 }
 
@@ -60,4 +62,9 @@ helpers.contains() {
         || return $?
     done
     return 0
+}
+
+helpers.matches() {
+    helpers.contains "$@"
+    return $?
 }
