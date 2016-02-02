@@ -200,14 +200,14 @@ load env_setup
 
 
 @test 'basic: Start and stop many vms one by one' {
-    local prefix="$FIXTURES"/prefix2
+    local prefix="$FIXTURES"/prefix1
     local repo="$FIXTURES"/repo_store
     local suite="$FIXTURES"/suite2.json
     local repo_conf="$FIXTURES"/template_repo.json
     local fake_uuid="12345678910121416182022242628303"
     # INIT
     rm -rf "$prefix" "$repo"
-    cp -a "$FIXTURES/repo2" "$repo"
+    cp -a "$FIXTURES/repo" "$repo"
     env_setup.populate_disks "$repo"
     export BATS_TMPDIR BATS_TEST_DIRNAME
     # This is needed to be able to run inside mock, as it uses some temp files
@@ -336,7 +336,7 @@ load env_setup
 }
 
 
-@test "basic.full_run: start again for the cleanup" {
+@test "basic.full_run: start again" {
     local prefix="$FIXTURES"/prefix1
 
     pushd "$prefix" >/dev/null
@@ -363,5 +363,4 @@ load env_setup
     env_setup.destroy_domains
     env_setup.destroy_nets
 }
-
 
