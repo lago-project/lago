@@ -55,6 +55,7 @@ autodoc_mock_imports = [
     'rpmUtils',
     'rpmUtils.arch',
     'rpmUtils.miscutils',
+    'scp',
     'stevedore',
     'stevedore.extension',
     'xmltodict',
