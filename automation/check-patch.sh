@@ -7,7 +7,7 @@ code_changed() {
         echo "Not in a git dir, will run all the tests"
         return 0
     fi
-    git diff-tree --no-commit-id --name-only -r HEAD \
+    git diff-tree --no-commit-id --name-only -r HEAD..HEAD^ \
     | grep --quiet -v -e '\(docs/\|README.md\)'
     return $?
 }
