@@ -531,6 +531,7 @@ class VM(object):
     def __init__(self, env, spec):
         self._env = env
         self._spec = self._normalize_spec(spec.copy())
+
         self._service_class = _SERVICE_WRAPPERS.get(
             self._spec.get('service_class', None),
             None,
