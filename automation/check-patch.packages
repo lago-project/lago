@@ -9,6 +9,7 @@ python-lxml
 python-magic
 python-nose
 python-paramiko
+python-scp
 python-xmltodict
 python2-devel
 yum

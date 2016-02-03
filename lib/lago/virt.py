@@ -32,6 +32,7 @@ import guestfs
 import libvirt
 import lxml.etree
 import paramiko
+from scp import SCPClient
 
 import config
 import brctl
@@ -672,25 +673,24 @@ class VM(object):
             )
 
     @contextlib.contextmanager
-    def _sftp(self):
+    def _scp(self):
         client = self._get_ssh_client()
-        sftp = client.open_sftp()
+        scp = SCPClient(client.get_transport())
         try:
-            yield sftp
+            yield scp
         finally:
-            sftp.close()
             client.close()
 
     def copy_to(self, local_path, remote_path):
         with LogTask(
             'Copy %s to %s:%s' % (local_path, self.name(), remote_path),
         ):
-            with self._sftp() as sftp:
-                sftp.put(local_path, remote_path)
+            with self._scp() as scp:
+                scp.put(local_path, remote_path)
 
     def copy_from(self, remote_path, local_path):
-        with self._sftp() as sftp:
-            sftp.get(remote_path, local_path)
+        with self._scp() as scp:
+            scp.get(remote_path, local_path)
 
     @property
     def metadata(self):
