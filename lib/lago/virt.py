@@ -652,7 +652,8 @@ class VM(object):
             )
         return utils.CommandStatus(rc, out, err)
 
-    def wait_for_ssh(self, connect_retries=50):
+    def wait_for_ssh(self):
+        connect_retries = self._spec.get('boot_time_sec', 50)
         while connect_retries:
             ret, _, _ = self.ssh(['true'])
             if ret == 0:
@@ -936,6 +937,7 @@ class VM(object):
                 'root-partition',
                 'root',
             )
+
             g = guestfs.GuestFS(python_return_dict=True)
             g.add_drive_opts(disk_path, format='qcow2', readonly=1)
             g.set_backend('direct')
