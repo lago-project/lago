@@ -97,6 +97,77 @@ class CommandStatus(_CommandStatus):
         return self.code
 
 
+def _run_command(
+    command,
+    input_data=None,
+    stdin=None,
+    out_pipe=subprocess.PIPE,
+    err_pipe=subprocess.PIPE,
+    env=None,
+    **kwargs
+):
+    """
+    Runs a command
+
+    Args:
+        command(list of str): args of the command to execute, including the
+            command itself as command[0] as `['ls', '-l']`
+        input_data(str): If passed, will feed that data to the subprocess
+            through stdin
+        out_pipe(int or file): File descriptor as passed to
+            :ref:subprocess.Popen to use as stdout
+        stdin(int or file): File descriptor as passed to
+            :ref:subprocess.Popen to use as stdin
+        err_pipe(int or file): File descriptor as passed to
+            :ref:subprocess.Popen to use as stderr
+        env(dict of str:str): If set, will use the given dict as env for the
+            subprocess
+        **kwargs: Any other keyword args passed will be passed to the
+            :ref:subprocess.Popen call
+
+    Returns:
+        lago.utils.CommandStatus: result of the interactive execution
+    """
+    # add libexec to PATH if needed
+    if constants.LIBEXEC_DIR not in os.environ['PATH'].split(':'):
+        os.environ['PATH'] = '%s:%s' % (
+            constants.LIBEXEC_DIR, os.environ['PATH']
+        )
+
+    if input_data and not stdin:
+        kwargs['stdin'] = subprocess.PIPE
+    elif stdin:
+        kwargs['stdin'] = stdin
+
+    if env is None:
+        env = os.environ.copy()
+    else:
+        env['PATH'] = ':'.join(
+            list(
+                set(
+                    env.get('PATH', '').split(':') + os.environ[
+                        'PATH'
+                    ].split(':')
+                ),
+            ),
+        )
+
+    popen = subprocess.Popen(
+        command,
+        stdout=out_pipe,
+        stderr=err_pipe,
+        env=env,
+        **kwargs
+    )
+    out, err = popen.communicate(input_data)
+    LOGGER.debug('command exit with %d', popen.returncode)
+    if out:
+        LOGGER.debug('command stdout: %s', out)
+    if err:
+        LOGGER.debug('command stderr: %s', err)
+    return CommandStatus(popen.returncode, out, err)
+
+
 def run_command(
     command,
     input_data=None,
@@ -105,48 +176,72 @@ def run_command(
     env=None,
     **kwargs
 ):
+    """
+    Runs a command non-interactively
+
+    Args:
+        command(list of str): args of the command to execute, including the
+            command itself as command[0] as `['ls', '-l']`
+        input_data(str): If passed, will feed that data to the subprocess
+            through stdin
+        out_pipe(int or file): File descriptor as passed to
+            :ref:subprocess.Popen to use as stdout
+        err_pipe(int or file): File descriptor as passed to
+            :ref:subprocess.Popen to use as stderr
+        env(dict of str:str): If set, will use the given dict as env for the
+            subprocess
+        **kwargs: Any other keyword args passed will be passed to the
+            :ref:subprocess.Popen call
+
+    Returns:
+        lago.utils.CommandStatus: result of the interactive execution
+    """
     with LogTask(
         'Run command: %s' % str(command[0]),
         logger=LOGGER,
         level='debug',
     ):
-
-        # add libexec to PATH if needed
-        if constants.LIBEXEC_DIR not in os.environ['PATH'].split(':'):
-            os.environ['PATH'] = '%s:%s' % (
-                constants.LIBEXEC_DIR, os.environ['PATH']
-            )
-
-        if input_data:
-            kwargs['stdin'] = subprocess.PIPE
-
-        if env is None:
-            env = os.environ.copy()
-        else:
-            env['PATH'] = ':'.join(
-                list(
-                    set(
-                        env.get('PATH', '').split(':') + os.environ[
-                            'PATH'
-                        ].split(':')
-                    ),
-                ),
-            )
-
-        popen = subprocess.Popen(
-            command,
-            stdout=out_pipe,
-            stderr=err_pipe,
+        command_result = _run_command(
+            command=command,
+            input_data=input_data,
+            out_pipe=out_pipe,
+            err_pipe=err_pipe,
             env=env,
             **kwargs
         )
-        out, err = popen.communicate(input_data)
-        LOGGER.debug('command exit with %d', popen.returncode)
-        if out:
-            LOGGER.debug('command stdout: %s', out)
-        if err:
-            LOGGER.debug('command stderr: %s', err)
-        return CommandStatus(popen.returncode, out, err)
+
+        LOGGER.debug('command exit with %d', command_result.code)
+        if command_result.out:
+            LOGGER.debug('command stdout: %s', command_result.out)
+        if command_result.err:
+            LOGGER.debug('command stderr: %s', command_result.err)
+        return command_result
+
+
+def run_interactive_command(command, env=None, **kwargs):
+    """
+    Runs a command interactively, reusing the current stdin, stdout and stderr
+
+    Args:
+        command(list of str): args of the command to execute, including the
+            command itself as command[0] as `['ls', '-l']`
+        env(dict of str:str): If set, will use the given dict as env for the
+            subprocess
+        **kwargs: Any other keyword args passed will be passed to the
+            :ref:subprocess.Popen call
+
+    Returns:
+        lago.utils.CommandStatus: result of the interactive execution
+    """
+    command_result = _run_command(
+        command=command,
+        out_pipe=sys.stdout,
+        err_pipe=sys.stderr,
+        stdin=sys.stdin,
+        env=env,
+        **kwargs
+    )
+    return command_result
 
 
 def service_is_enabled(name):
