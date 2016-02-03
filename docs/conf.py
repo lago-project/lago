@@ -57,6 +57,7 @@ autodoc_mock_imports = [
     'rpmUtils.miscutils',
     'stevedore',
     'stevedore.extension',
+    'xmltodict',
 ]
 
 autodoc_default_flags = [
