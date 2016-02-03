@@ -9,7 +9,7 @@ env_setup.populate_disks() {
 
     shopt -s nullglob
     echo "Decompressing $base_image"
-    gunzip -c "$base_image" > "$prefix"/base_image
+    xzcat "$base_image" > "$prefix"/base_image
     for skel_image in "$prefix"/images/*.skel "$prefix"/*skel; do
         cp "$prefix"/base_image "${skel_image%.skel}"
         echo "Realized skel disk $skel_image to ${skel_image%.skel}"

@@ -183,6 +183,29 @@ load env_setup
 }
 
 
+@test "basic.full_run: copy to vm" {
+    local prefix="$FIXTURES"/prefix1
+
+    pushd "$prefix" >/dev/null
+    [[ -e ".lago" ]] || skip "prefix not initialized"
+    content="$(date)"
+    echo "$content" > "dummy_file"
+    helpers.run "$LAGOCLI" \
+        copy-to-vm \
+        "lago_functional_tests_vm01" \
+        dummy_file \
+        /root/dummy_file_inside
+    helpers.equals "$status" '0'
+    helpers.run "$LAGOCLI" \
+        shell \
+        "lago_functional_tests_vm01" \
+        cat /root/dummy_file_inside
+    helpers.equals "$status" '0'
+    output="$(echo "$output"| tail -n1)"
+    helpers.contains "$output" "$content"
+}
+
+
 @test "basic.full_run: whole stop" {
     local prefix="$FIXTURES"/prefix1
 
@@ -212,7 +235,7 @@ load env_setup
 }
 
 
-@test 'basic: Start and stop many vms one by one' {
+@test 'basic.full_run: start and stop many vms one by one' {
     local prefix="$FIXTURES"/prefix1
     local repo="$FIXTURES"/repo_store
     local suite="$FIXTURES"/suite2.json

@@ -38,7 +38,7 @@ helpers.is_link() {
 helpers.run() {
     echo "RUNNING:$@"
     run "$@"
-    echo "---"
+    echo "--output--"
     echo "$output"
     echo "---"
     return 0
@@ -47,7 +47,7 @@ helpers.run() {
 helpers.equals() {
     local what="${1:?}"
     local to_what="${2:?}"
-    echo "$what == $to_what"
+    echo "\"$what\" == \"$to_what\""
     [[ "$what" == "$to_what" ]]
     return $?
 }
@@ -57,7 +57,7 @@ helpers.contains() {
     local contents=("${@:2}")
     local content
     for content in "${contents[@]}"; do
-        echo "\"$continent\" =~ \"$content\""
+        echo "\"$continent\" =~ $content"
         [[ "$continent" =~ $content ]] \
         || return $?
     done
