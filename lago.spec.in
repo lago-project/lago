@@ -16,6 +16,7 @@ BuildRequires:	python-nose
 BuildRequires:	git
 Requires:	python-%{name} = %{version}
 Requires:	sudo
+Requires:	python-requests
 
 %description
 LAGO System testing framework.

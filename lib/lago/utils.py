@@ -34,6 +34,8 @@ import time
 import tty
 import Queue
 
+import requests
+
 import constants
 from .log_utils import LogTask
 
@@ -328,3 +330,135 @@ def interactive_ssh_channel(chan, command=None, stdin=sys.stdin):
 
 def json_dump(obj, f):
     return json.dump(obj, f, indent=4)
+
+
+def to_human_size(fsize):
+    """
+    Pass a number from bytes, to human readable form, using 1024 multiples.
+
+    Args:
+        fsize(int): Byte to convert to human readable
+
+    Retruns:
+        str: Human readable string for the size
+    """
+    mb = fsize / (1024 * 1024)
+    if mb >= 1:
+        return '%dM' % mb
+    kb = fsize / 1024
+    if kb >= 1:
+        return '%dK' % kb
+    return '%dB' % fsize
+
+
+def print_busy(prev_pos=0):
+    """
+    Shows a spinning bar.
+
+    Useful to show activity when the amount of progress is unknown.
+
+    Args:
+        prev_pos(int): Previous position, will be used to calculate the current
+            char to show
+
+    Returns:
+        int: The next position index, to pass to itself on the next iteration
+
+    Example:
+        > i=0
+        > while True:
+        >    i = print_busy(i)
+    """
+    sys.stdout.write('\r')
+    if prev_pos == 0:
+        sys.stdout.write('-')
+    elif prev_pos == 1:
+        sys.stdout.write('/')
+    elif prev_pos == 2:
+        sys.stdout.write('|')
+    else:
+        sys.stdout.write('\\')
+    sys.stdout.flush()
+    return (prev_pos + 1) % 4
+
+
+def download(url, dest_path=None, tries=3, retry_timeout=5):
+    """
+    Download a url showing a friendly progress
+
+    Args:
+        url(str): Url to download
+        dest_path(str): Destination path to download to, if `None` it will just
+            open the url and return an unread response
+        tries(int): Number of times to retry the download
+        retry_timeout(int): Number of seconds to wait between retries
+
+    Returns:
+        requests.Response: response object used for the download
+
+    Raises:
+        RuntimeError: if it failed to download the file)
+    """
+    stream = requests.get(url, stream=True)
+    while not stream and tries:
+        stream = requests.get(url, stream=True)
+        tries -= 1
+        LOGGER.warn(
+            'Failed to retrieve, retrying in %d seconds', retry_timeout
+        )
+
+    if stream.status_code >= 300:
+        raise RuntimeError(
+            'Failed no retrieve URL %s:\nCode: %d' % (url, stream.status_code)
+        )
+
+    stream = requests.get(url, stream=True)
+    if dest_path is None:
+        return stream
+
+    chunk_size = 4096
+    # length == 0 means that we don't know the size
+    length = int(stream.headers.get('content-length', 0)) or 0
+    sys.stdout.write(
+        (
+            'Downloading %s, length %s ...\n' % (
+                url, length and to_human_size(length)
+            )
+        ) or 'unknown\n'
+    )
+    sys.stdout.flush()
+    num_dots = 100
+    dot_frec = (length / num_dots) or 1
+    prev_percent = 0
+    progress = 0
+    if length:
+        cur_percent = 0
+        sys.stdout.write(
+            '    %[' + '-' * 23 + '25' + '-' * 24 + '50' + '-' * 23 + '75' +
+            '-' * 24 + ']\r' + '    %['
+        )
+
+    sys.stdout.flush()
+    with open(dest_path, 'w') as rpm_fd:
+        for chunk in stream.iter_content(chunk_size=chunk_size):
+            if chunk:
+                rpm_fd.write(chunk)
+                progress += len(chunk)
+                cur_percent = int(progress / dot_frec)
+                if length and cur_percent > prev_percent:
+                    for _ in xrange(cur_percent - prev_percent):
+                        sys.stdout.write('=')
+                    sys.stdout.flush()
+                    prev_percent = cur_percent
+                elif not length:
+                    prev_percent = print_busy(prev_percent)
+
+    if length:
+        if cur_percent < num_dots:
+            sys.stdout.write('=')
+        sys.stdout.write(']\n')
+        sys.stdout.flush()
+    else:
+        sys.stdout.flush()
+
+    return stream
