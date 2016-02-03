@@ -504,7 +504,7 @@ class Prefix(object):
                 url = spec.get('url', '')
                 path = spec.get('path', '')
 
-                disk_metadata = spec.get('metadata',{})
+                disk_metadata = spec.get('metadata', {})
                 if not url and not path:
                     raise RuntimeError('Partial drive spec %s' % str(spec))
 
@@ -619,7 +619,7 @@ class Prefix(object):
                     image_file = item["rasd:HostResource"]
 
         if image_file is not None:
-            disk_meta ={"root-partition":"/dev/sda1"}
+            disk_meta = {"root-partition": "/dev/sda1"}
 
             disk_spec = [{"type": "file",
                           "format": "qcow2",
@@ -628,7 +628,7 @@ class Prefix(object):
                           "name": os.path.basename(image_file),
                           "path": ova_extracted_dir +
                                  "/images/" + image_file,
-                          "metadata": disk_meta }]
+                          "metadata": disk_meta}]
 
         return disk_spec, memory, vcpus
 
