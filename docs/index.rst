@@ -17,6 +17,14 @@ Releases
 
     Releases
 
+Developing
+------------
+
+.. toctree::
+    :maxdepth: 2
+
+    CI
+
 
 Contents
 -------------
