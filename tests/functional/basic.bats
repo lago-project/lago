@@ -188,6 +188,7 @@ load env_setup
 
     pushd "$prefix" >/dev/null
     [[ -e ".lago" ]] || skip "prefix not initialized"
+    rm -rf dummy_file
     content="$(date)"
     echo "$content" > "dummy_file"
     helpers.run "$LAGOCLI" \
@@ -202,6 +203,31 @@ load env_setup
         cat /root/dummy_file_inside
     helpers.equals "$status" '0'
     output="$(echo "$output"| tail -n1)"
+    helpers.contains "$output" "$content"
+}
+
+
+@test "basic.full_run: copy from vm" {
+    local prefix="$FIXTURES"/prefix1
+
+    pushd "$prefix" >/dev/null
+    [[ -e ".lago" ]] || skip "prefix not initialized"
+    rm -rf dummy_file
+    content="$(date)"
+    helpers.run "$LAGOCLI" \
+        shell \
+        "lago_functional_tests_vm01" \
+        <<EOS
+          echo "$content" > /root/dummy_file_inside
+EOS
+    helpers.run "$LAGOCLI" \
+        copy-from-vm \
+        "lago_functional_tests_vm01" \
+        /root/dummy_file_inside \
+        dummy_file
+    helpers.equals "$status" '0'
+    helpers.equals "$status" '0'
+    output="$(cat dummy_file)"
     helpers.contains "$output" "$content"
 }
 
