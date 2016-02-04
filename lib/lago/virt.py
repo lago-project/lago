@@ -44,6 +44,9 @@ LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
 log_task = functools.partial(log_utils.log_task, logger=LOGGER)
 
+#: Url to the libvirt daemon
+LIBVIRT_URL = 'qemu:///system'
+
 
 def _gen_ssh_command_id():
     return uuid.uuid1().hex[:8]
@@ -126,7 +129,7 @@ class VirtEnv(object):
     @property
     def libvirt_con(self):
         if self._libvirt_con is None:
-            self._libvirt_con = libvirt.open('qemu:///system')
+            self._libvirt_con = libvirt.open(LIBVIRT_URL)
         return self._libvirt_con
 
     def start(self, vm_names=None):
@@ -573,7 +576,7 @@ class VM(object):
         @functools.wraps(func)
         def wrapper(self, *args, **kwargs):
             if not self.alive():
-                raise RuntimeError('VM is not running')
+                raise RuntimeError('VM %s is not running' % self.name())
             return func(self, *args, **kwargs)
 
         return wrapper
@@ -1060,6 +1063,23 @@ class VM(object):
             channel.close()
             transport.close()
             client.close()
+
+    @_check_alive
+    def interactive_console(self):
+        """
+        Opens an interactive console
+
+        Returns:
+            lago.utils.CommandStatus: result of the virsh command execution
+        """
+        virsh_command = [
+            "virsh",
+            "-c",
+            LIBVIRT_URL,
+            "console",
+            self._libvirt_name(),
+        ]
+        return utils.run_interactive_command(command=virsh_command, )
 
     def nics(self):
         return self._spec['nics'][:]

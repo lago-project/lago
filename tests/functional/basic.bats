@@ -12,6 +12,7 @@ VERBS=(
     status
     stop
     template-repo
+    console
 )
 FIXTURES="$BATS_TEST_DIRNAME/fixtures/basic"
 

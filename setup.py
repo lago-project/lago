@@ -41,6 +41,7 @@ setup(
             'status=lago.cmd:do_status',
             'stop=lago.cmd:do_stop',
             'shell=lago.cmd:do_shell',
+            'console=lago.cmd:do_console',
             'snapshot=lago.cmd:do_snapshot',
             'revert=lago.cmd:do_revert',
             'copy-from-vm=lago.cmd:do_copy_from_vm',

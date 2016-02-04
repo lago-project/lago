@@ -248,6 +248,31 @@ def do_shell(prefix, host, args=None, **kwargs):
     sys.exit(result.code)
 
 
+@lago.plugins.cli.cli_plugin(help='Open serial console to the domain', )
+@lago.plugins.cli.cli_plugin_add_argument(
+    'host',
+    help='Host to connect to',
+    metavar='HOST',
+)
+@in_prefix
+@with_logging
+def do_console(prefix, host, **kwargs):
+    try:
+        host = prefix.virt_env.get_vm(host)
+    except KeyError:
+        LOGGER.error('Unable to find VM %s', host)
+        LOGGER.info(
+            'Available VMs:\n\t' + '\n\t'.join(
+                prefix.virt_env.get_vms().keys(
+                )
+            )
+        )
+        raise
+
+    result = host.interactive_console()
+    sys.exit(result.code)
+
+
 @lago.plugins.cli.cli_plugin(
     help='Show status of the deployed virtual resources'
 )
