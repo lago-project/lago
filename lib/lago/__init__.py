@@ -464,46 +464,66 @@ class Prefix(object):
 
             disk_filename = '%s_%s.%s' % (name, spec['name'], spec['format'])
             disk_path = self.paths.images(disk_filename)
+
             if spec['type'] == 'template':
-                if template_store is None or template_repo is None:
-                    raise RuntimeError('No templates directory provided')
+                template_type = spec.get('template_type', 'lago')
+                if template_type == 'lago':
+                    if template_store is None or template_repo is None:
+                        raise RuntimeError('No templates directory provided')
 
-                template = template_repo.get_by_name(spec['template_name'])
-                template_version = template.get_version(
-                    spec.get('template_version', None)
-                )
-
-                if template_version not in template_store:
-                    LOGGER.info(
-                        log_utils.log_always(
-                            "Template %s not in cache, downloading"
-                        ) % template_version.name,
+                    template = template_repo.get_by_name(spec['template_name'])
+                    template_version = template.get_version(
+                        spec.get('template_version', None)
                     )
-                    template_store.download(template_version)
-                template_store.mark_used(template_version, self.paths.uuid())
 
-                disk_metadata.update(
-                    template_store.get_stored_metadata(
-                        template_version,
-                    ),
-                )
+                    if template_version not in template_store:
+                        LOGGER.info(
+                            log_utils.log_always(
+                                "Template %s not in cache, downloading"
+                            ) % template_version.name,
+                        )
+                        template_store.download(template_version)
+                    template_store.mark_used(
+                        template_version, self.paths.uuid()
+                    )
 
-                base = template_store.get_path(template_version)
-                qemu_img_cmd = [
-                    'qemu-img', 'create', '-f', 'qcow2', '-b', base, disk_path
-                ]
+                    disk_metadata.update(
+                        template_store.get_stored_metadata(
+                            template_version,
+                        ),
+                    )
 
+                    base = template_store.get_path(template_version)
+                    qemu_img_cmd = [
+                        'qemu-img', 'create', '-f', 'qcow2', '-b', base,
+                        disk_path
+                    ]
+
+                elif template_type == 'qcow2':
+                    path = spec.get('path', '')
+                    if not path:
+                        raise RuntimeError('Partial drive spec %s' % str(spec))
+                    disk_metadata = spec.get('metadata', {})
+                    qemu_img_cmd = [
+                        'qemu-img', 'create', '-f', 'qcow2', '-b', path,
+                        disk_path
+                    ]
+                else:
+                    raise RuntimeError(
+                        'Unsupporte template spec %s' % str(spec)
+                    )
                 task_message = 'Create disk %s(%s)' % (name, spec['name'])
+
             elif spec['type'] == 'empty':
                 qemu_img_cmd = [
                     'qemu-img', 'create', '-f', spec['format'], disk_path,
                     spec['size']
                 ]
                 task_message = 'Create empty disk image'
+
             elif spec['type'] == 'file':
                 url = spec.get('url', '')
                 path = spec.get('path', '')
-
                 disk_metadata = spec.get('metadata', {})
                 if not url and not path:
                     raise RuntimeError('Partial drive spec %s' % str(spec))
@@ -514,6 +534,7 @@ class Prefix(object):
                         shutil.move(disk_in_prefix, spec['path'])
                     else:
                         spec['path'] = disk_in_prefix
+
                 # If we're using raw file, return it's path
                 return spec['path'], disk_metadata
             else:
@@ -620,8 +641,8 @@ class Prefix(object):
 
         if image_file is not None:
             disk_meta = {"root-partition": "/dev/sda1"}
-
-            disk_spec = [{"type": "file",
+            disk_spec = [{"type": "template",
+                          "template_type": "qcow2",
                           "format": "qcow2",
                           "dev": "vda",
                           "name": "root",
