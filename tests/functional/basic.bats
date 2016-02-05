@@ -171,6 +171,68 @@ load env_setup
 }
 
 
+@test "basic.full_run: shell to a vm" {
+    local prefix="$FIXTURES"/prefix1
+    local expected_hostname="cirros"
+
+    pushd "$prefix" >/dev/null
+    [[ -e ".lago" ]] || skip "prefix not initialized"
+    helpers.run "$LAGOCLI" shell "lago_functional_tests_vm01" hostname
+    output="$(echo "$output"| tail -n1)"
+    helpers.contains "$output" "$expected_hostname"
+    helpers.equals "$status" '0'
+}
+
+
+@test "basic.full_run: copy to vm" {
+    local prefix="$FIXTURES"/prefix1
+
+    pushd "$prefix" >/dev/null
+    [[ -e ".lago" ]] || skip "prefix not initialized"
+    rm -rf dummy_file
+    content="$(date)"
+    echo "$content" > "dummy_file"
+    helpers.run "$LAGOCLI" \
+        copy-to-vm \
+        "lago_functional_tests_vm01" \
+        dummy_file \
+        /root/dummy_file_inside
+    helpers.equals "$status" '0'
+    helpers.run "$LAGOCLI" \
+        shell \
+        "lago_functional_tests_vm01" \
+        cat /root/dummy_file_inside
+    helpers.equals "$status" '0'
+    output="$(echo "$output"| tail -n1)"
+    helpers.contains "$output" "$content"
+}
+
+
+@test "basic.full_run: copy from vm" {
+    local prefix="$FIXTURES"/prefix1
+
+    pushd "$prefix" >/dev/null
+    [[ -e ".lago" ]] || skip "prefix not initialized"
+    rm -rf dummy_file
+    content="$(date)"
+    helpers.run "$LAGOCLI" \
+        shell \
+        "lago_functional_tests_vm01" \
+        <<EOS
+          echo "$content" > /root/dummy_file_inside
+EOS
+    helpers.run "$LAGOCLI" \
+        copy-from-vm \
+        "lago_functional_tests_vm01" \
+        /root/dummy_file_inside \
+        dummy_file
+    helpers.equals "$status" '0'
+    helpers.equals "$status" '0'
+    output="$(cat dummy_file)"
+    helpers.contains "$output" "$content"
+}
+
+
 @test "basic.full_run: whole stop" {
     local prefix="$FIXTURES"/prefix1
 
@@ -200,15 +262,15 @@ load env_setup
 }
 
 
-@test 'basic: Start and stop many vms one by one' {
-    local prefix="$FIXTURES"/prefix2
+@test 'basic.full_run: start and stop many vms one by one' {
+    local prefix="$FIXTURES"/prefix1
     local repo="$FIXTURES"/repo_store
     local suite="$FIXTURES"/suite2.json
     local repo_conf="$FIXTURES"/template_repo.json
     local fake_uuid="12345678910121416182022242628303"
     # INIT
     rm -rf "$prefix" "$repo"
-    cp -a "$FIXTURES/repo2" "$repo"
+    cp -a "$FIXTURES/repo" "$repo"
     env_setup.populate_disks "$repo"
     export BATS_TMPDIR BATS_TEST_DIRNAME
     # This is needed to be able to run inside mock, as it uses some temp files
@@ -337,7 +399,7 @@ load env_setup
 }
 
 
-@test "basic.full_run: start again for the cleanup" {
+@test "basic.full_run: start again" {
     local prefix="$FIXTURES"/prefix1
 
     pushd "$prefix" >/dev/null
@@ -364,5 +426,4 @@ load env_setup
     env_setup.destroy_domains
     env_setup.destroy_nets
 }
-
 
