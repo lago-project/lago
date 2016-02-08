@@ -43,6 +43,9 @@ class OvirtVirtEnv(lago.virt.VirtEnv):
         elif role == 'host':
             self._host_vms.append(HostVM(self, vm_spec))
             return self._host_vms[-1]
+        elif role == 'node':
+            self._host_vms.append(NodeVM(self, vm_spec))
+            return self._host_vms[-1]
         else:
             return TestVM(self, vm_spec)
 
@@ -51,6 +54,18 @@ class OvirtVirtEnv(lago.virt.VirtEnv):
 
     def host_vms(self):
         return self._host_vms[:]
+
+
+# TODO : solve the problem of ssh to the Node
+class NodeVM(lago.virt.VM):
+    def _artifact_paths(self):
+        return []
+
+    def collect_artifacts(self, host_path):
+        return
+
+    def wait_for_ssh(self):
+        return
 
 
 class TestVM(lago.virt.VM):
