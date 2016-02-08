@@ -388,6 +388,7 @@ class OvirtPrefix(lago.Prefix):
 
     @_with_repo_server
     def run_test(self, path):
+
         with LogTask('Run test: %s' % os.path.basename(path)):
             env = os.environ.copy()
             env['LAGO_PREFIX'] = self.paths.prefix()
@@ -436,10 +437,14 @@ class OvirtPrefix(lago.Prefix):
 
     def _deploy_host(self, host):
         with LogTask('Deploy VM %s' % host.name()):
+            ovirt_scripts = host.metadata.get('ovirt-scripts', [])
+            if not ovirt_scripts:
+                return
+
             with LogTask('Wait for ssh connectivity'):
                 host.wait_for_ssh()
 
-            for script in host.metadata.get('ovirt-scripts', []):
+            for script in ovirt_scripts:
                 with LogTask('Run script %s' % os.path.basename(script)):
                     ret, out, err = host.ssh_script(script, show_output=False)
 
