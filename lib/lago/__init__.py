@@ -48,8 +48,8 @@ def _create_ip(subnet, index):
     from the subnet (255.255.255.0 mask only subnets)
 
     Args:
-        subnet (str): Strign containing the three first elements of the decimal
-            representation of a subnet (X.Y.Z) or a full ip (X.Y.Z.A)
+        subnet (str): String containing the three first elements of the decimal
+            representation of a subnet (X.Y.Z) or a full IP (X.Y.Z.A)
         index (int or str): Last element of a decimal ip representation, for
             example, 123 for the ip 1.2.3.123
 
@@ -67,16 +67,16 @@ def _ip_in_subnet(subnet, ip):
         only 255.255.255.0 masks allowed
 
     Args:
-        subnet (str): Strign containing the three first elements of the decimal
-            representation of a subnet (X.Y.Z) or a full ip (X.Y.Z.A)
-        ip (str or int): Decimal ip representation
+        subnet (str): String containing the three first elements of the decimal
+            representation of a subnet (X.Y.Z) or a full IP (X.Y.Z.A)
+        ip (str or int): Decimal IP representation
 
     Returns:
-        bool: ``True`` if ip is in subnet, ``False`` otherwise
+        bool: ``True`` if IP is in subnet, ``False`` otherwise
     """
     return (
-        _create_ip(subnet, 1) == _create_ip(ip, 1)
-        or '0.0.0.1' == _create_ip(ip, 1)
+        _create_ip(subnet, 1) == _create_ip(ip, 1) or
+        '0.0.0.1' == _create_ip(ip, 1)
     )
 
 
@@ -225,7 +225,7 @@ class Prefix(object):
     @log_task('Cleanup prefix')
     def cleanup(self):
         """
-        Stops any running entities in the prefix and uninitializes it, usually
+        Stops any running entities in the prefix and un-initializes it, usually
         you want to do this if you are going to remove the prefix afterwards
 
         Returns:
@@ -274,7 +274,7 @@ class Prefix(object):
 
             if subnet_lease.is_leasable_subnet(subnet):
                 raise RuntimeError(
-                    '%s subnet can only be dynamically allocated' % (subnet)
+                    '%s subnet can only be dynamically allocated' % subnet
                 )
 
     def _allocate_subnets(self, conf):
@@ -368,7 +368,7 @@ class Prefix(object):
                         if ip == net['ip']
                     ]
                     raise RuntimeError(
-                        'IP %s was to several domains: %s %s' % (
+                        'IP %s was mapped to several domains: %s %s' % (
                             nic['ip'],
                             dom_name,
                             ' '.join(conflict_list),
@@ -380,7 +380,7 @@ class Prefix(object):
     def _allocate_ips_to_nics(self, conf):
         """
         For all the nics of all the domains in the conf that have dynamic ip,
-        allocate one and addit to the network mapping
+        allocate one and add it to the network mapping
 
         Args:
             conf (dict): Configuration spec to extract the domains from
@@ -413,11 +413,11 @@ class Prefix(object):
     def _config_net_topology(self, conf):
         """
         Initialize and populate all the network related elements, like
-        reserving ips and populating network specs of the given confiiguration
+        reserving ips and populating network specs of the given configuration
         spec
 
         Args:
-            conf (dict): Configuration spec to initalize
+            conf (dict): Configuration spec to initialize
 
         Returns:
             None
@@ -510,7 +510,7 @@ class Prefix(object):
                     ]
                 else:
                     raise RuntimeError(
-                        'Unsupporte template spec %s' % str(spec)
+                        'Unsupported template spec %s' % str(spec)
                     )
                 task_message = 'Create disk %s(%s)' % (name, spec['name'])
 
@@ -535,7 +535,7 @@ class Prefix(object):
                     else:
                         spec['path'] = disk_in_prefix
 
-                # If we're using raw file, return it's path
+                # If we're using raw file, return its path
                 return spec['path'], disk_metadata
             else:
                 raise RuntimeError('Unknown drive spec %s' % str(spec))
@@ -562,7 +562,7 @@ class Prefix(object):
         The disk will be cached in the template repo
 
         Args:
-            filename(str): the url to retrive the data from
+            filename(str): the url to retrieve the data from
 
         TODO:
             * Add hash checking against the server
@@ -579,7 +579,7 @@ class Prefix(object):
 
         Raises:
             RuntimeError: If the ova format is not supported
-            TypeError: If the memory units in the ova are noot supported
+            TypeError: If the memory units in the ova are not supported
                 (currently only 'MegaBytes')
         """
         # extract if needed
@@ -633,7 +633,7 @@ class Prefix(object):
                     memory = int(item["rasd:VirtualQuantity"])
                     if item["rasd:AllocationUnits"] != "MegaBytes":
                         raise TypeError(
-                            "Fix me : we need to suport other units too"
+                            "Fix me : we need to support other units too"
                         )
 
                 elif resource_type == DISK_RESOURCE:
@@ -655,7 +655,7 @@ class Prefix(object):
 
     def _use_prototype(self, spec, conf):
         """
-        Populates the given spec with the values of it's declared prototype
+        Populates the given spec with the values of its declared prototype
 
         Args:
             spec (dict): spec to update
@@ -697,7 +697,7 @@ class Prefix(object):
 
         Args:
             conf (dict): Configuration spec
-            template_repo (TemplateRepository): template repository intance
+            template_repo (TemplateRepository): template repository instance
             template_store (TemplateStore): template store instance
 
         Returns:

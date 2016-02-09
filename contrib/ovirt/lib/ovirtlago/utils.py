@@ -84,7 +84,7 @@ def _create_http_server(ip, port, root_dir):
     Starts an http server with an improved request handler
 
     Args:
-        ip (str): Ip to listen on
+        ip (str): IP to listen on
         port (int): Port to register on
         root_dir (str): path to the directory to serve
 

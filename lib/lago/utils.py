@@ -253,7 +253,7 @@ def service_is_enabled(name):
 
 # Copied from VDSM: lib/vdsm/utils.py
 class RollbackContext(object):
-    '''
+    """
     A context manager for recording and playing rollback.
     The first exception will be remembered and re-raised after rollback
 
@@ -266,7 +266,7 @@ class RollbackContext(object):
     >     rollback.prependDefer(undoStep2, arg)
 
     More examples see tests/utilsTests.py @ vdsm code
-    '''
+    """
 
     def __init__(self, *args):
         self._finally = []
