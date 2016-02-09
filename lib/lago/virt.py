@@ -53,7 +53,7 @@ def _gen_ssh_command_id():
 
 
 def _ip_to_mac(ip):
-    # Mac addrs of domains are 54:52:xx:xx:xx:xx where the last 4 octets are
+    # Mac address of domains are 54:52:xx:xx:xx:xx where the last 4 octets are
     # the hex repr of the IP address)
     mac_addr_pieces = [0x54, 0x52] + [int(y) for y in ip.split('.')]
     return ':'.join([('%02x' % x) for x in mac_addr_pieces])
@@ -83,13 +83,13 @@ def _path_to_xml(basename):
 
 
 class VirtEnv(object):
-    '''Env properties:
+    """"Env properties:
     * prefix
     * vms
     * net
 
     * libvirt_con
-    '''
+    """
 
     def __init__(self, prefix, vm_specs, net_specs):
         self.prefix = prefix
@@ -179,7 +179,7 @@ class VirtEnv(object):
             nets = [self._nets[net] for net in stoppable_nets]
 
         with LogTask(log_msg):
-            with LogTask('Stop vms'):
+            with LogTask('Stop VMs'):
                 for vm in vms:
                     vm.stop()
             with LogTask('Stop nets'):
@@ -402,7 +402,7 @@ class _Service:
             return
 
         if self._request_start():
-            raise RuntimeError('Failed to start service')
+            raise RuntimeError('Failed to start service %s' % self._name)
 
     def stop(self):
         state = self.state()
@@ -412,7 +412,7 @@ class _Service:
             return
 
         if self._request_stop():
-            raise RuntimeError('Failed to stop service')
+            raise RuntimeError('Failed to stop service %s' % self._name)
 
     @classmethod
     def is_supported(cls, vm):
@@ -523,14 +523,14 @@ _SERVICE_WRAPPERS['sysvinit'] = _SysVInitService
 
 
 class VM(object):
-    '''VM properties:
+    """VM properties:
     * name
     * cpus
     * memory
     * disks
     * metadata
-    * network/mac addr
-    '''
+    * network/mac address
+    """
 
     def __init__(self, env, spec):
         self._env = env
@@ -601,7 +601,7 @@ class VM(object):
 
     def ssh(self, command, data=None, show_output=True):
         if not self.alive():
-            raise RuntimeError('Attempt to ssh into offline host')
+            raise RuntimeError('Cannot SSH into an offline host')
 
         client = self._get_ssh_client()
         transport = client.get_transport()
@@ -744,7 +744,7 @@ class VM(object):
 
             # we have to make some adjustments
             # we use iso to indicate cdrom
-            # but the ilbvirt wants it named raw
+            # but libvirt wants it named raw
             # and we need to use cdrom device
             disk_device = 'disk'
             bus = 'virtio'
