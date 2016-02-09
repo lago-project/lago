@@ -90,7 +90,7 @@ def test_wlock_twice_with_unlock():
 
 
 @tools.with_setup(setup_prefix, teardown_prefix)
-def test_prune_exipred():
+def test_prune_expired():
     tempdir = tempfile.mkdtemp()
     try:
 

@@ -105,5 +105,5 @@ class TemplateRepoCLI(CLIPlugin):
             _, _, func = ARGUMENTS[args.tplverb]
             func(args)
         except Exception:
-            logging.exception('Error occured, aborting')
+            logging.exception('Error occurred, aborting')
             sys.exit(1)

@@ -244,8 +244,8 @@ ARGUMENTS[Verbs.OVIRT_RUNTEST] = (
 ARGUMENTS[Verbs.OVIRT_SNAPSHOT] = (
     (
         'Create snapshots for all deployed resources.\n'
-        'This command maintenances storage domains and hosts before '
-        'taking snapshot.'
+        'This command sets storage domains and hosts to'
+        'maintenance before taking a snapshot.'
     ),
     (
         (
@@ -345,5 +345,5 @@ class OvirtCLI(CLIPlugin):
             _, _, func = ARGUMENTS[args.ovirtverb]
             func(args)
         except Exception:
-            logging.exception('Error occured, aborting')
+            logging.exception('Error occurred, aborting')
             sys.exit(1)

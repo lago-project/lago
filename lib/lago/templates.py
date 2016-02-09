@@ -11,7 +11,7 @@ definitions:
         Local store to cache templates
 
     * Template:
-        Unititialized disk image to use as base for other disk images
+        Uninitialized disk image to use as base for other disk images
 
     * Template version:
         Specific version of a template, to allow getting updates without
