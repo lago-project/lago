@@ -75,8 +75,8 @@ def _ip_in_subnet(subnet, ip):
         bool: ``True`` if IP is in subnet, ``False`` otherwise
     """
     return (
-        _create_ip(subnet, 1) == _create_ip(ip, 1)
-        or '0.0.0.1' == _create_ip(ip, 1)
+        _create_ip(subnet, 1) == _create_ip(ip, 1) or
+        '0.0.0.1' == _create_ip(ip, 1)
     )
 
 
