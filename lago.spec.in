@@ -151,8 +151,8 @@ BuildArch:	noarch
 BuildRequires:	python2-devel
 Requires:	python
 Requires:	python-%{name} = %{version}
-Requires:	python-nose
 Requires:	python-magic
+Requires:	python-nose
 Requires:	mock
 Requires:	ovirt-engine-sdk-python
 Requires:	createrepo
