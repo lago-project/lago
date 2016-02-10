@@ -142,6 +142,13 @@ or qemu groups and execution rights for the group, or execution rights for
 other (highly recommended to use the group instead, if the dir did not have
 execution rights for others already)
 
+It's very common for the user home directory to not have group execution
+rights, to make sure you can just run:
+
+```shell
+$ chmod g+x $HOME
+```
+
 And, just to be sure, let's refresh libvirtd service to ensure that it
 refreshes it's permissions and picks up any newly created users:
 
