@@ -132,11 +132,11 @@ class LogCollectorPlugin(nose.plugins.Plugin):
     def configure(self, options, conf):
         super(LogCollectorPlugin, self).configure(options, conf)
 
-    def addError(self, test, err):
-        self._addFault(test, err)
+    def addError(self, test):
+        self._addFault(test)
 
-    def addFailure(self, test, err):
-        self._addFault(test, err)
+    def addFailure(self, test):
+        self._addFault(test)
 
     def _addFault(self, test):
         suffix = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
