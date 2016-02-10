@@ -19,13 +19,14 @@
 #
 import datetime
 import functools
+import logging
 import os
 import time
 
 import nose.plugins
 from nose.plugins.skip import SkipTest
 
-import lago.utils as utils
+from lago import (utils as utils, log_utils as log_utils)
 
 import ovirtlago
 
@@ -142,6 +143,34 @@ class LogCollectorPlugin(nose.plugins.Plugin):
         suffix = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         test_name = '%s-%s' % (test.id(), suffix)
         self._prefix.collect_artifacts(self._prefix.paths.test_logs(test_name))
+
+
+class TaskLogNosePlugin(nose.plugins.Plugin):
+    name = "tasklog-plugin"
+
+    def __init__(self, *args, **kwargs):
+        self.logger = logging.getLogger('nose')
+        super(TaskLogNosePlugin, self).__init__(*args, **kwargs)
+
+    def options(self, parser, env):
+        return super(TaskLogNosePlugin, self).options(parser, env)
+
+    def configure(self, options, conf):
+        res = super(TaskLogNosePlugin, self).configure(options, conf)
+        self.logger.handlers = logging.root.handlers
+        return res
+
+    def startTest(self, test):
+        log_utils.start_log_task(
+            test.shortDescription() or str(test),
+            logger=self.logger
+        )
+
+    def stopTest(self, test):
+        log_utils.end_log_task(
+            test.shortDescription() or str(test),
+            logger=self.logger
+        )
 
 
 def assert_true_within(func, timeout):
