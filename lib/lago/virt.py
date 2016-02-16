@@ -366,6 +366,9 @@ class BridgeNetwork(Network):
         return net_raw_xml
 
     def start(self):
+        if brctl.exists(self._libvirt_name()):
+            return
+
         brctl.create(self._libvirt_name())
         try:
             super(BridgeNetwork, self).start()
