@@ -3,9 +3,9 @@ BUILDS=$PWD/automation-build
 EXPORTS=$PWD/exported-artifacts
 
 if hash dnf &>/dev/null; then
-    YUM=dnf
+    YUM='dnf builddep'
 else
-    YUM=yum
+    YUM='yum-builddep'
 fi
 
 rm -rf "$BUILDS" "$EXPORTS"/*{.rpm,.tar.gz}
@@ -14,7 +14,7 @@ mkdir -p "$EXPORTS"
 
 make clean
 make lago.spec
-$YUM builddep -y lago.spec
+$YUM -y lago.spec
 make rpm OUTPUT_DIR="$BUILDS"
 
 find "$BUILDS" \
