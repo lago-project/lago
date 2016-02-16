@@ -45,7 +45,9 @@ def domain_name(image_path):
         name_index += 1
 
 
-updating = lambda x: '%s.updating' % x
+def updating(subject):
+    return '%s.updating' % subject
+
 
 if __name__ == '__main__':
     logging.basicConfig(

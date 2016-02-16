@@ -55,7 +55,9 @@ def monkey_patch(obj, subs):
 @contextlib.contextmanager
 def config_context():
     with tempdir() as tmp:
-        mkpath = lambda x: os.path.join(tmp, x)
+
+        def mkpath(path):
+            return os.path.join(tmp, path)
 
         for dest, conts in [
             ('.userconf', _USER_CONF),

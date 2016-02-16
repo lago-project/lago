@@ -67,7 +67,10 @@ def continue_on_failure(func):
 
 def _vms_capable(vms, caps):
     caps = set(caps)
-    vm_caps = lambda vm: set(vm.metadata.get('ovirt-capabilities', []))
+
+    def vm_caps(vm):
+        set(vm.metadata.get('ovirt-capabilities', []))
+
     return caps.issubset(set.intersection(*[vm_caps(vm) for vm in vms]))
 
 
