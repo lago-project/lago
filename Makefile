@@ -45,7 +45,7 @@ fullchangelog:
 		echo A git clone is required to generate a FullChangeLog >&2; \
 	fi
 
-${SPECFILE}: ${SPECFILE}.in
+${SPECFILE}: ${SPECFILE}.in changelog
 	sed \
 		-e s/@VERSION@/${VERSION}/g \
 		-e s/@CHANGELOG@//g \
