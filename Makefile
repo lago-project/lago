@@ -5,6 +5,7 @@ FULL_NAME=${NAME}-${VERSION}
 TAR_FILE=${FULL_NAME}.tar
 TARBALL_FILE=${TAR_FILE}.gz
 SPECFILE=lago.spec
+NOSE=$(shell which nosetests)
 
 OUTPUT_DIR=${PWD}
 RPM_DIR=${OUTPUT_DIR}/rpmbuild
@@ -44,7 +45,7 @@ fullchangelog:
 		echo A git clone is required to generate a FullChangeLog >&2; \
 	fi
 
-${SPECFILE}: ${SPECFILE}.in
+${SPECFILE}: ${SPECFILE}.in changelog
 	sed \
 		-e s/@VERSION@/${VERSION}/g \
 		-e s/@CHANGELOG@//g \
@@ -65,11 +66,11 @@ check-local:
 	@echo "-------------------------------------------------------------"
 	@echo "-~      Running static checks                              --"
 	@echo "-------------------------------------------------------------"
-	find . -name '*.py' | xargs flake8
+	flake8
 	@echo "-------------------------------------------------------------"
 	@echo "-~      Running unit tests                                 --"
 	@echo "-------------------------------------------------------------"
-	PYTHONPATH=${PWD}/lib:${PYTHONPATH} nosetests -v tests/*.py
+	python ${NOSE} -v tests/*.py
 	@echo "-------------------------------------------------------------"
 	@echo "-------------------------------------------------------------"
 

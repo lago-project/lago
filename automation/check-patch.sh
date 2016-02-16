@@ -12,6 +12,11 @@ code_changed() {
     return $?
 }
 
+die() {
+    echo "$@"
+    exit 1
+}
+
 
 [[ -d "$EXPORTED_DIR" ]] || mkdir -p "$EXPORTED_DIR"
 
@@ -19,8 +24,12 @@ echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 echo '~*          Building docs                              ~'
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 rm -rf "$DOCS_DIR"
-pip install -r docs/requires.txt
+rm -rf tests/docs_venv
+virtualenv -q tests/docs_venv
+source tests/docs_venv/bin/activate
+pip --quiet install --requirement docs/requires.txt
 make docs
+deactivate
 mv docs/_build "$DOCS_DIR"
 
 if ! code_changed; then
@@ -28,25 +37,50 @@ if ! code_changed; then
     exit 0
 fi
 
-# Style and unit tests
-# required for the formatting
-pip install yapf
+# Style and unit tests, using venv to make sure the installation tests pull in
+# all the dependencies
+rm -rf tests/venv
+# the system packages are needed for python-libguestfs
+virtualenv -q --system-site-packages tests/venv
+source tests/venv/bin/activate
+pip --quiet install --requirement test-requires.txt
+export PYTHONPATH
 make check-local
+deactivate
 
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 echo '~*          Running build/installation tests           ~'
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 automation/build-artifacts.sh
+echo "Installing..."
+if hash dnf &>/dev/null; then
+    YUM=dnf
+else
+    YUM=yum
+fi
 # to allow negated groups in globs
 shopt -s extglob
 # fail if a glob turns out empty
 shopt -s failglob
-echo "Installing..."
-if hash dnf &>/dev/null; then
-    dnf install -y exported-artifacts/!(*.src).rpm
-else
-    yum install -y exported-artifacts/!(*.src).rpm
-fi
+for package in {python-,}lago {python-,}lago-ovirt; do
+    echo "    $package: installing"
+    ## Install one by one to make sure the deps are ok
+    $YUM install -y exported-artifacts/"$package"-[[:digit:]]!(*src).rpm \
+    && echo "    $package: OK" \
+    || die "    $package: FAILED"
+    if [[ "$package" == "lago" ]]; then
+        echo "    Checking that lago imports are not missing"
+        lago -h > /dev/null \
+        && echo "    OK" \
+        || die "    FAILED"
+
+    elif [[ "$package" == "lago-ovirt" ]]; then
+        echo "    Checking that lago ovirt imports are not missing"
+        lago ovirt -h > /dev/null \
+        && echo "    OK" \
+        || die "    FAILED"
+    fi
+done
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 echo '~*          Running basic functional tests             ~'
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'

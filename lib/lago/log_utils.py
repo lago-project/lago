@@ -22,7 +22,6 @@ This module defines the special logging tools that lago uses
 """
 import logging
 import logging.config
-import nose.plugins
 import os
 import re
 import sys
@@ -646,31 +645,6 @@ def log_always(message):
             logger
     """
     return ALWAYS_SHOW_TRIGGER_MSG % message
-
-
-class TaskLogNosePlugin(nose.plugins.Plugin):
-    name = "tasklog-plugin"
-
-    def __init__(self, *args, **kwargs):
-        self.logger = logging.getLogger('nose')
-        super(TaskLogNosePlugin, self).__init__(*args, **kwargs)
-
-    def options(self, parser, env):
-        return super(TaskLogNosePlugin, self).options(parser, env)
-
-    def configure(self, options, conf):
-        res = super(TaskLogNosePlugin, self).configure(options, conf)
-        self.logger.handlers = logging.root.handlers
-        return res
-
-    def startTest(self, test):
-        start_log_task(
-            test.shortDescription() or str(test),
-            logger=self.logger
-        )
-
-    def stopTest(self, test):
-        end_log_task(test.shortDescription() or str(test), logger=self.logger)
 
 
 def hide_paramiko_logs():

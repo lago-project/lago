@@ -205,8 +205,9 @@ class VirtEnv(object):
 
     @classmethod
     def from_prefix(cls, prefix):
-        virt_path = lambda name: \
-            os.path.join(prefix.paths.prefix(), 'virt', name)
+        def virt_path(name):
+            return os.path.join(prefix.paths.prefix(), 'virt', name)
+
         with open(virt_path('env'), 'r') as f:
             env_dom = json.load(f)
 

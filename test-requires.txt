@@ -1,0 +1,13 @@
+dulwich
+flake8
+libvirt-python
+# not provided by pip
+#python-libguestfs
+lockfile
+lxml
+python-magic
+nose
+paramiko
+scp
+xmltodict
+yapf
