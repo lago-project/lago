@@ -171,7 +171,32 @@ might want to create your own.
 
 
 **This tests require that you have at least 36GB of free space under the
-/var/lib/lago directory and an extra 200MB wherever you are running them**
+/var/lib/lago directory and an extra 200MB wherever you are running them.**
+
+If you don't have enough disk space on /var (for e.g, a default fedora
+install only has 20G), you can change the default path for downloading
+the images and repos on the lago.conf file.
+You can change the default values from:
+
+```shell
+$ cat /etc/lago.d/lago.conf
+[lago]
+log_level = debug
+template_store = /var/lib/lago/store
+template_repos = /var/lib/lago/repos
+default_root_password = 123456
+```
+
+to use your homedir, for e.g:
+
+```shell
+$ vim /etc/lago.d/lago.conf
+[lago]
+log_level = debug
+template_store = /home/USERNAME/lago/store
+template_repos = /home/USERNAME/lago/repos
+default_root_password = 123456
+```
 
 As an example, we will use the basic suite of the ovirt tests, so we have to
 download them, you can run the following to get a copy of the repository:
