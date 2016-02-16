@@ -10,13 +10,15 @@ URL:		https://github.com/oVirt/lago
 Source0:	https://resources.ovirt.org/pub/src/%{name}/%{name}-%{version}.tar.gz
 
 BuildRequires:	python2-devel
+%if 0%{?fedora} >= 1
+BuildRequires:	python2-dulwich
+%else
 BuildRequires:	python-dulwich
+%endif
 BuildRequires:	python-flake8
 BuildRequires:	python-nose
 BuildRequires:	git
 Requires:	python-%{name} = %{version}
-Requires:	sudo
-Requires:	python-scp
 
 %description
 LAGO System testing framework.
@@ -100,13 +102,16 @@ Requires:	libvirt-python
 Requires:	python-libguestfs
 Requires:	python-lxml
 Requires:	python-lockfile
+Requires:	python-magic
 Requires:	python-paramiko
 Requires:	python-xmltodict
+Requires:	python-scp
 Requires:	python-setuptools
 Requires:	python-stevedore
 Requires:	qemu-img >= 2.1.2
 Requires:	qemu-kvm >= 2.1.2
 Requires:	git
+Requires:	sudo
 %{?python_provide:%python_provide python2-lago}
 
 %description -n python-%{name}
