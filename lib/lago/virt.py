@@ -226,9 +226,13 @@ class VirtEnv(object):
         if name:
             return self.get_nets().get(name)
         else:
-            return [
-                net for net in self.get_nets().values() if net.is_management()
-            ].pop()
+            try:
+                return [
+                    net
+                    for net in self.get_nets().values() if net.is_management()
+                ].pop()
+            except IndexError:
+                return self.get_nets().values().pop()
 
     def get_vms(self):
         return self._vms.copy()
