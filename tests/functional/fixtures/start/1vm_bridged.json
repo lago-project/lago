@@ -1,0 +1,26 @@
+{
+    "domains": {
+        "lft_vm01": {
+            "memory": 64,
+            "nics": [
+                {
+                    "net": "lft_net1"
+                }
+            ],
+            "disks": [
+                {
+                    "template_name": "lago_functional_tests",
+                    "type": "template",
+                    "name": "root",
+                    "dev": "vda",
+                    "format": "qcow2"
+                }
+            ]
+        }
+    },
+    "nets": {
+        "lft_net1": {
+            "type": "bridge"
+        }
+    }
+}
