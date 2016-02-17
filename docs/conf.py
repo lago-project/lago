@@ -180,12 +180,12 @@ html_theme = 'alabaster'
 # further.  For a list of options available for each theme, see the
 # documentation.
 html_theme_options = {
-    'github_user': 'ovirt',
+    'github_user': 'lago-project',
     'github_repo': 'lago',
     'github_type': 'watch',
     'github_count': True,
     'github_button': True,
-    'logo': 'lago_logo.png',
+    'logo': 'lago_logo_200x200.png',
 }
 
 # Add any paths that contain custom themes here, relative to this directory.
