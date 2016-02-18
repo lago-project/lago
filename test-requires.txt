@@ -6,7 +6,7 @@ libvirt-python
 lockfile
 lxml
 python-magic
-nose
+pytest
 paramiko
 scp
 xmltodict

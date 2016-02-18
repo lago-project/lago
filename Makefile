@@ -5,7 +5,7 @@ FULL_NAME=${NAME}-${VERSION}
 TAR_FILE=${FULL_NAME}.tar
 TARBALL_FILE=${TAR_FILE}.gz
 SPECFILE=lago.spec
-NOSE=$(shell which nosetests)
+PYTEST=$(shell which py.test)
 
 OUTPUT_DIR=${PWD}
 RPM_DIR=${OUTPUT_DIR}/rpmbuild
@@ -70,7 +70,7 @@ check-local:
 	@echo "-------------------------------------------------------------"
 	@echo "-~      Running unit tests                                 --"
 	@echo "-------------------------------------------------------------"
-	python ${NOSE} -v tests/*.py
+	PYTHONPATH=$PYTHONPATH:lib/:contrib/ovirt/lib python ${PYTEST} -v tests/unit
 	@echo "-------------------------------------------------------------"
 	@echo "-------------------------------------------------------------"
 
