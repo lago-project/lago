@@ -1,0 +1,24 @@
+{
+  "templates": {
+    "lago_functional_tests": {
+      "versions": {
+        "v1": {
+          "source": "local_tests",
+          "handle": "vm0_root.qcow2",
+          "timestamp": 1428328144
+        }
+      }
+    }
+  },
+  "sources": {
+    "local_tests": {
+      "args": {
+        "root":
+            "$BATS_TEST_DIRNAME/fixtures/basic/repo_store"
+      },
+      "type": "file"
+    }
+  },
+  "name": "local_tests_repo"
+}
+

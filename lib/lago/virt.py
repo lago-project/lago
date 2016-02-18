@@ -20,6 +20,7 @@
 import collections
 import contextlib
 import functools
+import hashlib
 import json
 import logging
 import os
@@ -117,8 +118,40 @@ class VirtEnv(object):
     def _create_vm(self, vm_spec):
         return VM(self, vm_spec)
 
-    def prefixed_name(self, unprefixed_name):
-        return '%s-%s' % (self._uuid[:8], unprefixed_name)
+    def prefixed_name(self, unprefixed_name, max_length=0):
+        """
+        Returns a uuid pefixed identifier
+
+        Args:
+            unprefixed_name(str): Name to add a prefix to
+            max_length(int): maximum length of the resultant prefixed name,
+                will adapt the given name and the length of the uuid ot fit it
+
+        Returns:
+            str: prefixed identifier for the given unprefixed name
+        """
+        if max_length == 0:
+            prefixed_name = '%s-%s' % (self._uuid[:8], unprefixed_name)
+        else:
+            if max_length < 6:
+                raise RuntimeError(
+                    "Can't prefix with less than 6 chars (%s)" %
+                    unprefixed_name
+                )
+            if max_length < 16:
+                _uuid = self._uuid[:4]
+            else:
+                _uuid = self._uuid[:8]
+
+            name_max_length = max_length - len(_uuid) - 1
+
+            if name_max_length < len(unprefixed_name):
+                hashed_name = hashlib.sha1(unprefixed_name).hexdigest()
+                unprefixed_name = hashed_name[:name_max_length]
+
+            prefixed_name = '%s-%s' % (_uuid, unprefixed_name)
+
+        return prefixed_name
 
     def virt_path(self, *args):
         return self.prefix.paths.virt(*args)
@@ -193,9 +226,13 @@ class VirtEnv(object):
         if name:
             return self.get_nets().get(name)
         else:
-            return [
-                net for net in self.get_nets().values() if net.is_management()
-            ].pop()
+            try:
+                return [
+                    net
+                    for net in self.get_nets().values() if net.is_management()
+                ].pop()
+            except IndexError:
+                return self.get_nets().values().pop()
 
     def get_vms(self):
         return self._vms.copy()
@@ -282,7 +319,7 @@ class Network(object):
         return self._spec['mapping'][name]
 
     def _libvirt_name(self):
-        return self._env.prefixed_name(self.name())
+        return self._env.prefixed_name(self.name(), max_length=15)
 
     def alive(self):
         net_names = [
@@ -366,6 +403,9 @@ class BridgeNetwork(Network):
         return net_raw_xml
 
     def start(self):
+        if brctl.exists(self._libvirt_name()):
+            return
+
         brctl.create(self._libvirt_name())
         try:
             super(BridgeNetwork, self).start()
@@ -796,7 +836,10 @@ class VM(object):
             interface.append(
                 lxml.etree.Element(
                     'source',
-                    network=self._env.prefixed_name(dev_spec['net']),
+                    network=self._env.prefixed_name(
+                        dev_spec['net'],
+                        max_length=15
+                    ),
                 ),
             )
             interface.append(lxml.etree.Element('model', type='virtio', ), )
