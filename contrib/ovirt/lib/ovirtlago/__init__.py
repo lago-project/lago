@@ -26,7 +26,6 @@ import lockfile
 import nose.core
 import nose.config
 from ovirtsdk.infrastructure.errors import RequestError
-
 import lago
 from lago import log_utils
 
@@ -422,7 +421,7 @@ class OvirtPrefix(lago.Prefix):
                 stream=DummyStream(),
             )
             addplugins = [
-                log_utils.TaskLogNosePlugin(),
+                testlib.TaskLogNosePlugin(),
                 testlib.LogCollectorPlugin(self),
             ]
             result = nose.core.run(
