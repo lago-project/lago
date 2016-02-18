@@ -4,7 +4,7 @@ import os
 import shutil
 import tempfile
 
-import nose.tools as nt
+import pytest
 
 import lago.config as config
 
@@ -90,36 +90,36 @@ def _config_test(func):
 
 @_config_test
 def test_nonexistent_throws():
-    with nt.assert_raises(KeyError):
+    with pytest.raises(KeyError):
         config.get('i_dont_exist')
 
 
 @_config_test
 def test_nonexistent_default():
-    nt.assert_equals(config.get('i_dont_exist', 'foo'), 'foo', )
+    assert config.get('i_dont_exist', 'foo') == 'foo'
 
 
 @_config_test
 def test_get_from_env():
-    nt.assert_equals(config.get('env_var_1'), 'env_val_1', )
+    assert config.get('env_var_1') == 'env_val_1'
 
 
 @_config_test
 def test_env_shadows_user():
-    nt.assert_equals(config.get('user_var_1'), 'env_val_2', )
+    assert config.get('user_var_1') == 'env_val_2'
 
 
 @_config_test
 def test_get_from_user():
-    nt.assert_equals(config.get('user_var_2'), 'user_val_2', )
+    assert config.get('user_var_2') == 'user_val_2'
 
 
 @_config_test
 def test_user_shadows_system():
-    nt.assert_equals(config.get('system_var_3'), 'user_val_3', )
+    assert config.get('system_var_3') == 'user_val_3'
 
 
 @_config_test
 def test_get_from_system():
-    nt.assert_equals(config.get('system_var_1'), 'system_val_1', )
-    nt.assert_equals(config.get('system_var_2'), 'system_val_2', )
+    assert config.get('system_var_1') == 'system_val_1'
+    assert config.get('system_var_2') == 'system_val_2'

@@ -30,6 +30,18 @@ def _lock_path(path):
 
 
 def trylock(path, excl, key_path):
+    """
+    Tries once to get a lock to the given dir
+
+    Args:
+        path(str): path to the directory to lock
+        excl(bool): If the lock should be exclusive
+        key_path(str): path to the file that contains the uid to use when
+            locking
+
+    Returns:
+        bool: True if it did get a lock, False otherwise
+    """
     with lockfile.LockFile(path):
         # Prune invalid users
         if os.path.exists(_lock_path(path)):
@@ -65,11 +77,34 @@ def trylock(path, excl, key_path):
 
 
 def lock(path, excl, key_path):
+    """
+    Waits until the given directory can be locked
+
+    Args:
+        path(str): Path of the directory to lock
+        excl(bool): If the lock should be exclusive
+        key_path(str): path to the file that contains the uid to use when
+            locking
+
+    Returns:
+        None
+    """
     while not trylock(path, excl, key_path):
         time.sleep(0.1)
 
 
 def unlock(path, key_path):
+    """
+    Removes the lock of the uid in the given key file
+
+    Args:
+        path(str): Path of the directory to lock
+        key_path(str): path to the file that contains the uid to remove the
+            lock of
+
+    Returns:
+        None
+    """
     with lockfile.LockFile(path):
         with open(_lock_path(path)) as f:
             lock_obj = json.load(f)
