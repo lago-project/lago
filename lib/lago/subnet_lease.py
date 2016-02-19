@@ -127,7 +127,7 @@ def _lease_owned(path, current_uuid_path):
 
     Args:
         path (str): Path to the lease
-        current_uuid_path (str): Path to the uuid to check ownersip of
+        current_uuid_path (str): Path to the uuid to check ownership of
 
     Returns:
         bool: ``True`` if the given lease in owned by the prefix, ``False``
@@ -143,7 +143,7 @@ def _lease_owned(path, current_uuid_path):
 
 def _lease_valid(path):
     """
-    Checs if the given lease still has a prefix that owns it
+    Checks if the given lease still has a prefix that owns it
 
     Args:
         path (str): Path to the lease

@@ -40,7 +40,7 @@ currenly**)
 
 Exclude
 ++++++++++
-Similat to include, you can define an option 'exclude' with a space separated
+Similar to include, you can define an option 'exclude' with a space separated
 list of :mod:`fnmatch` patterns to ignore any rpms that match them
 
 

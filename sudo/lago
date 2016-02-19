@@ -4,4 +4,3 @@
 %lago ALL = NOPASSWD: /usr/sbin/brctl show *
 %lago ALL = NOPASSWD: /usr/sbin/brctl stp *
 %lago ALL = NOPASSWD: /usr/sbin/ip link set dev *
-%lago ALL = NOPASSWD: /usr/sbin/ip link set dev *

@@ -62,7 +62,7 @@ if __name__ == '__main__':
 
     with utils.RollbackContext() as rollback:
         # We will use each image we update as a snapshot, and if the update
-        # is successfull we will merge
+        # is successful we will merge
         for img in images:
             ret, _, _ = utils.run_command(
                 [
@@ -74,7 +74,7 @@ if __name__ == '__main__':
             if ret:
                 raise RuntimeError('Failed to create copy of image')
             rollback.prependDefer(os.unlink, updating(img))
-            # To avoid losing access once livirt changes ownership
+            # To avoid losing access once libvirt changes ownership
             os.chmod(updating(img), 0666)
 
         config = {

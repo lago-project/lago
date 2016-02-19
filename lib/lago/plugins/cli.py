@@ -20,7 +20,7 @@
 """
 About CLIPlugins
 
-A CLIPlugin is a subcommand of the lagocli command, it's ment to group
+A CLIPlugin is a subcommand of the lagocli command, meant to group
 actions together in a logical sense, for example grouping all the actions
 done to templates.
 

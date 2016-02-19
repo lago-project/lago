@@ -289,7 +289,7 @@ class TaskHandler(logging.StreamHandler):
 
     def mark_main_tasks_as_failed(self):
         """
-        Flags to the main thread that all it's tasks sholud fail
+        Flags to the main thread that all its tasks should fail
 
         Returns:
             None
@@ -334,7 +334,7 @@ class TaskHandler(logging.StreamHandler):
         """
         Do everything needed when a task is starting
 
-        Params:
+        Args:
             task_name (str): name of the task that is starting
             record (logging.LogRecord): log record with all the info
 
@@ -394,7 +394,7 @@ class TaskHandler(logging.StreamHandler):
         """
         Do everything needed when a task is closed
 
-        Params:
+        Args:
             task_name (str): name of the task that is finishing
             record (logging.LogRecord): log record with all the info
 
@@ -517,7 +517,7 @@ class TaskHandler(logging.StreamHandler):
         Handle the given record, this is the entry point from the python
         logging facility
 
-        Params:
+        Args:
             record (logging.LogRecord): log record to handle
 
         Returns:
