@@ -148,22 +148,34 @@ def _activate_storage_domains(api, sds):
 def _deactivate_storage_domains(api, sds):
     for sd in sds:
         sd.deactivate()
+        LOGGER.info('Started deactivation of storage domain %s', sd.name)
 
-    for sd in sds:
-        dc = api.datacenters.get(id=sd.get_data_center().get_id())
-        testlib.assert_true_within_long(
-            lambda: (
-                dc.storagedomains.get(sd.name).status.state
-                == 'maintenance'
-            ),
-        )
+    with LogTask('Waiting for the domains to get into maintenance'):
+        for sd in sds:
+            dc = api.datacenters.get(id=sd.get_data_center().get_id())
+            testlib.assert_true_within_long(
+                lambda: (
+                    dc.storagedomains.get(sd.name).status.state
+                    == 'maintenance'
+                ),
+            )
 
 
+@log_task('Deactivating all storage domains')
 def _deactivate_all_storage_domains(api):
     for dc in api.datacenters.list():
-        sds = dc.storagedomains.list()
-        _deactivate_storage_domains(api, [sd for sd in sds if not sd.master])
-        _deactivate_storage_domains(api, [sd for sd in sds if sd.master])
+        with LogTask('Deactivating domains for datacenter %s' % dc.name):
+            sds = dc.storagedomains.list()
+            with LogTask('Deactivating non-master storage domains'):
+                _deactivate_storage_domains(
+                    api,
+                    [sd for sd in sds if not sd.master],
+                )
+            with LogTask('Deactivating master storage domains'):
+                _deactivate_storage_domains(
+                    api,
+                    [sd for sd in sds if sd.master],
+                )
 
 
 def _deactivate_all_hosts(api):
