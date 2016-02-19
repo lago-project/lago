@@ -17,6 +17,7 @@ Releases
 
     Releases
 
+
 Developing
 ------------
 
@@ -24,6 +25,7 @@ Developing
     :maxdepth: 2
 
     CI
+    Env_Setup
 
 
 Contents
