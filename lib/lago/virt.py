@@ -353,11 +353,22 @@ class NATNetwork(Network):
             '@NAME@': self._libvirt_name(),
             '@BR_NAME@': ('%s-nic' % self._libvirt_name())[:12],
             '@GW_ADDR@': self.gw(),
+            #'@DNS_DOMAIN_NAME@': self._spec.get('dns_domain_name',
+            #                                    'lago.example.com'),
         }
         for k, v in replacements.items():
             net_raw_xml = net_raw_xml.replace(k, v, 1)
 
         net_xml = lxml.etree.fromstring(net_raw_xml)
+	dns_domain_name = self._spec.get('dns_domain_name',
+			                 None)
+	if dns_domain_name is not None:
+            domain_xml = lxml.etree.Element(
+			    'domain',
+                            name=dns_domain_name,
+                            localOnly='yes',
+			 )
+	    net_xml.append(domain_xml)
         if 'dhcp' in self._spec:
             IPV6_PREFIX = 'fd8f:1391:3a82:5e0d::'
             ipv4 = net_xml.xpath('/network/ip')[0]
