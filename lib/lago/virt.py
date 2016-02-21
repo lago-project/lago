@@ -353,8 +353,8 @@ class NATNetwork(Network):
             '@NAME@': self._libvirt_name(),
             '@BR_NAME@': ('%s-nic' % self._libvirt_name())[:12],
             '@GW_ADDR@': self.gw(),
-            '@DNS_DOMAIN_NAME@': self._spec.get('dns_domain_name',
-                                                'lago.example.com'),
+            #'@DNS_DOMAIN_NAME@': self._spec.get('dns_domain_name',
+            #                                    'lago.example.com'),
         }
         for k, v in replacements.items():
             net_raw_xml = net_raw_xml.replace(k, v, 1)
