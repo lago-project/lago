@@ -111,6 +111,10 @@ run_basic_functional_tests() {
 
 run_full_functional_tests() {
     local res
+    # Allow notty sudo, for the tests on jenkinslike environment
+    [[ -e /etc/sudoers ]] \
+    && sed -i -e 's/^Defaults\s*requiretty/Defaults !requiretty/' /etc/sudoers
+
     # Ugly fix to be able to run el* on fc*
     if ! [[ -e /usr/bin/qemu-kvm ]]; then
         ln -s /usr/libexec/qemu-kvm /usr/bin/qemu-kvm
