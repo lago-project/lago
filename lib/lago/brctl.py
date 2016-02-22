@@ -26,7 +26,10 @@ _IP = ['sudo', 'ip']
 def _brctl(command, *args):
     ret, out, err = utils.run_command(_BRCTL + [command] + list(args))
     if ret:
-        raise RuntimeError('brctl %s failed' % command)
+        raise RuntimeError(
+            'brctl %s failed\nrc: %d\n\nout:\n%s\n\nerr:\n%s' %
+            (command, ret, out, err)
+        )
     return ret, out, err
 
 
