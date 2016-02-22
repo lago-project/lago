@@ -28,7 +28,7 @@ enabled=1
 gpgcheck=0
 ```
 
-For CentOS:
+For EL distros (such as CentOS, RHEL, etc.):
 
 ```shell
 [lago]
