@@ -524,7 +524,7 @@ class OvirtPrefix(lago.Prefix):
         os.makedirs(output_dir)
 
         def _collect_artifacts(vm):
-            with LogTask('Collecting artifiacts from VM %s' % vm.name()):
+            with LogTask('Collecting artifacts from VM %s' % vm.name()):
                 path = os.path.join(output_dir, vm.name())
                 os.makedirs(path)
                 vm.collect_artifacts(path)
