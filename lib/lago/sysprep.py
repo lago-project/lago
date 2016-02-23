@@ -118,14 +118,12 @@ def config_net_interface_dhcp(iface, hwaddr):
     )
 
 
-def sysprep(disk, mods):
-    cmd = [
-        'virt-sysprep', '--connect', 'qemu:///system', '-a', disk,
-        '--selinux-relabel'
-    ]
+def sysprep(disk, mods, backend='direct'):
+    cmd = ['virt-sysprep', '-a', disk, '--selinux-relabel']
+    env = {'LIBGUESTFS_BACKEND': backend}
     for mod in mods:
         cmd.extend(mod)
 
-    ret = utils.run_command(cmd)
+    ret = utils.run_command(cmd, env=env)
     if ret:
         raise RuntimeError('Failed to bootstrap %s' % disk)
