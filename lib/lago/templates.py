@@ -154,7 +154,14 @@ class HttpTemplateProvider:
             except RuntimeError:
                 pass
         full_url = posixpath.join(self.baseurl, url) + suffix
-        response = urllib.urlopen(full_url)
+        try:
+            response = urllib.urlopen(full_url)
+        except urllib.error.URLError, e:
+            raise RuntimeError(
+                'Failed to open URL %s\nError code: %s\nError Reason: %s' %
+                (url, e.code, e.reason)
+            )
+
         if response.code >= 300:
             raise RuntimeError(
                 'Failed no retrieve URL %s:\nCode: %d' %
