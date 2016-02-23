@@ -21,7 +21,6 @@ load env_setup
     # and that is not seamlesly reachable from out of the chroot by
     # libvirt/kvm
     export BATS_TMPDIR BATS_TEST_DIRNAME
-    export LIBGUESTFS_BACKEND=direct
     export LIBGUESTFS_DEBUG=1 LIBGUESTFS_TRACE=1
     helpers.run "$LAGOCLI" \
         init \
