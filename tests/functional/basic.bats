@@ -1,5 +1,5 @@
 #!/usr/bin/env bats
-LAGOCLI=lagocli
+LAGOCLI=lago
 VERBS=(
     cleanup
     copy-from-vm
@@ -28,6 +28,16 @@ load env_setup
     helpers.contains "$output" 'usage:'
 }
 
+
+@test "basic: command shows version" {
+    installed_version="$(rpm -qa lago --queryformat %{version})"
+    helpers.run \
+        "$LAGOCLI" --version
+    helpers.equals "$status" '0'
+    helpers.contains "$output" "lago $installed_version"
+}
+
+
 @test "basic: lago and lagocli are both accepted" {
     helpers.run \
         "lago" -h
@@ -38,6 +48,7 @@ load env_setup
     helpers.equals "$status" '0'
     helpers.contains "$output" 'usage:'
 }
+
 
 @test "basic: command fails and shows help on wrong option" {
     helpers.run \

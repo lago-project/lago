@@ -25,6 +25,7 @@ import grp
 import json
 import logging
 import os
+import pkg_resources
 import shutil
 import sys
 
@@ -407,6 +408,12 @@ def create_parser(cli_plugins):
         type=int,
         help='How many task levels to show, by default %(default)s'
     )
+    pkg_info = pkg_resources.require("lago")[0]
+    parser.add_argument(
+        '--version',
+        action='version',
+        version='%(prog)s ' + pkg_info.version,
+    )
     verbs_parser = parser.add_subparsers(dest='verb', metavar='VERB')
     for cli_plugin_name, cli_plugin in cli_plugins.items():
         plugin_parser = verbs_parser.add_parser(
@@ -429,7 +436,7 @@ def main():
     parser = create_parser(cli_plugins)
     args = parser.parse_args()
 
-    logging.basicConfig(level=logging.DEBUG),
+    logging.basicConfig(level=logging.DEBUG)
     logging.root.handlers = [
         log_utils.TaskHandler(
             task_tree_depth=args.logdepth,
