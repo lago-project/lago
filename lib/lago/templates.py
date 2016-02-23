@@ -171,6 +171,7 @@ class HttpTemplateProvider:
             )
 
         bar = IncrementalBar('Downloading', max=100, suffix='%(percent).1f%%')
+
         def report(count, block_size, total_size):
             percent = (count * block_size * 100 / float(total_size))
             if bar.percent != percent:
