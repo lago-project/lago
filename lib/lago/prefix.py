@@ -81,12 +81,45 @@ def _ip_in_subnet(subnet, ip):
     )
 
 
-def resolve_prefix(start_path=None):
+def resolve_prefix_path(start_path=None):
+    """
+    Look for an existing prefix in the given path, in a path/.lago dir, or in a
+    .lago dir under any of it's parent directories
+
+    Args:
+        start_path (str): path to start the search from, if None passed, it
+            will use the current dir
+
+    Returns:
+        str: path to the found prefix
+
+    Raises:
+        RuntimeError: if no prefix was found
+    """
     if not start_path:
         start_path = os.path.curdir
 
-    if os.path.isfile(join(start_path, '.lago')):
+    cur_path = paths.Paths(start_path)
 
+    LOGGER.debug(
+        'Checking if %s is a prefix' % os.path.abspath(cur_path.prefix)
+    )
+    if os.path.isfile(cur_path.prefix_lagofile()):
+        return os.path.abspath(start_path)
+
+    # now search for a .lago directory that's a prefix on any parent dir
+    cur_path = paths.Paths(join(start_path, '.lago'))
+    while not os.path.isfile(cur_path.prefix_lagofile()):
+        LOGGER.debug('%s did not exist' % cur_path.prefix_lagofile())
+        cur_path = os.path.normpath(os.path.join(cur_path.prefix, '..', '..'))
+        LOGGER.debug('Checking %s for a prefix' % cur_path)
+        cur_path = paths.Paths(join(cur_path, '.lago'))
+        if os.path.realpath(join(cur_path.prefix, '..')) == '/':
+            raise RuntimeError(
+                'Unable to find prefix for %s' % os.path.abspath(start_path)
+            )
+
+    return os.path.abspath(cur_path.prefix)
 
 
 class Prefix(object):
