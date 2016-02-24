@@ -28,6 +28,7 @@ import subprocess
 import urlparse
 import urllib
 import uuid
+from os.path import join
 
 import xmltodict
 
@@ -78,6 +79,14 @@ def _ip_in_subnet(subnet, ip):
         _create_ip(subnet, 1) == _create_ip(ip, 1)
         or '0.0.0.1' == _create_ip(ip, 1)
     )
+
+
+def resolve_prefix(start_path=None):
+    if not start_path:
+        start_path = os.path.curdir
+
+    if os.path.isfile(join(start_path, '.lago')):
+
 
 
 class Prefix(object):
