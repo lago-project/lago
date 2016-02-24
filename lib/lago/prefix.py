@@ -140,7 +140,7 @@ class Prefix(object):
             prefix (str): Path of the prefix
         """
         self._prefix = prefix
-        self._paths = paths.Paths(self._prefix)
+        self.paths = paths.Paths(self._prefix)
         self._virt_env = None
         self._metadata = None
 
@@ -178,16 +178,6 @@ class Prefix(object):
         """
         self._save_metadata()
         self.virt_env.save()
-
-    @property
-    def paths(self):
-        """
-        Access the path handler for this prefix
-
-        Returns:
-            lago.paths.Paths: Path handler
-        """
-        return self._paths
 
     def _create_ssh_keys(self):
         """
