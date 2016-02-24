@@ -187,7 +187,13 @@ class HttpTemplateProvider:
 
         if dest:
             response.close()
-            urllib.urlretrieve(full_url, dest, report)
+            try:
+                urllib.urlretrieve(full_url, dest, report)
+            except IOError, e:
+                raise RuntimeError(
+                    'Failed to retrieve URL %s\nError code: %s\nError Reason: %s'
+                    % (full_url, e.errno, e.strerror)
+                )
             sys.stdout.write("\n")
         return response
 
