@@ -26,8 +26,8 @@ import sys
 import tempfile
 import time
 
-import lago
 import lago.utils as utils
+from lago.prefix import Prefix
 
 USAGE = """
 %s UPDATE_DIR UPDATE_SCRIPT IMG1 ... IMGn
@@ -131,7 +131,7 @@ if __name__ == '__main__':
         temp_dir = tempfile.mkdtemp(suffix='-domain-updater')
         rollback.prependDefer(shutil.rmtree, temp_dir)
 
-        prefix = lago.Prefix(working_dir)
+        prefix = Prefix(working_dir)
         prefix.initialize()
         rollback.prependDefer(shutil.rmtree, working_dir)
         rollback.prependDefer(prefix.cleanup)

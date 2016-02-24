@@ -28,6 +28,7 @@ import nose.config
 from ovirtsdk.infrastructure.errors import RequestError
 import lago
 from lago import log_utils
+from lago.prefix import Prefix
 
 import merge_repos
 import repoverify
@@ -222,7 +223,7 @@ def _activate_all_storage_domains(api):
         _activate_storage_domains(api, [sd for sd in sds if not sd.master])
 
 
-class OvirtPrefix(lago.Prefix):
+class OvirtPrefix(Prefix):
     def _create_paths(self):
         return paths.OvirtPaths(self._prefix)
 
