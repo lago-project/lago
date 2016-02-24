@@ -21,6 +21,13 @@ load helpers
 load env_setup
 
 
+is_initialized() {
+    local prefix="${1?}"
+    [[ -e "$prefix/initialized" ]]
+    return $?
+}
+
+
 @test "basic: command shows help" {
     helpers.run \
         "$LAGOCLI" -h
@@ -117,8 +124,8 @@ load env_setup
 @test "basic.full_run: status when stopped" {
     local prefix="$FIXTURES"/prefix1
 
+    is_initialized "$prefix" || skip "prefix not initiated"
     pushd "$prefix" >/dev/null
-    [[ -e '.lago' ]] || skip "prefix not initiated"
     helpers.run "$LAGOCLI" status
     helpers.equals "$status" '0'
     echo "$output" \
@@ -143,8 +150,8 @@ load env_setup
 @test "basic.full_run: start everything at once" {
     local prefix="$FIXTURES"/prefix1
 
+    is_initialized "$prefix" || skip "prefix not initiated"
     pushd "$prefix" >/dev/null
-    [[ -e '.lago' ]] || skip "prefix not initiated"
     helpers.run "$LAGOCLI" start
     helpers.equals "$status" '0'
 }
@@ -153,8 +160,8 @@ load env_setup
 @test "basic.full_run: status when started" {
     local prefix="$FIXTURES"/prefix1
 
+    is_initialized "$prefix" || skip "prefix not initiated"
     pushd "$prefix" >/dev/null
-    [[ -e '.lago' ]] || skip "prefix not initiated"
     helpers.run "$LAGOCLI" status
     helpers.equals "$status" '0'
     echo "$output" \
@@ -185,8 +192,8 @@ load env_setup
     local prefix="$FIXTURES"/prefix1
     local expected_hostname="cirros"
 
+    is_initialized "$prefix" || skip "prefix not initiated"
     pushd "$prefix" >/dev/null
-    [[ -e ".lago" ]] || skip "prefix not initialized"
     helpers.run "$LAGOCLI" shell "lago_functional_tests_vm01" hostname
     output="$(echo "$output"| tail -n1)"
     helpers.contains "$output" "$expected_hostname"
@@ -197,8 +204,8 @@ load env_setup
 @test "basic.full_run: copy to vm" {
     local prefix="$FIXTURES"/prefix1
 
+    is_initialized "$prefix" || skip "prefix not initiated"
     pushd "$prefix" >/dev/null
-    [[ -e ".lago" ]] || skip "prefix not initialized"
     rm -rf dummy_file
     content="$(date)"
     echo "$content" > "dummy_file"
@@ -221,8 +228,8 @@ load env_setup
 @test "basic.full_run: copy from vm" {
     local prefix="$FIXTURES"/prefix1
 
+    is_initialized "$prefix" || skip "prefix not initiated"
     pushd "$prefix" >/dev/null
-    [[ -e ".lago" ]] || skip "prefix not initialized"
     rm -rf dummy_file
     content="$(date)"
     helpers.run "$LAGOCLI" \
@@ -246,8 +253,8 @@ EOS
 @test "basic.full_run: whole stop" {
     local prefix="$FIXTURES"/prefix1
 
+    is_initialized "$prefix" || skip "prefix not initiated"
     pushd "$prefix" >/dev/null
-    [[ -e '.lago' ]] || skip "prefix not initiated"
     helpers.run "$LAGOCLI" stop
     helpers.equals "$status" '0'
     # STATUS
@@ -273,13 +280,15 @@ EOS
 
 
 @test 'basic.full_run: start and stop many vms one by one' {
-    local prefix="$FIXTURES"/prefix1
+    local basedir="$FIXTURES/basedir"
     local repo="$FIXTURES"/repo_store
     local suite="$FIXTURES"/suite2.json
     local repo_conf="$FIXTURES"/template_repo.json
     local fake_uuid="12345678910121416182022242628303"
+    PREFIX_PATH="$basedir/.lago"
     # INIT
-    rm -rf "$prefix" "$repo"
+    rm -rf "$basedir" "$repo"
+    mkdir -p "$basedir/extradir"
     cp -a "$FIXTURES/repo" "$repo"
     env_setup.populate_disks "$repo"
     export BATS_TMPDIR BATS_TEST_DIRNAME
@@ -287,18 +296,19 @@ EOS
     # and that is not seamlesly reachable from out of the chroot by
     # libvirt/kvm
     export LIBGUESTFS_DEBUG=1 LIBGUESTFS_TRACE=1
+    cd "$basedir"
     helpers.run "$LAGOCLI" \
         init \
         --template-repo-path "$repo_conf" \
         --template-repo-name "local_tests_repo" \
         --template-store "$repo" \
-        "$prefix" \
         "$suite"
     helpers.equals "$status" '0'
     echo "Checking generated uuid length"
-    helpers.equals "$(wc -m "$prefix/uuid")" "32 $prefix/uuid"
-    echo "$fake_uuid" > "$prefix/uuid"
-    pushd "$prefix" >/dev/null
+    helpers.equals "$(wc -m ".lago/uuid")" "32 .lago/uuid"
+    echo "$fake_uuid" > ".lago/uuid"
+    # make sure that the prefix recursive find works
+    cd extradir
     # START vm02
     helpers.run "$LAGOCLI" start lago_functional_tests_vm02
     helpers.equals "$status" '0'
@@ -307,24 +317,24 @@ EOS
     helpers.equals "$status" '0'
     echo "$output" \
     | tail -n+2 \
-    > "$prefix/current"
+    > "current"
     # the vnc port is not always 5900, for example, if there's another vm
     # running already
     echo "DIFF:Checking if the output differs from the expected"
     echo "CURRENT                  | EXPECTED"
     expected_content="$FIXTURES/expected2_down_status_vm01"
-    expected_file="$prefix/expected2_down_status_vm01"
+    expected_file="expected2_down_status_vm01"
     sed \
-        -e "s|@@BATS_TEST_DIRNAME@@|$BATS_TEST_DIRNAME|g" \
+        -e "s|@@PREFIX_PATH@@|$PREFIX_PATH|g" \
         "$expected_content" \
     | grep -v 'VNC port' \
     > "$expected_file"
-    grep -v 'VNC port' "$prefix/current" \
-    > "$prefix/current.now"
+    grep -v 'VNC port' "current" \
+    > "current.now"
     diff \
         --suppress-common-lines \
         --side-by-side \
-        "$prefix/current.now" \
+        "current.now" \
         "$expected_file"
     # START vm01
     helpers.run "$LAGOCLI" start lago_functional_tests_vm01
@@ -334,24 +344,24 @@ EOS
     helpers.equals "$status" '0'
     echo "$output" \
     | tail -n+2 \
-    > "$prefix/current"
+    > "current"
     # the vnc port is not always 5900, for example, if there's another vm
     # running already
     echo "DIFF:Checking if the output differs from the expected"
     echo "CURRENT                  | EXPECTED"
     expected_content="$FIXTURES/expected2_up_status_all"
-    expected_file="$prefix/expected2_up_status_all"
+    expected_file="expected2_up_status_all"
     sed \
-        -e "s|@@BATS_TEST_DIRNAME@@|$BATS_TEST_DIRNAME|g" \
+        -e "s|@@PREFIX_PATH@@|$PREFIX_PATH|g" \
         "$expected_content" \
     | grep -v 'VNC port' \
     > "$expected_file"
-    grep -v 'VNC port' "$prefix/current" \
-    > "$prefix/current.now"
+    grep -v 'VNC port' "current" \
+    > "current.now"
     diff \
         --suppress-common-lines \
         --side-by-side \
-        "$prefix/current.now" \
+        "current.now" \
         "$expected_file"
     # STOP vm02
     helpers.run "$LAGOCLI" stop lago_functional_tests_vm02
@@ -361,24 +371,24 @@ EOS
     helpers.equals "$status" '0'
     echo "$output" \
     | tail -n+2 \
-    > "$prefix/current"
+    > "current"
     # the vnc port is not always 5900, for example, if there's another vm
     # running already
     echo "DIFF:Checking if the output differs from the expected"
     echo "CURRENT                  | EXPECTED"
     expected_content="$FIXTURES/expected2_up_status_vm01"
-    expected_file="$prefix/expected2_up_status_vm01"
+    expected_file="expected2_up_status_vm01"
     sed \
-        -e "s|@@BATS_TEST_DIRNAME@@|$BATS_TEST_DIRNAME|g" \
+        -e "s|@@PREFIX_PATH@@|$PREFIX_PATH|g" \
         "$expected_content" \
     | grep -v 'VNC port' \
     > "$expected_file"
-    grep -v 'VNC port' "$prefix/current" \
-    > "$prefix/current.now"
+    grep -v 'VNC port' "current" \
+    > "current.now"
     diff \
         --suppress-common-lines \
         --side-by-side \
-        "$prefix/current.now" \
+        "current.now" \
         "$expected_file"
     # STOP vm01
     helpers.run "$LAGOCLI" stop lago_functional_tests_vm01
@@ -388,46 +398,48 @@ EOS
     helpers.equals "$status" '0'
     echo "$output" \
     | tail -n+2 \
-    > "$prefix/current"
+    > "current"
     echo "DIFF:Checking if the output differs from the expected"
     echo "CURRENT                  | EXPECTED"
     expected_content="$FIXTURES/expected2_down_status_all"
-    expected_file="$prefix/expected2_down_status_all"
+    expected_file="expected2_down_status_all"
     sed \
-        -e "s|@@BATS_TEST_DIRNAME@@|$BATS_TEST_DIRNAME|g" \
+        -e "s|@@PREFIX_PATH@@|$PREFIX_PATH|g" \
         "$expected_content" \
     | grep -v 'VNC port' \
     > "$expected_file"
-    grep -v 'VNC port' "$prefix/current" \
-    > "$prefix/current.now"
+    grep -v 'VNC port' "current" \
+    > "current.now"
     diff \
         --suppress-common-lines \
         --side-by-side \
-        "$prefix/current.now" \
+        "current.now" \
         "$expected_file"
 }
 
 
 @test "basic.full_run: start again" {
-    local prefix="$FIXTURES"/prefix1
+    local basedir="$FIXTURES/basedir"
+    local prefix="$basedir"/.lago
 
-    pushd "$prefix" >/dev/null
-    [[ -e '.lago' ]] || skip "prefix not initiated"
+    is_initialized "$prefix" || skip "prefix not initiated"
+    cd "$basedir"
     helpers.run "$LAGOCLI" start
     helpers.equals "$status" '0'
 }
 
 
 @test "basic.full_run: cleanup a started prefix" {
-    local prefix="$FIXTURES"/prefix1
+    local basedir="$FIXTURES/basedir"
+    local prefix="$basedir"/.lago
 
-    pushd "$prefix" >/dev/null
-    [[ -e '.lago' ]] || skip "prefix not initiated"
+    is_initialized "$prefix" || skip "prefix not initiated"
+    cd "$basedir"
     helpers.run "$LAGOCLI" cleanup
     helpers.equals "$status" '0'
     helpers.contains "$output" "Stop prefix"
     helpers.is_file "$prefix/uuid"
-    ! helpers.is_file "$prefix/.lago"
+    ! is_initialized "$prefix"
 }
 
 
