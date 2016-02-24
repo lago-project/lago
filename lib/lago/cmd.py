@@ -34,8 +34,7 @@ import lago.config
 import lago.plugins
 import lago.plugins.cli
 import lago.templates
-from lago import log_utils
-from lago.prefix import Prefix
+from lago import log_utils, prefix as lago_prefix
 
 CLI_PREFIX = 'lagocli-'
 LOGGER = logging.getLogger('cli')
@@ -52,9 +51,14 @@ LOGGER = logging.getLogger('cli')
 )
 @lago.plugins.cli.cli_plugin_add_argument(
     'prefix',
-    help='Prefix directory of the deployment',
+    help=(
+        'Prefix directory of the deployment, if none passed, it will use '
+        '$PWD/.lago'
+    ),
     metavar='PREFIX',
     type=os.path.abspath,
+    nargs='?',
+    default=os.path.join(os.path.curdir, '.lago'),
 )
 @lago.plugins.cli.cli_plugin_add_argument(
     '--template-repo-path',
@@ -78,7 +82,7 @@ def do_init(
     template_store=None,
     **kwargs
 ):
-    prefix = Prefix(prefix)
+    prefix = lago_prefix.Prefix(prefix)
     prefix.initialize()
 
     with open(virt_config, 'r') as f:
@@ -121,9 +125,8 @@ def do_init(
 def in_prefix(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
-        if not os.path.exists('.lago'):
-            raise RuntimeError('Not inside prefix')
-        return func(*args, prefix=Prefix(os.getcwd()), **kwargs)
+        prefix_path = lago_prefix.resolve_prefix_path()
+        return func(*args, prefix=lago_prefix.Prefix(prefix_path), **kwargs)
 
     return wrapper
 
@@ -282,7 +285,7 @@ def do_console(prefix, host, **kwargs):
 @with_logging
 def do_status(prefix, **kwargs):
     print '[Prefix]:'
-    print '\tBase directory:', prefix.paths.prefix()
+    print '\tBase directory:', prefix.paths.prefix
     with open(prefix.paths.uuid()) as f:
         print '\tUUID:', f.read()
     net = prefix.virt_env.get_net()
