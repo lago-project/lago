@@ -191,8 +191,8 @@ class HttpTemplateProvider:
                 urllib.urlretrieve(full_url, dest, report)
             except IOError, e:
                 raise RuntimeError(
-                    'Failed to retrieve URL %s\nError code: %s\nError Reason: %s'
-                    % (full_url, e.errno, e.strerror)
+                    'Failed to retrieve URL %s\nError code: %s\n \
+                    Error Reason: %s' % (full_url, e.errno, e.strerror)
                 )
             sys.stdout.write("\n")
         return response
