@@ -159,7 +159,7 @@ class HttpTemplateProvider:
         except IOError, e:
             raise RuntimeError(
                 'Failed to open URL %s\nError code: %s\nError Reason: %s' %
-                (url, e.errno, e.strerror)
+                (full_url, e.errno, e.strerror)
             )
 
         if response.code >= 300:
