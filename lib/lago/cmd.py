@@ -35,6 +35,7 @@ import lago.plugins
 import lago.plugins.cli
 import lago.templates
 from lago import log_utils
+from lago.prefix import Prefix
 
 CLI_PREFIX = 'lagocli-'
 LOGGER = logging.getLogger('cli')
@@ -77,7 +78,7 @@ def do_init(
     template_store=None,
     **kwargs
 ):
-    prefix = lago.Prefix(prefix)
+    prefix = Prefix(prefix)
     prefix.initialize()
 
     with open(virt_config, 'r') as f:
@@ -122,7 +123,7 @@ def in_prefix(func):
     def wrapper(*args, **kwargs):
         if not os.path.exists('.lago'):
             raise RuntimeError('Not inside prefix')
-        return func(*args, prefix=lago.Prefix(os.getcwd()), **kwargs)
+        return func(*args, prefix=Prefix(os.getcwd()), **kwargs)
 
     return wrapper
 
