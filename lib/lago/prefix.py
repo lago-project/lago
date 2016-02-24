@@ -140,18 +140,9 @@ class Prefix(object):
             prefix (str): Path of the prefix
         """
         self._prefix = prefix
-        self._paths = self._create_paths()
+        self._paths = paths.Paths(self._prefix)
         self._virt_env = None
         self._metadata = None
-
-    def _create_paths(self):
-        """
-        Get the path handler for this instance
-
-        Returns:
-            lago.paths.Paths: Path handler
-        """
-        return paths.Paths(self._prefix)
 
     def _get_metadata(self):
         """
