@@ -207,7 +207,7 @@ class Prefix(object):
         Raises:
             RuntimeError: If it fails to create the prefix dir
         """
-        prefix = self.paths.prefix()
+        prefix = self.paths.prefix
         with utils.RollbackContext() as rollback:
             with LogTask('Create prefix dirs'):
                 try:

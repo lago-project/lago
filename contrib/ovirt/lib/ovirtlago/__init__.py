@@ -403,10 +403,10 @@ class OvirtPrefix(Prefix):
 
         with LogTask('Run test: %s' % os.path.basename(path)):
             env = os.environ.copy()
-            env['LAGO_PREFIX'] = self.paths.prefix()
+            env['LAGO_PREFIX'] = self.paths.prefix
             results_path = os.path.abspath(
                 os.path.join(
-                    self.paths.prefix(),
+                    self.paths.prefix,
                     'nosetests-%s.xml' % os.path.basename(path),
                 )
             )
