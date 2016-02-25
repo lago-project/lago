@@ -827,6 +827,15 @@ class Prefix(object):
         """
         self.virt_env.revert_snapshots(name)
 
+    def get_snapshots(self):
+        """
+        Retrieve info on all the snapshots from all the domains
+
+        Returns:
+            dict of str: list(str): dictionary with vm_name -> snapshot list
+        """
+        return self.virt_env.get_snapshots()
+
     def _create_virt_env(self):
         """
         Create a new virt env from this prefix
