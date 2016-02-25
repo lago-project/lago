@@ -57,7 +57,8 @@ class DefaultOutFormatPlugin(OutFormatPlugin):
 
     def format(self, info_dict, indent=''):
         formatted_lines = []
-        for key, value in info_dict.items():
+        for key in sorted(info_dict.keys()):
+            value = info_dict[key]
             if isinstance(value, collections.Mapping):
                 if not value:
                     continue
