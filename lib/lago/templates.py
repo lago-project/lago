@@ -154,11 +154,17 @@ class HttpTemplateProvider:
             except RuntimeError:
                 pass
         full_url = posixpath.join(self.baseurl, url) + suffix
-        response = urllib.urlopen(full_url)
-        if response.code >= 300:
+        try:
+            response = urllib.urlopen(full_url)
+            if response.code >= 300:
+                raise RuntimeError(
+                    'Failed to retrieve URL %s:\nCode: %d' %
+                    (full_url, response.code)
+                )
+        except Exception as e:
             raise RuntimeError(
-                'Failed no retrieve URL %s:\nCode: %d' %
-                (full_url, response.code)
+                'Failed to retrieve URL %s:\n Exception: %s' %
+                (full_url, e)
             )
 
         meta = response.info()
