@@ -1,20 +1,18 @@
 [Prefix]:
-	Base directory: @@BATS_TEST_DIRNAME@@/fixtures/start/prefix1
-	UUID: 12345678910121416182022242628303
+    Base directory: @@BATS_TEST_DIRNAME@@/fixtures/start/prefix1
+    [Networks]:
+        [lft_net1]:
+            management: False
+            status: up
+    UUID: 12345678910121416182022242628303
 
-[Networks]:
-	[lft_net1]
-		Gateway: None
-		Status: up
-		Management: False
-[VMs]:
-	[lft_vm01]
-		Distro: cirros
-		Root password: 123456
-		Status: up
-		Snapshots: 
-		VNC port: @@VNC_PORT@@
-		NICs:
-			[eth0]
-				Network: lft_net1
-				IP N/A
+    [VMs]:
+        [lft_vm01]:
+            [NICs]:
+                [eth0]:
+                    ip: N/A
+                    network: lft_net1
+            VNC port: @@VNC_PORT@@
+            distro: cirros
+            root password: 123456
+            status: up

@@ -1,20 +1,19 @@
 [Prefix]:
-	Base directory: @@BATS_TEST_DIRNAME@@/fixtures/basic/prefix1
-	UUID: 12345678910121416182022242628303
+    Base directory: @@BATS_TEST_DIRNAME@@/fixtures/basic/prefix1
+    [Networks]:
+        [lago_functional_tests]:
+            gateway: 192.168.200.1
+            management: True
+            status: up
+    UUID: 12345678910121416182022242628303
 
-[Networks]:
-	[lago_functional_tests]
-		Gateway: 192.168.200.1
-		Status: up
-		Management: True
-[VMs]:
-	[lago_functional_tests_vm01]
-		Distro: cirros
-		Root password: 123456
-		Status: up
-		Snapshots: 
-		VNC port: @@VNC_PORT@@
-		NICs:
-			[eth0]
-				Network: lago_functional_tests
-				IP 192.168.200.2
+    [VMs]:
+        [lago_functional_tests_vm01]:
+            [NICs]:
+                [eth0]:
+                    ip: 192.168.200.2
+                    network: lago_functional_tests
+            VNC port: @@VNC_PORT@@
+            distro: cirros
+            root password: 123456
+            status: up
