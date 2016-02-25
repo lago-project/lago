@@ -49,5 +49,10 @@ setup(
             'ovirt=ovirtlago.cmd:OvirtCLI',
             'template-repo=lago_template_repo:TemplateRepoCLI',
         ],
+        'lago.plugins.output': [
+            'default=lago.plugins.output:DefaultOutFormatPlugin',
+            'json=lago.plugins.output:JSONOutFormatPlugin',
+            'yaml=lago.plugins.output:YAMLOutFormatPlugin',
+        ],
     },
 )
