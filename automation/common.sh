@@ -24,6 +24,8 @@ build_docs() {
     local res=0
     rm -rf "$docs_dir"
     rm -rf tests/docs_venv
+    mkdir -p .cache
+    chown -R $USER .cache
     virtualenv -q tests/docs_venv
     source tests/docs_venv/bin/activate
     pip --quiet install --requirement docs/requires.txt
