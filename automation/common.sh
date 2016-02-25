@@ -102,7 +102,11 @@ run_basic_functional_tests() {
     if ! [[ -e /usr/bin/qemu-kvm ]]; then
         ln -s /usr/libexec/qemu-kvm /usr/bin/qemu-kvm
     fi
-    bats tests/functional/*basic.bats \
+    # Avoid any heavy tests (for example, any that download templates)
+    bats \
+        tests/functional/*basic.bats \
+        tests/functional/status.bats \
+        tests/functional/start.bats \
     | tee exported-artifacts/functional_tests.tap
     res=${PIPESTATUS[0]}
     return $res
