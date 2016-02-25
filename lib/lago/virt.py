@@ -290,6 +290,27 @@ class VirtEnv(object):
             self._vms.values(),
         )
 
+    def get_snapshots(self, domains=None):
+        """
+        Get the list of snapshots for each domain
+
+        Args:
+            domanins(list of str): list of the domains to get the snapshots
+                for, all will be returned if none or empty list passed
+
+        Returns:
+            dict of str -> list(str): with the domain names and the list of
+                snapshots for each
+        """
+        snapshots = {}
+        for vm_name, vm in self.get_vms().items():
+            if domains and vm_name not in domains:
+                continue
+
+            snapshots[vm_name] = vm._spec['snapshots']
+
+        return snapshots
+
 
 class Network(object):
     def __init__(self, env, spec):
