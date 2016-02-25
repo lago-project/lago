@@ -1,37 +1,35 @@
 [Prefix]:
-	Base directory: @@PREFIX@@
-	UUID: fe689d3c39d011e5b22b54ee755a00ca
-[Networks]:
-	[n0]
-		Gateway: 192.168.201.1
-		Status: down
-		Management: True
-	[n1]
-		Gateway: 192.168.202.1
-		Status: down
-		Management: False
-[VMs]:
-	[vm0]
-		Distro: cirros
-		Root password: 123456
-		Status: down
-		Snapshots: 
-		NICs:
-			[eth0]
-				Network: n0
-				IP 192.168.201.2
-			[eth1]
-				Network: n1
-				IP 192.168.202.2
-	[vm1]
-		Distro: cirros
-		Root password: cubswin:)
-		Status: down
-		Snapshots: 
-		NICs:
-			[eth0]
-				Network: n0
-				IP 192.168.201.3
-			[eth1]
-				Network: n1
-				IP 192.168.202.3
+    Base directory: @@PREFIX@@
+    [Networks]:
+        [n0]:
+            gateway: 192.168.201.1
+            management: True
+            status: down
+        [n1]:
+            gateway: 192.168.202.1
+            management: False
+            status: down
+    UUID: fe689d3c39d011e5b22b54ee755a00ca
+    [VMs]:
+        [vm0]:
+            [NICs]:
+                [eth0]:
+                    ip: 192.168.201.2
+                    network: n0
+                [eth1]:
+                    ip: 192.168.202.2
+                    network: n1
+            distro: cirros
+            root password: 123456
+            status: down
+        [vm1]:
+            [NICs]:
+                [eth0]:
+                    ip: 192.168.201.3
+                    network: n0
+                [eth1]:
+                    ip: 192.168.202.3
+                    network: n1
+            distro: cirros
+            root password: cubswin:)
+            status: down

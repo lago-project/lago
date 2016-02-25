@@ -311,7 +311,7 @@ def do_status(prefix, out_format, **kwargs):
                         'root password': vm.root_password(),
                         'status': vm.alive() and 'up' or 'down',
                         'snapshots': ', '.join(vm._spec['snapshots'].keys()),
-                        'VNC port': vm.vnc_port() if vm.alive() else '',
+                        'VNC port': vm.vnc_port() if vm.alive() else None,
                         'metadata': vm.metadata,
                         'NICs': dict(
                             (
