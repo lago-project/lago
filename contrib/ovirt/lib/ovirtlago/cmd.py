@@ -44,9 +44,8 @@ DISTS = ['el6', 'el7', 'fc20']
 def in_prefix(func):
     @functools.wraps(func)
     def wrapper(args):
-        if not os.path.exists('.lago'):
-            raise RuntimeError('Not inside prefix')
-        prefix = ovirtlago.OvirtPrefix(os.getcwd())
+        prefix_path = lago.prefix.resolve_prefix_path()
+        prefix = ovirtlago.OvirtPrefix(prefix_path)
         return func(prefix, args)
 
     return wrapper
