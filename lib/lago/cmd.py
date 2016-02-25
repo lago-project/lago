@@ -178,14 +178,29 @@ def do_stop(prefix, vm_names, **kwargs):
     help='Create snapshots for all deployed resources'
 )
 @lago.plugins.cli.cli_plugin_add_argument(
+    '--list',
+    '-l',
+    dest='list_only',
+    help='List current available snapshots',
+    action='store_true',
+)
+@lago.plugins.cli.cli_plugin_add_argument(
     'snapshot_name',
     help='Name of the snapshot to create',
-    metavar='SNAPSHOT_NAME'
+    metavar='SNAPSHOT_NAME',
+    nargs='?',
+    default=None,
 )
 @in_prefix
 @with_logging
-def do_snapshot(prefix, snapshot_name, **kwargs):
-    prefix.create_snapshots(snapshot_name)
+def do_snapshot(prefix, list_only, snapshot_name, out_format, **kwargs):
+    if list_only:
+        snapshots = prefix.get_snapshots()
+        print out_format.format(snapshots)
+    elif snapshot_name:
+        prefix.create_snapshots(snapshot_name)
+    else:
+        raise RuntimeError('No snapshot name provided')
 
 
 @lago.plugins.cli.cli_plugin(help='Revert resources to a snapshot')
