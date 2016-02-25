@@ -58,6 +58,7 @@ autodoc_mock_imports = [
     'scp',
     'stevedore',
     'stevedore.extension',
+    'yaml',
     'xmltodict',
 ]
 
