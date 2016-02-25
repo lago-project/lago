@@ -107,7 +107,13 @@ def fetch_xml(url):
     Returns:
         lxml.etree._Element: Root of the xml tree for the retrieved resource
     """
-    content = urllib2.urlopen(url).read()
+    try:
+        content = urllib2.urlopen(url).read()
+    except urllib2.URLError, e:
+        raise RuntimeError(
+            'Failed to open URL %s\nError code: %s\nError Reason: %s' %
+            (url, e.code, e.reason)
+        )
 
     if url.endswith('.gz'):
         content = gzip.GzipFile(fileobj=StringIO.StringIO(content)).read()

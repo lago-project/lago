@@ -154,7 +154,14 @@ class HttpTemplateProvider:
             except RuntimeError:
                 pass
         full_url = posixpath.join(self.baseurl, url) + suffix
-        response = urllib.urlopen(full_url)
+        try:
+            response = urllib.urlopen(full_url)
+        except IOError, e:
+            raise RuntimeError(
+                'Failed to open URL %s\nError code: %s\nError Reason: %s' %
+                (full_url, e.errno, e.strerror)
+            )
+
         if response.code >= 300:
             raise RuntimeError(
                 'Failed no retrieve URL %s:\nCode: %d' %
@@ -180,7 +187,13 @@ class HttpTemplateProvider:
 
         if dest:
             response.close()
-            urllib.urlretrieve(full_url, dest, report)
+            try:
+                urllib.urlretrieve(full_url, dest, report)
+            except IOError, e:
+                raise RuntimeError(
+                    'Failed to retrieve URL %s\nError code: %s\n \
+                    Error Reason: %s' % (full_url, e.errno, e.strerror)
+                )
             sys.stdout.write("\n")
         return response
 
