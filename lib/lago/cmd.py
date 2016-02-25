@@ -77,6 +77,7 @@ def do_init(
     template_store=None,
     **kwargs
 ):
+    raise Exception()
     prefix = lago.Prefix(prefix)
     prefix.initialize()
 
