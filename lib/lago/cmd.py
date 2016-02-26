@@ -63,6 +63,7 @@ LOGGER = logging.getLogger('cli')
 @lago.plugins.cli.cli_plugin_add_argument(
     '--template-repo-path',
     help='Repo file describing the templates',
+    default='http://templates.ovirt.org/repo/repo.metadata',
 )
 @lago.plugins.cli.cli_plugin_add_argument(
     '--template-repo-name',
