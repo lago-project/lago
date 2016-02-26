@@ -22,13 +22,10 @@ import os
 
 class Paths(object):
     def __init__(self, prefix):
-        self._prefix = prefix
-
-    def prefix(self):
-        return self._prefix
+        self.prefix = prefix
 
     def prefixed(self, *args):
-        return os.path.join(self.prefix(), *args)
+        return os.path.join(self.prefix, *args)
 
     def uuid(self):
         return self.prefixed('uuid')
@@ -53,4 +50,4 @@ class Paths(object):
 
     def prefix_lagofile(self):
         "This file represents a prefix that's initialized"
-        return self.prefixed('.lago')
+        return self.prefixed('initialized')

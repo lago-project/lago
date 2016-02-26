@@ -8,6 +8,13 @@ load helpers
 load env_setup
 
 
+is_initialized() {
+    local prefix="${1?}"
+    [[ -e "$prefix/initialized" ]]
+    return $?
+}
+
+
 @test "start: init" {
     local prefix="$FIXTURES"/prefix1
     local repo="$FIXTURES"/repo_store
@@ -38,7 +45,7 @@ load env_setup
 @test "start.1vm_bridged: start everything at once" {
     local prefix="$FIXTURES"/prefix1
 
-    [[ -e "$prefix/.lago" ]] || skip "prefix not initiated"
+    is_initialized "$prefix" || skip "prefix not initiated"
     pushd "$prefix" >/dev/null
     helpers.run "$LAGOCLI" start
     helpers.equals "$status" '0'
@@ -74,7 +81,7 @@ load env_setup
     local prefix="$FIXTURES"/prefix1
     local repo="$FIXTURES"/repo_store
 
-    [[ -e "$prefix/.lago" ]] || skip "prefix not initiated"
+    is_initialized "$prefix" || skip "prefix not initiated"
     pushd "$prefix" >/dev/null
     helpers.run "$LAGOCLI" start
     helpers.equals "$status" '0'
@@ -108,7 +115,7 @@ load env_setup
 @test "start: teardown" {
     local prefix="$FIXTURES"/prefix1
 
-    [[ -e "$prefix/.lago" ]] \
+    is_initialized "$prefix" \
     && {
         pushd "$prefix" >/dev/null
         helpers.run "$LAGOCLI" cleanup

@@ -1,5 +1,5 @@
 [Prefix]:
-	Base directory: @@BATS_TEST_DIRNAME@@/fixtures/basic/prefix1
+	Base directory: @@PREFIX_PATH@@
 	UUID: 12345678910121416182022242628303
 
 [Networks]:

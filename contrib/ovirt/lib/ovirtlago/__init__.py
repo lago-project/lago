@@ -28,6 +28,7 @@ import nose.config
 from ovirtsdk.infrastructure.errors import RequestError
 import lago
 from lago import log_utils
+from lago.prefix import Prefix
 
 import merge_repos
 import repoverify
@@ -222,9 +223,10 @@ def _activate_all_storage_domains(api):
         _activate_storage_domains(api, [sd for sd in sds if not sd.master])
 
 
-class OvirtPrefix(lago.Prefix):
-    def _create_paths(self):
-        return paths.OvirtPaths(self._prefix)
+class OvirtPrefix(Prefix):
+    def __init__(self, *args, **kwargs):
+        super(OvirtPrefix, self).__init__(*args, **kwargs)
+        self.paths = paths.OvirtPaths(self._prefix)
 
     def create_snapshots(self, name, restore=True):
         with lago.utils.RollbackContext() as rollback, \
@@ -402,10 +404,10 @@ class OvirtPrefix(lago.Prefix):
 
         with LogTask('Run test: %s' % os.path.basename(path)):
             env = os.environ.copy()
-            env['LAGO_PREFIX'] = self.paths.prefix()
+            env['LAGO_PREFIX'] = self.paths.prefix
             results_path = os.path.abspath(
                 os.path.join(
-                    self.paths.prefix(),
+                    self.paths.prefix,
                     'nosetests-%s.xml' % os.path.basename(path),
                 )
             )
