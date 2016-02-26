@@ -23,7 +23,10 @@
 from stevedore import ExtensionManager
 
 #: Map of plugin type string -> setuptools entry point
-PLUGIN_ENTRY_POINTS = {'cli': 'lago.plugins.cli', }
+PLUGIN_ENTRY_POINTS = {
+    'cli': 'lago.plugins.cli',
+    'out': 'lago.plugins.output',
+}
 
 
 class Plugin(object):

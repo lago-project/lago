@@ -284,36 +284,53 @@ def do_console(prefix, host, **kwargs):
 )
 @in_prefix
 @with_logging
-def do_status(prefix, **kwargs):
-    print '[Prefix]:'
-    print '\tBase directory:', prefix.paths.prefix
+def do_status(prefix, out_format, **kwargs):
+
     with open(prefix.paths.uuid()) as f:
-        print '\tUUID:', f.read()
-    net = prefix.virt_env.get_net()
-    print '[Networks]:'
-    for net in prefix.virt_env.get_nets().values():
-        print '\t[%s]' % net.name()
-        print '\t\tGateway:', net.gw()
-        print '\t\tStatus:', net.alive() and 'up' or 'down'
-        print '\t\tManagement:', net.is_management()
-    print '[VMs]:'
-    for vm in prefix.virt_env.get_vms().values():
-        print '\t[%s]' % vm.name()
-        print '\t\tDistro:', vm.distro()
-        print '\t\tRoot password:', vm.root_password()
-        print '\t\tStatus:', vm.alive() and 'up' or 'down'
-        print '\t\tSnapshots:', ', '.join(vm._spec['snapshots'].keys())
-        if vm.alive():
-            print '\t\tVNC port:', vm.vnc_port()
-        if vm.metadata:
-            print '\t\tMetadata:'
-            for k, v in vm.metadata.items():
-                print '\t\t\t%s: %s' % (k, v)
-        print '\t\tNICs:'
-        for i, nic in enumerate(vm.nics()):
-            print '\t\t\t[eth%d]' % i
-            print '\t\t\t\tNetwork:', nic['net']
-            print '\t\t\t\tIP', nic.get('ip', 'N/A')
+        uuid = f.read()
+
+    info_dict = {
+        'Prefix': {
+            'Base directory': prefix.paths.prefix,
+            'UUID': uuid,
+            'Networks': dict(
+                (
+                    net.name(),
+                    {
+                        'gateway': net.gw(),
+                        'status': net.alive() and 'up' or 'down',
+                        'management': net.is_management(),
+                    }
+                ) for net in prefix.virt_env.get_nets().values()
+            ),
+            'VMs': dict(
+                (
+                    vm.name(),
+                    {
+                        'distro': vm.distro(),
+                        'root password': vm.root_password(),
+                        'status': vm.alive() and 'up' or 'down',
+                        'snapshots': ', '.join(vm._spec['snapshots'].keys()),
+                        'VNC port': vm.vnc_port() if vm.alive() else None,
+                        'metadata': vm.metadata,
+                        'NICs': dict(
+                            (
+                                'eth%d' % i,
+                                {
+                                    'network': nic['net'],
+                                    'ip': nic.get('ip', 'N/A'),
+                                }
+
+                            ) for i, nic in enumerate(vm.nics())
+                        ),
+                    }
+
+                ) for vm in prefix.virt_env.get_vms().values()
+            ),
+        },
+    }
+
+    print out_format.format(info_dict)
 
 
 @lago.plugins.cli.cli_plugin(
@@ -396,7 +413,7 @@ def do_copy_to_vm(prefix, host, remote_path, local_path, **kwargs):
     host.copy_to(local_path, remote_path)
 
 
-def create_parser(cli_plugins):
+def create_parser(cli_plugins, out_plugins):
     parser = argparse.ArgumentParser(
         description='Command line interface to oVirt testing framework.'
     )
@@ -419,6 +436,13 @@ def create_parser(cli_plugins):
         action='version',
         version='%(prog)s ' + pkg_info.version,
     )
+    parser.add_argument(
+        '--out-format',
+        '-f',
+        action='store',
+        default='default',
+        choices=out_plugins.keys(),
+    )
     verbs_parser = parser.add_subparsers(dest='verb', metavar='VERB')
     for cli_plugin_name, cli_plugin in cli_plugins.items():
         plugin_parser = verbs_parser.add_parser(
@@ -438,7 +462,10 @@ def main():
     cli_plugins = lago.plugins.load_plugins(
         lago.plugins.PLUGIN_ENTRY_POINTS['cli']
     )
-    parser = create_parser(cli_plugins)
+    out_plugins = lago.plugins.load_plugins(
+        lago.plugins.PLUGIN_ENTRY_POINTS['out']
+    )
+    parser = create_parser(cli_plugins=cli_plugins, out_plugins=out_plugins)
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.DEBUG)
@@ -454,6 +481,8 @@ def main():
     ]
 
     check_group_membership()
+
+    args.out_format = out_plugins[args.out_format]
 
     try:
         cli_plugins[args.verb].do_run(args)
