@@ -170,7 +170,10 @@ def do_destroy(prefix, yes, **kwargs):
             return
 
     prefix.cleanup()
-    shutil.rmtree(prefix_path)
+    if os.path.islink(prefix_path):
+        os.unlink(prefix_path)
+    else:
+        shutil.rmtree(prefix_path)
 
 
 @lago.plugins.cli.cli_plugin(help='Deploy lago resources')

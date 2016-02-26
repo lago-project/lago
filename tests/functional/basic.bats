@@ -282,12 +282,21 @@ EOS
 
 @test "basic.full_run: destroy" {
     local prefix="$FIXTURES"/prefix1
+    local prefix_link="$FIXTURES"/.lago
 
     is_initialized "$prefix" || skip "prefix not initiated"
+    pushd "$FIXTURES" >/dev/null
+    ln -s "$prefix" "$prefix_link"
+    # Remove the link too
+    helpers.run "$LAGOCLI" destroy --yes
+    helpers.equals "$status" '0'
+    helpers.not_exists "$prefix_link"
+    # Remove from inside the prefix
+    helpers.is_dir "$prefix"
     pushd "$prefix" >/dev/null
     helpers.run "$LAGOCLI" destroy --yes
     helpers.equals "$status" '0'
-    helpers.isnt_dir "$prefix"
+    helpers.not_exists "$prefix"
 }
 
 
@@ -476,9 +485,8 @@ EOS
     helpers.run "$LAGOCLI" destroy --yes
     helpers.equals "$status" '0'
     helpers.contains "$output" "Stop prefix"
-    helpers.isnt_dir "$prefix"
+    helpers.not_exists "$prefix"
 }
-
 
 
 @test "basic: teardown" {
