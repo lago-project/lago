@@ -37,6 +37,7 @@ setup(
         'lago.plugins.cli': [
             'init=lago.cmd:do_init',
             'cleanup=lago.cmd:do_cleanup',
+            'destroy=lago.cmd:do_destroy',
             'start=lago.cmd:do_start',
             'status=lago.cmd:do_status',
             'stop=lago.cmd:do_stop',
