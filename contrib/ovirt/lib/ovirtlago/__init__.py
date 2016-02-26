@@ -224,8 +224,9 @@ def _activate_all_storage_domains(api):
 
 
 class OvirtPrefix(Prefix):
-    def _create_paths(self):
-        return paths.OvirtPaths(self._prefix)
+    def __init__(self, *args, **kwargs):
+        super(OvirtPrefix, self).__init__(*args, **kwargs)
+        self.paths = paths.OvirtPaths(self._prefix)
 
     def create_snapshots(self, name, restore=True):
         with lago.utils.RollbackContext() as rollback, \
