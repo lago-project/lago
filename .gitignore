@@ -12,3 +12,5 @@ mock*
 docs/ovirtlago.rst
 docs/lago.rst
 *ChangeLog
+rpmbuild
+lago.egg-info
