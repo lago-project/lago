@@ -1,24 +1,24 @@
-Name:		lago
-Version:	@VERSION@
-Release:	1%{?dist}
-Summary:	System testing framework
-BuildArch:	noarch
+Name: lago
+Version: @VERSION@
+Release: 1%{?dist}
+Summary: System testing framework
+BuildArch: noarch
 
-Group:		System Environment/Libraries
-License:	GPLv2+
-URL:		https://github.com/oVirt/lago
-Source0:	https://resources.ovirt.org/pub/src/%{name}/%{name}-%{version}.tar.gz
+Group: System Environment/Libraries
+License: GPLv2+
+URL: https://github.com/oVirt/lago
+Source0: https://resources.ovirt.org/pub/src/%{name}/%{name}-%{version}.tar.gz
 
-BuildRequires:	python2-devel
+BuildRequires: python2-devel
 %if 0%{?fedora} >= 23
-BuildRequires:	python2-dulwich
+BuildRequires: python2-dulwich
 %else
-BuildRequires:	python-dulwich
+BuildRequires: python-dulwich
 %endif
-BuildRequires:	python-flake8
-BuildRequires:	python-nose
-BuildRequires:	git
-Requires:	python-%{name} = %{version}
+BuildRequires: python-flake8
+BuildRequires: python-nose
+BuildRequires: git
+Requires: python-%{name} = %{version}
 
 %description
 LAGO System testing framework.
@@ -46,29 +46,29 @@ install -d "$RPM_BUILD_ROOT"/var/lib/lago/reposync
 %attr(0775, root, root) %{_sysconfdir}/sudoers.d/*
 
 %package -n python-%{name}
-Summary:	Library to perform lago operations
-BuildArch:	noarch
-BuildRequires:	python2-devel
-BuildRequires:	python-pbr
-Requires:	python
-Requires:	libguestfs-tools
-Requires:	libvirt >= 1.2.8
-Requires:	libvirt-python
-Requires:	python-libguestfs
-Requires:	python-lxml
-Requires:	python-lockfile
-Requires:	python-magic
-Requires:	python-paramiko
-Requires:	python-pbr
-Requires:	python-xmltodict
-Requires:	python-scp
-Requires:	python-setuptools
-Requires:	python-stevedore
-Requires:	python-yaml
-Requires:	qemu-img >= 2.1.2
-Requires:	qemu-kvm >= 2.1.2
-Requires:	git
-Requires:	sudo
+Summary: Library to perform lago operations
+BuildArch: noarch
+BuildRequires: python2-devel
+BuildRequires: python-pbr
+Requires: python
+Requires: libguestfs-tools
+Requires: libvirt >= 1.2.8
+Requires: libvirt-python
+Requires: python-libguestfs
+Requires: python-lxml
+Requires: python-lockfile
+Requires: python-magic
+Requires: python-paramiko
+Requires: python-pbr
+Requires: python-xmltodict
+Requires: python-scp
+Requires: python-setuptools
+Requires: python-stevedore
+Requires: python-yaml
+Requires: qemu-img >= 2.1.2
+Requires: qemu-kvm >= 2.1.2
+Requires: git
+Requires: sudo
 %{?python_provide:%python_provide python2-lago}
 
 %description -n python-%{name}
@@ -88,39 +88,39 @@ Requires:	sudo
 
 %pre -n python-%{name}
 if [[ "$1" -eq 1 ]]; then
-	groupadd lago
+    groupadd lago
 fi
 
 %postun -n python-%{name}
 if [[ "$1" -eq 0 ]]; then
-	groupdel lago
+    groupdel lago
 fi
 
 %package -n %{name}-ovirt
-Summary:	oVirt extension for lagocli
-BuildArch:	noarch
-BuildRequires:	python2-devel
-Requires:	%{name} = %{version}
-Requires:	python-%{name}-ovirt = %{version}
+Summary: oVirt extension for lagocli
+BuildArch: noarch
+BuildRequires: python2-devel
+Requires: %{name} = %{version}
+Requires: python-%{name}-ovirt = %{version}
 
 %files -n %{name}-ovirt
 
 %description -n %{name}-ovirt
 
 %package -n python-%{name}-ovirt
-Summary:	Library for ovirt specific facitilies
-BuildArch:	noarch
-BuildRequires:	python2-devel
-Requires:	python
-Requires:	python-%{name} = %{version}
-Requires:	python-magic
-Requires:	python-nose
-Requires:	mock
-Requires:	ovirt-engine-sdk-python
-Requires:	createrepo
-Requires:	yum-utils
-Requires:	rpm-build
-Requires:	xz
+Summary: Library for ovirt specific facitilies
+BuildArch: noarch
+BuildRequires: python2-devel
+Requires: python
+Requires: python-%{name} = %{version}
+Requires: python-magic
+Requires: python-nose
+Requires: mock
+Requires: ovirt-engine-sdk-python
+Requires: createrepo
+Requires: yum-utils
+Requires: rpm-build
+Requires: xz
 %{?python_provide:%python_provide python2-lago-ovirt}
 
 %description -n python-%{name}-ovirt
@@ -131,16 +131,16 @@ Requires:	xz
 %dir %attr(2775, root, lago) /var/lib/lago/reposync/
 
 %post -n python-%{name}-ovirt
-if [ "$1" -eq 1 ]; then
-	firewall-cmd --reload
-	firewall-cmd --permanent --zone=public --add-service=lago
-	firewall-cmd --reload
+if which firewall-cmd &>/dev/null; then
+    firewall-cmd --reload
+    firewall-cmd --permanent --zone=public --add-service=ovirtlago
+    firewall-cmd --reload
 fi
 
 %preun  -n python-%{name}-ovirt
-if [ "$1" -eq 0 ]; then
-	firewall-cmd --permanent --zone=public --remove-service=lago
-	firewall-cmd --reload
+if which firewall-cmd &>/dev/null; then
+    firewall-cmd --permanent --zone=public --remove-service=ovirtlago
+    firewall-cmd --reload
 fi
 
 %changelog
