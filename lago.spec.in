@@ -1,5 +1,5 @@
 Name: lago
-Version: @VERSION@
+Version: 0.0.0.0
 Release: 1%{?dist}
 Summary: System testing framework
 BuildArch: noarch
@@ -144,4 +144,3 @@ if which firewall-cmd &>/dev/null; then
 fi
 
 %changelog
-@CHANGELOG@
