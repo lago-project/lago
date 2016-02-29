@@ -1,23 +1,14 @@
-Name: lago
-Version: 0.0.0.0
+Version: @@VERSION@@
 Release: 1%{?dist}
+Name: lago
 Summary: System testing framework
 BuildArch: noarch
-
 Group: System Environment/Libraries
 License: GPLv2+
-URL: https://github.com/oVirt/lago
-Source0: https://resources.ovirt.org/pub/src/%{name}/%{name}-%{version}.tar.gz
+URL: https://github.com/lago-project/lago
+Source0: https://resources.ovirt.org/repos/%{name}/0.0/src/%{name}/%{name}-%{version}.tar.gz
 
-BuildRequires: python2-devel
-%if 0%{?fedora} >= 23
-BuildRequires: python2-dulwich
-%else
-BuildRequires: python-dulwich
-%endif
-BuildRequires: python-flake8
-BuildRequires: python-nose
-BuildRequires: git
+###################### lago package
 Requires: python-%{name} = %{version}
 
 %description
@@ -37,19 +28,26 @@ cd "$RPM_BUILD_DIR"
 install -d "$RPM_BUILD_ROOT"/var/lib/lago/subnets
 install -d "$RPM_BUILD_ROOT"/var/lib/lago/store
 install -d "$RPM_BUILD_ROOT"/var/lib/lago/repos
+# this is for python-lago-ovirt
 install -d "$RPM_BUILD_ROOT"/var/lib/lago/reposync
 
 %files
 %doc AUTHORS COPYING README.md
-%{_bindir}/lagocli
-%{_bindir}/lago
-%attr(0775, root, root) %{_sysconfdir}/sudoers.d/*
 
+###################### python-lago package
 %package -n python-%{name}
 Summary: Library to perform lago operations
 BuildArch: noarch
 BuildRequires: python2-devel
 BuildRequires: python-pbr
+%if 0%{?fedora} >= 23
+BuildRequires: python2-dulwich
+%else
+BuildRequires: python-dulwich
+%endif
+BuildRequires: python-flake8
+BuildRequires: python-nose
+BuildRequires: git
 Requires: python
 Requires: libguestfs-tools
 Requires: libvirt >= 1.2.8
@@ -80,6 +78,9 @@ Requires: sudo
 %{python2_sitelib}/%{name}/*.xml
 %{python2_sitelib}/%{name}-%{version}-py*.egg-info
 %{_sysconfdir}/polkit-1/localauthority/50-local.d/
+%{_bindir}/lagocli
+%{_bindir}/lago
+%attr(0775, root, root) %{_sysconfdir}/sudoers.d/*
 %config(noreplace) %{_sysconfdir}/lago.d/lago.conf
 %dir %attr(2775, root, lago) /var/lib/lago/
 %dir %attr(2775, root, lago) /var/lib/lago/subnets/
@@ -96,6 +97,7 @@ if [[ "$1" -eq 0 ]]; then
     groupdel lago
 fi
 
+###################### lago-ovirt package
 %package -n %{name}-ovirt
 Summary: oVirt extension for lagocli
 BuildArch: noarch
@@ -107,6 +109,7 @@ Requires: python-%{name}-ovirt = %{version}
 
 %description -n %{name}-ovirt
 
+###################### python-lago-ovirt package
 %package -n python-%{name}-ovirt
 Summary: Library for ovirt specific facitilies
 BuildArch: noarch
