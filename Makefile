@@ -12,7 +12,7 @@ DIST_DIR=${OUTPUT_DIR}/dist
 TAR_DIST_LOCATION=${DIST_DIR}/${TAR_FILE}
 TARBALL_DIST_LOCATION=${DIST_DIR}/${TARBALL_FILE}
 
-.PHONY: build rpm srpm ${TARBALL_DIST_LOCATION} check-local dist check ${SPECFILE} docs fullchangelog changelog python-sdist extract-sdist add-extra-files-sdist
+.PHONY: build rpm srpm ${TARBALL_DIST_LOCATION} check-local dist check ${SPECFILE} docs fullchangelog changelog python-sdist add-extra-files-sdist
 
 changelog:
 	echo Creating RPM compatible ChangeLog \
@@ -73,20 +73,17 @@ dist: ${TARBALL_DIST_LOCATION}
 python-sdist:
 	LAGO_VERSION=${VERSION} python setup.py sdist --dist-dir ${DIST_DIR}
 
-extract-sdist:
-	gunzip ${TARBALL_DIST_LOCATION}
-
-
 add-extra-files-sdist: changelog fullchangelog
+	gunzip ${TARBALL_DIST_LOCATION}
 	tar rvf ${TAR_DIST_LOCATION} \
 		etc \
 		scripts \
 		FullChangeLog \
 		ChangeLog
-
-
-${TARBALL_DIST_LOCATION}: python-sdist extract-sdist add-extra-files-sdist
 	gzip ${TAR_DIST_LOCATION}
+
+
+${TARBALL_DIST_LOCATION}: python-sdist add-extra-files-sdist
 
 srpm: dist ${SPECFILE}
 	rpmbuild 					\
