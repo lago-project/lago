@@ -35,7 +35,7 @@ LAGO_VERSION=%{version} %{__python} setup.py install --root $RPM_BUILD_ROOT
 cd "$RPM_BUILD_DIR"
 install -d "$RPM_BUILD_ROOT"%{_sysconfdir}/firewalld/services
 install \
-    etc/firewalld/services/lago.xml \
+    etc/firewalld/services/ovirtlago.xml \
     "$RPM_BUILD_ROOT"%{_sysconfdir}/firewalld/services
 
 install -d "$RPM_BUILD_ROOT"%{_sysconfdir}/polkit-1/localauthority/50-local.d
@@ -52,11 +52,6 @@ install -d "$RPM_BUILD_ROOT"%{_sysconfdir}/lago.d
 install \
     etc/lago.d/lago.conf \
     "$RPM_BUILD_ROOT"%{_sysconfdir}/lago.d
-
-install -d "$RPM_BUILD_ROOT"%{_sysconfdir}/sudoers.d
-install \
-    sudo/lago \
-    "$RPM_BUILD_ROOT"%{_sysconfdir}/sudoers.d
 
 
 install -d "$RPM_BUILD_ROOT"/var/lib/lago/subnets
@@ -151,8 +146,6 @@ Requires:	xz
 
 %files -n python-%{name}-ovirt
 %{python2_sitelib}/ovirt%{name}/*.py*
-%{_libexecdir}/ovirt%{name}/*
-%{_sysconfdir}/mock/*
 %{_sysconfdir}/firewalld/services/*
 %dir %attr(2775, root, lago) /var/lib/lago/reposync/
 
