@@ -39,7 +39,8 @@ fullchangelog:
 	fi
 
 ${SPECFILE}: ${SPECFILE}.in changelog
-	cat ${SPECFILE}.in > $@; \
+	sed -e "s/@@VERSION@@/${VERSION}/g" \
+		${SPECFILE}.in > $@; \
 	cat ChangeLog >> $@
 
 build:
@@ -66,40 +67,34 @@ check-local:
 
 dist: ${TARBALL_DIST_LOCATION}
 
-
 python-sdist:
 	LAGO_VERSION=${VERSION} python setup.py sdist --dist-dir ${DIST_DIR}
 
 add-extra-files-sdist: changelog fullchangelog
 	gunzip ${TARBALL_DIST_LOCATION}
 	tar rvf ${TAR_DIST_LOCATION} \
-		etc \
-		scripts \
 		FullChangeLog \
 		ChangeLog
 	gzip ${TAR_DIST_LOCATION}
 
-
 ${TARBALL_DIST_LOCATION}: python-sdist add-extra-files-sdist
 
 srpm: dist ${SPECFILE}
-	rpmbuild 					\
-		--define "_topdir ${RPM_DIR}" 	\
-		--define "_sourcedir ${DIST_DIR}" 	\
-		--define "version ${VERSION}"
-		-bs 					\
+	rpmbuild \
+		--define "_topdir ${RPM_DIR}" \
+		--define "_sourcedir ${DIST_DIR}" \
+		-of \
 		${SPECFILE}
 
 rpm: dist ${SPECFILE}
-	rpmbuild 					\
-		--define "_topdir ${RPM_DIR}" 	\
-		--define "_sourcedir ${DIST_DIR}" 	\
-		--define "version ${VERSION}"
-		-ba 					\
+	rpmbuild \
+		--define "_topdir ${RPM_DIR}" \
+		--define "_sourcedir ${DIST_DIR}" \
+		-ba \
 		${SPECFILE}
 
 clean:
-	LAGO_VERSION=${VERSION} python setup.py clean
+	python setup.py clean
 	rm -rf ${DIST_DIR}
 	rm -rf ${RPM_DIR}
 	rm -rf build "$(REPO_LOCAL_REL_PATH)"
