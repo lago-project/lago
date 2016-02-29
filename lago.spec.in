@@ -33,39 +33,19 @@ LAGO_VERSION=%{version} %{__python} setup.py build
 %install
 LAGO_VERSION=%{version} %{__python} setup.py install --root $RPM_BUILD_ROOT
 cd "$RPM_BUILD_DIR"
-install -d $RPM_BUILD_ROOT/usr/share/lago
-install \
-    bin/sync_templates.py \
-    bin/update_images.py \
-    "$RPM_BUILD_ROOT"/usr/share/lago
-
-install -d "$RPM_BUILD_ROOT"/usr/libexec/ovirtlago
-install \
-    contrib/ovirt/libexec/build_engine_rpms.sh \
-    contrib/ovirt/libexec/build_vdsm_rpms.sh \
-    contrib/ovirt/libexec/build_vdsm-jsonrpc-java_rpms.sh \
-    contrib/ovirt/libexec/build_ioprocess_rpms.sh \
-    "$RPM_BUILD_ROOT"/usr/libexec/ovirtlago
-
-install -d "$RPM_BUILD_ROOT"%{_sysconfdir}/mock
-install \
-    contrib/ovirt/mock/epel-6-x86_64_ovirt.cfg \
-    contrib/ovirt/mock/epel-7-x86_64_ovirt.cfg \
-    "$RPM_BUILD_ROOT"%{_sysconfdir}/mock
-
 install -d "$RPM_BUILD_ROOT"%{_sysconfdir}/firewalld/services
 install \
-    contrib/ovirt/firewalld/services/lago.xml \
+    etc/firewalld/services/lago.xml \
     "$RPM_BUILD_ROOT"%{_sysconfdir}/firewalld/services
 
 install -d "$RPM_BUILD_ROOT"%{_sysconfdir}/polkit-1/localauthority/50-local.d
 install \
-    polkit/lago.pkla \
+    etc/polkit/lago.pkla \
     "$RPM_BUILD_ROOT"%{_sysconfdir}/polkit-1/localauthority/50-local.d
 
 install -d "$RPM_BUILD_ROOT"%{_sysconfdir}/sudoers.d
 install \
-    sudo/lago \
+    etc/sudo/lago \
     "$RPM_BUILD_ROOT"%{_sysconfdir}/sudoers.d
 
 install -d "$RPM_BUILD_ROOT"%{_sysconfdir}/lago.d
