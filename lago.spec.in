@@ -32,7 +32,6 @@ install -d "$RPM_BUILD_ROOT"/var/lib/lago/repos
 install -d "$RPM_BUILD_ROOT"/var/lib/lago/reposync
 
 %files
-%doc AUTHORS COPYING README.md
 
 ###################### python-lago package
 %package -n python-%{name}
@@ -72,6 +71,7 @@ Requires: sudo
 %description -n python-%{name}
 
 %files -n python-%{name}
+%doc AUTHORS COPYING README.md
 %{python2_sitelib}/%{name}/*.py*
 %{python2_sitelib}/%{name}/plugins/*.py*
 %{python2_sitelib}/%{name}_template_repo/*.py*
