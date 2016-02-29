@@ -21,19 +21,19 @@ from recommonmark.parser import CommonMarkParser
 subprocess.call(
     [
         'sphinx-apidoc', '--module-first', '--no-toc', '-f', '-o',
-        os.path.dirname(__file__), '../lib/lago'
+        os.path.dirname(__file__), '../lago'
     ]
 )
 subprocess.call(
     [
         'sphinx-apidoc', '--module-first', '--no-toc', '-f', '-o',
-        os.path.dirname(__file__), '../contrib/ovirt/lib/ovirtlago'
+        os.path.dirname(__file__), '../ovirtlago'
     ]
 )
 subprocess.call(
     [
         'sphinx-apidoc', '--module-first', '--no-toc', '-f', '-o',
-        os.path.dirname(__file__), '../lib/lago_template_repo'
+        os.path.dirname(__file__), '../lago_template_repo'
     ]
 )
 
@@ -72,8 +72,7 @@ autodoc_default_flags = [
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-sys.path.insert(0, os.path.abspath('../lib'))
-sys.path.insert(0, os.path.abspath('../contrib/ovirt/lib'))
+sys.path.insert(0, os.path.abspath('..'))
 
 # -- General configuration ------------------------------------------------
 

@@ -12,9 +12,9 @@ setup(
     author_email='dkuznets@redhat.com',
     url='redhat.com',
     package_dir={
-        'lago': 'lib/lago',
-        'lago_template_repo': 'lib/lago_template_repo',
-        'ovirtlago': 'contrib/ovirt/lib/ovirtlago'
+        'lago': 'lago',
+        'lago_template_repo': 'lago_template_repo',
+        'ovirtlago': 'ovirtlago'
     },
     packages=[
         'lago',
