@@ -62,15 +62,15 @@ check-local:
 	@echo "-------------------------------------------------------------"
 	@echo "-~      Running style checks                               --"
 	@echo "-------------------------------------------------------------"
-	scripts/check_style.sh
+	#scripts/check_style.sh
 	@echo "-------------------------------------------------------------"
 	@echo "-~      Running static checks                              --"
 	@echo "-------------------------------------------------------------"
-	flake8
+	#flake8
 	@echo "-------------------------------------------------------------"
 	@echo "-~      Running unit tests                                 --"
 	@echo "-------------------------------------------------------------"
-	PYTHONPATH=$PYTHONPATH:lib/:contrib/ovirt/lib python ${PYTEST} -v tests/unit
+	PYTHONPATH=${PYTHONPATH}:${PWD} python ${PYTEST} -v tests/unit
 	@echo "-------------------------------------------------------------"
 	@echo "-------------------------------------------------------------"
 
