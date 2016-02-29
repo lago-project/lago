@@ -39,10 +39,7 @@ fullchangelog:
 	fi
 
 ${SPECFILE}: ${SPECFILE}.in changelog
-	sed \
-		-e s/@VERSION@/${VERSION}/g \
-		-e s/@CHANGELOG@//g \
-		${SPECFILE}.in > $@; \
+	cat ${SPECFILE}.in > $@; \
 	cat ChangeLog >> $@
 
 build:
@@ -89,6 +86,7 @@ srpm: dist ${SPECFILE}
 	rpmbuild 					\
 		--define "_topdir ${RPM_DIR}" 	\
 		--define "_sourcedir ${DIST_DIR}" 	\
+		--define "version ${VERSION}"
 		-bs 					\
 		${SPECFILE}
 
@@ -96,6 +94,7 @@ rpm: dist ${SPECFILE}
 	rpmbuild 					\
 		--define "_topdir ${RPM_DIR}" 	\
 		--define "_sourcedir ${DIST_DIR}" 	\
+		--define "version ${VERSION}"
 		-ba 					\
 		${SPECFILE}
 
