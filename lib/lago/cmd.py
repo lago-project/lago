@@ -148,6 +148,34 @@ def do_cleanup(prefix, **kwargs):
     prefix.cleanup()
 
 
+@lago.plugins.cli.cli_plugin(
+    help='Cleanup and remove the whole prefix and any files in it'
+)
+@lago.plugins.cli.cli_plugin_add_argument(
+    '-y',
+    '--yes',
+    help="Don't ask for confirmation, assume yes",
+    action='store_true',
+)
+@in_prefix
+@with_logging
+def do_destroy(prefix, yes, **kwargs):
+    prefix_path = prefix.paths.prefix
+    if not yes:
+        response = raw_input(
+            'Do you really want to destroy %s? [Yn] ' % prefix_path
+        )
+        if response and response[0] not in 'Yy':
+            LOGGER.info('Aborting on user input')
+            return
+
+    prefix.cleanup()
+    if os.path.islink(prefix_path):
+        os.unlink(prefix_path)
+    else:
+        shutil.rmtree(prefix_path)
+
+
 @lago.plugins.cli.cli_plugin(help='Deploy lago resources')
 @lago.plugins.cli.cli_plugin_add_argument(
     'vm_names',

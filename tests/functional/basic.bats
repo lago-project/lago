@@ -4,6 +4,7 @@ VERBS=(
     cleanup
     copy-from-vm
     copy-to-vm
+    destroy
     init
     ovirt
     shell
@@ -279,6 +280,27 @@ EOS
 }
 
 
+@test "basic.full_run: destroy" {
+    local prefix="$FIXTURES"/prefix1
+    local prefix_link="$FIXTURES"/.lago
+
+    is_initialized "$prefix" || skip "prefix not initiated"
+    pushd "$FIXTURES" >/dev/null
+    ln -s "$prefix" "$prefix_link"
+    # Remove the link too
+    helpers.run "$LAGOCLI" destroy --yes
+    helpers.equals "$status" '0'
+    helpers.not_exists "$prefix_link"
+    # Remove from inside the prefix
+    helpers.is_dir "$prefix"
+    pushd "$prefix" >/dev/null
+    helpers.run "$LAGOCLI" destroy --yes
+    helpers.equals "$status" '0'
+    helpers.not_exists "$prefix"
+}
+
+
+
 @test 'basic.full_run: start and stop many vms one by one' {
     local basedir="$FIXTURES/basedir"
     local repo="$FIXTURES"/repo_store
@@ -440,6 +462,30 @@ EOS
     helpers.contains "$output" "Stop prefix"
     helpers.is_file "$prefix/uuid"
     ! is_initialized "$prefix"
+}
+
+
+@test "basic.full_run: reinitialize and start again" {
+    local basedir="$FIXTURES/basedir"
+    local prefix="$basedir"/.lago
+
+    touch "$prefix"/initialized
+    cd "$basedir"
+    helpers.run "$LAGOCLI" start
+    helpers.equals "$status" '0'
+}
+
+
+@test "basic.full_run: destroy a started prefix" {
+    local basedir="$FIXTURES/basedir"
+    local prefix="$basedir"/.lago
+
+    is_initialized "$prefix" || skip "prefix not initiated"
+    cd "$basedir"
+    helpers.run "$LAGOCLI" destroy --yes
+    helpers.equals "$status" '0'
+    helpers.contains "$output" "Stop prefix"
+    helpers.not_exists "$prefix"
 }
 
 
