@@ -33,26 +33,6 @@ LAGO_VERSION=%{version} %{__python} setup.py build
 %install
 LAGO_VERSION=%{version} %{__python} setup.py install --root $RPM_BUILD_ROOT
 cd "$RPM_BUILD_DIR"
-install -d "$RPM_BUILD_ROOT"%{_sysconfdir}/firewalld/services
-install \
-    etc/firewalld/services/ovirtlago.xml \
-    "$RPM_BUILD_ROOT"%{_sysconfdir}/firewalld/services
-
-install -d "$RPM_BUILD_ROOT"%{_sysconfdir}/polkit-1/localauthority/50-local.d
-install \
-    etc/polkit/lago.pkla \
-    "$RPM_BUILD_ROOT"%{_sysconfdir}/polkit-1/localauthority/50-local.d
-
-install -d "$RPM_BUILD_ROOT"%{_sysconfdir}/sudoers.d
-install \
-    etc/sudo/lago \
-    "$RPM_BUILD_ROOT"%{_sysconfdir}/sudoers.d
-
-install -d "$RPM_BUILD_ROOT"%{_sysconfdir}/lago.d
-install \
-    etc/lago.d/lago.conf \
-    "$RPM_BUILD_ROOT"%{_sysconfdir}/lago.d
-
 
 install -d "$RPM_BUILD_ROOT"/var/lib/lago/subnets
 install -d "$RPM_BUILD_ROOT"/var/lib/lago/store
@@ -63,13 +43,13 @@ install -d "$RPM_BUILD_ROOT"/var/lib/lago/reposync
 %doc AUTHORS COPYING README.md
 %{_bindir}/lagocli
 %{_bindir}/lago
-%{_datadir}/%{name}/*
 %attr(0775, root, root) %{_sysconfdir}/sudoers.d/*
 
 %package -n python-%{name}
 Summary:	Library to perform lago operations
 BuildArch:	noarch
 BuildRequires:	python2-devel
+BuildRequires:	python-pbr
 Requires:	python
 Requires:	libguestfs-tools
 Requires:	libvirt >= 1.2.8
@@ -79,6 +59,7 @@ Requires:	python-lxml
 Requires:	python-lockfile
 Requires:	python-magic
 Requires:	python-paramiko
+Requires:	python-pbr
 Requires:	python-xmltodict
 Requires:	python-scp
 Requires:	python-setuptools

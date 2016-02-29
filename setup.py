@@ -54,21 +54,6 @@ def get_version():
     return version
 
 
-setup(
-    name='lago',
-    version=get_version(),
-    description=(
-        'Deploy and tear down environments of several virtual machines'
-    ),
-    license='GNU GPLv2+',
-    author='David Caro',
-    author_email='dcaro@redhat.com',
-    url='http://lago.readthedocs.com',
-    packages=[
-        'lago',
-        'lago.plugins',
-        'lago_template_repo',
-        'ovirtlago',
-    ],
-    provides=['lago', 'ovirtlago'],
-)
+if __name__ == '__main__':
+    os.environ['PBR_VERSION'] = get_version()
+    setup(setup_requires=['pbr'], pbr=True, )
