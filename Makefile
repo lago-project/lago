@@ -62,15 +62,15 @@ check-local:
 	@echo "-------------------------------------------------------------"
 	@echo "-~      Running style checks                               --"
 	@echo "-------------------------------------------------------------"
-	#scripts/check_style.sh
+	scripts/check_style.sh
 	@echo "-------------------------------------------------------------"
 	@echo "-~      Running static checks                              --"
 	@echo "-------------------------------------------------------------"
-	#flake8
+	flake8
 	@echo "-------------------------------------------------------------"
 	@echo "-~      Running unit tests                                 --"
 	@echo "-------------------------------------------------------------"
-	PYTHONPATH=${PYTHONPATH}:${PWD} python ${PYTEST} -v tests/unit
+	PYTHONPATH=$PWD python ${PYTEST} -v tests/unit
 	@echo "-------------------------------------------------------------"
 	@echo "-------------------------------------------------------------"
 
@@ -80,12 +80,8 @@ ${TARBALL_DIST_LOCATION}: changelog fullchangelog
 	LAGO_VERSION=${VERSION} python setup.py sdist --dist-dir ${DIST_DIR}
 	gunzip ${TARBALL_DIST_LOCATION}
 	tar rvf ${TAR_DIST_LOCATION} \
-		bin \
-		contrib \
 		etc \
 		scripts \
-		sudo \
-		polkit \
 		FullChangeLog \
 		ChangeLog
 	gzip ${TAR_DIST_LOCATION}
