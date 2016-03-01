@@ -98,22 +98,7 @@ FIXTURES="$FIXTURES/basic"
     common.is_initialized "$prefix" || skip "prefix not initiated"
     pushd "$prefix" >/dev/null
     helpers.run_ok "$LAGOCLI" status
-    echo "$output" \
-    | tail -n+2 \
-    > "$prefix/current"
-    echo "DIFF:Checking if the output differs from the expected"
-    echo "CURRENT                  | EXPECTED"
-    expected_content="$FIXTURES/expected_down_status"
-    expected_file="expected_down_status"
-    sed \
-        -e "s|@@BATS_TEST_DIRNAME@@|$BATS_TEST_DIRNAME|g" \
-        "$expected_content" \
-    > "$expected_file"
-    diff \
-        --suppress-common-lines \
-        --side-by-side \
-        "current" \
-        "$expected_file"
+    helpers.diff_output "$FIXTURES/expected_down_status"
 }
 
 
@@ -122,22 +107,7 @@ FIXTURES="$FIXTURES/basic"
 
     common.is_initialized "$prefix" || skip "prefix not initiated"
     helpers.run_ok "$LAGOCLI" --prefix-path "$prefix" status
-    echo "$output" \
-    | tail -n+2 \
-    > "$prefix/current"
-    echo "DIFF:Checking if the output differs from the expected"
-    echo "CURRENT                  | EXPECTED"
-    expected_content="$FIXTURES/expected_down_status"
-    expected_file="expected_down_status"
-    sed \
-        -e "s|@@BATS_TEST_DIRNAME@@|$BATS_TEST_DIRNAME|g" \
-        "$expected_content" \
-    > "$expected_file"
-    diff \
-        --suppress-common-lines \
-        --side-by-side \
-        "$prefix/current" \
-        "$expected_file"
+    helpers.diff_output "$FIXTURES/expected_down_status"
 }
 
 
@@ -157,27 +127,7 @@ FIXTURES="$FIXTURES/basic"
     common.is_initialized "$prefix" || skip "prefix not initiated"
     pushd "$prefix" >/dev/null
     helpers.run_ok "$LAGOCLI" status
-    echo "$output" \
-    | tail -n+2 \
-    > "$prefix/current"
-    # the vnc port is not always 5900, for example, if there's another vm
-    # running already
-    echo "Extracting vnc port from the current status"
-    vnc_port="$(grep -Po '(?<=VNC port: )\d+' "$prefix/current")" || :
-    echo "DIFF:Checking if the output differs from the expected"
-    echo "CURRENT                  | EXPECTED"
-    expected_content="$FIXTURES/expected_up_status"
-    expected_file="expected_up_status"
-    sed \
-        -e "s|@@BATS_TEST_DIRNAME@@|$BATS_TEST_DIRNAME|g" \
-        -e "s|@@VNC_PORT@@|${vnc_port:-no port found}|g" \
-        "$expected_content" \
-    > "$expected_file"
-    diff \
-        --suppress-common-lines \
-        --side-by-side \
-        "current" \
-        "$expected_file"
+    helpers.diff_output "$FIXTURES/expected_up_status"
 }
 
 
@@ -246,22 +196,7 @@ EOS
     helpers.run_ok "$LAGOCLI" stop
     # STATUS
     helpers.run_ok "$LAGOCLI" status
-    echo "$output" \
-    | tail -n+2 \
-    > "$prefix/current"
-    echo "DIFF:Checking if the output differs from the expected"
-    echo "CURRENT                  | EXPECTED"
-    expected_content="$FIXTURES/expected_down_status"
-    expected_file="$prefix/expected_down_status"
-    sed \
-        -e "s|@@BATS_TEST_DIRNAME@@|$BATS_TEST_DIRNAME|g" \
-        "$expected_content" \
-    > "$expected_file"
-    diff \
-        --suppress-common-lines \
-        --side-by-side \
-        "$prefix/current" \
-        "$expected_file"
+    helpers.diff_output "$FIXTURES/expected_down_status"
 }
 
 
@@ -317,102 +252,20 @@ EOS
     cd extradir
     # START vm02
     helpers.run_ok "$LAGOCLI" start lago_functional_tests_vm02
-    # STATUS
     helpers.run_ok "$LAGOCLI" status
-    echo "$output" \
-    | tail -n+2 \
-    > "current"
-    # the vnc port is not always 5900, for example, if there's another vm
-    # running already
-    echo "DIFF:Checking if the output differs from the expected"
-    echo "CURRENT                  | EXPECTED"
-    expected_content="$FIXTURES/expected2_down_status_vm01"
-    expected_file="expected2_down_status_vm01"
-    sed \
-        -e "s|@@PREFIX_PATH@@|$PREFIX_PATH|g" \
-        "$expected_content" \
-    | grep -v 'VNC port' \
-    > "$expected_file"
-    grep -v 'VNC port' "current" \
-    > "current.now"
-    diff \
-        --suppress-common-lines \
-        --side-by-side \
-        "current.now" \
-        "$expected_file"
+    helpers.diff_output "$FIXTURES/expected2_down_status_vm01"
     # START vm01
     helpers.run_ok "$LAGOCLI" start lago_functional_tests_vm01
-    # STATUS
     helpers.run_ok "$LAGOCLI" status
-    echo "$output" \
-    | tail -n+2 \
-    > "current"
-    # the vnc port is not always 5900, for example, if there's another vm
-    # running already
-    echo "DIFF:Checking if the output differs from the expected"
-    echo "CURRENT                  | EXPECTED"
-    expected_content="$FIXTURES/expected2_up_status_all"
-    expected_file="expected2_up_status_all"
-    sed \
-        -e "s|@@PREFIX_PATH@@|$PREFIX_PATH|g" \
-        "$expected_content" \
-    | grep -v 'VNC port' \
-    > "$expected_file"
-    grep -v 'VNC port' "current" \
-    > "current.now"
-    diff \
-        --suppress-common-lines \
-        --side-by-side \
-        "current.now" \
-        "$expected_file"
+    helpers.diff_output "$FIXTURES/expected2_up_status_all"
     # STOP vm02
     helpers.run_ok "$LAGOCLI" stop lago_functional_tests_vm02
-    # STATUS
     helpers.run_ok "$LAGOCLI" status
-    echo "$output" \
-    | tail -n+2 \
-    > "current"
-    # the vnc port is not always 5900, for example, if there's another vm
-    # running already
-    echo "DIFF:Checking if the output differs from the expected"
-    echo "CURRENT                  | EXPECTED"
-    expected_content="$FIXTURES/expected2_up_status_vm01"
-    expected_file="expected2_up_status_vm01"
-    sed \
-        -e "s|@@PREFIX_PATH@@|$PREFIX_PATH|g" \
-        "$expected_content" \
-    | grep -v 'VNC port' \
-    > "$expected_file"
-    grep -v 'VNC port' "current" \
-    > "current.now"
-    diff \
-        --suppress-common-lines \
-        --side-by-side \
-        "current.now" \
-        "$expected_file"
+    helpers.diff_output "$FIXTURES/expected2_up_status_vm01"
     # STOP vm01
     helpers.run_ok "$LAGOCLI" stop lago_functional_tests_vm01
-    # STATUS
     helpers.run_ok "$LAGOCLI" status
-    echo "$output" \
-    | tail -n+2 \
-    > "current"
-    echo "DIFF:Checking if the output differs from the expected"
-    echo "CURRENT                  | EXPECTED"
-    expected_content="$FIXTURES/expected2_down_status_all"
-    expected_file="expected2_down_status_all"
-    sed \
-        -e "s|@@PREFIX_PATH@@|$PREFIX_PATH|g" \
-        "$expected_content" \
-    | grep -v 'VNC port' \
-    > "$expected_file"
-    grep -v 'VNC port' "current" \
-    > "current.now"
-    diff \
-        --suppress-common-lines \
-        --side-by-side \
-        "current.now" \
-        "$expected_file"
+    helpers.diff_output "$FIXTURES/expected2_down_status_all"
 }
 
 

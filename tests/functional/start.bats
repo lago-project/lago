@@ -42,27 +42,7 @@ FIXTURES="$FIXTURES/start"
     helpers.run_ok "$LAGOCLI" start
 
     helpers.run_ok "$LAGOCLI" status
-    echo "$output" \
-    | tail -n+2 \
-    > "$prefix/current"
-    # the vnc port is not always 5900, for example, if there's another vm
-    # running already
-    echo "Extracting vnc port from the current status"
-    vnc_port="$(grep -Po '(?<=VNC port: )\d+' "$prefix/current")" || :
-    echo "DIFF:Checking if the output differs from the expected"
-    echo "CURRENT                  | EXPECTED"
-    expected_content="$FIXTURES/expected_up_status"
-    expected_file="expected_up_status"
-    sed \
-        -e "s|@@BATS_TEST_DIRNAME@@|$BATS_TEST_DIRNAME|g" \
-        -e "s|@@VNC_PORT@@|${vnc_port:-no port found}|g" \
-        "$expected_content" \
-    > "$expected_file"
-    diff \
-        --suppress-common-lines \
-        --side-by-side \
-        "current" \
-        "$expected_file"
+    helpers.diff_output "$FIXTURES/expected_up_status"
 }
 
 
@@ -76,27 +56,7 @@ FIXTURES="$FIXTURES/start"
     helpers.run_ok "$LAGOCLI" start
 
     helpers.run_ok "$LAGOCLI" status
-    echo "$output" \
-    | tail -n+2 \
-    > "$prefix/current"
-    # the vnc port is not always 5900, for example, if there's another vm
-    # running already
-    echo "Extracting vnc port from the current status"
-    vnc_port="$(grep -Po '(?<=VNC port: )\d+' "$prefix/current")" || :
-    echo "DIFF:Checking if the output differs from the expected"
-    echo "CURRENT                  | EXPECTED"
-    expected_content="$FIXTURES/expected_up_status"
-    expected_file="expected_up_status"
-    sed \
-        -e "s|@@BATS_TEST_DIRNAME@@|$BATS_TEST_DIRNAME|g" \
-        -e "s|@@VNC_PORT@@|${vnc_port:-no port found}|g" \
-        "$expected_content" \
-    > "$expected_file"
-    diff \
-        --suppress-common-lines \
-        --side-by-side \
-        "current" \
-        "$expected_file"
+    helpers.diff_output "$FIXTURES/expected_up_status"
 }
 
 
