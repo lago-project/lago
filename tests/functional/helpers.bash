@@ -44,7 +44,29 @@ helpers.run() {
     return 0
 }
 
+
+helpers.run_ok() {
+    helpers.run "$@"
+    helpers.equals "$status" '0'
+}
+
+
+helpers.run_nook() {
+    helpers.run "$@"
+    helpers.different "$status" '0'
+}
+
+
 helpers.equals() {
+    local what="${1:?}"
+    local to_what="${2:?}"
+    echo "\"$what\" == \"$to_what\""
+    [[ "$what" == "$to_what" ]]
+    return $?
+}
+
+
+helpers.different() {
     local what="${1:?}"
     local to_what="${2:?}"
     echo "\"$what\" == \"$to_what\""
