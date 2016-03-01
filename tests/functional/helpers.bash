@@ -100,9 +100,11 @@ helpers.diff_output() {
     > "$prefix/current"
     echo "DIFF:Checking if the output differs from the expected"
     echo "CURRENT(<): output | EXPECTED(>): $expected_file"
+    [[ -e "$PREFIX" ]] && UUID="${UUID:-$(cat "$PREFIX/uuid")}"
     sed \
         -e "s|@@PREFIX_PATH@@|$PREFIX_PATH|g" \
         -e "s|@@PREFIX@@|$PREFIX|g" \
+        -e "s|@@UUID@@|$UUID|g" \
         -e "s|@@BATS_TEST_DIRNAME@@|$BATS_TEST_DIRNAME|g" \
         "$expected_file" \
     > "$expected_replaced_file"
