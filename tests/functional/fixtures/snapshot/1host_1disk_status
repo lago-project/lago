@@ -1,0 +1,19 @@
+[Prefix]:
+    Base directory: @@PREFIX@@
+    [Networks]:
+        [lago_functional_tests]:
+            gateway: 192.168.200.1
+            management: True
+            status: up
+    UUID: @@UUID@@
+    [VMs]:
+        [lago_functional_tests_vm01]:
+            [NICs]:
+                [eth0]:
+                    ip: 192.168.200.2
+                    network: lago_functional_tests
+            VNC port: @@VNC_PORT@@
+            distro: fc23
+            root password: 123456
+            snapshots: snapshot_number_1
+            status: up
