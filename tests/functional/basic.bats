@@ -148,6 +148,32 @@ is_initialized() {
 }
 
 
+@test "basic.full_run: status when stopped explicitly specifying the prefix" {
+    local prefix="$FIXTURES"/prefix1
+
+    is_initialized "$prefix" || skip "prefix not initiated"
+    helpers.run "$LAGOCLI" --prefix-path "$prefix" status
+    helpers.equals "$status" '0'
+    echo "$output" \
+    | tail -n+2 \
+    > "$prefix/current"
+    echo "DIFF:Checking if the output differs from the expected"
+    echo "CURRENT                  | EXPECTED"
+    expected_content="$FIXTURES/expected_down_status"
+    expected_file="expected_down_status"
+    sed \
+        -e "s|@@BATS_TEST_DIRNAME@@|$BATS_TEST_DIRNAME|g" \
+        "$expected_content" \
+    > "$expected_file"
+    diff \
+        --suppress-common-lines \
+        --side-by-side \
+        "$prefix/current" \
+        "$expected_file"
+}
+
+
+
 @test "basic.full_run: start everything at once" {
     local prefix="$FIXTURES"/prefix1
 
