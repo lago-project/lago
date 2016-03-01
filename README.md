@@ -375,6 +375,8 @@ $ sed -e "s/@SUITE@/$suite_path/g" init.json.in > init.json
 Now we have a full `init.json` file :), but we have to talk about another file
 before being able to create the prefix:
 
+Note that lago supports json and yaml formats for that file.
+
 
 ### template-repo.json: Sources for templates
 
