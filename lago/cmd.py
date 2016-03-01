@@ -44,7 +44,10 @@ LOGGER = logging.getLogger('cli')
 )
 @lago.plugins.cli.cli_plugin_add_argument(
     'virt_config',
-    help='Configuration of resources to deploy',
+    help=(
+        'Configuration of resources to deploy, json and yaml file formats '
+        'are supported'
+    ),
     metavar='VIRT_CONFIG',
     type=os.path.abspath,
 )
