@@ -1,0 +1,25 @@
+base_disk: &base_disk
+  template_name: lago_functional_tests
+  type: template
+  name: root
+  dev: vda
+  format: qcow2
+
+base_domain: &base_domain
+  memory: 64
+  nics:
+    - net: lago_functional_tests
+  disks:
+    - *base_disk
+
+domains:
+  lago_functional_tests_vm01: *base_domain
+  lago_functional_tests_vm02: *base_domain
+
+nets:
+  lago_functional_tests:
+    type: nat
+    dhcp:
+      start: 100
+      end: 254
+    management: true

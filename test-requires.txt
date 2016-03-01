@@ -1,13 +1,14 @@
+# not provided by pip
+#python-libguestfs
 dulwich
 flake8
 libvirt-python
-# not provided by pip
-#python-libguestfs
 lockfile
 lxml
-python-magic
-pytest
 paramiko
+pytest
+python-magic
+pyyaml
 scp
 xmltodict
 yapf
