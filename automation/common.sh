@@ -24,6 +24,8 @@ build_docs() {
     local res=0
     rm -rf "$docs_dir"
     rm -rf tests/docs_venv
+    [[ -d .cache ]] || mkdir .cache
+    chown -R $USER .cache
     virtualenv -q tests/docs_venv
     source tests/docs_venv/bin/activate
     pip --quiet install --requirement docs/requires.txt
@@ -40,6 +42,8 @@ run_unit_tests() {
     # pull in all the dependencies
     rm -rf tests/venv
     # the system packages are needed for python-libguestfs
+    [[ -d .cache ]] || mkdir .cache
+    chown -R $USER .cache
     virtualenv -q --system-site-packages tests/venv
     source tests/venv/bin/activate
     pip --quiet install --requirement test-requires.txt
