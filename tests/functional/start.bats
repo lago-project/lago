@@ -1,18 +1,11 @@
 #!/usr/bin/env bats
-LAGOCLI=lagocli
-FIXTURES="$BATS_TEST_DIRNAME/fixtures/start"
-LIBVIRT_PREFIX="lft_"
-
-
+load common
 load helpers
 load env_setup
 
 
-is_initialized() {
-    local prefix="${1?}"
-    [[ -e "$prefix/initialized" ]]
-    return $?
-}
+LIBVIRT_PREFIX="lft_"
+FIXTURES="$FIXTURES/start"
 
 
 @test "start: init" {
@@ -29,14 +22,13 @@ is_initialized() {
     # libvirt/kvm
     export BATS_TMPDIR BATS_TEST_DIRNAME
     export LIBGUESTFS_DEBUG=1 LIBGUESTFS_TRACE=1
-    helpers.run "$LAGOCLI" \
+    helpers.run_ok "$LAGOCLI" \
         init \
         --template-repo-path "$repo_conf" \
         --template-repo-name "local_tests_repo" \
         --template-store "$repo" \
         "$prefix" \
         "$suite"
-    helpers.equals "$status" '0'
 
     echo "$fake_uuid" > "$prefix/uuid"
 }
@@ -45,13 +37,11 @@ is_initialized() {
 @test "start.1vm_bridged: start everything at once" {
     local prefix="$FIXTURES"/prefix1
 
-    is_initialized "$prefix" || skip "prefix not initiated"
+    common.is_initialized "$prefix" || skip "prefix not initiated"
     pushd "$prefix" >/dev/null
-    helpers.run "$LAGOCLI" start
-    helpers.equals "$status" '0'
+    helpers.run_ok "$LAGOCLI" start
 
-    helpers.run "$LAGOCLI" status
-    helpers.equals "$status" '0'
+    helpers.run_ok "$LAGOCLI" status
     echo "$output" \
     | tail -n+2 \
     > "$prefix/current"
@@ -81,13 +71,11 @@ is_initialized() {
     local prefix="$FIXTURES"/prefix1
     local repo="$FIXTURES"/repo_store
 
-    is_initialized "$prefix" || skip "prefix not initiated"
+    common.is_initialized "$prefix" || skip "prefix not initiated"
     pushd "$prefix" >/dev/null
-    helpers.run "$LAGOCLI" start
-    helpers.equals "$status" '0'
+    helpers.run_ok "$LAGOCLI" start
 
-    helpers.run "$LAGOCLI" status
-    helpers.equals "$status" '0'
+    helpers.run_ok "$LAGOCLI" status
     echo "$output" \
     | tail -n+2 \
     > "$prefix/current"
@@ -115,10 +103,10 @@ is_initialized() {
 @test "start: teardown" {
     local prefix="$FIXTURES"/prefix1
 
-    is_initialized "$prefix" \
+    common.is_initialized "$prefix" \
     && {
         pushd "$prefix" >/dev/null
-        helpers.run "$LAGOCLI" cleanup
+        helpers.run_ok "$LAGOCLI" cleanup
     }
 
     env_setup.destroy_domains "$LIBVIRT_PREFIX"

@@ -1,11 +1,11 @@
 #!/usr/bin/env bats
-LAGOCLI=lagocli
-FIXTURES="$BATS_TEST_DIRNAME/fixtures/status"
-PREFIX="$FIXTURES/prefix"
-
-
+load common
 load helpers
 load env_setup
+
+
+FIXTURES="$FIXTURES/status"
+PREFIX="$FIXTURES/prefix"
 
 
 @test "status: setup" {
@@ -17,8 +17,7 @@ load env_setup
 
 @test "status: simple status run on stopped prefix" {
     pushd "$PREFIX" >/dev/null
-    helpers.run "$LAGOCLI" status
-    helpers.equals "$status" '0'
+    helpers.run_ok "$LAGOCLI" status
 
     echo "DIFF:Checking if the output differs from the expected"
     expected_file="$PREFIX/expected"
@@ -40,8 +39,7 @@ load env_setup
 
 @test "status: json status run on stopped prefix" {
     pushd "$PREFIX" >/dev/null
-    helpers.run "$LAGOCLI" --out-format json status
-    helpers.equals "$status" '0'
+    helpers.run_ok "$LAGOCLI" --out-format json status
 
     echo "DIFF:Checking if the output differs from the expected"
     expected_file="$PREFIX/expected.json"
@@ -62,8 +60,7 @@ load env_setup
 
 @test "status: yaml status run on stopped prefix" {
     pushd "$PREFIX" >/dev/null
-    helpers.run "$LAGOCLI" -f yaml status
-    helpers.equals "$status" '0'
+    helpers.run_ok "$LAGOCLI" -f yaml status
 
     echo "DIFF:Checking if the output differs from the expected"
     expected_file="$PREFIX/expected.yaml"
