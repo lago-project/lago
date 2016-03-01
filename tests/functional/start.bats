@@ -1,18 +1,11 @@
 #!/usr/bin/env bats
-LAGOCLI=lagocli
-FIXTURES="$BATS_TEST_DIRNAME/fixtures/start"
-LIBVIRT_PREFIX="lft_"
-
-
+load common
 load helpers
 load env_setup
 
 
-is_initialized() {
-    local prefix="${1?}"
-    [[ -e "$prefix/initialized" ]]
-    return $?
-}
+LIBVIRT_PREFIX="lft_"
+FIXTURES="$FIXTURES/start"
 
 
 @test "start: init" {
@@ -29,14 +22,13 @@ is_initialized() {
     # libvirt/kvm
     export BATS_TMPDIR BATS_TEST_DIRNAME
     export LIBGUESTFS_DEBUG=1 LIBGUESTFS_TRACE=1
-    helpers.run "$LAGOCLI" \
+    helpers.run_ok "$LAGOCLI" \
         init \
         --template-repo-path "$repo_conf" \
         --template-repo-name "local_tests_repo" \
         --template-store "$repo" \
         "$prefix" \
         "$suite"
-    helpers.equals "$status" '0'
 
     echo "$fake_uuid" > "$prefix/uuid"
 }
@@ -45,34 +37,12 @@ is_initialized() {
 @test "start.1vm_bridged: start everything at once" {
     local prefix="$FIXTURES"/prefix1
 
-    is_initialized "$prefix" || skip "prefix not initiated"
+    common.is_initialized "$prefix" || skip "prefix not initiated"
     pushd "$prefix" >/dev/null
-    helpers.run "$LAGOCLI" start
-    helpers.equals "$status" '0'
+    helpers.run_ok "$LAGOCLI" start
 
-    helpers.run "$LAGOCLI" status
-    helpers.equals "$status" '0'
-    echo "$output" \
-    | tail -n+2 \
-    > "$prefix/current"
-    # the vnc port is not always 5900, for example, if there's another vm
-    # running already
-    echo "Extracting vnc port from the current status"
-    vnc_port="$(grep -Po '(?<=VNC port: )\d+' "$prefix/current")" || :
-    echo "DIFF:Checking if the output differs from the expected"
-    echo "CURRENT                  | EXPECTED"
-    expected_content="$FIXTURES/expected_up_status"
-    expected_file="expected_up_status"
-    sed \
-        -e "s|@@BATS_TEST_DIRNAME@@|$BATS_TEST_DIRNAME|g" \
-        -e "s|@@VNC_PORT@@|${vnc_port:-no port found}|g" \
-        "$expected_content" \
-    > "$expected_file"
-    diff \
-        --suppress-common-lines \
-        --side-by-side \
-        "current" \
-        "$expected_file"
+    helpers.run_ok "$LAGOCLI" status
+    helpers.diff_output "$FIXTURES/expected_up_status"
 }
 
 
@@ -81,44 +51,22 @@ is_initialized() {
     local prefix="$FIXTURES"/prefix1
     local repo="$FIXTURES"/repo_store
 
-    is_initialized "$prefix" || skip "prefix not initiated"
+    common.is_initialized "$prefix" || skip "prefix not initiated"
     pushd "$prefix" >/dev/null
-    helpers.run "$LAGOCLI" start
-    helpers.equals "$status" '0'
+    helpers.run_ok "$LAGOCLI" start
 
-    helpers.run "$LAGOCLI" status
-    helpers.equals "$status" '0'
-    echo "$output" \
-    | tail -n+2 \
-    > "$prefix/current"
-    # the vnc port is not always 5900, for example, if there's another vm
-    # running already
-    echo "Extracting vnc port from the current status"
-    vnc_port="$(grep -Po '(?<=VNC port: )\d+' "$prefix/current")" || :
-    echo "DIFF:Checking if the output differs from the expected"
-    echo "CURRENT                  | EXPECTED"
-    expected_content="$FIXTURES/expected_up_status"
-    expected_file="expected_up_status"
-    sed \
-        -e "s|@@BATS_TEST_DIRNAME@@|$BATS_TEST_DIRNAME|g" \
-        -e "s|@@VNC_PORT@@|${vnc_port:-no port found}|g" \
-        "$expected_content" \
-    > "$expected_file"
-    diff \
-        --suppress-common-lines \
-        --side-by-side \
-        "current" \
-        "$expected_file"
+    helpers.run_ok "$LAGOCLI" status
+    helpers.diff_output "$FIXTURES/expected_up_status"
 }
 
 
 @test "start: teardown" {
     local prefix="$FIXTURES"/prefix1
 
-    is_initialized "$prefix" \
+    common.is_initialized "$prefix" \
     && {
         pushd "$prefix" >/dev/null
-        helpers.run "$LAGOCLI" cleanup
+        helpers.run_ok "$LAGOCLI" cleanup
     }
 
     env_setup.destroy_domains "$LIBVIRT_PREFIX"

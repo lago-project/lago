@@ -1,11 +1,11 @@
 #!/usr/bin/env bats
-LAGOCLI=lagocli
-FIXTURES="$BATS_TEST_DIRNAME/fixtures/status"
-PREFIX="$FIXTURES/prefix"
-
-
+load common
 load helpers
 load env_setup
+
+
+FIXTURES="$FIXTURES/status"
+PREFIX="$FIXTURES/prefix"
 
 
 @test "status: setup" {
@@ -17,67 +17,19 @@ load env_setup
 
 @test "status: simple status run on stopped prefix" {
     pushd "$PREFIX" >/dev/null
-    helpers.run "$LAGOCLI" status
-    helpers.equals "$status" '0'
-
-    echo "DIFF:Checking if the output differs from the expected"
-    expected_file="$PREFIX/expected"
-    current_file="$PREFIX/current"
-    echo "$output" \
-    | tail -n+2 \
-    > "$current_file"
-    sed \
-        -i \
-        -e "s|@@PREFIX@@|$PREFIX|g" \
-        "$expected_file"
-    diff \
-        --suppress-common-lines \
-        --side-by-side \
-        "$current_file" \
-        "$expected_file"
+    helpers.run_ok "$LAGOCLI" status
+    helpers.diff_output "$PREFIX/expected"
 }
 
 
 @test "status: json status run on stopped prefix" {
     pushd "$PREFIX" >/dev/null
-    helpers.run "$LAGOCLI" --out-format json status
-    helpers.equals "$status" '0'
-
-    echo "DIFF:Checking if the output differs from the expected"
-    expected_file="$PREFIX/expected.json"
-    current_file="$PREFIX/current"
-    echo "$output" \
-    | tail -n+2 \
-    > "$current_file"
-    sed \
-        -i \
-        -e "s|@@PREFIX@@|$PREFIX|g" \
-        "$expected_file"
-    diff \
-        --suppress-common-lines \
-        --side-by-side \
-        "$current_file" \
-        "$expected_file"
+    helpers.run_ok "$LAGOCLI" --out-format json status
+    helpers.diff_output "$PREFIX/expected.json"
 }
 
 @test "status: yaml status run on stopped prefix" {
     pushd "$PREFIX" >/dev/null
-    helpers.run "$LAGOCLI" -f yaml status
-    helpers.equals "$status" '0'
-
-    echo "DIFF:Checking if the output differs from the expected"
-    expected_file="$PREFIX/expected.yaml"
-    current_file="$PREFIX/current"
-    echo "$output" \
-    | tail -n+2 \
-    > "$current_file"
-    sed \
-        -i \
-        -e "s|@@PREFIX@@|$PREFIX|g" \
-        "$expected_file"
-    diff \
-        --suppress-common-lines \
-        --side-by-side \
-        "$current_file" \
-        "$expected_file"
+    helpers.run_ok "$LAGOCLI" -f yaml status
+    helpers.diff_output "$PREFIX/expected.yaml"
 }
