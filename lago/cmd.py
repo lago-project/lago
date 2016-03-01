@@ -22,7 +22,6 @@
 import argparse
 import functools
 import grp
-import json
 import logging
 import os
 import pkg_resources
@@ -45,7 +44,10 @@ LOGGER = logging.getLogger('cli')
 )
 @lago.plugins.cli.cli_plugin_add_argument(
     'virt_config',
-    help='Configuration of resources to deploy',
+    help=(
+        'Configuration of resources to deploy, json and yaml file formats '
+        'are supported'
+    ),
     metavar='VIRT_CONFIG',
     type=os.path.abspath,
 )
@@ -85,10 +87,6 @@ def do_init(
 ):
     prefix = lago_prefix.Prefix(prefix)
     prefix.initialize()
-
-    with open(virt_config, 'r') as f:
-        virt_conf = json.load(f)
-
     log_utils.setup_prefix_logging(prefix.paths.logs())
 
     try:
@@ -117,7 +115,8 @@ def do_init(
         )
         store = lago.templates.TemplateStore(template_store_path)
 
-        prefix.virt_conf(virt_conf, repo, store)
+        with open(virt_config, 'r') as virt_fd:
+            prefix.virt_conf_from_stream(virt_fd, repo, store)
     except:
         shutil.rmtree(prefix.paths.prefixed(''))
         raise

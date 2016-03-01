@@ -306,7 +306,7 @@ EOS
 @test 'basic.full_run: start and stop many vms one by one' {
     local basedir="$FIXTURES/basedir"
     local repo="$FIXTURES"/repo_store
-    local suite="$FIXTURES"/suite2.json
+    local suite="$FIXTURES"/suite2.yaml
     local repo_conf="$FIXTURES"/template_repo.json
     local fake_uuid="12345678910121416182022242628303"
     PREFIX_PATH="$basedir/.lago"
