@@ -109,10 +109,9 @@ def fetch_xml(url):
     """
     try:
         content = urllib2.urlopen(url).read()
-    except urllib2.URLError, e:
+    except urllib2.URLError as e:
         raise RuntimeError(
-            'Failed to open URL %s\nError code: %s\nError reason: %s' %
-            (url, e.code, e.reason)
+            'Failed to open URL %s\nError reason: %s' % (url, e.reason)
         )
 
     if url.endswith('.gz'):

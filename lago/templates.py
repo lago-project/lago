@@ -187,10 +187,15 @@ class HttpTemplateProvider:
             response.close()
             try:
                 urllib.urlretrieve(full_url, dest, report)
-            except IOError, e:
+            except IOError as e:
                 raise RuntimeError(
-                    'Failed to retrieve URL%s\nError code: %s\n \
-                    Error Reason %s' (full_url, e.errno, e.srerror)
+                    'Failed to retrieve URL %s\nError code: %s\n \
+                    Error Reason: %s' % (full_url, e.errno, e.strerror)
+                )
+            except urllib.ContentTooShortError:
+                raise RuntimeError(
+                    'The amount of downloaded data for %s \
+                    is less than the expected amount' % (full_url)
                 )
             sys.stdout.write("\n")
         return response
