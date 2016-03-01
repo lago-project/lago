@@ -287,14 +287,16 @@ EOS
     is_initialized "$prefix" || skip "prefix not initiated"
     pushd "$FIXTURES" >/dev/null
     ln -s "$prefix" "$prefix_link"
-    # Remove the link too
+    echo "Destroying the link-based prefix"
     helpers.run "$LAGOCLI" destroy --yes
     helpers.equals "$status" '0'
     helpers.not_exists "$prefix_link"
-    # Remove from inside the prefix
+
+    echo "Destroying from inside the prefix"
     helpers.is_dir "$prefix"
     pushd "$prefix" >/dev/null
-    helpers.run "$LAGOCLI" destroy --yes
+    helpers.run touch 'initialized'
+    helpers.run "$LAGOCLI" --loglevel debug --logdepth -1 destroy --yes
     helpers.equals "$status" '0'
     helpers.not_exists "$prefix"
 }
