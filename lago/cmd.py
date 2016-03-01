@@ -126,7 +126,10 @@ def do_init(
 def in_prefix(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
-        prefix_path = lago_prefix.resolve_prefix_path()
+        prefix_path = kwargs.get('prefix_path', 'auto')
+        if prefix_path == 'auto':
+            prefix_path = lago_prefix.resolve_prefix_path()
+
         return func(*args, prefix=lago_prefix.Prefix(prefix_path), **kwargs)
 
     return wrapper
@@ -485,6 +488,12 @@ def create_parser(cli_plugins, out_plugins):
         action='store',
         default='default',
         choices=out_plugins.keys(),
+    )
+    parser.add_argument(
+        '--prefix-path',
+        '-p',
+        action='store',
+        default='auto',
     )
     verbs_parser = parser.add_subparsers(dest='verb', metavar='VERB')
     for cli_plugin_name, cli_plugin in cli_plugins.items():

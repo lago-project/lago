@@ -44,7 +44,10 @@ DISTS = ['el6', 'el7', 'fc20']
 def in_prefix(func):
     @functools.wraps(func)
     def wrapper(args):
-        prefix_path = lago.prefix.resolve_prefix_path()
+        prefix_path = getattr(args, 'prefix_path', 'auto')
+        if prefix_path == 'auto':
+            prefix_path = lago.prefix.resolve_prefix_path()
+
         prefix = ovirtlago.OvirtPrefix(prefix_path)
         return func(prefix, args)
 
