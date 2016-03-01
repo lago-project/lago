@@ -17,6 +17,7 @@
 #
 # Refer to the README and COPYING files for full details of the license
 #
+import Queue
 import array
 import collections
 import fcntl
@@ -32,7 +33,7 @@ import termios
 import threading
 import time
 import tty
-import Queue
+import yaml
 
 import constants
 from .log_utils import LogTask
@@ -423,3 +424,43 @@ def interactive_ssh_channel(chan, command=None, stdin=sys.stdin):
 
 def json_dump(obj, f):
     return json.dump(obj, f, indent=4)
+
+
+def deepcopy(original_obj):
+    """
+    Creates a deep copy of an object with no crossed referenced lists or dicts,
+    useful when loading from yaml as anchors generate those cross-referenced
+    dicts and lists
+
+    Args:
+        original_obj(object): Object to deep copy
+
+    Return:
+        object: deep copy of the object
+    """
+    if isinstance(original_obj, list):
+        return list(deepcopy(item) for item in original_obj)
+    elif isinstance(original_obj, dict):
+        return dict((key, deepcopy(val)) for key, val in original_obj.items())
+    else:
+        return original_obj
+
+
+def load_virt_stream(virt_fd):
+    """
+    Loads the given conf stream into a dict, trying different formats if
+    needed
+
+    Args:
+        virt_fd (str): file like objcect with the virt config to load
+
+    Returns:
+        dict: Loaded virt config
+    """
+    try:
+        virt_conf = json.load(virt_fd)
+    except ValueError:
+        virt_fd.seek(0)
+        virt_conf = yaml.load(virt_fd)
+
+    return deepcopy(virt_conf)

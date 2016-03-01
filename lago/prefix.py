@@ -481,8 +481,8 @@ class Prefix(object):
             RuntimeError: If the type of the disk is not supported or failed to
                 create the disk
         """
+        LOGGER.debug("Spec: %s" % spec)
         with LogTask("Create disk %s" % spec['name']):
-            LOGGER.debug("Spec: %s" % spec)
             disk_metadata = {}
 
             disk_filename = '%s_%s.%s' % (name, spec['name'], spec['format'])
@@ -712,7 +712,34 @@ class Prefix(object):
 
         return dst_path
 
-    def virt_conf(self, conf, template_repo=None, template_store=None, ):
+    def virt_conf_from_stream(
+        self,
+        conf_fd,
+        template_repo=None,
+        template_store=None
+    ):
+        """
+        Initializes all the virt infrastructure of the prefix, creating the
+        domains disks, doing any network leases and creating all the virt
+        related files and dirs inside this prefix.
+
+        Args:
+            conf_fd (File): File like object to read the config from
+            template_repo (TemplateRepository): template repository intance
+            template_store (TemplateStore): template store instance
+
+        Returns:
+            None
+        """
+        virt_conf = utils.load_virt_stream(conf_fd)
+        LOGGER.debug('Loaded virt config:\n%s', virt_conf)
+        return self.virt_conf(
+            conf=virt_conf,
+            template_repo=template_repo,
+            template_store=template_store,
+        )
+
+    def virt_conf(self, conf, template_repo=None, template_store=None):
         """
         Initializes all the virt infrastructure of the prefix, creating the
         domains disks, doing any network leases and creating all the virt
