@@ -69,7 +69,7 @@ helpers.equals() {
 helpers.different() {
     local what="${1:?}"
     local to_what="${2:?}"
-    echo "\"$what\" == \"$to_what\""
+    echo "\"$what\" != \"$to_what\""
     [[ "$what" != "$to_what" ]]
     return $?
 }

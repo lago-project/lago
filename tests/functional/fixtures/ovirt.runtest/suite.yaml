@@ -1,0 +1,29 @@
+common-host-settings: &common-host-settings
+  memory: 512
+  nics:
+    - net: lago_functional_tests
+  disks:
+    - template_name: fc23-base
+      type: template
+      name: root
+      dev: vda
+      format: qcow2
+
+domains:
+  lago_functional_tests_host:
+      <<: *common-host-settings
+      metadata:
+        ovirt-role: host
+
+  lago_functional_tests_engine:
+      <<: *common-host-settings
+      metadata:
+        ovirt-role: engine
+
+nets:
+  lago_functional_tests:
+    type: nat
+    dhcp:
+      start: 100
+      end: 254
+    management: true
