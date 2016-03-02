@@ -1,1 +1,2 @@
-check-patch.mounts
+/var/run/libvirt
+/var/lib/lago

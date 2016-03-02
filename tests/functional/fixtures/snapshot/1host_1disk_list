@@ -1,0 +1,21 @@
+{
+    "lago_functional_tests_vm01": {
+        "snapshot_number_1": [
+            {
+                "dev": "vda", 
+                "format": "qcow2", 
+                "metadata": {
+                    "arch": "x86_64", 
+                    "base": "fedora-23", 
+                    "distro": "fc23", 
+                    "expand": "/dev/sda3", 
+                    "name": "lago Fedora\u00ae 23", 
+                    "osinfo": "fedora23", 
+                    "root-partition": "/dev/sda3"
+                }, 
+                "path": "@@PREFIX@@/images/lago_functional_tests_vm01_root.qcow2", 
+                "type": "template"
+            }
+        ]
+    }
+}
