@@ -117,6 +117,7 @@ helpers.diff_output() {
             "$expected_replaced_file"
     done
     diff \
+        --ignore-trailing-space \
         "$prefix/current" \
         "$expected_replaced_file"
     return $?
