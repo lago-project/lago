@@ -55,24 +55,38 @@ class OutFormatPlugin(Plugin):
 class DefaultOutFormatPlugin(OutFormatPlugin):
     indent_unit = '    '
 
-    def format(self, info_dict, indent=''):
+    def format(self, info_obj, indent=''):
         formatted_lines = []
-        for key in sorted(info_dict.keys()):
-            value = info_dict[key]
-            if isinstance(value, collections.Mapping):
-                if not value:
-                    continue
+        if isinstance(info_obj, list):
+            if indent:
+                formatted_lines.append('')
+            for elem in info_obj:
+                value_str = self.format(elem)
+                formatted_lines.append(indent + value_str)
+        elif isinstance(info_obj, collections.Mapping):
+            for key in sorted(info_obj.keys()):
+                value = info_obj[key]
+                if isinstance(value, collections.Mapping):
+                    if not value:
+                        continue
 
-                formatted_lines.append('%s[%s]:' % (indent, str(key)))
-                value_str = self.format(
-                    value,
-                    indent=indent + self.indent_unit,
-                )
-                if value_str:
-                    formatted_lines.append(value_str)
+                    formatted_lines.append('%s[%s]:' % (indent, str(key)))
+                    value_str = self.format(
+                        info_obj=value,
+                        indent=indent + self.indent_unit,
+                    )
+                    if value_str:
+                        formatted_lines.append(value_str)
 
-            elif value not in (None, ''):
-                formatted_lines.append(indent + str(key) + ': ' + str(value))
+                elif value not in (None, ''):
+                    formatted_lines.append(
+                        indent + str(key) + ': ' + self.format(
+                            info_obj=value,
+                            indent=indent + self.indent_unit,
+                        )
+                    )
+        else:
+            formatted_lines.append(str(info_obj))
 
         return '\n'.join(formatted_lines)
 
