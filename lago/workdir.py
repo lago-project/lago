@@ -22,16 +22,16 @@ A workdir is the base directory where lago will store all the files it needs
 and that are unique (not shared between workdirs).
 
 It's basic structure is a directory with one soft link and multiple
-directories, one per prefix/environment. Where the link points to the default
-prefix/environment to use.
+directories, one per prefix. Where the link points to the default prefix to
+use.
 
 """
 import os
 import logging
+import shutil
 from functools import partial, wraps
 
 from . import prefix
-from .plugins.cli import CLIPlugin
 
 LOGGER = logging.getLogger(__name__)
 
@@ -89,6 +89,9 @@ def resolve_workdir_path(start_path=os.curdir):
     Raises:
         RuntimeError: if no prefix was found
     """
+    if start_path == 'auto':
+        start_path = os.curdir
+
     cur_path = start_path
 
     LOGGER.debug('Checking if %s is a workdir', os.path.abspath(cur_path), )
@@ -187,7 +190,7 @@ class Workdir(object):
         )
         self.prefixes[prefix_name].initialize()
         if self.current is None:
-            self.set_current(prefix_name)
+            self._set_current(prefix_name)
 
         self.load()
 
@@ -213,12 +216,14 @@ class Workdir(object):
             raise MalformedWorkdir('Empty dir %s' % self.path)
 
         full_path = partial(os.path.join, basepath)
+        found_current = False
 
         for dirname in dirs:
             if dirname == 'current' and os.path.islink(full_path('current')):
                 self.current = os.path.basename(
                     os.readlink(full_path('current'))
                 )
+                found_current = True
                 continue
             elif dirname == 'current':
                 raise MalformedWorkdir(
@@ -229,15 +234,33 @@ class Workdir(object):
                 prefix=self.join(dirname)
             )
 
-        if not self.current:
+        if not found_current:
+            raise MalformedWorkdir(
+                '"%s/current" should exist and be a soft link' % self.path
+            )
+
+        self._update_current()
+
+    def _update_current(self):
+        """
+        Makes sure that a current is set
+        """
+        if not self.current or self.current not in self.prefixes:
             if 'default' in self.prefixes:
-                logging.info('Missing current link, setting it to default')
-                self._set_current('default')
+                selected_current = 'default'
+            elif self.prefixes:
+                selected_current = sorted(self.prefixes.keys()).pop()
             else:
+                # should never get here
                 raise MalformedWorkdir(
-                    'No current link and no default prefix in workdir %s' %
-                    self.path
+                    'No current link and no prefixes in workdir %s' % self.path
                 )
+
+            logging.info(
+                'Missing current link, setting it to %s',
+                selected_current,
+            )
+            self._set_current(selected_current)
 
     def _set_current(self, new_current):
         """
@@ -261,7 +284,7 @@ class Workdir(object):
                 (new_current, self.path)
             )
 
-        if os.path.exists(self.join('current')):
+        if os.path.lexists(self.join('current')):
             os.unlink(self.join('current'))
 
         os.symlink(new_current, self.join('current'))
@@ -311,7 +334,7 @@ class Workdir(object):
         self.prefixes[name] = self.PREFIX_CLASS(
             self.join(name), *args, **kwargs
         )
-        self.prefixes[name].initalize()
+        self.prefixes[name].initialize()
         if self.current is None:
             self.set_current(name)
 
@@ -338,3 +361,32 @@ class Workdir(object):
             raise KeyError(
                 'Unable to find prefix "%s" in workdir %s' % (name, self.path)
             )
+
+    @workdir_loaded
+    def destroy(self, prefix_names=None):
+        """
+        Destroy all the given prefixes and remove any left files if no more
+        prefixes are left
+
+        Args:
+            prefix_names(list of str): list of prefix names to destroy, if None
+            passed (default) will destroy all of them
+        """
+        if prefix_names is None:
+            self.destroy(prefix_names=self.prefixes.keys())
+            return
+
+        for prefix_name in prefix_names:
+            if prefix_name == 'current' and self.current in prefix_names:
+                continue
+
+            elif prefix_name == 'current':
+                prefix_name = self.current
+
+            self.get_prefix(prefix_name).destroy()
+            self.prefixes.pop(prefix_name)
+            if self.prefixes:
+                self._update_current()
+
+        if not self.prefixes:
+            shutil.rmtree(self.path)

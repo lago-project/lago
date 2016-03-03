@@ -96,7 +96,7 @@ def resolve_prefix_path(start_path=None):
     Raises:
         RuntimeError: if no prefix was found
     """
-    if not start_path:
+    if not start_path or start_path == 'auto':
         start_path = os.path.curdir
 
     cur_path = paths.Paths(start_path)
@@ -226,9 +226,9 @@ class Prefix(object):
             with LogTask('Create prefix dirs'):
                 try:
                     os.mkdir(prefix)
-                except OSError:
+                except OSError as error:
                     raise RuntimeError(
-                        'Could not create prefix at %s' % prefix
+                        'Could not create prefix at %s:\n%s' % (prefix, error)
                     )
             rollback.prependDefer(shutil.rmtree, prefix)
 
@@ -885,5 +885,27 @@ class Prefix(object):
         return self._virt_env
 
     def destroy(self):
+        """
+        Destroy this prefix, running any cleanups and removing any files
+        inside it.
+        """
         self.cleanup()
         shutil.rmtree(self._prefix)
+
+    def get_vms(self):
+        """
+        Retrieve info on all the vms
+
+        Returns:
+            dict of str->list(str): dictionary with vm_name -> vm list
+        """
+        return self.virt_env.get_vms()
+
+    def get_nets(self):
+        """
+        Retrieve info on all the nets from all the domains
+
+        Returns:
+            dict of str->list(str): dictionary with net_name -> net list
+        """
+        return self.virt_env.get_nets()
