@@ -883,3 +883,7 @@ class Prefix(object):
         if self._virt_env is None:
             self._virt_env = self._create_virt_env()
         return self._virt_env
+
+    def destroy(self):
+        self.cleanup()
+        shutil.rmtree(self._prefix)

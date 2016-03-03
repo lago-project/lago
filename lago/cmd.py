@@ -172,11 +172,10 @@ def do_destroy(prefix, yes, **kwargs):
             LOGGER.info('Aborting on user input')
             return
 
-    prefix.cleanup()
     if os.path.islink(prefix_path):
         os.unlink(prefix_path)
     else:
-        shutil.rmtree(prefix_path)
+        prefix.destroy()
 
 
 @lago.plugins.cli.cli_plugin(help='Deploy lago resources')
