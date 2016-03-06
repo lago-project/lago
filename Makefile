@@ -99,6 +99,7 @@ clean:
 	rm -rf ${RPM_DIR}
 	rm -rf build "$(REPO_LOCAL_REL_PATH)"
 	rm -f ${SPECFILE}
+	rm -f AUTHORS
 
 docs:
 	$(MAKE) -C docs clean
