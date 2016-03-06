@@ -158,8 +158,7 @@ class HttpTemplateProvider:
             response = urllib.urlopen(full_url)
         except Exception as e:
             raise RuntimeError(
-                'Failed to retrieve URL %s:\nCode: %d' %
-                (full_url, response.code)
+                'Failed to retrieve URL %s:\nError: %s' % (full_url, e)
             )
         if response.code >= 300:
             raise RuntimeError(
