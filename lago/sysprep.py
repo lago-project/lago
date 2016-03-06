@@ -124,6 +124,9 @@ def sysprep(disk, mods, backend='direct'):
     for mod in mods:
         cmd.extend(mod)
 
-    ret = utils.run_command(cmd, env=env)
+    ret, out, err = utils.run_command(cmd, env=env)
     if ret:
-        raise RuntimeError('Failed to bootstrap %s' % disk)
+        raise RuntimeError(
+            'Failed to bootstrap: %s\nOutput: %s\n \
+                Error: %s\n' % (disk, out, err)
+        )
