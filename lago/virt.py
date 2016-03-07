@@ -242,8 +242,7 @@ class VirtEnv(object):
 
     @classmethod
     def from_prefix(cls, prefix):
-        def virt_path(name):
-            return os.path.join(prefix.paths.prefix, 'virt', name)
+        virt_path = functools.partial(prefix.paths.prefixed, 'virt')
 
         with open(virt_path('env'), 'r') as f:
             env_dom = json.load(f)
