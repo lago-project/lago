@@ -102,6 +102,16 @@ FIXTURES="$FIXTURES/basic"
 }
 
 
+@test "basic.full_run: ignore-warnings hides the group warning" {
+    local prefix="$FIXTURES"/prefix1
+
+    common.is_initialized "$prefix" || skip "prefix not initiated"
+    pushd "$prefix" >/dev/null
+    helpers.run_ok "$LAGOCLI" --ignore-warnings status
+    helpers.diff_output_nowarning "$FIXTURES/expected_down_status"
+}
+
+
 @test "basic.full_run: status when stopped explicitly specifying the prefix" {
     local prefix="$FIXTURES"/prefix1
 
@@ -109,7 +119,6 @@ FIXTURES="$FIXTURES/basic"
     helpers.run_ok "$LAGOCLI" --prefix-path "$prefix" status
     helpers.diff_output "$FIXTURES/expected_down_status"
 }
-
 
 
 @test "basic.full_run: start everything at once" {

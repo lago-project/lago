@@ -122,3 +122,33 @@ helpers.diff_output() {
         "$expected_replaced_file"
     return $?
 }
+
+
+helpers.diff_output_nowarning() {
+    local expected_file="${1?}"
+    local expected_replaced_file="$expected_file.tmp"
+    echo "$output" > "$prefix/current"
+    echo "DIFF:Checking if the output differs from the expected"
+    echo "CURRENT(<): output | EXPECTED(>): $expected_file"
+    [[ -e "$PREFIX" ]] && UUID="${UUID:-$(cat "$PREFIX/uuid")}"
+    sed \
+        -e "s|@@PREFIX_PATH@@|$PREFIX_PATH|g" \
+        -e "s|@@PREFIX@@|$PREFIX|g" \
+        -e "s|@@UUID@@|$UUID|g" \
+        -e "s|@@BATS_TEST_DIRNAME@@|$BATS_TEST_DIRNAME|g" \
+        "$expected_file" \
+    > "$expected_replaced_file"
+    # replace each vnc port appearance
+    local vnc_ports=($(grep -Po '(?<=VNC port: )\d+' "$prefix/current")) || :
+    local vnc_port
+    for vnc_port in "${vnc_ports[@]}"; do
+        sed -i \
+            -e "0,/@@VNC_PORT@@/{s/@@VNC_PORT@@/${vnc_port:=no port found}/}" \
+            "$expected_replaced_file"
+    done
+    diff \
+        --ignore-trailing-space \
+        "$prefix/current" \
+        "$expected_replaced_file"
+    return $?
+}

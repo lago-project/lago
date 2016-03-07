@@ -27,6 +27,7 @@ import os
 import pkg_resources
 import shutil
 import sys
+import warnings
 
 import lago
 import lago.config
@@ -494,6 +495,7 @@ def create_parser(cli_plugins, out_plugins):
         action='store',
         default='auto',
     )
+    parser.add_argument('--ignore-warnings', action='store_true', )
     verbs_parser = parser.add_subparsers(dest='verb', metavar='VERB')
     for cli_plugin_name, cli_plugin in cli_plugins.items():
         plugin_parser = verbs_parser.add_parser(
@@ -506,7 +508,7 @@ def create_parser(cli_plugins, out_plugins):
 
 def check_group_membership():
     if 'lago' not in [grp.getgrgid(gid).gr_name for gid in os.getgroups()]:
-        LOGGER.warning('current session does not belong to lago group.')
+        warnings.warn('current session does not belong to lago group.')
 
 
 def main():
@@ -530,6 +532,12 @@ def main():
             )
         )
     ]
+
+    logging.captureWarnings(True)
+    if args.ignore_warnings:
+        logging.getLogger('py.warnings').setLevel(logging.ERROR)
+    else:
+        warnings.formatwarning = lambda message, *args, **kwargs: message
 
     check_group_membership()
 
