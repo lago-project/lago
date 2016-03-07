@@ -296,11 +296,11 @@ class VirtEnv(object):
 
         Args:
             domanins(list of str): list of the domains to get the snapshots
-                for, all will be returned if none or empty list passed
+            for, all will be returned if none or empty list passed
 
         Returns:
             dict of str -> list(str): with the domain names and the list of
-                snapshots for each
+            snapshots for each
         """
         snapshots = {}
         for vm_name, vm in self.get_vms().items():
