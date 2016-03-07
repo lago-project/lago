@@ -31,7 +31,8 @@ import logging
 import shutil
 from functools import partial, wraps
 
-from . import prefix
+from . import (prefix, utils)
+from .plugins import cli
 
 LOGGER = logging.getLogger(__name__)
 
@@ -54,65 +55,6 @@ class MalformedWorkdir(WorkdirError):
 
 class PrefixAlreadyExists(WorkdirError):
     pass
-
-
-def is_workdir(path):
-    """
-    Check if the given path is a workdir
-
-    Args:
-        path(str): Path to check
-
-    Return:
-        bool: True if the given path is a workdir
-    """
-    try:
-        Workdir(path).load()
-    except Exception:
-        return False
-
-    return True
-
-
-def resolve_workdir_path(start_path=os.curdir):
-    """
-    Look for an existing workdir in the given path, in a path/.lago dir, or in
-    a .lago dir under any of it's parent directories
-
-    Args:
-        start_path (str): path to start the search from, if None passed, it
-            will use the current dir
-
-    Returns:
-        str: path to the found prefix
-
-    Raises:
-        RuntimeError: if no prefix was found
-    """
-    if start_path == 'auto':
-        start_path = os.curdir
-
-    cur_path = start_path
-
-    LOGGER.debug('Checking if %s is a workdir', os.path.abspath(cur_path), )
-    if is_workdir(cur_path):
-        return os.path.abspath(cur_path)
-
-    # now search for a .lago directory that's a workdir on any parent dir
-    cur_path = os.path.join(start_path, '.lago')
-    while not is_workdir(cur_path):
-        LOGGER.debug('%s is not a workdir', cur_path)
-        cur_path = os.path.normpath(
-            os.path.join(cur_path, '..', '..', '.lago')
-        )
-        if os.path.realpath(os.path.join(cur_path, '..')) == '/':
-            raise RuntimeError(
-                'Unable to find workdir for %s' % os.path.abspath(start_path)
-            )
-
-        LOGGER.debug('Checking %s for a workdir', cur_path)
-
-    return os.path.abspath(cur_path)
 
 
 def workdir_loaded(func):
@@ -138,17 +80,18 @@ class Workdir(object):
 
     Properties:
         path(str): Path to the workdir
-        perfixes(dirt of str->self.PREFIX_CLASS): dict with the prefixes in
-            the workdir, by name
+        perfixes(dict of str->self.prefix_class): dict with the prefixes in
+        the workdir, by name
         current(str): Name of the current prefix
+        prefix_class(type): Class to use when creating prefixes
     """
-    PREFIX_CLASS = prefix.Prefix
 
-    def __init__(self, path):
+    def __init__(self, path, prefix_class=prefix.Prefix):
         self.path = path
         self.prefixes = {}
         self.current = None
         self.loaded = False
+        self.prefix_class = prefix_class
 
     def join(self, *args):
         """
@@ -185,7 +128,7 @@ class Workdir(object):
             LOGGER.debug('Creating workdir %s', self.path)
             os.makedirs(self.path)
 
-        self.prefixes[prefix_name] = self.PREFIX_CLASS(
+        self.prefixes[prefix_name] = self.prefix_class(
             self.join(prefix_name), *args, **kwargs
         )
         self.prefixes[prefix_name].initialize()
@@ -230,7 +173,7 @@ class Workdir(object):
                     '"%s/current" should be a soft link' % self.path
                 )
 
-            self.prefixes[dirname] = self.PREFIX_CLASS(
+            self.prefixes[dirname] = self.prefix_class(
                 prefix=self.join(dirname)
             )
 
@@ -331,7 +274,7 @@ class Workdir(object):
                 (name, self.path)
             )
 
-        self.prefixes[name] = self.PREFIX_CLASS(
+        self.prefixes[name] = self.prefix_class(
             self.join(name), *args, **kwargs
         )
         self.prefixes[name].initialize()
@@ -350,7 +293,7 @@ class Workdir(object):
                 current one
 
         Returns:
-            self.PREFIX_CLASS: instance of the prefix with the given name
+            self.prefix_class: instance of the prefix with the given name
         """
         if name == 'current':
             name = self.current
@@ -390,3 +333,89 @@ class Workdir(object):
 
         if not self.prefixes:
             shutil.rmtree(self.path)
+
+    @classmethod
+    def resolve_workdir_path(cls, start_path=os.curdir):
+        """
+        Look for an existing workdir in the given path, in a path/.lago dir,
+        or in a .lago dir under any of it's parent directories
+
+        Args:
+            start_path (str): path to start the search from, if None passed, it
+                will use the current dir
+
+        Returns:
+            str: path to the found prefix
+
+        Raises:
+            RuntimeError: if no prefix was found
+        """
+        if start_path == 'auto':
+            start_path = os.curdir
+
+        cur_path = start_path
+
+        LOGGER.debug(
+            'Checking if %s is a workdir',
+            os.path.abspath(cur_path),
+        )
+        if cls.is_workdir(cur_path):
+            return os.path.abspath(cur_path)
+
+        # now search for a .lago directory that's a workdir on any parent dir
+        cur_path = os.path.join(start_path, '.lago')
+        while not cls.is_workdir(cur_path):
+            LOGGER.debug('%s is not a workdir', cur_path)
+            cur_path = os.path.normpath(
+                os.path.join(cur_path, '..', '..', '.lago')
+            )
+            if os.path.realpath(os.path.join(cur_path, '..')) == '/':
+                raise RuntimeError(
+                    'Unable to find workdir for %s' %
+                    os.path.abspath(start_path)
+                )
+
+            LOGGER.debug('Checking %s for a workdir', cur_path)
+
+        return os.path.abspath(cur_path)
+
+    @classmethod
+    def is_workdir(cls, path):
+        """
+        Check if the given path is a workdir
+
+        Args:
+            path(str): Path to check
+
+        Return:
+            bool: True if the given path is a workdir
+        """
+        try:
+            cls(path=path).load()
+        except Exception:
+            return False
+
+        return True
+
+
+@cli.cli_plugin(
+    help=(
+        'Change the current prefix link, so the default prefix that is used '
+        'is a new one'
+    ),
+)
+@cli.cli_plugin_add_argument(
+    'prefix_name',
+    action='store',
+    help='Name of the prefix to set as current',
+)
+@utils.in_prefix(prefix_class=prefix.Prefix, workdir_class=Workdir, )
+def set_current(prefix_name, parent_workdir, **kwargs):
+    """
+    Changes the current to point to the given prefix
+
+    Args:
+        prefix_name(str): name of the prefix to set the current to
+        workdir(str): path to the workdir to change the current of
+    """
+    parent_workdir.set_current(new_current=prefix_name)
