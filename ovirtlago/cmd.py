@@ -21,6 +21,7 @@
 import logging
 import os
 import sys
+import warnings
 
 import lago
 import ovirtlago
@@ -122,11 +123,31 @@ def do_ovirt_runtest(prefix, test_file, **kwargs):
     help='Do not sync repos',
     action='store_true',
 )
+@cli_plugin_add_argument(
+    '--engine-dir',
+    help=('Deprecated, left here for backwards compatibility'),
+)
+@cli_plugin_add_argument(
+    '--vdsm-dir',
+    help=('Deprecated, left here for backwards compatibility'),
+)
+@cli_plugin_add_argument(
+    '--ioprocess-dir',
+    help=('Deprecated, left here for backwards compatibility'),
+)
 @in_ovirt_prefix
 @with_logging
 def do_ovirt_reposetup(
     prefix, rpm_repo, reposync_yum_config, skip_sync, **kwargs
 ):
+
+    if kwargs['engine_dir']:
+        warnings.warn('Deprecated option --engine-dir ignored')
+    if kwargs['vdsm_dir']:
+        warnings.warn('Deprecated option --vdsm-dir ignored')
+    if kwargs['ioprocess_dir']:
+        warnings.warn('Deprecated option --ioprocess-dir ignored')
+
     rpm_repo = (
         rpm_repo
         or lago.config.get('reposync_dir', CONF_DEFAULTS['reposync_dir'])
