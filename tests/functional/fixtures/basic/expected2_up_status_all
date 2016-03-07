@@ -2,16 +2,15 @@
     Base directory: @@PREFIX_PATH@@
     [Networks]:
         [lago_functional_tests]:
-            gateway: 192.168.200.1
+            gateway: @@GATEWAY@@
             management: True
             status: up
-    UUID: 12345678910121416182022242628303
-
+    UUID: @@UUID@@
     [VMs]:
         [lago_functional_tests_vm01]:
             [NICs]:
                 [eth0]:
-                    ip: 192.168.200.3
+                    ip: @@IP@@
                     network: lago_functional_tests
             VNC port: @@VNC_PORT@@
             distro: cirros
@@ -20,7 +19,7 @@
         [lago_functional_tests_vm02]:
             [NICs]:
                 [eth0]:
-                    ip: 192.168.200.2
+                    ip: @@IP@@
                     network: lago_functional_tests
             VNC port: @@VNC_PORT@@
             distro: cirros

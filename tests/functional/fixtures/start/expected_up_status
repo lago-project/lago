@@ -1,11 +1,10 @@
 [Prefix]:
-    Base directory: @@BATS_TEST_DIRNAME@@/fixtures/start/prefix1
+    Base directory: @@PREFIX_PATH@@
     [Networks]:
         [lft_net1]:
             management: False
             status: up
-    UUID: 12345678910121416182022242628303
-
+    UUID: @@UUID@@
     [VMs]:
         [lft_vm01]:
             [NICs]:

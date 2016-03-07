@@ -13,7 +13,7 @@
                     "osinfo": "fedora23", 
                     "root-partition": "/dev/sda3"
                 }, 
-                "path": "@@PREFIX@@/images/lago_functional_tests_vm01_root.qcow2", 
+                "path": "@@PREFIX_PATH@@/images/lago_functional_tests_vm01_root.qcow2", 
                 "type": "template"
             }
         ]
