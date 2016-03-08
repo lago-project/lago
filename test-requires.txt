@@ -5,10 +5,12 @@ flake8
 libvirt-python
 lockfile
 lxml
+mock
 paramiko
 pytest
 python-magic
 pyyaml
 scp
+stevedore
 xmltodict
 yapf
