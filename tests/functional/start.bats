@@ -30,6 +30,8 @@ REPO_NAME="local_tests_repo"
         --template-repo-name "$REPO_NAME" \
         --template-store "$STORE" \
         "$suite"
+    # This is needed to be able to run sudo inside the chroot
+    echo 'Defaults:root !requiretty' > /etc/sudoers.d/lago_functional_tests
 }
 
 
