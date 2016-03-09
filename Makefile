@@ -3,7 +3,9 @@ NAME=lago
 TAR_FILE=${NAME}-${VERSION}.tar
 TARBALL_FILE=${TAR_FILE}.gz
 SPECFILE=${NAME}.spec
+# this is needed to use the libs from venv
 PYTEST=$(shell which py.test)
+FLAKE8=$(shell which flake8)
 
 OUTPUT_DIR=${PWD}
 RPM_DIR=${OUTPUT_DIR}/rpmbuild
@@ -57,7 +59,8 @@ check-local:
 	@echo "-------------------------------------------------------------"
 	@echo "-~      Running static checks                              --"
 	@echo "-------------------------------------------------------------"
-	flake8
+	PYTHONPATH=${PWD} python ${FLAKE8} --version
+	PYTHONPATH=${PWD} python ${FLAKE8}
 	@echo "-------------------------------------------------------------"
 	@echo "-~      Running unit tests                                 --"
 	@echo "-------------------------------------------------------------"

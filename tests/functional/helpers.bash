@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+load common
+
 helpers.exists() {
     local what="${1:?}"
     echo "exists $what"
@@ -32,6 +34,16 @@ helpers.is_link() {
     local what="${1:?}"
     echo "is link $what"
     [[ -L "$what" ]]
+    return $?
+}
+
+
+helpers.links_to() {
+    local what="${1:?}"
+    local where="${2:?}"
+    helpers.is_link "$what" || return $?
+    echo "link $what points to $where"
+    [[ "$(readlink "$what")" == "$where" ]]
     return $?
 }
 
@@ -95,30 +107,27 @@ helpers.matches() {
 helpers.diff_output() {
     local expected_file="${1?}"
     local expected_replaced_file="$expected_file.tmp"
+    base_file="$BATS_TMPDIR/stdout"
+    echo "DIFF OUTPUT: Checking if \$output matches $expected_file"
+    # get rid of the dummy group warning
     echo "$output" \
     | tail -n+2 \
-    > "$prefix/current"
-    echo "DIFF:Checking if the output differs from the expected"
-    echo "CURRENT(<): output | EXPECTED(>): $expected_file"
-    [[ -e "$PREFIX" ]] && UUID="${UUID:-$(cat "$PREFIX/uuid")}"
-    sed \
-        -e "s|@@PREFIX_PATH@@|$PREFIX_PATH|g" \
-        -e "s|@@PREFIX@@|$PREFIX|g" \
-        -e "s|@@UUID@@|$UUID|g" \
-        -e "s|@@BATS_TEST_DIRNAME@@|$BATS_TEST_DIRNAME|g" \
-        "$expected_file" \
-    > "$expected_replaced_file"
-    # replace each vnc port appearance
-    local vnc_ports=($(grep -Po '(?<=VNC port: )\d+' "$prefix/current")) || :
-    local vnc_port
-    for vnc_port in "${vnc_ports[@]}"; do
-        sed -i \
-            -e "0,/@@VNC_PORT@@/{s/@@VNC_PORT@@/${vnc_port:=no port found}/}" \
-            "$expected_replaced_file"
-    done
+    > "$base_file"
+    helpers.diff "$expected_file" "$base_file"
+    return $?
+}
+
+
+helpers.diff() {
+    local expected_file="${1?}"
+    local expected_replaced_file="$expected_file.tmp"
+    local base_file="${2?}"
+    echo "DIFF:Checking if the $base_file differs from the expected"
+    echo "CURRENT(<): $base_file | EXPECTED(>): $expected_file"
+    common.realize_lago_template "$expected_file" "$expected_replaced_file"
     diff \
         --ignore-trailing-space \
-        "$prefix/current" \
+        "$base_file" \
         "$expected_replaced_file"
     return $?
 }
@@ -126,29 +135,8 @@ helpers.diff_output() {
 
 helpers.diff_output_nowarning() {
     local expected_file="${1?}"
-    local expected_replaced_file="$expected_file.tmp"
     echo "$output" > "$prefix/current"
-    echo "DIFF:Checking if the output differs from the expected"
-    echo "CURRENT(<): output | EXPECTED(>): $expected_file"
-    [[ -e "$PREFIX" ]] && UUID="${UUID:-$(cat "$PREFIX/uuid")}"
-    sed \
-        -e "s|@@PREFIX_PATH@@|$PREFIX_PATH|g" \
-        -e "s|@@PREFIX@@|$PREFIX|g" \
-        -e "s|@@UUID@@|$UUID|g" \
-        -e "s|@@BATS_TEST_DIRNAME@@|$BATS_TEST_DIRNAME|g" \
-        "$expected_file" \
-    > "$expected_replaced_file"
-    # replace each vnc port appearance
-    local vnc_ports=($(grep -Po '(?<=VNC port: )\d+' "$prefix/current")) || :
-    local vnc_port
-    for vnc_port in "${vnc_ports[@]}"; do
-        sed -i \
-            -e "0,/@@VNC_PORT@@/{s/@@VNC_PORT@@/${vnc_port:=no port found}/}" \
-            "$expected_replaced_file"
-    done
-    diff \
-        --ignore-trailing-space \
-        "$prefix/current" \
-        "$expected_replaced_file"
+    echo "DIFF:Checking \$output (unfiltered) matches $expected_file"
+    helpers.diff "$expected_file" "$prefix/current"
     return $?
 }

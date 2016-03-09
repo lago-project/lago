@@ -29,6 +29,7 @@ from ovirtsdk.infrastructure.errors import RequestError
 import lago
 from lago import log_utils
 from lago.prefix import Prefix
+from lago.workdir import Workdir
 
 import merge_repos
 import repoverify
@@ -535,3 +536,9 @@ class OvirtPrefix(Prefix):
             _collect_artifacts,
             self.virt_env.get_vms().values(),
         )
+
+
+class OvirtWorkdir(Workdir):
+    def __init__(self, *args, **kwargs):
+        super(OvirtWorkdir, self).__init__(*args, **kwargs)
+        self.prefix_class = OvirtPrefix

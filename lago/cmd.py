@@ -20,7 +20,6 @@
 #
 
 import argparse
-import functools
 import grp
 import logging
 import os
@@ -34,10 +33,14 @@ import lago.config
 import lago.plugins
 import lago.plugins.cli
 import lago.templates
-from lago import log_utils, prefix as lago_prefix
+from lago import (log_utils, workdir as lago_workdir, )
+from lago.utils import (in_prefix, with_logging)
 
-CLI_PREFIX = 'lagocli-'
 LOGGER = logging.getLogger('cli')
+in_lago_prefix = in_prefix(
+    prefix_class=lago.prefix.Prefix,
+    workdir_class=lago_workdir.Workdir,
+)
 
 
 @lago.plugins.cli.cli_plugin(
@@ -53,12 +56,12 @@ LOGGER = logging.getLogger('cli')
     type=os.path.abspath,
 )
 @lago.plugins.cli.cli_plugin_add_argument(
-    'prefix',
+    'workdir',
     help=(
-        'Prefix directory of the deployment, if none passed, it will use '
+        'Workdir directory of the deployment, if none passed, it will use '
         '$PWD/.lago'
     ),
-    metavar='PREFIX',
+    metavar='WORKDIR',
     type=os.path.abspath,
     nargs='?',
     default=os.path.join(os.path.curdir, '.lago'),
@@ -79,15 +82,34 @@ LOGGER = logging.getLogger('cli')
 )
 @log_utils.log_task('Initialize and populate prefix', LOGGER)
 def do_init(
-    prefix,
+    workdir,
     virt_config,
+    prefix_name='default',
     template_repo_path=None,
     template_repo_name=None,
     template_store=None,
     **kwargs
 ):
-    prefix = lago_prefix.Prefix(prefix)
-    prefix.initialize()
+    if prefix_name == 'current':
+        prefix_name = 'default'
+
+    LOGGER.debug('Using workdir %s', workdir)
+    workdir = lago_workdir.Workdir(workdir)
+    if not os.path.exists(workdir.path):
+        LOGGER.debug(
+            'Initializing workdir %s with prefix %s',
+            workdir.path,
+            prefix_name,
+        )
+        prefix = workdir.initialize(prefix_name)
+    else:
+        LOGGER.debug(
+            'Adding prefix %s to workdir %s',
+            prefix_name,
+            workdir.path,
+        )
+        prefix = workdir.add_prefix(prefix_name)
+
     log_utils.setup_prefix_logging(prefix.paths.logs())
 
     try:
@@ -123,29 +145,8 @@ def do_init(
         raise
 
 
-def in_prefix(func):
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        prefix_path = kwargs.get('prefix_path', 'auto')
-        if prefix_path == 'auto':
-            prefix_path = lago_prefix.resolve_prefix_path()
-
-        return func(*args, prefix=lago_prefix.Prefix(prefix_path), **kwargs)
-
-    return wrapper
-
-
-def with_logging(func):
-    @functools.wraps(func)
-    def wrapper(prefix, *args, **kwargs):
-        log_utils.setup_prefix_logging(prefix.paths.logs())
-        return func(*args, prefix=prefix, **kwargs)
-
-    return wrapper
-
-
 @lago.plugins.cli.cli_plugin(help='Clean up deployed resources')
-@in_prefix
+@in_lago_prefix
 @with_logging
 def do_cleanup(prefix, **kwargs):
     prefix.cleanup()
@@ -155,28 +156,46 @@ def do_cleanup(prefix, **kwargs):
     help='Cleanup and remove the whole prefix and any files in it'
 )
 @lago.plugins.cli.cli_plugin_add_argument(
+    '--all-prefixes',
+    help="Destroy all the prefixes in the workdir",
+    action='store_true',
+)
+@lago.plugins.cli.cli_plugin_add_argument(
     '-y',
     '--yes',
     help="Don't ask for confirmation, assume yes",
     action='store_true',
 )
-@in_prefix
+@in_lago_prefix
 @with_logging
-def do_destroy(prefix, yes, **kwargs):
-    prefix_path = prefix.paths.prefix
+def do_destroy(
+    prefix, yes, all_prefixes, parent_workdir, prefix_name, **kwargs
+):
+    warn_message = prefix.paths.prefix
+    path = prefix.paths.prefix
+
+    if all_prefixes:
+        warn_message = 'all the prefixes under ' + parent_workdir.path
+        path = parent_workdir.path
+
     if not yes:
         response = raw_input(
-            'Do you really want to destroy %s? [Yn] ' % prefix_path
+            'Do you really want to destroy %s? [Yn] ' % warn_message
         )
         if response and response[0] not in 'Yy':
             LOGGER.info('Aborting on user input')
             return
 
-    prefix.cleanup()
-    if os.path.islink(prefix_path):
-        os.unlink(prefix_path)
+    if os.path.islink(path):
+        os.unlink(path)
+        return
+
+    if all_prefixes:
+        parent_workdir.destroy()
+    elif parent_workdir:
+        parent_workdir.destroy([prefix_name])
     else:
-        shutil.rmtree(prefix_path)
+        prefix.destroy()
 
 
 @lago.plugins.cli.cli_plugin(help='Deploy lago resources')
@@ -186,7 +205,7 @@ def do_destroy(prefix, yes, **kwargs):
     metavar='VM_NAME',
     nargs='*',
 )
-@in_prefix
+@in_lago_prefix
 @with_logging
 def do_start(prefix, vm_names=None, **kwargs):
     prefix.start(vm_names=vm_names)
@@ -199,7 +218,7 @@ def do_start(prefix, vm_names=None, **kwargs):
     metavar='VM_NAME',
     nargs='*',
 )
-@in_prefix
+@in_lago_prefix
 @with_logging
 def do_stop(prefix, vm_names, **kwargs):
     prefix.stop(vm_names=vm_names)
@@ -222,7 +241,7 @@ def do_stop(prefix, vm_names, **kwargs):
     nargs='?',
     default=None,
 )
-@in_prefix
+@in_lago_prefix
 @with_logging
 def do_snapshot(prefix, list_only, snapshot_name, out_format, **kwargs):
     if list_only:
@@ -240,7 +259,7 @@ def do_snapshot(prefix, list_only, snapshot_name, out_format, **kwargs):
     help='Name of the snapshot to revert to',
     metavar='SNAPSHOT_NAME',
 )
-@in_prefix
+@in_lago_prefix
 @with_logging
 def do_revert(prefix, snapshot_name, **kwargs):
     prefix.revert_snapshots(snapshot_name)
@@ -266,7 +285,7 @@ def do_revert(prefix, snapshot_name, **kwargs):
     help='Host to connect to',
     metavar='HOST',
 )
-@in_prefix
+@in_lago_prefix
 @with_logging
 def do_shell(prefix, host, args=None, **kwargs):
     args = args or []
@@ -306,7 +325,7 @@ def do_shell(prefix, host, args=None, **kwargs):
     help='Host to connect to',
     metavar='HOST',
 )
-@in_prefix
+@in_lago_prefix
 @with_logging
 def do_console(prefix, host, **kwargs):
     try:
@@ -328,7 +347,7 @@ def do_console(prefix, host, **kwargs):
 @lago.plugins.cli.cli_plugin(
     help='Show status of the deployed virtual resources'
 )
-@in_prefix
+@in_lago_prefix
 @with_logging
 def do_status(prefix, out_format, **kwargs):
 
@@ -380,6 +399,34 @@ def do_status(prefix, out_format, **kwargs):
 
 
 @lago.plugins.cli.cli_plugin(
+    help='List the name of the available given virtual resources'
+)
+@lago.plugins.cli.cli_plugin_add_argument(
+    'resource_type',
+    help='Type of resource to list',
+    metavar='RESOURCE_TYPE',
+    choices=['envs', 'prefixes'],
+)
+@in_lago_prefix
+@with_logging
+def do_list(
+    prefix, resource_type, out_format, prefix_path, workdir_path, **kwargs
+):
+    if resource_type in ['prefixes', 'envs']:
+        if prefix_path:
+            raise RuntimeError('Using a plain prefix')
+        else:
+            if workdir_path == 'auto':
+                workdir_path = lago_workdir.resolve_workdir_path()
+
+            workdir = lago_workdir.Workdir(path=workdir_path)
+            workdir.load()
+            resources = workdir.prefixes.keys()
+
+    print out_format.format(resources)
+
+
+@lago.plugins.cli.cli_plugin(
     help='Copy file from a virtual machine to local machine'
 )
 @lago.plugins.cli.cli_plugin_add_argument(
@@ -397,7 +444,7 @@ def do_status(prefix, out_format, **kwargs):
     help='Host to copy files from',
     metavar='HOST',
 )
-@in_prefix
+@in_lago_prefix
 @with_logging
 def do_copy_from_vm(prefix, host, remote_path, local_path, **kwargs):
     try:
@@ -437,7 +484,7 @@ def do_copy_from_vm(prefix, host, remote_path, local_path, **kwargs):
     help='Host to copy files to',
     metavar='HOST',
 )
-@in_prefix
+@in_lago_prefix
 @with_logging
 def do_copy_to_vm(prefix, host, remote_path, local_path, **kwargs):
     try:
@@ -493,7 +540,26 @@ def create_parser(cli_plugins, out_plugins):
         '--prefix-path',
         '-p',
         action='store',
-        default='auto',
+        default=None,
+        help=(
+            'Path to the prefix to use, will be deprecated, use '
+            '--workdir-path instead'
+        ),
+    )
+    parser.add_argument(
+        '--workdir-path',
+        '-w',
+        action='store',
+        default=None,
+        help='Path to the workdir to use',
+    )
+    parser.add_argument(
+        '--prefix-name',
+        '-P',
+        action='store',
+        default='current',
+        dest='prefix_name',
+        help='Name of the prefix to use',
     )
     parser.add_argument('--ignore-warnings', action='store_true', )
     verbs_parser = parser.add_subparsers(dest='verb', metavar='VERB')
@@ -542,6 +608,12 @@ def main():
     check_group_membership()
 
     args.out_format = out_plugins[args.out_format]
+    if args.prefix_path:
+        warnings.warn(
+            'The option --prefix-path is going to be deprecated, use '
+            '--wordir and --prefix instead',
+            DeprecationWarning,
+        )
 
     try:
         cli_plugins[args.verb].do_run(args)

@@ -242,8 +242,7 @@ class VirtEnv(object):
 
     @classmethod
     def from_prefix(cls, prefix):
-        def virt_path(name):
-            return os.path.join(prefix.paths.prefix, 'virt', name)
+        virt_path = functools.partial(prefix.paths.prefixed, 'virt')
 
         with open(virt_path('env'), 'r') as f:
             env_dom = json.load(f)
@@ -296,11 +295,11 @@ class VirtEnv(object):
 
         Args:
             domanins(list of str): list of the domains to get the snapshots
-                for, all will be returned if none or empty list passed
+            for, all will be returned if none or empty list passed
 
         Returns:
             dict of str -> list(str): with the domain names and the list of
-                snapshots for each
+            snapshots for each
         """
         snapshots = {}
         for vm_name, vm in self.get_vms().items():

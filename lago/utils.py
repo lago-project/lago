@@ -36,7 +36,7 @@ import tty
 import yaml
 
 import constants
-from .log_utils import LogTask
+from .log_utils import (LogTask, setup_prefix_logging)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -464,3 +464,51 @@ def load_virt_stream(virt_fd):
         virt_conf = yaml.load(virt_fd)
 
     return deepcopy(virt_conf)
+
+
+def in_prefix(prefix_class, workdir_class):
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            prefix_path = kwargs.get('prefix_path', None)
+            workdir_path = kwargs.get('workdir_path', None)
+            if (
+                prefix_path is not None or (
+                    prefix_class.is_prefix(os.curdir) and workdir_path is None
+                )
+            ):
+                LOGGER.debug('Looking for a prefix')
+                prefix_path = prefix_class.resolve_prefix_path(prefix_path)
+                prefix = prefix_class(prefix_path)
+                kwargs['parent_workdir'] = None
+
+            else:
+                LOGGER.debug('Looking for a workdir')
+                if workdir_path is None:
+                    workdir_path = 'auto'
+
+                workdir_path = workdir_class.resolve_workdir_path(workdir_path)
+                workdir = workdir_class(path=workdir_path)
+                kwargs['parent_workdir'] = workdir
+                if kwargs.get('all_envs', False):
+                    prefix = workdir
+                else:
+                    prefix_name = kwargs.get('prefix_name', 'current')
+                    prefix = workdir.get_prefix(prefix_name)
+                    kwargs['perfix_name'] = prefix_name
+
+            kwargs['prefix'] = prefix
+            return func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
+def with_logging(func):
+    @functools.wraps(func)
+    def wrapper(prefix, *args, **kwargs):
+        setup_prefix_logging(prefix.paths.logs())
+        return func(*args, prefix=prefix, **kwargs)
+
+    return wrapper
