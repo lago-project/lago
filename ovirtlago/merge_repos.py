@@ -67,6 +67,8 @@ def merge(output_dir, input_dirs):
                     input_dir,
                     '-type',
                     'f',
+                    '-size',
+                    '+0',
                     '-name',
                     '*.rpm',
                 ]
