@@ -1,3 +1,4 @@
+Defaults:%lago !requiretty
 %lago ALL = (qemu) NOPASSWD: /usr/bin/chmod
 %lago ALL = NOPASSWD: /usr/sbin/brctl addbr *
 %lago ALL = NOPASSWD: /usr/sbin/brctl delbr *
