@@ -26,9 +26,10 @@ build_docs() {
     rm -rf tests/docs_venv
     [[ -d .cache ]] || mkdir .cache
     chown -R $USER .cache
-    virtualenv -q tests/docs_venv
+    virtualenv -q tests/docs_venv || return 1
     source tests/docs_venv/bin/activate
-    pip --quiet install --requirement docs/requires.txt
+    pip --quiet install --upgrade pip || return 1
+    pip --quiet install --requirement docs/requires.txt || return 1
     make docs || res=$?
     deactivate
     mv docs/_build "$docs_dir"
@@ -44,11 +45,21 @@ run_unit_tests() {
     # the system packages are needed for python-libguestfs
     [[ -d .cache ]] || mkdir .cache
     chown -R $USER .cache
-    virtualenv -q --system-site-packages tests/venv
+    virtualenv -q tests/venv || return 1
     source tests/venv/bin/activate
-    pip --quiet install --requirement test-requires.txt
+    pip --quiet install --upgrade pip || return 1
+    pip --quiet install --requirement test-requires.txt || return 1
+    scripts/pull_system_python_libs.sh \
+        "$VIRTUAL_ENV" \
+        python-libguestfs
     export PYTHONPATH
-    make check-local || res=$?
+    FLAKE8=$(which flake8)
+    PYTEST=$(which py.test)
+    make \
+        "FLAKE8=$FLAKE8" \
+        "PYTEST=$PYTEST" \
+        check-local \
+    || res=$?
     deactivate
     return $res
 }
