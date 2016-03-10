@@ -71,7 +71,7 @@ Requires: sudo
 %description -n python-%{name}
 
 %files -n python-%{name}
-%doc AUTHORS COPYING README.md
+%doc AUTHORS COPYING README.rst
 %{python2_sitelib}/%{name}/*.py*
 %{python2_sitelib}/%{name}/plugins/*.py*
 %{python2_sitelib}/%{name}_template_repo/*.py*

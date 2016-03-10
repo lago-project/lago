@@ -4,10 +4,10 @@ Welcome to Lago's documentation!
 Getting started
 ----------------
 
-Check out the awesome `README`_!
+.. toctree::
+    :maxdepth: 3
 
- .. _README: README.html
-
+    README
 
 Developing
 ------------
