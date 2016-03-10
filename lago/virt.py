@@ -40,6 +40,7 @@ import brctl
 import utils
 import sysprep
 from . import log_utils
+from . import libvirt_utils
 
 LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
@@ -1159,3 +1160,19 @@ class VM(object):
 
     def root_password(self):
         return self._spec['root-password']
+
+    def state(self):
+        """
+        Return a small description of the current status of the domain
+
+        Returns:
+            str: small description of the domain status, 'down' if it's not
+            defined at all.
+        """
+        if not self.alive():
+            return 'down'
+
+        state = self._env.libvirt_con.lookupByName(
+            self._libvirt_name()
+        ).state()
+        return libvirt_utils.Domain.resolve_state(state)

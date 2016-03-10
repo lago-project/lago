@@ -16,4 +16,4 @@
             distro: fc23
             root password: 123456
             snapshots: snapshot_number_1
-            status: up
+            status: running
