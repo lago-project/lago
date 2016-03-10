@@ -790,7 +790,7 @@ class TestWorkdir(object):
             'not found',
         ),
     )
-    def test_resolve_workdir_path_from_inide_of_it(
+    def test_resolve_workdir_path_from_inside_of_it(
         self,
         workdir_path,
         params,
