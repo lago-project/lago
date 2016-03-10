@@ -9,15 +9,6 @@ Check out the awesome `README`_!
  .. _README: README.html
 
 
-Releases
------------
-
-.. toctree::
-    :maxdepth: 2
-
-    Releases
-
-
 Developing
 ------------
 
@@ -38,6 +29,16 @@ Contents
    lago
    lago_template_repo
    ovirtlago
+
+
+Releases
+-----------
+
+.. toctree::
+    :maxdepth: 2
+
+    Releases
+
 
 
 Indices and tables
