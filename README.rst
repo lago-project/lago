@@ -99,8 +99,8 @@ To disable SELinux from start-up, edit `/etc/selinux/config` and set::
 User setup
 ~~~~~~~~~~~~~
 
-Running a testing framework environment requires certain permissions, so the
-user running it should be part of certain groups.
+Running lago requires certain permissions, so the user running it should be
+part of certain groups.
 
 Add yourself to lago and qemu groups::
 
@@ -147,7 +147,7 @@ We will be using the example configurations of lago, for a custom setup you
 might want to create your own.
 
 
-Running the testing framework
+Running lago
 -------------------------------
 
 **This tests require that you have at least 36GB of free space under the
