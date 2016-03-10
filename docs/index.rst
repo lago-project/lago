@@ -1,6 +1,8 @@
 Welcome to Lago's documentation!
 ================================
 
+Lago is an add-hoc virtual testing environment framework
+
 Getting started
 ----------------
 
