@@ -16,6 +16,7 @@
     </features>
     <devices>
       <emulator>@QEMU_KVM@</emulator>
+      <memballoon model='none'/>
       <disk type='file' device='disk'>
         <driver name='qemu' type='qcow2'/>
         <source file='DISK_PATH'/>
