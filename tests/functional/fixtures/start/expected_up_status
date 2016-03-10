@@ -14,4 +14,4 @@
             VNC port: @@VNC_PORT@@
             distro: cirros
             root password: 123456
-            status: up
+            status: running
