@@ -118,7 +118,6 @@ Requires: python
 Requires: python-%{name} = %{version}
 Requires: python-magic
 Requires: python-nose
-Requires: mock
 Requires: ovirt-engine-sdk-python
 Requires: createrepo
 Requires: yum-utils

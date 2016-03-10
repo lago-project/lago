@@ -102,10 +102,9 @@ User setup
 Running a testing framework environment requires certain permissions, so the
 user running it should be part of certain groups.
 
-Add yourself to lago, mock and qemu groups::
+Add yourself to lago and qemu groups::
 
     $ usermod -a -G lago USERNAME
-    $ usermod -a -G mock USERNAME
     $ usermod -a -G qemu USERNAME
 
 It is also advised to add qemu user to your group (to be able to store VM files
@@ -417,21 +416,6 @@ types of sources:
     A yum .repo file can be passed to the verb, and all the included
     repositories will be downloaded using 'reposync' and added to the internal
     repo.
-
-* RPMs build from sources:
-
-    At the moment of writing, this utility knows to build 3 projects from
-    source:
-
-    * ovirt-engine
-    * vdsm
-    * vdsm-jsonrpc-java
-
-    All the builds are launched inside mock so mock permissions are required
-    if anything is to be built from source. That way host distro does not have
-    to match the distro of the VMs. RPMs build from source take precedence
-    over ones synced from external repos.
-
 
 This is used by the `ovirt reposetup` verb. To prefetch and generate the local
 repo, we have to run it::
