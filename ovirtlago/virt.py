@@ -160,4 +160,4 @@ class EngineVM(TestVM):
 
 class HostVM(TestVM):
     def _artifact_paths(self):
-        return ['/var/log/vdsm', ]
+        return ['/var/log/vdsm', '/var/log/messages', ]
