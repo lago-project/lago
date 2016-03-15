@@ -645,7 +645,10 @@ class VM(object):
 
     @_check_alive
     def _get_ssh_client(self):
-        while True:
+        ssh_timeout = int(config.get('ssh_timeout'))
+        ssh_tries = int(config.get('ssh_tries'))
+        start_time = time.time()
+        while ssh_tries > 0:
             try:
                 client = paramiko.SSHClient()
                 client.set_missing_host_key_policy(paramiko.AutoAddPolicy(), )
@@ -653,13 +656,22 @@ class VM(object):
                     self.ip(),
                     username='root',
                     key_filename=self._env.prefix.paths.ssh_id_rsa(),
-                    timeout=1,
+                    timeout=ssh_timeout,
                 )
                 return client
             except socket.error:
                 pass
             except socket.timeout:
                 pass
+
+            ssh_tries -= 1
+            time.sleep(1)
+
+        end_time = time.time()
+        raise RuntimeError(
+            'Timed out (in %d s) trying to ssh to %s' %
+            (end_time - start_time, self.name())
+        )
 
     def ssh(self, command, data=None, show_output=True):
         if not self.alive():
