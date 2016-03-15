@@ -1,22 +1,15 @@
 Welcome to Lago's documentation!
 ================================
 
+Lago is an add-hoc virtual testing environment framework
+
 Getting started
 ----------------
 
-Check out the awesome `README`_!
-
- .. _README: README.html
-
-
-Releases
------------
-
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 3
 
-    Releases
-
+    README
 
 Developing
 ------------
@@ -38,6 +31,16 @@ Contents
    lago
    lago_template_repo
    ovirtlago
+
+
+Releases
+-----------
+
+.. toctree::
+    :maxdepth: 2
+
+    Releases
+
 
 
 Indices and tables

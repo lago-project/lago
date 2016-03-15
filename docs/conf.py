@@ -16,8 +16,6 @@ import os
 import sys
 import subprocess
 
-from recommonmark.parser import CommonMarkParser
-
 subprocess.call(
     [
         'sphinx-apidoc', '--module-first', '--no-toc', '-f', '-o',
@@ -97,9 +95,6 @@ napoleon_include_special_with_doc = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
-
-# Support for markdown files
-source_parsers = {'.md': CommonMarkParser, }
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:

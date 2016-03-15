@@ -71,7 +71,7 @@ Requires: sudo
 %description -n python-%{name}
 
 %files -n python-%{name}
-%doc AUTHORS COPYING README.md
+%doc AUTHORS COPYING README.rst
 %{python2_sitelib}/%{name}/*.py*
 %{python2_sitelib}/%{name}/plugins/*.py*
 %{python2_sitelib}/%{name}_template_repo/*.py*
@@ -118,7 +118,6 @@ Requires: python
 Requires: python-%{name} = %{version}
 Requires: python-magic
 Requires: python-nose
-Requires: mock
 Requires: ovirt-engine-sdk-python
 Requires: createrepo
 Requires: yum-utils
