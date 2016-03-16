@@ -69,9 +69,6 @@ class NodeVM(lago.virt.VM):
 
 
 class TestVM(lago.virt.VM):
-    def _artifact_paths(self):
-        return []
-
     def collect_artifacts(self, host_path):
         self.extract_paths(
             [
@@ -93,7 +90,8 @@ class EngineVM(TestVM):
         self._api = None
 
     def _artifact_paths(self):
-        return ['/var/log/ovirt-engine', ]
+        inherited_artifacts = super(EngineVM, self)._artifact_paths()
+        return set(inherited_artifacts + ['/var/log/ovirt-engine', ])
 
     def _create_api(self):
         url = 'https://%s/ovirt-engine/api' % self.ip()
@@ -160,4 +158,10 @@ class EngineVM(TestVM):
 
 class HostVM(TestVM):
     def _artifact_paths(self):
-        return ['/var/log/vdsm', '/var/log/messages', ]
+        inherited_artifacts = super(HostVM, self)._artifact_paths()
+        return set(
+            inherited_artifacts + [
+                '/var/log/vdsm',
+                '/var/log/messages',
+            ]
+        )
