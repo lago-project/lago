@@ -31,7 +31,7 @@ PREFIX="$FIXTURES"/.lago
 }
 
 
-@test "ovirt.collect: collect" {
+@test "ovirt.collect: collect started vms with guest agent" {
     common.is_initialized "$PREFIX" || skip "prefix not initiated"
     pushd "$FIXTURES"
     outdir="$FIXTURES/output"
@@ -61,6 +61,37 @@ PREFIX="$FIXTURES"/.lago
                 shell "$host" \
                 cat "$remote_logdir/$logfile"
             helpers.diff_output "$logdir/$logfile"
+        done
+    done
+}
+
+
+@test "ovirt.collect: collect stopped vms" {
+    common.is_initialized "$PREFIX" || skip "prefix not initiated"
+    pushd "$FIXTURES"
+    outdir="$FIXTURES/output"
+    logfiles=(
+        "fancylog.log"
+        "fancylog2.log"
+    )
+
+    rm -rf "$outdir"
+    helpers.run_ok "$LAGOCLI" stop
+    helpers.run_ok "$LAGOCLI" ovirt collect --output "$outdir"
+    for host in lago_functional_tests_{host,engine}; do
+        helpers.is_dir "$outdir/$host"
+        if [[ "$host" =~ _host$ ]]; then
+            logdir="$outdir/$host/_var_log_vdsm"
+        elif [[ "$host" =~ _engine$ ]]; then
+            logdir="$outdir/$host/_var_log_ovirt-engine"
+        else
+            echo "SKIPPING HOST $host"
+            continue
+        fi
+        helpers.is_dir "$logdir"
+        for logfile in "${logfiles[@]}"; do
+            helpers.is_file "$logdir/$logfile"
+            helpers.diff "$FIXTURES/$logfile.expected" "$logdir/$logfile"
         done
     done
 }

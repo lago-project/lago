@@ -645,7 +645,10 @@ class VM(object):
 
     @_check_alive
     def _get_ssh_client(self):
-        while True:
+        ssh_timeout = int(config.get('ssh_timeout'))
+        ssh_tries = int(config.get('ssh_tries'))
+        start_time = time.time()
+        while ssh_tries > 0:
             try:
                 client = paramiko.SSHClient()
                 client.set_missing_host_key_policy(paramiko.AutoAddPolicy(), )
@@ -653,13 +656,22 @@ class VM(object):
                     self.ip(),
                     username='root',
                     key_filename=self._env.prefix.paths.ssh_id_rsa(),
-                    timeout=1,
+                    timeout=ssh_timeout,
                 )
                 return client
             except socket.error:
                 pass
             except socket.timeout:
                 pass
+
+            ssh_tries -= 1
+            time.sleep(1)
+
+        end_time = time.time()
+        raise RuntimeError(
+            'Timed out (in %d s) trying to ssh to %s' %
+            (end_time - start_time, self.name())
+        )
 
     def ssh(self, command, data=None, show_output=True):
         if not self.alive():
@@ -996,47 +1008,83 @@ class VM(object):
             if was_alive:
                 self.start()
 
-    def extract_paths(self, paths):
+    def _extract_paths_scp(self, paths):
+        for guest_path, host_path in paths:
+            self.copy_to(local_path=guest_path, remote_path=host_path)
+
+    def _extract_paths_live(self, paths):
         self.guest_agent().start()
         dom = self._env.libvirt_con.lookupByName(self._libvirt_name())
         dom.fsFreeze()
         try:
-            disk_path = self._spec['disks'][0]['path']
-            disk_root_part = self._spec['disks'][0]['metadata'].get(
-                'root-partition',
-                'root',
-            )
-
-            g = guestfs.GuestFS(python_return_dict=True)
-            g.add_drive_opts(disk_path, format='qcow2', readonly=1)
-            g.set_backend('direct')
-            g.launch()
-            rootfs = [
-                filesystem
-                for filesystem in g.list_filesystems()
-                if disk_root_part in filesystem
-            ]
-            if not rootfs:
-                raise RuntimeError(
-                    'No root fs (%s) could be found for %s form list %s' %
-                    (disk_root_part, disk_path, str(g.list_filesystems()))
-                )
-            else:
-                rootfs = rootfs[0]
-            g.mount_ro(rootfs, '/')
-            for (guest_path, host_path) in paths:
-                try:
-                    _guestfs_copy_path(g, guest_path, host_path)
-                except Exception:
-                    LOGGER.exception(
-                        'Failed to copy %s from %s',
-                        guest_path,
-                        self.name(),
-                    )
-            g.shutdown()
-            g.close()
+            self._extract_paths_dead(paths=paths)
         finally:
             dom.fsThaw()
+
+    def _extract_paths_dead(self, paths):
+        disk_path = self._spec['disks'][0]['path']
+        disk_root_part = self._spec['disks'][0]['metadata'].get(
+            'root-partition',
+            'root',
+        )
+
+        gfs_cli = guestfs.GuestFS(python_return_dict=True)
+        gfs_cli.add_drive_opts(disk_path, format='qcow2', readonly=1)
+        gfs_cli.set_backend('direct')
+        gfs_cli.launch()
+        rootfs = [
+            filesystem
+            for filesystem in gfs_cli.list_filesystems()
+            if disk_root_part in filesystem
+        ]
+        if not rootfs:
+            raise RuntimeError(
+                'No root fs (%s) could be found for %s form list %s' %
+                (disk_root_part, disk_path, str(gfs_cli.list_filesystems()))
+            )
+        else:
+            rootfs = rootfs[0]
+        gfs_cli.mount_ro(rootfs, '/')
+        for (guest_path, host_path) in paths:
+            try:
+                _guestfs_copy_path(gfs_cli, guest_path, host_path)
+            except Exception:
+                LOGGER.exception(
+                    'Failed to copy %s from %s',
+                    guest_path,
+                    self.name(),
+                )
+        gfs_cli.shutdown()
+        gfs_cli.close()
+
+    def has_guest_agent(self):
+        try:
+            self.guest_agent()
+        except RuntimeError:
+            return False
+
+        return True
+
+    def ssh_reachable(self):
+        try:
+            self._get_ssh_client()
+        except RuntimeError:
+            return False
+
+        return True
+
+    def extract_paths(self, paths):
+        if self.alive() and self.ssh_reachable() and self.has_guest_agent():
+            self._extract_paths_live(paths=paths)
+        elif self.alive() and self.ssh_reachable():
+            self._extract_paths_scp(paths=paths)
+        elif self.alive():
+            raise RuntimeError(
+                'Unable to extract logs from alive but unreachable host %s. '
+                'Try stopping it first' % self.name()
+            )
+        else:
+            self._extract_paths_dead(paths=paths)
 
     def save(self, path=None):
         if path is None:
