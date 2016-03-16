@@ -1227,3 +1227,13 @@ class VM(object):
 
     def _artifact_paths(self):
         return self._spec.get('artifacts', [])
+
+    def collect_artifacts(self, host_path):
+        self.extract_paths(
+            [
+                (
+                    guest_path,
+                    os.path.join(host_path, guest_path.replace('/', '_')),
+                ) for guest_path in self._artifact_paths()
+            ]
+        )

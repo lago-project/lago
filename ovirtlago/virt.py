@@ -47,7 +47,7 @@ class OvirtVirtEnv(lago.virt.VirtEnv):
             self._host_vms.append(NodeVM(self, vm_spec))
             return self._host_vms[-1]
         else:
-            return TestVM(self, vm_spec)
+            return lago.virt.VM(self, vm_spec)
 
     def engine_vm(self):
         return self._engine_vm
@@ -68,25 +68,13 @@ class NodeVM(lago.virt.VM):
         return
 
 
-class TestVM(lago.virt.VM):
-    def collect_artifacts(self, host_path):
-        self.extract_paths(
-            [
-                (
-                    guest_path,
-                    os.path.join(host_path, guest_path.replace('/', '_')),
-                ) for guest_path in self._artifact_paths()
-            ]
-        )
-
-
-class EngineVM(TestVM):
+class EngineVM(lago.virt.VM):
     def __init__(self, *args, **kwargs):
-        TestVM.__init__(self, *args, **kwargs)
+        super(EngineVM, self).__init__(*args, **kwargs)
         self._api = None
 
     def stop(self):
-        TestVM.stop(self)
+        super(EngineVM, self).stop()
         self._api = None
 
     def _artifact_paths(self):
@@ -156,7 +144,7 @@ class EngineVM(TestVM):
             raise RuntimeError('Failed to setup the engine')
 
 
-class HostVM(TestVM):
+class HostVM(lago.virt.VM):
     def _artifact_paths(self):
         inherited_artifacts = super(HostVM, self)._artifact_paths()
         return set(
