@@ -24,6 +24,14 @@ import os
 
 _SYSTEM_CONFIG_DIR = '/etc/lago.d'
 _USER_CONFIG = os.path.join(os.path.expanduser('~'), '.lago')
+DEFAULTS = {
+    'log_level': 'debug',
+    'template_store': '/var/lib/lago/store',
+    'template_repos': '/var/lib/lago/repos',
+    'default_root_password': '123456',
+    'ssh_tries': '100',
+    'ssh_timeout': '10',
+}
 
 
 def _get_environ():
@@ -35,7 +43,7 @@ def _get_from_env(key):
 
 
 def _get_from_files(paths, key):
-    config = ConfigParser.ConfigParser()
+    config = ConfigParser.ConfigParser(defaults=DEFAULTS)
     config.read(paths)
     try:
         return config.get('lago', key)
