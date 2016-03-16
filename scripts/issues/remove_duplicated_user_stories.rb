@@ -5,8 +5,10 @@ require 'rest-client'
 puts 'Removing duplicated User Stories from taiga... STARTED!'
 
 #Getting taiga's token: 
-taiga_username = '<taiga user here>'
-taiga_password = '<taiga pass here>'
+print 'Taga username: '
+taiga_username = gets.chomp
+print 'Taiga pass: '
+taiga_password = STDIN.noecho(&:gets).chomp
 auth = RestClient.post(
     'https://api.taiga.io/api/v1/auth',
     {
