@@ -5,7 +5,8 @@ require 'rest-client'
 puts 'Creating User Stories from github issutes.. STARTED!'
 
 #getting github's token: https://help.github.com/articles/creating-an-access-token-for-command-line-use
-github_token = "<your github api token comes here>"
+print 'Enter GitHub api token: '
+github_token = STDIN.noecho(&:gets).chomp
 
 #github params
 github = {
@@ -14,8 +15,10 @@ github = {
 }
 
 #Getting taiga's token: 
-taiga_username = '<your taiga user here>'
-taiga_password = '<your taiga pass here>'
+print 'Taga username: '
+taiga_username = gets.chomp
+print 'Taiga pass: '
+taiga_password = STDIN.noecho(&:gets).chomp
 auth = RestClient.post(
     'https://api.taiga.io/api/v1/auth',
     {

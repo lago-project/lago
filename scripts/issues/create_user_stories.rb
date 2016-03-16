@@ -1,12 +1,15 @@
 #!/usr/bin/env ruby
 require 'json'
 require 'rest-client'
+require 'io/console'
 
 puts 'Creating User Stories from taiga issutes.. STARTED!'
 
 #Getting taiga's token: 
-taiga_username = '<taiga user>'
-taiga_password = '<taiga pass>'
+print 'Taga username: '
+taiga_username = gets.chomp
+print 'Taiga pass: '
+taiga_password = STDIN.noecho(&:gets).chomp
 auth = RestClient.post(
     'https://api.taiga.io/api/v1/auth',
     {
@@ -30,8 +33,7 @@ taiga = {
 }
 
 puts 'Loading Issues from Taiga..'
-issues = JSON.parse(
-    RestClient.get(
+response = RestClient.get(
         taiga[:url] + "issues?project=#{taiga[:project_id]}",
         {
             :content_type => :json,
@@ -39,21 +41,18 @@ issues = JSON.parse(
             'x-disable-pagination' => true,
         }
     )
+issues = JSON.parse(
+    response
 )
-
-
-puts "NOT WORKING, SEE https://github.com/taigaio/taiga-back/issues/663"
 
 
 puts "Creating Missing User Stories on Taiga.."
 issues.each do |issue|
-    if issue['generated_user_stories'] =! [] then
+    if issue['generated_user_stories'] != [] then
         puts "Skipping issue #{issue['ref']} - #{issue['subject']}, already has user story #{issue['generated_user_stories']}"
         next
     end
-    puts issue
-    puts issue['generated_user_stories']
-    next
+    puts "Got issue #{issue['ref']} - #{issue['subject']}, with user story #{issue['generated_user_stories']}"
     puts "Creating User Story on Taiga with subject: #{issue['subject']}"
     user_story = JSON.parse(
         RestClient.post(
