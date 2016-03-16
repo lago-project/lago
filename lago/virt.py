@@ -1224,3 +1224,6 @@ class VM(object):
             self._libvirt_name()
         ).state()
         return libvirt_utils.Domain.resolve_state(state)
+
+    def _artifact_paths(self):
+        return self._spec.get('artifacts', [])
