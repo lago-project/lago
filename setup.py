@@ -20,7 +20,7 @@ def check_output(args):
     return stdout
 
 
-def get_version():
+def get_version(project_dir=os.curdir):
     """
     Retrieves the version of the package, from the PKG-INFO file or generates
     it with the version script
@@ -33,15 +33,17 @@ def get_version():
         return os.environ['LAGO_VERSION']
 
     version = None
-    if os.path.exists('PKG-INFO'):
-        with open('PKG-INFO') as info_fd:
+    pkg_info_file = os.path.join(project_dir, 'PKG-INFO')
+    version_manager = os.path.join(project_dir, 'scripts/version_manager.py')
+    if os.path.exists(pkg_info_file):
+        with open(pkg_info_file) as info_fd:
             for line in info_fd.readlines():
                 if line.startswith('Version: '):
                     version = line.split(' ', 1)[-1]
 
-    elif os.path.exists('scripts/version_manager.py'):
+    elif os.path.exists(version_manager):
         version = check_output(
-            ['scripts/version_manager.py', '.', 'version']
+            [version_manager, project_dir, 'version']
         ).strip()
 
     if version is None:
