@@ -147,9 +147,7 @@ class EngineVM(lago.virt.VM):
 class HostVM(lago.virt.VM):
     def _artifact_paths(self):
         inherited_artifacts = super(HostVM, self)._artifact_paths()
-        return set(
-            inherited_artifacts + [
-                '/var/log/vdsm',
-                '/var/log/messages',
-            ]
-        )
+        if self.distro() not in ['fc22', 'fc23']:
+            inherited_artifacts.append('/var/log/messages')
+
+        return set(inherited_artifacts + ['/var/log/vdsm', ])
