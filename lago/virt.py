@@ -765,9 +765,13 @@ class VM(object):
             with self._scp() as scp:
                 scp.put(local_path, remote_path)
 
-    def copy_from(self, remote_path, local_path):
+    def copy_from(self, remote_path, local_path, recursive=True):
         with self._scp() as scp:
-            scp.get(remote_path, local_path)
+            scp.get(
+                recursive=recursive,
+                remote_path=remote_path,
+                local_path=local_path,
+            )
 
     @property
     def metadata(self):
