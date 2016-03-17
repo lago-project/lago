@@ -506,6 +506,19 @@ def do_copy_to_vm(prefix, host, remote_path, local_path, **kwargs):
     host.copy_to(local_path, remote_path)
 
 
+@lago.plugins.cli.cli_plugin(help='Collect logs from VMs')
+@lago.plugins.cli.cli_plugin_add_argument(
+    '--output',
+    help='Path to place all the extracted at',
+    required=True,
+    type=os.path.abspath,
+)
+@in_lago_prefix
+@with_logging
+def do_collect(prefix, output, **kwargs):
+    prefix.collect_artifacts(output)
+
+
 def create_parser(cli_plugins, out_plugins):
     parser = argparse.ArgumentParser(
         description='Command line interface to oVirt testing framework.'

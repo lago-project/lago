@@ -1,4 +1,5 @@
 {
     "root-password": "cowswin:)",
-    "distro": "cirros"
+    "distro": "cirros",
+    "root-partition": "/dev/sda1"
 }

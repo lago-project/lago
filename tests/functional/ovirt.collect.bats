@@ -5,14 +5,14 @@ load helpers
 load env_setup
 
 FIXTURES="$FIXTURES/ovirt.collect"
-PREFIX="$FIXTURES"/.lago
+WORKDIR="$FIXTURES"/.lago
 
 
 @test "ovirt.collect: setup" {
     # As there's no way to know the last test result, we will handle it here
     local suite="$FIXTURES"/suite.yaml
 
-    rm -rf "$PREFIX"
+    rm -rf "$WORKDIR"
     pushd "$FIXTURES"
     export LIBGUESTFS_DEBUG=1 LIBGUESTFS_TRACE=1
     helpers.run_ok "$LAGOCLI" \
@@ -23,7 +23,7 @@ PREFIX="$FIXTURES"/.lago
 
 
 @test "ovirt.collect: generate some logs" {
-    common.is_initialized "$PREFIX" || skip "prefix not initiated"
+    common.is_initialized "$WORKDIR" || skip "Workdir not initiated"
     pushd "$FIXTURES"
     outdir="$FIXTURES/output"
     rm -rf "$outdir"
@@ -32,7 +32,7 @@ PREFIX="$FIXTURES"/.lago
 
 
 @test "ovirt.collect: collect started vms with guest agent" {
-    common.is_initialized "$PREFIX" || skip "prefix not initiated"
+    common.is_initialized "$WORKDIR" || skip "Workdir not initiated"
     pushd "$FIXTURES"
     outdir="$FIXTURES/output"
     logfiles=(
@@ -67,7 +67,7 @@ PREFIX="$FIXTURES"/.lago
 
 
 @test "ovirt.collect: collect stopped vms" {
-    common.is_initialized "$PREFIX" || skip "prefix not initiated"
+    common.is_initialized "$WORKDIR" || skip "Workdir not initiated"
     pushd "$FIXTURES"
     outdir="$FIXTURES/output"
     logfiles=(
@@ -98,7 +98,7 @@ PREFIX="$FIXTURES"/.lago
 
 
 @test "ovirt.collect: teardown" {
-    if common.is_initialized "$PREFIX"; then
+    if common.is_initialized "$WORKDIR"; then
         pushd "$FIXTURES"
         helpers.run_ok "$LAGOCLI" destroy -y
         popd

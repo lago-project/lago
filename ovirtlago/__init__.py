@@ -522,21 +522,6 @@ class OvirtPrefix(Prefix):
 
         super(OvirtPrefix, self).stop()
 
-    @log_task('Collect artifacts')
-    def collect_artifacts(self, output_dir):
-        os.makedirs(output_dir)
-
-        def _collect_artifacts(vm):
-            with LogTask('%s' % vm.name()):
-                path = os.path.join(output_dir, vm.name())
-                os.makedirs(path)
-                vm.collect_artifacts(path)
-
-        lago.utils.invoke_in_parallel(
-            _collect_artifacts,
-            self.virt_env.get_vms().values(),
-        )
-
 
 class OvirtWorkdir(Workdir):
     def __init__(self, *args, **kwargs):

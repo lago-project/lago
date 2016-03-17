@@ -2,6 +2,7 @@
 LAGOCLI=lago
 VERBS=(
     cleanup
+    collect
     copy-from-vm
     copy-to-vm
     destroy

@@ -765,9 +765,13 @@ class VM(object):
             with self._scp() as scp:
                 scp.put(local_path, remote_path)
 
-    def copy_from(self, remote_path, local_path):
+    def copy_from(self, remote_path, local_path, recursive=True):
         with self._scp() as scp:
-            scp.get(remote_path, local_path)
+            scp.get(
+                recursive=recursive,
+                remote_path=remote_path,
+                local_path=local_path,
+            )
 
     @property
     def metadata(self):
@@ -1009,8 +1013,14 @@ class VM(object):
                 self.start()
 
     def _extract_paths_scp(self, paths):
-        for guest_path, host_path in paths:
-            self.copy_to(local_path=guest_path, remote_path=host_path)
+        for host_path, guest_path in paths:
+            LOGGER.debug(
+                'Extracting scp://%s:%s to %s',
+                self.name(),
+                host_path,
+                guest_path,
+            )
+            self.copy_from(local_path=guest_path, remote_path=host_path)
 
     def _extract_paths_live(self, paths):
         self.guest_agent().start()
@@ -1046,6 +1056,12 @@ class VM(object):
             rootfs = rootfs[0]
         gfs_cli.mount_ro(rootfs, '/')
         for (guest_path, host_path) in paths:
+            LOGGER.debug(
+                'Extracting guestfs://%s:%s to %s',
+                self.name(),
+                host_path,
+                guest_path,
+            )
             try:
                 _guestfs_copy_path(gfs_cli, guest_path, host_path)
             except Exception:
@@ -1146,23 +1162,32 @@ class VM(object):
                 self._service_class = service_class
                 self._spec['service_class'] = manager_name
                 self.save()
-                break
+                return
+
+        raise RuntimeError('No service manager detected for %s' % self.name())
 
     @_check_alive
     def service(self, name):
         if self._service_class is None:
             self._detect_service_manager()
+
         return self._service_class(self, name)
 
     def guest_agent(self):
         if 'guest-agent' not in self._spec:
             for possible_name in ('qemu-ga', 'qemu-guest-agent'):
-                if self.service(possible_name).exists():
-                    self._spec['guest-agent'] = possible_name
-                    self.save()
-                    break
+                try:
+                    if self.service(possible_name).exists():
+                        self._spec['guest-agent'] = possible_name
+                        self.save()
+                        break
+                except RuntimeError as err:
+                    raise RuntimeError(
+                        'Could not find guest agent service: %s' % err
+                    )
             else:
                 raise RuntimeError('Could not find guest agent service')
+
         return self.service(self._spec['guest-agent'])
 
     @_check_alive
@@ -1224,3 +1249,16 @@ class VM(object):
             self._libvirt_name()
         ).state()
         return libvirt_utils.Domain.resolve_state(state)
+
+    def _artifact_paths(self):
+        return self._spec.get('artifacts', [])
+
+    def collect_artifacts(self, host_path):
+        self.extract_paths(
+            [
+                (
+                    guest_path,
+                    os.path.join(host_path, guest_path.replace('/', '_')),
+                ) for guest_path in self._artifact_paths()
+            ]
+        )

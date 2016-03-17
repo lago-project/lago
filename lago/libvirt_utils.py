@@ -22,6 +22,7 @@ Utilities to help deal with the libvirt python bindings
 """
 import libvirt
 
+#: Mapping of domain statuses values to human readable strings
 DOMAIN_STATES = {
     libvirt.VIR_DOMAIN_NOSTATE: 'no state',
     libvirt.VIR_DOMAIN_RUNNING: 'running',
@@ -46,10 +47,10 @@ class Domain(object):
 
         Args:
             state_number(list of int): State number as returned by
-            :ref:`libvirt.virtDomain.state`
+                :func:`libvirt.virDomain.state`
 
-        Return:
+        Returns:
             str: small human readable description of the domain state, unknown
-            if the state is not in the known list
+                if the state is not in the known list
         """
         return DOMAIN_STATES.get(state_number[0], 'unknown')
