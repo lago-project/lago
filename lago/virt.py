@@ -1009,8 +1009,14 @@ class VM(object):
                 self.start()
 
     def _extract_paths_scp(self, paths):
-        for guest_path, host_path in paths:
-            self.copy_to(local_path=guest_path, remote_path=host_path)
+        for host_path, guest_path in paths:
+            LOGGER.debug(
+                'Extracting scp://%s:%s to %s',
+                self.name(),
+                host_path,
+                guest_path,
+            )
+            self.copy_from(local_path=guest_path, remote_path=host_path)
 
     def _extract_paths_live(self, paths):
         self.guest_agent().start()
@@ -1046,6 +1052,12 @@ class VM(object):
             rootfs = rootfs[0]
         gfs_cli.mount_ro(rootfs, '/')
         for (guest_path, host_path) in paths:
+            LOGGER.debug(
+                'Extracting guestfs://%s:%s to %s',
+                self.name(),
+                host_path,
+                guest_path,
+            )
             try:
                 _guestfs_copy_path(gfs_cli, guest_path, host_path)
             except Exception:
