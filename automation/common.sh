@@ -122,6 +122,7 @@ run_basic_functional_tests() {
         tests/functional/*basic.bats \
         tests/functional/status.bats \
         tests/functional/start.bats \
+        tests/functional/collect.bats \
     | tee exported-artifacts/functional_tests.tap
     res=${PIPESTATUS[0]}
     return $res
