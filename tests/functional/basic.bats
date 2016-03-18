@@ -99,7 +99,7 @@ REPO_NAME="local_tests_repo"
     export BATS_TMPDIR BATS_TEST_DIRNAME
     export LIBGUESTFS_DEBUG=1 LIBGUESTFS_TRACE=1
     cd "$FIXTURES"
-    for prefix_name in "${PREFIX_NAMES[@]}"; do
+    for prefix_name in "${PREFIX_NAMES[@]:0:${#PREFIX_NAMES[@]}-1}"; do
         echo "Creating prefix $prefix_name in $WORKDIR"
         helpers.run_ok "$LAGOCLI" \
             --prefix-name "$prefix_name" \
@@ -112,6 +112,34 @@ REPO_NAME="local_tests_repo"
         helpers.links_to "$WORKDIR/current" "default"
     done
 }
+
+
+@test "basic.full_run: init workdir non default prefix setting it as current" {
+    local workdir="$FIXTURES"/workdir
+    local suite="$FIXTURES"/suite.json
+
+    # This is needed to be able to run inside mock, as it uses some temp files
+    # and that is not seamlesly reachable from out of the chroot by
+    # libvirt/kvm
+    export BATS_TMPDIR BATS_TEST_DIRNAME
+    export LIBGUESTFS_DEBUG=1 LIBGUESTFS_TRACE=1
+    cd "$FIXTURES"
+    prefix_name="${PREFIX_NAMES[@]: -1}"
+    echo "Creating prefix $prefix_name in $WORKDIR"
+    helpers.run_ok "$LAGOCLI" \
+        --prefix-name "$prefix_name" \
+        init \
+        --template-repo-path "$REPO_CONF" \
+        --template-repo-name "$REPO_NAME" \
+        --template-store "$STORE" \
+        --set-current \
+        "$suite"
+    helpers.is_dir "$WORKDIR/$prefix_name"
+    helpers.links_to "$WORKDIR/current" "$prefix_name"
+    helpers.run_ok "$LAGOCLI" set-current "default"
+    helpers.links_to "$WORKDIR/current" "default"
+}
+
 
 
 @test "basic.full_run: current prefix status when stopped" {
