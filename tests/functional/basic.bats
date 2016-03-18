@@ -114,7 +114,7 @@ REPO_NAME="local_tests_repo"
 }
 
 
-@test "basic.full_run: init workdir non default prefix setting it as current" {
+@test "basic.full_run: init workdir with LagoInitFile and non default prefix setting it as current" {
     local workdir="$FIXTURES"/workdir
     local suite="$FIXTURES"/suite.json
 
@@ -132,8 +132,7 @@ REPO_NAME="local_tests_repo"
         --template-repo-path "$REPO_CONF" \
         --template-repo-name "$REPO_NAME" \
         --template-store "$STORE" \
-        --set-current \
-        "$suite"
+        --set-current
     helpers.is_dir "$WORKDIR/$prefix_name"
     helpers.links_to "$WORKDIR/current" "$prefix_name"
     helpers.run_ok "$LAGOCLI" set-current "default"
