@@ -80,6 +80,11 @@ in_lago_prefix = in_prefix(
     help='Location to store templates at',
     type=os.path.abspath,
 )
+@lago.plugins.cli.cli_plugin_add_argument(
+    '--set-current',
+    action='store_true',
+    help='If passed, it will set the newly created prefix as the current one',
+)
 @log_utils.log_task('Initialize and populate prefix', LOGGER)
 def do_init(
     workdir,
@@ -88,6 +93,7 @@ def do_init(
     template_repo_path=None,
     template_repo_name=None,
     template_store=None,
+    set_current=False,
     **kwargs
 ):
     if prefix_name == 'current':
@@ -140,6 +146,10 @@ def do_init(
 
         with open(virt_config, 'r') as virt_fd:
             prefix.virt_conf_from_stream(virt_fd, repo, store)
+
+        if set_current:
+            workdir.set_current(new_current=prefix_name)
+
     except:
         shutil.rmtree(prefix.paths.prefixed(''))
         raise
