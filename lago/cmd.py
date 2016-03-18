@@ -50,10 +50,12 @@ in_lago_prefix = in_prefix(
     'virt_config',
     help=(
         'Configuration of resources to deploy, json and yaml file formats '
-        'are supported'
+        'are supported, takes option precedence over workdir'
     ),
     metavar='VIRT_CONFIG',
     type=os.path.abspath,
+    nargs='?',
+    default=None,
 )
 @lago.plugins.cli.cli_plugin_add_argument(
     'workdir',
@@ -64,7 +66,7 @@ in_lago_prefix = in_prefix(
     metavar='WORKDIR',
     type=os.path.abspath,
     nargs='?',
-    default=os.path.join(os.path.curdir, '.lago'),
+    default=None,
 )
 @lago.plugins.cli.cli_plugin_add_argument(
     '--template-repo-path',
@@ -96,6 +98,17 @@ def do_init(
     set_current=False,
     **kwargs
 ):
+
+    if virt_config is None and workdir is not None:
+        virt_config = workdir
+        workdir = None
+
+    if workdir is None:
+        workdir = os.path.abspath('.lago')
+
+    if virt_config is None:
+        virt_config = os.path.abspath('LagoInitFile')
+
     if prefix_name == 'current':
         prefix_name = 'default'
 
