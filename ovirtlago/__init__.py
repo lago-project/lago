@@ -138,13 +138,16 @@ def _git_revision_at(path):
 
 def _activate_storage_domains(api, sds):
     for sd in sds:
+        LOGGER.info('Started activation of storage domain %s', sd.name)
         sd.activate()
 
     for sd in sds:
         dc = api.datacenters.get(id=sd.get_data_center().get_id(), )
+        LOGGER.debug('Waiting until storage domain %s is active', sd.name)
         testlib.assert_true_within_long(
             lambda: dc.storagedomains.get(sd.name).status.state == 'active',
         )
+        LOGGER.debug('Storage domain %s is active', sd.name)
 
 
 def _deactivate_storage_domains(api, sds):
