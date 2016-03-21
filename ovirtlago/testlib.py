@@ -30,6 +30,7 @@ from lago import (utils as utils, log_utils as log_utils)
 
 import ovirtlago
 
+LOGGER = logging.getLogger(__name__)
 SHORT_TIMEOUT = 3 * 60
 LONG_TIMEOUT = 10 * 60
 
@@ -188,9 +189,10 @@ def assert_true_within(func, timeout):
             try:
                 if func():
                     return
-                time.sleep(3)
             except Exception:
-                pass
+                LOGGER.exception("Unhandled exception in %s", func)
+            time.sleep(3)
+
     raise AssertionError('Timed out after %s seconds' % timeout)
 
 
