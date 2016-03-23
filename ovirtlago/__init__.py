@@ -499,6 +499,12 @@ class OvirtPrefix(Prefix):
             for vm in self.virt_env.get_vms().values():
                 vm.wait_for_ssh()
 
+        with LogTask('Wait for engine to go online'):
+            testlib.assert_true_within_long(
+                lambda: self.virt_env.engine_vm().get_api() or True,
+                allowed_exceptions=[RequestError],
+            )
+
         api = self.virt_env.engine_vm().get_api()
         with LogTask('Activate hosts'):
             _activate_all_hosts(api)
