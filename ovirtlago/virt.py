@@ -21,6 +21,7 @@ import os
 
 import ovirtsdk.api
 import lago
+from ovirtsdk.infrastructure.errors import (RequestError, ConnectionError)
 
 import constants
 import testlib
@@ -101,7 +102,8 @@ class EngineVM(lago.virt.VM):
 
                 api = []
                 testlib.assert_true_within_short(
-                    lambda: api.append(self._create_api()) or True
+                    lambda: api.append(self._create_api()) or True,
+                    allowed_exceptions=[RequestError, ConnectionError],
                 )
             except AssertionError:
                 raise RuntimeError('Failed to connect to the engine')
