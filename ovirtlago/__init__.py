@@ -25,7 +25,7 @@ import os
 import lockfile
 import nose.core
 import nose.config
-from ovirtsdk.infrastructure.errors import RequestError
+from ovirtsdk.infrastructure.errors import (RequestError, ConnectionError)
 import lago
 from lago import log_utils
 from lago.prefix import Prefix
@@ -137,33 +137,56 @@ def _git_revision_at(path):
 
 
 def _activate_storage_domains(api, sds):
-    for sd in sds:
-        LOGGER.info('Started activation of storage domain %s', sd.name)
-        sd.activate()
+    if not sds:
+        LOGGER.info('No storages to activate')
+        return
 
     for sd in sds:
-        dc = api.datacenters.get(id=sd.get_data_center().get_id(), )
-        LOGGER.debug('Waiting until storage domain %s is active', sd.name)
-        testlib.assert_true_within_long(
-            lambda: dc.storagedomains.get(sd.name).status.state == 'active',
-        )
-        LOGGER.debug('Storage domain %s is active', sd.name)
+        if sd.status.get_state() != 'active':
+            sd.activate()
+            LOGGER.info('Started activation of storage domain %s', sd.name)
+        else:
+            LOGGER.info('Storage domain %s already active', sd.name)
+
+    with LogTask('Waiting for the domains to become active'):
+        for sd in sds:
+            dc = api.datacenters.get(id=sd.get_data_center().get_id(), )
+            with LogTask(
+                'Waiting for storage domain %s to become active' % sd.name,
+                level='debug'
+            ):
+                testlib.assert_true_within_long(
+                    lambda: (
+                        dc.storagedomains.get(sd.name).status.state == 'active'
+                    )
+                )
 
 
 def _deactivate_storage_domains(api, sds):
+    if not sds:
+        LOGGER.info('No storages to deactivate')
+        return
+
     for sd in sds:
-        sd.deactivate()
-        LOGGER.info('Started deactivation of storage domain %s', sd.name)
+        if sd.status.get_state() != 'maintenance':
+            sd.deactivate()
+            LOGGER.info('Started deactivation of storage domain %s', sd.name)
+        else:
+            LOGGER.info('Storage domain %s already inactive', sd.name)
 
     with LogTask('Waiting for the domains to get into maintenance'):
         for sd in sds:
             dc = api.datacenters.get(id=sd.get_data_center().get_id())
-            testlib.assert_true_within_long(
-                lambda: (
-                    dc.storagedomains.get(sd.name).status.state
-                    == 'maintenance'
-                ),
-            )
+            with LogTask(
+                'Waiting for storage domain %s to become inactive' % sd.name,
+                level='debug'
+            ):
+                testlib.assert_true_within_long(
+                    lambda: (
+                        dc.storagedomains.get(sd.name).status.state
+                        == 'maintenance'
+                    ),
+                )
 
 
 @log_task('Deactivating all storage domains')
@@ -220,11 +243,21 @@ def _activate_all_hosts(api):
         )
 
 
+@log_task('Activating all storage domains')
 def _activate_all_storage_domains(api):
     for dc in api.datacenters.list():
-        sds = dc.storagedomains.list()
-        _activate_storage_domains(api, [sd for sd in sds if sd.master])
-        _activate_storage_domains(api, [sd for sd in sds if not sd.master])
+        with LogTask('Activating domains for datacenter %s' % dc.name):
+            sds = dc.storagedomains.list()
+            with LogTask('Activating master storage domains'):
+                _activate_storage_domains(
+                    api,
+                    [sd for sd in sds if sd.master],
+                )
+            with LogTask('Activating non-master storage domains'):
+                _activate_storage_domains(
+                    api,
+                    [sd for sd in sds if not sd.master],
+                )
 
 
 class OvirtPrefix(Prefix):
@@ -502,7 +535,7 @@ class OvirtPrefix(Prefix):
         with LogTask('Wait for engine to go online'):
             testlib.assert_true_within_long(
                 lambda: self.virt_env.engine_vm().get_api() or True,
-                allowed_exceptions=[RequestError],
+                allowed_exceptions=[RequestError, ConnectionError],
             )
 
         api = self.virt_env.engine_vm().get_api()
