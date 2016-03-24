@@ -183,22 +183,42 @@ class TaskLogNosePlugin(nose.plugins.Plugin):
         )
 
 
-def assert_true_within(func, timeout):
+def _instance_of_any(obj, cls_list):
+    return any(True for cls in cls_list if isinstance(obj, cls))
+
+
+def assert_true_within(func, timeout, allowed_exceptions=None):
+    allowed_exceptions = allowed_exceptions or []
     with utils.EggTimer(timeout) as timer:
         while not timer.elapsed():
             try:
                 if func():
                     return
-            except Exception:
+            except Exception as exc:
+                if _instance_of_any(exc, allowed_exceptions):
+                    continue
+
                 LOGGER.exception("Unhandled exception in %s", func)
+                raise
+
             time.sleep(3)
 
     raise AssertionError('Timed out after %s seconds' % timeout)
 
 
-def assert_true_within_short(func):
-    assert_true_within(func, SHORT_TIMEOUT)
+def assert_true_within_short(func, allowed_exceptions=None):
+    allowed_exceptions = allowed_exceptions or []
+    assert_true_within(
+        func,
+        SHORT_TIMEOUT,
+        allowed_exceptions=allowed_exceptions,
+    )
 
 
-def assert_true_within_long(func):
-    assert_true_within(func, LONG_TIMEOUT)
+def assert_true_within_long(func, allowed_exceptions=None):
+    allowed_exceptions = allowed_exceptions or []
+    assert_true_within(
+        func,
+        LONG_TIMEOUT,
+        allowed_exceptions=allowed_exceptions,
+    )
