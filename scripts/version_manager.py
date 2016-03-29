@@ -22,15 +22,19 @@ def fit_to_cols(what, indent, cols=79):
     lines = []
     free_cols = cols - len(indent)
     while len(what) > free_cols:
+        cutpoint = free_cols
+        extra_indent = ''
         if what[free_cols] != ' ':
             try:
                 prev_space = what[:free_cols].rindex(' ')
                 lines.append(indent + what[:prev_space])
+                cutpoint = prev_space + 1
+                extra_indent = '          '
             except ValueError:
                 lines.append(indent + what[:free_cols] + '-')
         else:
             lines.append(indent + what[:free_cols])
-        what = what[free_cols:]
+        what = extra_indent + what[cutpoint:]
     lines.append(indent + what)
     return '\n'.join(lines)
 
