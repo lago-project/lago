@@ -129,7 +129,7 @@ def sysprep(disk, mods, backend='direct'):
         raise RuntimeError(
             'Failed to bootstrap %s\ncommand:%s\nstdout:%s\nstderr:%s' % (
                 disk,
-                ' '.join('"%elem"' % elem for elem in cmd),
+                ' '.join('"%s"' % elem for elem in cmd),
                 ret.out,
                 ret.err,
             )
