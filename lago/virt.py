@@ -643,6 +643,7 @@ class VM(object):
 
         return wrapper
 
+    @log_task('Get ssh client', level='debug')
     @_check_alive
     def _get_ssh_client(self):
         ssh_timeout = int(config.get('ssh_timeout'))
@@ -650,6 +651,7 @@ class VM(object):
         start_time = time.time()
         while ssh_tries > 0:
             try:
+                LOGGER.debug('still got %d tries' % ssh_tries)
                 client = paramiko.SSHClient()
                 client.set_missing_host_key_policy(paramiko.AutoAddPolicy(), )
                 client.connect(
@@ -659,9 +661,11 @@ class VM(object):
                     timeout=ssh_timeout,
                 )
                 return client
-            except socket.error:
+            except (socket.error, socket.timeout) as err:
+                LOGGER.debug('Socket error: %s', err)
                 pass
-            except socket.timeout:
+            except paramiko.ssh_exception.SSHException as err:
+                LOGGER.debug('SSH error %s', err)
                 pass
 
             ssh_tries -= 1
