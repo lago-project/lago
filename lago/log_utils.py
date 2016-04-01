@@ -595,7 +595,7 @@ def log_task(task, logger=logging, level='info'):
         @wraps(func)
         def wrapper(*args, **kwargs):
             with LogTask(task, logger=logger, level=level):
-                func(*args, **kwargs)
+                return func(*args, **kwargs)
 
         return wrapper
 
