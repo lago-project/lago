@@ -206,7 +206,7 @@ class VirtEnv(object):
             for vm in vms:
                 stoppable_nets = stoppable_nets.union(vm.nets())
             for vm in self._vms.values():
-                if not vm.alive() or vm.name() in vm_names:
+                if not vm.defined() or vm.name() in vm_names:
                     continue
                 for net in vm.nets():
                     stoppable_nets.discard(net)
@@ -634,6 +634,15 @@ class VM(object):
             except socket.timeout:
                 pass
 
+    def _check_defined(func):
+        @functools.wraps(func)
+        def wrapper(self, *args, **kwargs):
+            if not self.defined():
+                raise RuntimeError('VM %s is not defined' % self.name())
+            return func(self, *args, **kwargs)
+
+        return wrapper
+
     def _check_alive(func):
         @functools.wraps(func)
         def wrapper(self, *args, **kwargs):
@@ -679,7 +688,7 @@ class VM(object):
 
     def ssh(self, command, data=None, show_output=True):
         if not self.alive():
-            raise RuntimeError('Attempt to ssh into offline host')
+            raise RuntimeError('Attempt to ssh into a not running host')
 
         client = self._get_ssh_client()
         transport = client.get_transport()
@@ -896,12 +905,12 @@ class VM(object):
         return lxml.etree.tostring(dom_xml)
 
     def start(self):
-        if not self.alive():
+        if not self.defined():
             with LogTask('Starting VM %s' % self.name()):
                 self._env.libvirt_con.createXML(self._libvirt_xml())
 
     def stop(self):
-        if self.alive():
+        if self.defined():
             self._ssh_client = None
             with LogTask('Destroying VM %s' % self.name()):
                 self._env.libvirt_con.lookupByName(
@@ -909,6 +918,9 @@ class VM(object):
                 ).destroy()
 
     def alive(self):
+        return self.state() == 'running'
+
+    def defined(self):
         dom_names = [
             dom.name() for dom in self._env.libvirt_con.listAllDomains()
         ]
@@ -992,8 +1004,8 @@ class VM(object):
 
         with LogTask('Reverting %s to snapshot %s' % (self.name(), name)):
 
-            was_alive = self.alive()
-            if was_alive:
+            was_defined = self.defined()
+            if was_defined:
                 self.stop()
             for disk, disk_template in zip(self._spec['disks'], snap_info):
                 os.unlink(disk['path'])
@@ -1013,7 +1025,7 @@ class VM(object):
                     raise RuntimeError('Failed to revert disk')
 
             self._reclaim_disks()
-            if was_alive:
+            if was_defined:
                 self.start()
 
     def _extract_paths_scp(self, paths):
@@ -1148,7 +1160,7 @@ class VM(object):
         for disk in self._spec['disks']:
             self._reclaim_disk(disk['path'])
 
-    @_check_alive
+    @_check_defined
     def vnc_port(self):
         dom = self._env.libvirt_con.lookupByName(self._libvirt_name())
         dom_xml = lxml.etree.fromstring(dom.XMLDesc())
@@ -1206,7 +1218,7 @@ class VM(object):
             transport.close()
             client.close()
 
-    @_check_alive
+    @_check_defined
     def interactive_console(self):
         """
         Opens an interactive console
@@ -1246,7 +1258,7 @@ class VM(object):
             str: small description of the domain status, 'down' if it's not
             defined at all.
         """
-        if not self.alive():
+        if not self.defined():
             return 'down'
 
         state = self._env.libvirt_con.lookupByName(
