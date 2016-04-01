@@ -35,10 +35,10 @@ def mocked_methods():
 
 
 @pytest.fixture()
-def mock_VM(is_alive, mocked_methods, monkeypatch):
+def mock_VM(is_defined, mocked_methods, monkeypatch):
     mocks = {}
-    if 'alive' not in mocked_methods:
-        mocked_methods['alive'] = lambda *args: is_alive
+    if 'defined' not in mocked_methods:
+        mocked_methods['defined'] = lambda *args: is_defined
 
     mock_vm_cls = mock.Mock(spec=lago.virt.VM)
 
@@ -66,15 +66,15 @@ def mock_VM(is_alive, mocked_methods, monkeypatch):
 
 class TestVM(object):
     @pytest.mark.parametrize(
-        'is_alive,mocked_methods',
+        'is_defined,mocked_methods',
         (
             (True, {'state': lago.virt.VM.state}),
             (False, {'state': lago.virt.VM.state}),
         ),
-        ids=('alive VM', 'dead VM'),
+        ids=('defined VM', 'dead VM'),
     )
     def test_state(self, mock_VM):
-        if mock_VM.alive():
+        if mock_VM.defined():
             assert mock_VM.state() == 'shrubbery'
         else:
             assert mock_VM.state() == 'down'

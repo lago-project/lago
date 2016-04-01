@@ -325,7 +325,9 @@ def do_shell(prefix, host, args=None, **kwargs):
         raise
 
     if not host.alive():
-        raise RuntimeError('Host %s is not running' % host.name())
+        raise RuntimeError(
+            'Host %s is not "running", but "%s"' % (host.name(), host.state())
+        )
 
     host.wait_for_ssh()
 
@@ -483,7 +485,9 @@ def do_copy_from_vm(prefix, host, remote_path, local_path, **kwargs):
         raise
 
     if not host.alive():
-        raise RuntimeError('Host %s is not running' % host.name())
+        raise RuntimeError(
+            'Host %s is not "running", but "%s"' % (host.name(), host.state())
+        )
 
     host.wait_for_ssh()
     host.copy_from(remote_path, local_path)
@@ -523,7 +527,9 @@ def do_copy_to_vm(prefix, host, remote_path, local_path, **kwargs):
         raise
 
     if not host.alive():
-        raise RuntimeError('Host %s is not running' % host.name())
+        raise RuntimeError(
+            'Host %s is not "running", but "%s"' % (host.name(), host.state())
+        )
 
     host.wait_for_ssh()
     host.copy_to(local_path, remote_path)
