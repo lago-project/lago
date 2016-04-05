@@ -5,6 +5,7 @@ VERBS=(
     collect
     copy-from-vm
     copy-to-vm
+    deploy
     destroy
     init
     ovirt
