@@ -10,7 +10,7 @@ domains:
           dev: vda
           format: qcow2
       metadata:
-        ovirt-scripts:
+        deploy-scripts:
           - scripts/create_nicefile.sh
           - scripts/create_uglyfile.sh
 

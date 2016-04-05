@@ -1,15 +1,13 @@
 #!/usr/bin/env bats
 load common
-load ovirt_common
 load helpers
 load env_setup
 
-FIXTURES="$FIXTURES/ovirt.deploy"
+FIXTURES="$FIXTURES/deploy"
 PREFIX="$FIXTURES"/.lago
 
 
-@test "ovirt.deploy.basic: setup" {
-    # As there's no way to know the last test result, we will handle it here
+@test "deploy.basic: setup" {
     local suite="$FIXTURES"/suite_1host.yaml
 
     rm -rf "$PREFIX"
@@ -22,11 +20,11 @@ PREFIX="$FIXTURES"/.lago
 }
 
 
-@test "ovirt.deploy.basic: deploy" {
+@test "deploy.basic: deploy" {
     common.is_initialized "$PREFIX" || skip "prefix not initiated"
     pushd "$FIXTURES"
 
-    helpers.run_ok "$LAGOCLI" ovirt deploy
+    helpers.run_ok "$LAGOCLI" deploy
 
 echo "Checking that the nicefile was properly created"
     helpers.run_ok "$LAGOCLI" shell 'lago_functional_tests_vm01' <<EOC
@@ -42,7 +40,7 @@ EOC
 }
 
 
-@test "ovirt.deploy.basic: teardown" {
+@test "deploy.basic: teardown" {
     if common.is_initialized "$PREFIX"; then
         pushd "$FIXTURES"
         helpers.run_ok "$LAGOCLI" destroy -y
@@ -53,7 +51,7 @@ EOC
 }
 
 
-@test "ovirt.deploy.fail_on_deploy_failure: setup" {
+@test "deploy.fail_on_deploy_failure: setup" {
     # As there's no way to know the last test result, we will handle it here
     local suite="$FIXTURES"/suite_1host_fail.yaml
 
@@ -67,16 +65,16 @@ EOC
 }
 
 
-@test "ovirt.deploy.fail_on_deploy_failure: failed deploy" {
+@test "deploy.fail_on_deploy_failure: failed deploy" {
     common.is_initialized "$PREFIX" || skip "prefix not initiated"
     pushd "$FIXTURES"
 
-    helpers.run_nook "$LAGOCLI" --loglevel debug ovirt deploy
+    helpers.run_nook "$LAGOCLI" --loglevel debug deploy
     helpers.contains "$output" "I'm going to fail"
 }
 
 
-@test "ovirt.deploy.fail_on_deploy_failure: teardown" {
+@test "deploy.fail_on_deploy_failure: teardown" {
     if common.is_initialized "$PREFIX"; then
         pushd "$FIXTURES"
         helpers.run_ok "$LAGOCLI" destroy -y
@@ -85,4 +83,3 @@ EOC
     env_setup.destroy_domains
     env_setup.destroy_nets
 }
-
