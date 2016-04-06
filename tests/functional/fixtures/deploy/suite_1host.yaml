@@ -4,14 +4,15 @@ domains:
       nics:
         - net: lago_functional_tests
       disks:
-        - template_name: fc23-base
+        - template_name: cirros
           type: template
           name: root
           dev: vda
           format: qcow2
       metadata:
-        ovirt-scripts:
-          - scripts/fail.sh
+        deploy-scripts:
+          - scripts/create_nicefile.sh
+          - scripts/create_uglyfile.sh
 
 nets:
   lago_functional_tests:

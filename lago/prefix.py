@@ -28,6 +28,7 @@ import subprocess
 import urlparse
 import urllib
 import uuid
+import warnings
 from os.path import join
 
 import xmltodict
@@ -936,4 +937,60 @@ class Prefix(object):
         utils.invoke_in_parallel(
             _collect_artifacts,
             self.virt_env.get_vms().values(),
+        )
+
+    def _get_scripts(self, host):
+        """
+        Temporary method to retrieve the host scripts
+
+        TODO:
+            remove once the "ovirt-scripts" option gets deprecated
+
+        Args:
+            host(VM): host to retrieve the scripts for
+
+        Returns:
+            list: deploy scripts for the host, empty if none found
+        """
+        deploy_scripts = host.metadata.get('deploy-scripts', [])
+        if deploy_scripts:
+            return deploy_scripts
+
+        ovirt_scripts = host.metadata.get('ovirt-scripts', [])
+        if ovirt_scripts:
+            warnings.warn(
+                'Deprecated entry "ovirt-scripts" will not be supported in '
+                'the future, replace with "deploy-scripts"'
+            )
+
+        return ovirt_scripts
+
+    def _deploy_host(self, host):
+        with LogTask('Deploy VM %s' % host.name()):
+            deploy_scripts = self._get_scripts(host)
+            if not deploy_scripts:
+                return
+
+            with LogTask('Wait for ssh connectivity'):
+                host.wait_for_ssh()
+
+            for script in deploy_scripts:
+                with LogTask('Run script %s' % os.path.basename(script)):
+                    ret, out, err = host.ssh_script(script, show_output=False)
+
+                if ret != 0:
+                    LOGGER.debug('STDOUT:\n%s' % out)
+                    LOGGER.error('STDERR\n%s' % err)
+                    raise RuntimeError(
+                        '%s failed with status %d on %s' % (
+                            script,
+                            ret,
+                            host.name(),
+                        ),
+                    )
+
+    @log_task('Deploy environment')
+    def deploy(self):
+        utils.invoke_in_parallel(
+            self._deploy_host, self.virt_env.get_vms().values()
         )

@@ -548,6 +548,15 @@ def do_collect(prefix, output, **kwargs):
     prefix.collect_artifacts(output)
 
 
+@lago.plugins.cli.cli_plugin(
+    help='Run scripts that install necessary RPMs and configuration'
+)
+@in_lago_prefix
+@with_logging
+def do_deploy(prefix, **kwargs):
+    prefix.deploy()
+
+
 def create_parser(cli_plugins, out_plugins):
     parser = argparse.ArgumentParser(
         description='Command line interface to oVirt testing framework.'
