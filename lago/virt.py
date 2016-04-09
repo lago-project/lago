@@ -33,7 +33,7 @@ import guestfs
 import libvirt
 import lxml.etree
 import paramiko
-from scp import SCPClient
+from scp import SCPClient, SCPException
 
 import config
 import brctl
@@ -618,14 +618,15 @@ class VM(object):
         return spec
 
     def _open_ssh_client(self):
+        client = paramiko.SSHClient()
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy(), )
         while self._ssh_client is None:
             try:
-                client = paramiko.SSHClient()
-                client.set_missing_host_key_policy(paramiko.AutoAddPolicy(), )
                 client.connect(
                     self.ip(),
                     username='root',
                     key_filename=self._env.prefix.paths.ssh_id_rsa(),
+                    look_for_keys=False,
                     timeout=1,
                 )
                 return client
@@ -658,15 +659,16 @@ class VM(object):
         ssh_timeout = int(config.get('ssh_timeout'))
         ssh_tries = int(config.get('ssh_tries'))
         start_time = time.time()
+        client = paramiko.SSHClient()
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy(), )
         while ssh_tries > 0:
             try:
                 LOGGER.debug('still got %d tries' % ssh_tries)
-                client = paramiko.SSHClient()
-                client.set_missing_host_key_policy(paramiko.AutoAddPolicy(), )
                 client.connect(
                     self.ip(),
                     username='root',
                     key_filename=self._env.prefix.paths.ssh_id_rsa(),
+                    look_for_keys=False,
                     timeout=ssh_timeout,
                 )
                 return client
@@ -780,11 +782,14 @@ class VM(object):
 
     def copy_from(self, remote_path, local_path, recursive=True):
         with self._scp() as scp:
-            scp.get(
-                recursive=recursive,
-                remote_path=remote_path,
-                local_path=local_path,
-            )
+            try:
+                scp.get(
+                    recursive=recursive,
+                    remote_path=remote_path,
+                    local_path=local_path,
+                )
+            except SCPException:
+                LOGGER.debug('Remote path %s not found' % remote_path)
 
     @property
     def metadata(self):
@@ -842,7 +847,7 @@ class VM(object):
             if dev_spec['format'] == 'iso':
                 disk_device = 'cdrom'
                 dev_spec['format'] = 'raw'
-                bus = 'ide'
+                bus = 'scsi'
             # names converted
 
             disk = lxml.etree.Element(
@@ -856,6 +861,8 @@ class VM(object):
                     'driver',
                     name='qemu',
                     type=dev_spec['format'],
+                    io='native',
+                    discard='unmap',
                 ),
             )
 
@@ -943,10 +950,6 @@ class VM(object):
             level='debug',
         ):
 
-            self.wait_for_ssh()
-            self.guest_agent().start()
-            self.ssh('sync'.split(' '))
-
             dom = self._env.libvirt_con.lookupByName(self._libvirt_name())
             dom_xml = lxml.etree.fromstring(dom.XMLDesc())
             disks = dom_xml.xpath('devices/disk')
@@ -963,6 +966,10 @@ class VM(object):
                         name=target_dev
                     )
                 )
+
+            self.wait_for_ssh()
+            self.guest_agent().start()
+            self.ssh('sync'.split(' '))
 
             try:
                 dom.snapshotCreateXML(
@@ -1038,15 +1045,6 @@ class VM(object):
             )
             self.copy_from(local_path=guest_path, remote_path=host_path)
 
-    def _extract_paths_live(self, paths):
-        self.guest_agent().start()
-        dom = self._env.libvirt_con.lookupByName(self._libvirt_name())
-        dom.fsFreeze()
-        try:
-            self._extract_paths_dead(paths=paths)
-        finally:
-            dom.fsThaw()
-
     def _extract_paths_dead(self, paths):
         disk_path = self._spec['disks'][0]['path']
         disk_root_part = self._spec['disks'][0]['metadata'].get(
@@ -1106,15 +1104,15 @@ class VM(object):
         return True
 
     def extract_paths(self, paths):
-        if self.alive() and self.ssh_reachable() and self.has_guest_agent():
-            self._extract_paths_live(paths=paths)
-        elif self.alive() and self.ssh_reachable():
-            self._extract_paths_scp(paths=paths)
-        elif self.alive():
-            raise RuntimeError(
-                'Unable to extract logs from alive but unreachable host %s. '
-                'Try stopping it first' % self.name()
-            )
+        if self.alive():
+            if self.ssh_reachable():
+                self._extract_paths_scp(paths=paths)
+            else:
+                raise RuntimeError(
+                    'Unable to extract logs from alive but'
+                    'unreachable host %s. '
+                    'Try stopping it first' % self.name()
+                )
         else:
             self._extract_paths_dead(paths=paths)
 
