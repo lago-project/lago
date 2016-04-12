@@ -74,7 +74,7 @@ def merge(output_dir, input_dirs):
                 ]
             )
 
-            if ret:
+            if ret.code or not ret.out:
                 raise RuntimeError('Could not find the RPMs in %s' % input_dir)
 
             rpm_paths = ret.out.strip().split('\n')
