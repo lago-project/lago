@@ -107,6 +107,7 @@ REPO_NAME="local_tests_repo"
             --template-repo-path "$REPO_CONF" \
             --template-repo-name "$REPO_NAME" \
             --template-store "$STORE" \
+            --skip-bootstrap \
             "$suite"
         helpers.is_dir "$WORKDIR/$prefix_name"
         helpers.links_to "$WORKDIR/current" "default"
@@ -132,6 +133,7 @@ REPO_NAME="local_tests_repo"
         --template-repo-path "$REPO_CONF" \
         --template-repo-name "$REPO_NAME" \
         --template-store "$STORE" \
+        --skip-bootstrap \
         --set-current
     helpers.is_dir "$WORKDIR/$prefix_name"
     helpers.links_to "$WORKDIR/current" "$prefix_name"
@@ -302,6 +304,7 @@ EOS
         --template-repo-path "$REPO_CONF" \
         --template-repo-name "$REPO_NAME" \
         --template-store "$REPO_STORE" \
+        --skip-bootstrap \
         "$suite"
 
     # Set as current prefix
