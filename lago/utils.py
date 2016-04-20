@@ -20,12 +20,14 @@
 import Queue
 import array
 import collections
+import datetime
 import fcntl
 import functools
 import json
 import logging
 import os
 import select
+import shutil
 import socket
 import subprocess
 import sys
@@ -512,3 +514,13 @@ def with_logging(func):
         return func(*args, prefix=prefix, **kwargs)
 
     return wrapper
+
+
+def add_timestamp_suffix(base_string):
+    return datetime.datetime.fromtimestamp(
+        time.time()
+    ).strftime(base_string + '.%Y-%m-%d_%H:%M:%S')
+
+
+def rotate_dir(base_dir):
+    shutil.move(base_dir, add_timestamp_suffix(base_dir))
