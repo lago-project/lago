@@ -23,9 +23,6 @@ import os
 import shutil
 from functools import partial
 
-import rpmUtils.arch
-import rpmUtils.miscutils
-
 import utils
 from lago import log_utils
 
@@ -38,27 +35,14 @@ def _fastcopy(source, dest):
     try:
         os.link(source, dest)
     except OSError:
-        shutil.copy(source, dest)
-
-
-def _get_header(path):
-    ret = utils.run_command(['rpm', '-qpi', path, ], )
-
-    if ret:
-        raise RuntimeError('Failed to query RPM %s' % path)
-
-    lines = ret.out.strip().split('\n')
-    header = {}
-    for line in lines:
-        if line.startswith('Description'):
-            break
-        header[line.split(':', 1)[0].strip()] = line.split(':', 1)[1].strip()
-    return header
+        shutil.copyfile(source, dest)
 
 
 def merge(output_dir, input_dirs):
-    rpms_by_name = {}
-
+    try:
+        os.makedirs(output_dir)
+    except:
+        pass
     for input_dir in input_dirs:
         with LogTask('Processing directory %s' % input_dir):
             ret = utils.run_command(
@@ -78,51 +62,17 @@ def merge(output_dir, input_dirs):
                 raise RuntimeError('Could not find the RPMs in %s' % input_dir)
 
             rpm_paths = ret.out.strip().split('\n')
-            pkgs_by_name = {}
-
             for path in rpm_paths:
-                hdr = _get_header(path)
-
-                if path.endswith('.src.rpm'):
-                    continue
-
-                if hdr['Architecture'] not in rpmUtils.arch.getArchList():
-                    continue
-
-                pkgs_by_name.setdefault(hdr['Name'], [], ).append((path, hdr))
-
-            for name, pkgs in pkgs_by_name.items():
-                if name in rpms_by_name:
-                    continue
-
-                cand_path, cand_hdr = pkgs[0]
-
-                for other_path, other_hdr in pkgs[1:]:
-                    if rpmUtils.miscutils.compareEVR(
-                        (
-                            None,
-                            cand_hdr['Version'],
-                            cand_hdr['Release'],
-                        ), (
-                            None,
-                            other_hdr['Version'],
-                            other_hdr['Release'],
+                if "i686" not in path:
+                    _fastcopy(
+                        path, os.path.join(
+                            output_dir, os.path.basename(path)
                         )
-                    ) < 0:
-                        cand_path, cand_hdr = other_path, other_hdr
-
-                rpms_by_name[name] = cand_path
+                    )
 
     try:
-        shutil.rmtree(output_dir)
+        ret = utils.run_command(['createrepo', output_dir], cwd=output_dir)
+        if ret:
+            raise RuntimeError('createrepo for %s failed', output_dir)
     except OSError:
         pass
-
-    os.makedirs(output_dir)
-    for path in rpms_by_name.values():
-        LOGGER.debug('Copying %s to output directory', path)
-        _fastcopy(path, os.path.join(output_dir, os.path.basename(path)))
-
-    ret = utils.run_command(['createrepo', '.'], cwd=output_dir)
-    if ret:
-        raise RuntimeError('createrepo failed')
