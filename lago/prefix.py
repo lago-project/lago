@@ -926,6 +926,9 @@ class Prefix(object):
 
     @log_task('Collect artifacts')
     def collect_artifacts(self, output_dir):
+        if os.path.exists(output_dir):
+            utils.rotate_dir(output_dir)
+
         os.makedirs(output_dir)
 
         def _collect_artifacts(vm):
