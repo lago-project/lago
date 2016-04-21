@@ -346,11 +346,6 @@ class OvirtPrefix(Prefix):
         rpm_repo=None,
         reposync_yum_config=None,
         skip_sync=False,
-        vdsm_dir=None,
-        engine_dir=None,
-        engine_build_gwt=None,
-        vdsm_jsonrpc_java_dir=None,
-        ioprocess_dir=None,
     ):
         # Detect distros from template metadata
         engine_dists = [self.virt_env.engine_vm().distro()] \
@@ -369,8 +364,9 @@ class OvirtPrefix(Prefix):
 
         if rpm_repo and reposync_yum_config:
             parser = ConfigParser.SafeConfigParser()
-            with open(reposync_yum_config) as f:
-                parser.readfp(f)
+            with open(reposync_yum_config) as repo_conf_fd:
+                parser.readfp(repo_conf_fd)
+
             repos = [
                 repo
                 for repo in parser.sections()
@@ -387,57 +383,12 @@ class OvirtPrefix(Prefix):
                     )
                 )
 
-        metadata = self._get_metadata()
-
-        if vdsm_dir and vdsm_dists:
-            jobs.append(
-                functools.partial(
-                    _build_vdsm_rpms,
-                    vdsm_dir=vdsm_dir,
-                    output_dir=self.paths.build_dir('vdsm'),
-                    dists=vdsm_dists,
-                )
-            )
-
-        if engine_dir and engine_dists:
-            jobs.append(
-                functools.partial(
-                    _build_engine_rpms,
-                    engine_dir=engine_dir,
-                    output_dir=self.paths.build_dir('ovirt-engine'),
-                    dists=engine_dists,
-                    build_gwt=engine_build_gwt,
-                ),
-            )
-
-        if vdsm_jsonrpc_java_dir and engine_dists:
-            jobs.append(
-                functools.partial(
-                    _build_engine_rpms,
-                    source_dir=engine_dir,
-                    output_dir=self.paths.build_dir('vdsm-jsonrpc-java'),
-                    dists=engine_dists,
-                    build_gwt=engine_build_gwt,
-                ),
-            )
-
-        if ioprocess_dir and engine_dists:
-            jobs.append(
-                functools.partial(
-                    _build_ioprocess_rpms,
-                    source_dir=ioprocess_dir,
-                    output_dir=self.paths.build_dir('ioprocess'),
-                    dists=vdsm_dists,
-                ),
-            )
-
-        vt = lago.utils.VectorThread(jobs)
-        vt.start_all()
-        if engine_dir:
-            metadata['ovirt-engine-revision'] = _git_revision_at(engine_dir)
-        if vdsm_dir:
-            metadata['vdsm-revision'] = _git_revision_at(vdsm_dir)
-        vt.join_all()
+        with LogTask(
+            'Syncing remote repos locally (this might take some time)'
+        ):
+            reposync_jobs = lago.utils.VectorThread(jobs)
+            reposync_jobs.start_all()
+            reposync_jobs.join_all()
 
         self._create_rpm_repository(all_dists, rpm_repo, repos)
         self.save()
