@@ -35,12 +35,11 @@ and blacklist options:
 Include
 ++++++++++
 For each repo you can define an option 'include' with a space separated list
-of :mod:`fnmatch` patterns to allow only rpms that match them (**Not working
-currenly**)
+of :mod:`fnmatch` patterns to allow only rpms that match them
 
 Exclude
 ++++++++++
-Similat to include, you can define an option 'exclude' with a space separated
+Similar to include, you can define an option 'exclude' with a space separated
 list of :mod:`fnmatch` patterns to ignore any rpms that match them
 
 
@@ -68,6 +67,7 @@ import ConfigParser
 import fnmatch
 import functools
 import gzip
+import logging
 import os
 import StringIO
 import urllib2
@@ -77,6 +77,12 @@ import rpmUtils.arch
 import rpmUtils.miscutils
 
 import lago.utils
+from lago import log_utils
+
+
+LOGGER = logging.getLogger(__name__)
+LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
+log_task = functools.partial(log_utils.log_task, logger=LOGGER)
 
 
 def gen_to_list(func):
@@ -115,8 +121,38 @@ def fetch_xml(url):
     return lxml.etree.fromstring(content)
 
 
-@gen_to_list
-def get_packages(repo_url, whitelist=None, blacklist=None):
+def _pkg_in_pattern_list(pattern_list, pkg):
+    return (
+        pkg in pattern_list
+        or any(fnmatch.fnmatch(pkg, pat) for pat in pattern_list)
+    )
+
+
+def _passes_lists(whitelist, blacklist, name):
+    if (
+        whitelist and not _pkg_in_pattern_list(whitelist, name)
+        or blacklist and _pkg_in_pattern_list(blacklist, name)
+    ):
+        return False
+
+    return True
+
+
+def _get_packages_from_repo_url(repo_url):
+    repomd_url = '%s/repodata/repomd.xml' % repo_url
+    repomd_xml = fetch_xml(repomd_url)
+    primary_xml_loc = repomd_xml.xpath(
+        '/rpm:repomd/rpm:data[@type="primary"]/rpm:location',
+        namespaces=RPMNS,
+    )[0].attrib['href']
+    primary_xml = fetch_xml('%s/%s' % (repo_url, primary_xml_loc))
+    return primary_xml.xpath(
+        '/common:metadata/common:package[@type="rpm"]',
+        namespaces=RPMNS,
+    )
+
+
+def get_packages(repo_url, whitelist=None, blacklist=None, only_latest=True):
     """
     Retrieves the package info from the given repo, filtering with whitelist
     and blacklist
@@ -179,36 +215,29 @@ def get_packages(repo_url, whitelist=None, blacklist=None):
 
 
     """
-    repomd_url = '%s/repodata/repomd.xml' % repo_url
-    repomd_xml = fetch_xml(repomd_url)
-    primary_xml_loc = repomd_xml.xpath(
-        '/rpm:repomd/rpm:data[@type="primary"]/rpm:location',
-        namespaces=RPMNS,
-    )[0].attrib['href']
-    primary_xml = fetch_xml('%s/%s' % (repo_url, primary_xml_loc))
-    for pkg_element in primary_xml.xpath(
-        '/common:metadata/common:package[@type="rpm"]',
-        namespaces=RPMNS,
-    ):
+    available_arches = rpmUtils.arch.getArchList()
+    rpms_by_name = {}
+    unfiltered_packages = _get_packages_from_repo_url(repo_url=repo_url)
+    LOGGER.debug(
+        'Got %d unfiltered packages from %s',
+        len(unfiltered_packages),
+        repo_url,
+    )
+    for pkg_element in unfiltered_packages:
         name = pkg_element.xpath('common:name', namespaces=RPMNS)[0].text
 
-        if not whitelist:
-            whitelist = ('*', )
-
-        if not blacklist:
-            blacklist = ()
-
-        if any([fnmatch.fnmatch(name, pat) for pat in whitelist]):
-            continue
-
-        if any([fnmatch.fnmatch(name, pat) for pat in blacklist]):
+        if not _passes_lists(
+            whitelist=whitelist,
+            blacklist=blacklist,
+            name=name
+        ):
             continue
 
         arch = pkg_element.xpath('common:arch', namespaces=RPMNS)[0].text
-        if arch not in rpmUtils.arch.getArchList():
+        if arch not in available_arches:
             continue
 
-        yield {
+        rpm = {
             'name': name,
             'location': pkg_element.xpath(
                 'common:location',
@@ -246,34 +275,20 @@ def get_packages(repo_url, whitelist=None, blacklist=None):
             ),
         }
 
-
-def discard_older_rpms(rpms):
-    """
-    Gets the list of the newest rpms from the given list
-
-    Args:
-        rpms (list of dict): List of rpms as returned by :func:`get_packages`
-
-    Returns:
-        list of dict: list of the newest rpms from the list that was passed
-    """
-    rpms_by_name = {}
-    for rpm in rpms:
         name = rpm['name']
 
         if rpm['location'].endswith('.src.rpm'):
             name = 'src-%s' % name
 
         if (
-            (
-                name not in rpms_by_name
-            ) or (
-                rpmUtils.miscutils.compareEVR(
-                    rpms_by_name[name]['version'], rpm['version']
-                ) < 0
-            )
+            name not in rpms_by_name
+            or rpmUtils.miscutils.compareEVR(
+                rpms_by_name[name]['version'], rpm['version']
+            ) < 0
         ):
             rpms_by_name[name] = rpm
+        else:
+            continue
 
     return rpms_by_name.values()
 
@@ -299,27 +314,39 @@ def verify_repo(repo_url, path, whitelist=None, blacklist=None):
         :func:`get_packages`
     """
     downloaded_rpms = []
-    for root, dirs, files in os.walk(path):
-        downloaded_rpms.extend([f for f in files if f.endswith('.rpm')])
+    whitelist = whitelist or {'*': True}
+    blacklist = blacklist or {}
+    for _, _, files in os.walk(path):
+        downloaded_rpms.extend(
+            fname for fname in files if fname.endswith('.rpm')
+        )
+    packages = get_packages(repo_url, whitelist, blacklist, only_latest=True)
+    LOGGER.debug(
+        'Got %d filtered packages for repo %s',
+        len(packages),
+        repo_url,
+    )
 
-    for rpm in discard_older_rpms(
-        get_packages(repo_url, whitelist, blacklist)
-    ):
+    are_there_missing_rpms = False
+    for rpm in get_packages(repo_url, whitelist, blacklist, only_latest=True):
         rpm_filename = os.path.basename(rpm['location'])
-
-        if whitelist and rpm['name'] not in whitelist:
-            continue
 
         if rpm_filename.endswith('.src.rpm'):
             continue
 
         if rpm_filename not in downloaded_rpms:
-            raise RuntimeError(
-                'RPM %s is missing from %s' % (
-                    rpm['name'],
-                    repo_url,
-                )
+            are_there_missing_rpms = True
+            LOGGER.error(
+                'RPM %s from %s is missing locally ',
+                rpm['name'],
+                repo_url,
             )
+
+    if are_there_missing_rpms:
+        raise RuntimeError(
+            'Some rpms were not found locally for repo %s'
+            % repo_url
+        )
 
 
 def verify_reposync(config_path, sync_dir, repo_whitelist=None):
@@ -339,10 +366,10 @@ def verify_reposync(config_path, sync_dir, repo_whitelist=None):
         None
     """
     config = ConfigParser.SafeConfigParser()
-    with open(config_path) as f:
-        config.readfp(f)
+    with open(config_path) as config_fd:
+        config.readfp(config_fd)
 
-    jobs = []
+    verify_repo_jobs = []
     for repo in config.sections():
         if repo == 'main':
             continue
@@ -354,24 +381,36 @@ def verify_reposync(config_path, sync_dir, repo_whitelist=None):
             continue
 
         if config.has_option(repo, 'includepkgs'):
-            whitelist = config.get(repo, 'includepkgs').split(' ')
+            # a dict is a couple orders of magnitude faster than a list
+            whitelist = {
+                pkg: True
+                for pkg in config.get(repo, 'includepkgs').split(' ')
+            }
         else:
             whitelist = None
 
         if config.has_option(repo, 'exclude'):
-            blacklist = config.get(repo, 'exclude').split(' ')
+            # a dict is a couple orders of magnitude faster than a list
+            blacklist = {
+                pkg: True
+                for pkg in config.get(repo, 'exclude').split(' ')
+            }
         else:
             blacklist = None
 
         repo_path = os.path.join(sync_dir, repo)
 
-        jobs.append(
+        def _verify_repo_job(base_url, *args, **kwargs):
+            with LogTask('Verifying repo %s' % base_url):
+                verify_repo(base_url, *args, **kwargs)
+
+        verify_repo_jobs.append(
             functools.partial(
-                verify_repo,
+                _verify_repo_job,
                 config.get(repo, 'baseurl'),
                 repo_path,
                 whitelist,
                 blacklist,
             )
         )
-    lago.utils.invoke_in_parallel(lambda f: f(), jobs)
+    lago.utils.invoke_in_parallel(lambda f: f(), verify_repo_jobs)
