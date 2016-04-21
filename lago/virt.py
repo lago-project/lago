@@ -861,8 +861,7 @@ class VM(object):
 
             disk.append(
                 lxml.etree.Element(
-                    'boot',
-                    order="{}".format(disk_order + 1)
+                    'boot', order="{}".format(disk_order + 1)
                 ),
             )
 
@@ -887,8 +886,7 @@ class VM(object):
                 lxml.etree.Element(
                     'source',
                     network=self._env.prefixed_name(
-                        dev_spec['net'],
-                        max_length=15
+                        dev_spec['net'], max_length=15
                     ),
                 ),
             )
@@ -896,8 +894,7 @@ class VM(object):
             if 'ip' in dev_spec:
                 interface.append(
                     lxml.etree.Element(
-                        'mac',
-                        address=_ip_to_mac(dev_spec['ip'])
+                        'mac', address=_ip_to_mac(dev_spec['ip'])
                     ),
                 )
             devices.append(interface)
@@ -959,8 +956,7 @@ class VM(object):
                 target_dev = disk.xpath('target')[0].attrib['dev']
                 snapshot_disks.append(
                     lxml.etree.Element(
-                        'disk',
-                        name=target_dev
+                        'disk', name=target_dev
                     )
                 )
 

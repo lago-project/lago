@@ -161,8 +161,7 @@ def do_init(
 
         template_store_path = (
             template_store or lago.config.get(
-                'template_store',
-                default=None
+                'template_store', default=None
             )
         )
         store = lago.templates.TemplateStore(template_store_path)

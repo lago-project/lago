@@ -154,11 +154,9 @@ def _run_command(
         )
 
     popen = subprocess.Popen(
-        command,
-        stdout=out_pipe,
+        command, stdout=out_pipe,
         stderr=err_pipe,
-        env=env,
-        **kwargs
+        env=env, **kwargs
     )
     out, err = popen.communicate(input_data)
     LOGGER.debug('command exit with %d', popen.returncode)
