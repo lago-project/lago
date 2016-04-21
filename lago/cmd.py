@@ -87,6 +87,15 @@ in_lago_prefix = in_prefix(
     action='store_true',
     help='If passed, it will set the newly created prefix as the current one',
 )
+@lago.plugins.cli.cli_plugin_add_argument(
+    '--skip-bootstrap',
+    action='store_true',
+    help=(
+        'If passed, will skip bootstrapping the images, useful if you are '
+        'using templates and you already know they will have the correct '
+        'root pass for example'
+    ),
+)
 @log_utils.log_task('Initialize and populate prefix', LOGGER)
 def do_init(
     workdir,
@@ -96,6 +105,7 @@ def do_init(
     template_repo_name=None,
     template_store=None,
     set_current=False,
+    skip_bootstrap=False,
     **kwargs
 ):
 
@@ -151,14 +161,18 @@ def do_init(
 
         template_store_path = (
             template_store or lago.config.get(
-                'template_store',
-                default=None
+                'template_store', default=None
             )
         )
         store = lago.templates.TemplateStore(template_store_path)
 
         with open(virt_config, 'r') as virt_fd:
-            prefix.virt_conf_from_stream(virt_fd, repo, store)
+            prefix.virt_conf_from_stream(
+                virt_fd,
+                repo,
+                store,
+                do_bootstrap=not skip_bootstrap,
+            )
 
         if set_current:
             workdir.set_current(new_current=prefix_name)

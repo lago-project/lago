@@ -676,7 +676,8 @@ class Prefix(object):
         self,
         conf_fd,
         template_repo=None,
-        template_store=None
+        template_store=None,
+        do_bootstrap=True,
     ):
         """
         Initializes all the virt infrastructure of the prefix, creating the
@@ -697,9 +698,16 @@ class Prefix(object):
             conf=virt_conf,
             template_repo=template_repo,
             template_store=template_store,
+            do_bootstrap=do_bootstrap,
         )
 
-    def virt_conf(self, conf, template_repo=None, template_store=None):
+    def virt_conf(
+        self,
+        conf,
+        template_repo=None,
+        template_store=None,
+        do_bootstrap=True
+    ):
         """
         Initializes all the virt infrastructure of the prefix, creating the
         domains disks, doing any network leases and creating all the virt
@@ -763,7 +771,9 @@ class Prefix(object):
 
             env = virt.VirtEnv(self, conf['domains'], conf['nets'])
             env.save()
-            env.bootstrap()
+            if do_bootstrap:
+                env.bootstrap()
+
             rollback.clear()
 
     def start(self, vm_names=None):
