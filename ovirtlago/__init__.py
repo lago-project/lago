@@ -425,13 +425,18 @@ class OvirtPrefix(Prefix):
                 ),
             )
 
-        vt = lago.utils.VectorThread(jobs)
-        vt.start_all()
-        if engine_dir:
-            metadata['ovirt-engine-revision'] = _git_revision_at(engine_dir)
-        if vdsm_dir:
-            metadata['vdsm-revision'] = _git_revision_at(vdsm_dir)
-        vt.join_all()
+        with LogTask(
+            'Syncing remote repos locally (this might take some time)'
+        ):
+            reposync_jobs = lago.utils.VectorThread(jobs)
+            reposync_jobs.start_all()
+            if engine_dir:
+                metadata['ovirt-engine-revision'] = _git_revision_at(
+                    engine_dir
+                )
+            if vdsm_dir:
+                metadata['vdsm-revision'] = _git_revision_at(vdsm_dir)
+            reposync_jobs.join_all()
 
         self._create_rpm_repository(all_dists, rpm_repo, repos)
         self.save()
