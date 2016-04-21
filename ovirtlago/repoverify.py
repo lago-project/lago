@@ -79,7 +79,6 @@ import rpmUtils.miscutils
 import lago.utils
 from lago import log_utils
 
-
 LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
 log_task = functools.partial(log_utils.log_task, logger=LOGGER)
@@ -123,15 +122,16 @@ def fetch_xml(url):
 
 def _pkg_in_pattern_list(pattern_list, pkg):
     return (
-        pkg in pattern_list
-        or any(fnmatch.fnmatch(pkg, pat) for pat in pattern_list)
+        pkg in pattern_list or any(
+            fnmatch.fnmatch(pkg, pat) for pat in pattern_list
+        )
     )
 
 
 def _passes_lists(whitelist, blacklist, name):
     if (
-        whitelist and not _pkg_in_pattern_list(whitelist, name)
-        or blacklist and _pkg_in_pattern_list(blacklist, name)
+        whitelist and not _pkg_in_pattern_list(whitelist, name) or blacklist
+        and _pkg_in_pattern_list(blacklist, name)
     ):
         return False
 
@@ -281,8 +281,7 @@ def get_packages(repo_url, whitelist=None, blacklist=None, only_latest=True):
             name = 'src-%s' % name
 
         if (
-            name not in rpms_by_name
-            or rpmUtils.miscutils.compareEVR(
+            name not in rpms_by_name or rpmUtils.miscutils.compareEVR(
                 rpms_by_name[name]['version'], rpm['version']
             ) < 0
         ):
@@ -344,8 +343,7 @@ def verify_repo(repo_url, path, whitelist=None, blacklist=None):
 
     if are_there_missing_rpms:
         raise RuntimeError(
-            'Some rpms were not found locally for repo %s'
-            % repo_url
+            'Some rpms were not found locally for repo %s' % repo_url
         )
 
 
