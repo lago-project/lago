@@ -87,7 +87,7 @@ EOC
 }
 
 
-@test "collect: collect from stopped vm" {
+@test "collect: collect from stopped vm and rotate dest dir if exists" {
     common.is_initialized "$WORKDIR" || skip "Workdir not initiated"
     pushd "$FIXTURES"
     outdir="$FIXTURES/output"
@@ -97,6 +97,7 @@ EOC
     )
 
     rm -rf "$outdir"
+    mkdir "$outdir"
     helpers.run_ok "$LAGOCLI" collect --output "$outdir"
 
     for host in vm01; do
@@ -111,7 +112,6 @@ EOC
         done
     done
 }
-
 
 
 @test "collect: teardown" {
