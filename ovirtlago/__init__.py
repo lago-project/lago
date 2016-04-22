@@ -21,6 +21,7 @@ import ConfigParser
 import functools
 import logging
 import os
+import shutil
 
 import lockfile
 import nose.core
@@ -61,26 +62,41 @@ def _sync_rpm_repository(repo_path, yum_config, repos):
         os.makedirs(repo_path)
 
     with lockfile.LockFile(lock_path, timeout=180):
+        reposync_command = [
+            'reposync',
+            '--config=%s' % yum_config,
+            '--download_path=%s' % repo_path,
+            '--newest-only',
+            '--delete',
+            '--cachedir=%s/cache' % repo_path,
+        ] + [
+            '--repoid=%s' % repo for repo in repos
+        ]
+
         with LogTask('Running reposync'):
-            ret, _, _ = utils.run_command(
-                [
-                    'reposync',
-                    '--config=%s' % yum_config,
-                    '--download_path=%s' % repo_path,
-                    '--newest-only',
-                    '--delete',
-                    '--cachedir=%s' % repo_path,
-                ] + [
-                    '--repoid=%s' % repo for repo in repos
-                ],
-            )
-        if ret:
-            LOGGER.warn(
-                'Failed to run reposync, making sure everyithing is '
-                'consistent'
-            )
-            with LogTask('Verifying downloads'):
-                repoverify.verify_reposync(yum_config, repo_path, repos)
+            ret, _, _ = utils.run_command(reposync_command)
+
+        if not ret:
+            return
+
+        LOGGER.warn(
+            'Failed to run reposync a first time, that usually means that '
+            'some of the local rpms might be corrupted or the metadata '
+            'invalid, cleaning caches and retrying a second time'
+        )
+        shutil.rmtree('%s/cache' % repo_path)
+        with LogTask('Rerunning reposync'):
+            ret, _, _ = utils.run_command(reposync_command)
+
+        if not ret:
+            return
+
+        LOGGER.warn(
+            'Failed to run reposync the second time, making sure everyithing '
+            'is consistent before continuing'
+        )
+        with LogTask('Verifying downloads'):
+            repoverify.verify_reposync(yum_config, repo_path, repos)
 
 
 def _build_rpms(name, script, source_dir, output_dir, dists, env=None):
