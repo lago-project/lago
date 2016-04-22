@@ -198,7 +198,7 @@ def run_command(
         lago.utils.CommandStatus: result of the interactive execution
     """
     with LogTask(
-        'Run command: %s' % str(command[0]),
+        'Run command: %s' % ' '.join('"%s"' % arg for arg in command),
         logger=LOGGER,
         level='debug',
     ):

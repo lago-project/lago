@@ -113,8 +113,12 @@ class Prefix(object):
         """
         if self._metadata is None:
             try:
-                with open(self.paths.metadata()) as f:
-                    self._metadata = json.load(f)
+                with open(self.paths.metadata()) as metadata_fd:
+                    json_data = metadata_fd.read()
+                    if json_data:
+                        self._metadata = json.load(json_data)
+                    else:
+                        raise IOError()
             except IOError:
                 self._metadata = {}
         return self._metadata
@@ -126,8 +130,8 @@ class Prefix(object):
         Returns:
             None
         """
-        with open(self.paths.metadata(), 'w') as f:
-            utils.json_dump(self._get_metadata(), f)
+        with open(self.paths.metadata(), 'w') as metadata_fd:
+            utils.json_dump(self._get_metadata(), metadata_fd)
 
     def save(self):
         """
