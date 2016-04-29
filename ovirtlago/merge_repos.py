@@ -21,6 +21,7 @@
 import logging
 import os
 import shutil
+import sys
 from functools import partial
 
 import utils
@@ -42,7 +43,8 @@ def merge(output_dir, input_dirs):
     try:
         os.makedirs(output_dir)
     except:
-        pass
+        sys.exc_clear()
+
     for input_dir in input_dirs:
         with LogTask('Processing directory %s' % input_dir):
             ret = utils.run_command(
