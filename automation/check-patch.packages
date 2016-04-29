@@ -7,6 +7,8 @@ python-virtualenv
 python-libguestfs
 libxslt-devel
 libvirt-devel
+libffi-devel
+openssl-devel
 yum
 # needed for fc23
 # see http://pkgs.fedoraproject.org/cgit/libguestfs.git/tree/libguestfs.spec#n131
