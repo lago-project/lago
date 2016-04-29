@@ -128,14 +128,32 @@ def _pkg_in_pattern_list(pattern_list, pkg):
     )
 
 
-def _passes_lists(whitelist, blacklist, name):
-    if (
-        whitelist and not _pkg_in_pattern_list(whitelist, name) or blacklist
-        and _pkg_in_pattern_list(blacklist, name)
-    ):
-        return False
+def _passes_whitelist(whitelist, rpm_string, rpm_name):
+    return (
+        whitelist and (
+            _pkg_in_pattern_list(whitelist, rpm_string)
+            or _pkg_in_pattern_list(whitelist, rpm_name)
+        ) or not whitelist
+    )
 
-    return True
+
+def _passes_blacklist(blacklist, rpm_string, rpm_name):
+    return (
+        blacklist and not (
+            _pkg_in_pattern_list(blacklist, rpm_string) or
+            _pkg_in_pattern_list(blacklist, rpm_name)
+        ) or not blacklist
+    )
+
+
+def _passes_lists(whitelist, blacklist, rpm_string, rpm_name):
+    if (
+        _passes_whitelist(whitelist, rpm_string, rpm_name)
+        and _passes_blacklist(blacklist, rpm_string, rpm_name)
+    ):
+        return True
+
+    return False
 
 
 def _get_packages_from_repo_url(repo_url):
@@ -225,14 +243,6 @@ def get_packages(repo_url, whitelist=None, blacklist=None, only_latest=True):
     )
     for pkg_element in unfiltered_packages:
         name = pkg_element.xpath('common:name', namespaces=RPMNS)[0].text
-
-        if not _passes_lists(
-            whitelist=whitelist,
-            blacklist=blacklist,
-            name=name
-        ):
-            continue
-
         arch = pkg_element.xpath('common:arch', namespaces=RPMNS)[0].text
         if arch not in available_arches:
             continue
@@ -273,9 +283,18 @@ def get_packages(repo_url, whitelist=None, blacklist=None, only_latest=True):
                     namespaces=RPMNS,
                 )[0].attrib['build']
             ),
+            'arch': arch,
         }
 
-        name = rpm['name']
+        if not _passes_lists(
+            whitelist=whitelist,
+            blacklist=blacklist,
+            rpm_string='%s-%s.%s' % (
+                rpm['name'], '%s.%s' % rpm['version'][1:], rpm['arch']
+            ),
+            rpm_name=rpm['name'],
+        ):
+            continue
 
         if rpm['location'].endswith('.src.rpm'):
             name = 'src-%s' % name
