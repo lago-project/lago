@@ -1,0 +1,82 @@
+{
+    "domains": {
+        "vm0-server": {
+            "memory": "1024",
+            "nics": [
+                {
+                    "net": "lago"
+                }
+            ],
+            "disks": [
+                {
+                    "template_name": "el7-base",
+                    "type": "template",
+                    "name": "root",
+                    "dev": "vda",
+                    "format": "qcow2"
+                }
+            ],
+            "metadata": {
+                "deploy-scripts": [
+                    "../deployment-scripts/vm0-server-deploy-script.sh"
+                ]
+            }
+        },
+
+        "vm1-slave": {
+            "memory": "1024",
+            "nics": [
+                {
+                    "net": "lago"
+                }
+            ],
+            "disks": [
+                {
+                    "template_name": "el7-base",
+                    "type": "template",
+                    "name": "root",
+                    "dev": "vda",
+                    "format": "qcow2"
+                }
+            ],
+            "metadata": {
+                "deploy-scripts": [
+                    "../deployment-scripts/vm1-slave-deploy-script.sh"
+                ]
+            }
+        },
+        "vm2-slave": {
+            "memory": "1024",
+            "nics": [
+                {
+                    "net": "lago"
+                }
+            ],
+            "disks": [
+                {
+                    "template_name": "fc23-base",
+                    "type": "template",
+                    "name": "root",
+                    "dev": "vda",
+                    "format": "qcow2"
+                }
+            ],
+            "metadata": {
+                "ovirt-role": "host",
+                "deploy-scripts": [
+                    "../deployment-scripts/vm2-slave-deploy-script.sh"
+                ]
+            }
+        }
+    },
+    "nets": {
+        "lago": {
+            "type": "nat",
+            "dhcp": {
+                "start": 100,
+                "end": 254
+            },
+            "management": true
+        }
+    }
+}
