@@ -11,7 +11,12 @@ logs*
 mock*
 docs/ovirtlago.rst
 docs/lago.rst
+docs/lago.plugins.rst
+docs/lago_template_repo.rst
 *ChangeLog
 rpmbuild
 lago.egg-info
 AUTHORS
+*/*venv
+.bash*
+.cache*
