@@ -376,7 +376,6 @@ class OvirtPrefix(Prefix):
         all_dists = list(set(engine_dists + vdsm_dists))
 
         repos = []
-        jobs = []
 
         if rpm_repo and reposync_yum_config:
             parser = ConfigParser.SafeConfigParser()
@@ -390,21 +389,10 @@ class OvirtPrefix(Prefix):
             ]
 
             if not skip_sync:
-                jobs.append(
-                    functools.partial(
-                        _sync_rpm_repository,
-                        rpm_repo,
-                        reposync_yum_config,
-                        repos,
-                    )
-                )
-
-        with LogTask(
-            'Syncing remote repos locally (this might take some time)'
-        ):
-            reposync_jobs = lago.utils.VectorThread(jobs)
-            reposync_jobs.start_all()
-            reposync_jobs.join_all()
+                with LogTask(
+                    'Syncing remote repos locally (this might take some time)'
+                ):
+                    _sync_rpm_repository(rpm_repo, reposync_yum_config, repos)
 
         self._create_rpm_repository(all_dists, rpm_repo, repos)
         self.save()
