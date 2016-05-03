@@ -359,6 +359,7 @@ class LockFile(object):
         timeout(int): timeout in seconds to wait while acquiring the lock
         **kwargs(dict): Any other param to pass to `lockfile.LockFile`
     """
+
     def __init__(self, path, timeout=None, **kwargs):
         self.path = path
         self.timeout = timeout or 0
