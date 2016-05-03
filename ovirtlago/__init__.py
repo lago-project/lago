@@ -61,18 +61,18 @@ def _sync_rpm_repository(repo_path, yum_config, repos):
     if not os.path.exists(repo_path):
         os.makedirs(repo_path)
 
-    with lockfile.LockFile(lock_path, timeout=180):
-        reposync_command = [
-            'reposync',
-            '--config=%s' % yum_config,
-            '--download_path=%s' % repo_path,
-            '--newest-only',
-            '--delete',
-            '--cachedir=%s/cache' % repo_path,
-        ] + [
-            '--repoid=%s' % repo for repo in repos
-        ]
+    reposync_command = [
+        'reposync',
+        '--config=%s' % yum_config,
+        '--download_path=%s' % repo_path,
+        '--newest-only',
+        '--delete',
+        '--cachedir=%s/cache' % repo_path,
+    ] + [
+        '--repoid=%s' % repo for repo in repos
+    ]
 
+    with LockFile(lock_path, timeout=180):
         with LogTask('Running reposync'):
             ret, _, _ = utils.run_command(reposync_command)
 
