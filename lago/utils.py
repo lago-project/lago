@@ -28,6 +28,7 @@ import logging
 import os
 import select
 import shutil
+import signal
 import socket
 import subprocess
 import sys
@@ -37,10 +38,19 @@ import time
 import tty
 import yaml
 
+import lockfile
+
 import constants
 from .log_utils import (LogTask, setup_prefix_logging)
 
 LOGGER = logging.getLogger(__name__)
+
+
+class TimerException(Exception):
+    """
+    Exception to throw when a timeout is reached
+    """
+    pass
 
 
 def _ret_via_queue(func, queue):
@@ -316,6 +326,64 @@ class EggTimer:
 
     def elapsed(self):
         return (time.time() - self.start_time) > self.timeout
+
+
+class ExceptionTimer(object):
+    def __init__(self, timeout):
+        self.timeout = timeout or 0
+
+    def __enter__(self):
+        self.start()
+
+    def __exit__(self, *_):
+        self.stop()
+
+    def start(self):
+        def raise_timeout(*_):
+            raise TimerException('Passed %d seconds' % self.timeout)
+
+        signal.signal(signal.SIGALRM, raise_timeout)
+        signal.alarm(self.timeout)
+
+    def stop(self):
+        signal.alarm(0)
+
+
+class LockFile(object):
+    """
+    Context manager that creates a lock around a directory, with optional
+    timeout in the acquire operation
+
+    Args:
+        path(str): path to the dir to lock
+        timeout(int): timeout in seconds to wait while acquiring the lock
+        **kwargs(dict): Any other param to pass to `lockfile.LockFile`
+    """
+    def __init__(self, path, timeout=None, **kwargs):
+        self.path = path
+        self.timeout = timeout or 0
+        self.lock = lockfile.LockFile(path=path, **kwargs)
+
+    def __enter__(self):
+        """
+        Start the lock with timeout if needed in the acquire operation
+
+        Raises:
+            TimerException: if the timeout is reached before acquiring the lock
+        """
+        try:
+            with ExceptionTimer(timeout=self.timeout):
+                with LogTask('Aquiring lock for %s' % self.path):
+                    self.lock.acquire()
+        except TimerException:
+            raise TimerException(
+                'Unable to acquire lock for %s in %s secs',
+                self.path,
+                self.timeout,
+            )
+
+    def __exit__(self, *_):
+        self.lock.release()
 
 
 def _read_nonblocking(f):
