@@ -11,8 +11,8 @@ domains:
           format: qcow2
       metadata:
         deploy-scripts:
-          - scripts/create_nicefile.sh
-          - scripts/create_uglyfile.sh
+          - $LAGO_PREFIX_PATH/../../scripts/create_nicefile.sh
+          - $LAGO_WORKDIR_PATH/../scripts/create_uglyfile.sh
 
 nets:
   lago_functional_tests:

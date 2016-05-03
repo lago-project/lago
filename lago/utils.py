@@ -497,7 +497,11 @@ def in_prefix(prefix_class, workdir_class):
                     prefix = workdir.get_prefix(prefix_name)
                     kwargs['perfix_name'] = prefix_name
 
+                prefix_path = os.path.join(workdir_path, prefix_name)
+
             kwargs['prefix'] = prefix
+            os.environ['LAGO_PREFIX_PATH'] = prefix_path or ''
+            os.environ['LAGO_WORKDIR_PATH'] = workdir_path or ''
             return func(*args, **kwargs)
 
         return wrapper
