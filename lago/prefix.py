@@ -992,6 +992,7 @@ class Prefix(object):
                 host.wait_for_ssh()
 
             for script in deploy_scripts:
+                script = os.path.expanduser(os.path.expandvars(script))
                 with LogTask('Run script %s' % os.path.basename(script)):
                     ret, out, err = host.ssh_script(script, show_output=False)
 
