@@ -23,12 +23,12 @@ import logging
 import os
 import shutil
 
-import lockfile
 import nose.core
 import nose.config
 from ovirtsdk.infrastructure.errors import (RequestError, ConnectionError)
 import lago
 from lago import log_utils
+from lago.utils import LockFile
 from lago.prefix import Prefix
 from lago.workdir import Workdir
 
