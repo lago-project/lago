@@ -23,12 +23,12 @@ import logging
 import os
 import shutil
 
-import lockfile
 import nose.core
 import nose.config
 from ovirtsdk.infrastructure.errors import (RequestError, ConnectionError)
 import lago
 from lago import log_utils
+from lago.utils import LockFile
 from lago.prefix import Prefix
 from lago.workdir import Workdir
 
@@ -61,18 +61,18 @@ def _sync_rpm_repository(repo_path, yum_config, repos):
     if not os.path.exists(repo_path):
         os.makedirs(repo_path)
 
-    with lockfile.LockFile(lock_path, timeout=180):
-        reposync_command = [
-            'reposync',
-            '--config=%s' % yum_config,
-            '--download_path=%s' % repo_path,
-            '--newest-only',
-            '--delete',
-            '--cachedir=%s/cache' % repo_path,
-        ] + [
-            '--repoid=%s' % repo for repo in repos
-        ]
+    reposync_command = [
+        'reposync',
+        '--config=%s' % yum_config,
+        '--download_path=%s' % repo_path,
+        '--newest-only',
+        '--delete',
+        '--cachedir=%s/cache' % repo_path,
+    ] + [
+        '--repoid=%s' % repo for repo in repos
+    ]
 
+    with LockFile(lock_path, timeout=180):
         with LogTask('Running reposync'):
             ret, _, _ = utils.run_command(reposync_command)
 
@@ -376,7 +376,6 @@ class OvirtPrefix(Prefix):
         all_dists = list(set(engine_dists + vdsm_dists))
 
         repos = []
-        jobs = []
 
         if rpm_repo and reposync_yum_config:
             parser = ConfigParser.SafeConfigParser()
@@ -390,21 +389,10 @@ class OvirtPrefix(Prefix):
             ]
 
             if not skip_sync:
-                jobs.append(
-                    functools.partial(
-                        _sync_rpm_repository,
-                        rpm_repo,
-                        reposync_yum_config,
-                        repos,
-                    )
-                )
-
-        with LogTask(
-            'Syncing remote repos locally (this might take some time)'
-        ):
-            reposync_jobs = lago.utils.VectorThread(jobs)
-            reposync_jobs.start_all()
-            reposync_jobs.join_all()
+                with LogTask(
+                    'Syncing remote repos locally (this might take some time)'
+                ):
+                    _sync_rpm_repository(rpm_repo, reposync_yum_config, repos)
 
         self._create_rpm_repository(all_dists, rpm_repo, repos)
         self.save()
