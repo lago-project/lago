@@ -374,7 +374,7 @@ class LockFile(object):
         """
         try:
             with ExceptionTimer(timeout=self.timeout):
-                with LogTask('Aquiring lock for %s' % self.path):
+                with LogTask('Acquiring lock for %s' % self.path):
                     self.lock.acquire()
         except TimerException:
             raise TimerException(
