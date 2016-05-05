@@ -8,8 +8,9 @@ Getting started
 
 .. toctree::
     :maxdepth: 3
-
+    
     README
+    /lago-tutorial/README
 
 Developing
 ------------
