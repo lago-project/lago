@@ -868,7 +868,7 @@ class VM(object):
             disk.append(
                 lxml.etree.Element(
                     'source',
-                    file=dev_spec['path'],
+                    file=os.path.expandvars(dev_spec['path']),
                 ),
             )
             disk.append(
@@ -1004,7 +1004,7 @@ class VM(object):
             if was_defined:
                 self.stop()
             for disk, disk_template in zip(self._spec['disks'], snap_info):
-                os.unlink(disk['path'])
+                os.unlink(os.path.expandvars(disk['path']))
                 ret, _, _ = utils.run_command(
                     [
                         'qemu-img',
@@ -1015,7 +1015,7 @@ class VM(object):
                         disk_template['path'],
                         disk['path'],
                     ],
-                    cwd=os.path.dirname(disk['path']),
+                    cwd=os.path.dirname(os.path.expandvars(disk['path'])),
                 )
                 if ret != 0:
                     raise RuntimeError('Failed to revert disk')
@@ -1044,7 +1044,7 @@ class VM(object):
             dom.fsThaw()
 
     def _extract_paths_dead(self, paths):
-        disk_path = self._spec['disks'][0]['path']
+        disk_path = os.path.expandvars(self._spec['disks'][0]['path'])
         disk_root_part = self._spec['disks'][0]['metadata'].get(
             'root-partition',
             'root',

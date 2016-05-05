@@ -1054,7 +1054,9 @@ class Prefix(object):
                 raise RuntimeError('Script %s does not exist' % script)
 
             sanitized_name = script.replace('/', '_')
-            new_script_cur_path = self.paths.scripts(sanitized_name)
+            new_script_cur_path = os.path.expandvars(
+                self.paths.scripts(sanitized_name)
+            )
             shutil.copy(script, new_script_cur_path)
 
             new_script_init_path = os.path.join(
