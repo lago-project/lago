@@ -170,8 +170,7 @@ def _run_command(
         stdout=out_pipe,
         stderr=err_pipe,
         shell=True,
-        env=env,
-        **kwargs
+        env=env, **kwargs
     )
     out, err = popen.communicate(input_data)
     LOGGER.debug('command exit with %d', popen.returncode)

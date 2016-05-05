@@ -1053,16 +1053,14 @@ class Prefix(object):
             if not os.path.exists(script):
                 raise RuntimeError('Script %s does not exist' % script)
 
-            new_script_cur_path = os.path.join(
-                self.paths.scripts(),
-                os.path.basename(script),
-            )
+            sanitized_name = script.replace('/', '_')
+            new_script_cur_path = self.paths.scripts(sanitized_name)
             shutil.copy(script, new_script_cur_path)
 
             new_script_init_path = os.path.join(
                 '$LAGO_PREFIX_DIR',
                 os.path.basename(self.paths.scripts()),
-                os.path.basename(script),
+                sanitized_name,
             )
             new_scripts.append(new_script_init_path)
 
