@@ -166,9 +166,12 @@ def _run_command(
         )
 
     popen = subprocess.Popen(
-        command, stdout=out_pipe,
+        ' '.join('"%s"' % arg for arg in command),
+        stdout=out_pipe,
         stderr=err_pipe,
-        env=env, **kwargs
+        shell=True,
+        env=env,
+        **kwargs
     )
     out, err = popen.communicate(input_data)
     LOGGER.debug('command exit with %d', popen.returncode)
@@ -207,6 +210,9 @@ def run_command(
     Returns:
         lago.utils.CommandStatus: result of the interactive execution
     """
+    if env is None:
+        env = os.environ.copy()
+
     with LogTask(
         'Run command: %s' % ' '.join('"%s"' % arg for arg in command),
         logger=LOGGER,

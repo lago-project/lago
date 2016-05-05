@@ -120,7 +120,7 @@ def config_net_interface_dhcp(iface, hwaddr):
 
 def sysprep(disk, mods, backend='direct'):
     cmd = ['virt-sysprep', '-a', disk, '--selinux-relabel']
-    env = {'LIBGUESTFS_BACKEND': backend}
+    env = dict(os.environ.copy(), LIBGUESTFS_BACKEND=backend)
     for mod in mods:
         cmd.extend(mod)
 

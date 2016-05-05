@@ -186,6 +186,8 @@ class Prefix(object):
             RuntimeError: If it fails to create the prefix dir
         """
         prefix = self.paths.prefix
+        os.environ['LAGO_PREFIX_DIR'] = prefix
+
         with utils.RollbackContext() as rollback:
             with LogTask('Create prefix dirs'):
                 try:
@@ -539,7 +541,12 @@ class Prefix(object):
                 # To avoid losing access to the file
                 os.chmod(disk_path, 0666)
 
-            return disk_path, disk_metadata
+            disk_rel_path = os.path.join(
+                '$LAGO_PREFIX_DIR',
+                os.path.basename(self.paths.images()),
+                os.path.basename(disk_path),
+            )
+            return disk_rel_path, disk_metadata
 
     def _ova_to_spec(self, filename):
         """
@@ -725,6 +732,7 @@ class Prefix(object):
         Returns:
             None
         """
+        os.environ['LAGO_PREFIX_DIR'] = self.paths.prefix
         with utils.RollbackContext() as rollback:
             if not os.path.exists(self.paths.images()):
                 os.mkdir(self.paths.images())
