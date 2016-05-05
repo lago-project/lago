@@ -773,11 +773,12 @@ class Prefix(object):
 
             self._config_net_topology(conf)
 
+            self._copy_deploy_scripts_for_hosts(domains=conf['domains'])
             env = virt.VirtEnv(self, conf['domains'], conf['nets'])
-            env.save()
             if do_bootstrap:
                 env.bootstrap()
 
+            env.save()
             rollback.clear()
 
     def start(self, vm_names=None):
@@ -956,7 +957,7 @@ class Prefix(object):
             self.virt_env.get_vms().values(),
         )
 
-    def _get_scripts(self, host):
+    def _get_scripts(self, host_metadata):
         """
         Temporary method to retrieve the host scripts
 
@@ -964,16 +965,16 @@ class Prefix(object):
             remove once the "ovirt-scripts" option gets deprecated
 
         Args:
-            host(VM): host to retrieve the scripts for
+            host_metadata(dict): host metadata to retrieve the scripts for
 
         Returns:
             list: deploy scripts for the host, empty if none found
         """
-        deploy_scripts = host.metadata.get('deploy-scripts', [])
+        deploy_scripts = host_metadata.get('deploy-scripts', [])
         if deploy_scripts:
             return deploy_scripts
 
-        ovirt_scripts = host.metadata.get('ovirt-scripts', [])
+        ovirt_scripts = host_metadata.get('ovirt-scripts', [])
         if ovirt_scripts:
             warnings.warn(
                 'Deprecated entry "ovirt-scripts" will not be supported in '
@@ -982,9 +983,86 @@ class Prefix(object):
 
         return ovirt_scripts
 
+    def _set_scripts(self, host_metadata, scripts):
+        """
+        Temporary method to set the host scripts
+
+        TODO:
+            remove once the "ovirt-scripts" option gets deprecated
+
+        Args:
+            host_metadata(dict): host metadata to set scripts in
+
+        Returns:
+            dict: the updated metadata
+        """
+        scripts_key = 'deploy-scripts'
+        if 'ovirt-scritps' in host_metadata:
+            scripts_key = 'ovirt-scripts'
+
+        host_metadata[scripts_key] = scripts
+        return host_metadata
+
+    def _copy_deploy_scripts_for_hosts(self, domains):
+        """
+        Copy the deploy scripts for all the domains into the prefix scripts dir
+
+        Args:
+            domains(dict): spec with the domains info as when loaded from the
+                initfile
+
+        Returns:
+            None
+        """
+        with LogTask('Copying any deploy scripts'):
+            for host_name, host_spec in domains.iteritems():
+                host_metadata = host_spec.get('metadata', {})
+                deploy_scripts = self._get_scripts(host_metadata)
+                new_scripts = self._copy_delpoy_scripts(deploy_scripts)
+                self._set_scripts(
+                    host_metadata=host_metadata,
+                    scripts=new_scripts,
+                )
+
+    def _copy_delpoy_scripts(self, scripts):
+        """
+        Copy the given deploy scripts to the scripts dir in the prefix
+
+        Args:
+            scripts(list of str): list of paths of the scripts to copy to the
+                prefix
+
+        Returns:
+            list of str: list with the paths to the copied scripts, with a
+                prefixed with $LAGO_PREFIX_DIR so the full path is not
+                hardcoded
+        """
+        if not os.path.exists(self.paths.scripts()):
+            os.makedirs(self.paths.scripts())
+
+        new_scripts = []
+        for script in scripts:
+            if not os.path.exists(script):
+                raise RuntimeError('Script %s does not exist' % script)
+
+            new_script_cur_path = os.path.join(
+                self.paths.scripts(),
+                os.path.basename(script),
+            )
+            shutil.copy(script, new_script_cur_path)
+
+            new_script_init_path = os.path.join(
+                '$LAGO_PREFIX_DIR',
+                os.path.basename(self.paths.scripts()),
+                os.path.basename(script),
+            )
+            new_scripts.append(new_script_init_path)
+
+        return new_scripts
+
     def _deploy_host(self, host):
         with LogTask('Deploy VM %s' % host.name()):
-            deploy_scripts = self._get_scripts(host)
+            deploy_scripts = self._get_scripts(host.metadata)
             if not deploy_scripts:
                 return
 
