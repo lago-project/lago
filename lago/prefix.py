@@ -186,7 +186,7 @@ class Prefix(object):
             RuntimeError: If it fails to create the prefix dir
         """
         prefix = self.paths.prefix
-        os.environ['LAGO_PREFIX_DIR'] = prefix
+        os.environ['LAGO_PREFIX_PATH'] = prefix
 
         with utils.RollbackContext() as rollback:
             with LogTask('Create prefix dirs'):
@@ -542,7 +542,7 @@ class Prefix(object):
                 os.chmod(disk_path, 0666)
 
             disk_rel_path = os.path.join(
-                '$LAGO_PREFIX_DIR',
+                '$LAGO_PREFIX_PATH',
                 os.path.basename(self.paths.images()),
                 os.path.basename(disk_path),
             )
@@ -732,7 +732,7 @@ class Prefix(object):
         Returns:
             None
         """
-        os.environ['LAGO_PREFIX_DIR'] = self.paths.prefix
+        os.environ['LAGO_PREFIX_PATH'] = self.paths.prefix
         with utils.RollbackContext() as rollback:
             if not os.path.exists(self.paths.images()):
                 os.mkdir(self.paths.images())
@@ -1042,7 +1042,7 @@ class Prefix(object):
 
         Returns:
             list of str: list with the paths to the copied scripts, with a
-                prefixed with $LAGO_PREFIX_DIR so the full path is not
+                prefixed with $LAGO_PREFIX_PATH so the full path is not
                 hardcoded
         """
         if not os.path.exists(self.paths.scripts()):
@@ -1058,7 +1058,7 @@ class Prefix(object):
             shutil.copy(script, new_script_cur_path)
 
             new_script_init_path = os.path.join(
-                '$LAGO_PREFIX_DIR',
+                '$LAGO_PREFIX_PATH',
                 os.path.basename(self.paths.scripts()),
                 sanitized_name,
             )
