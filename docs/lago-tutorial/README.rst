@@ -68,13 +68,6 @@ What is in the repository?
    for common enviornments - you are welcome
    to conribute your on files :)
 
--  templates-repo – This directory contains .json files which specify
-   the template repository that should be used. (The templates
-   repository is the place from which the base “qcow2” virtual disks
-   will be copied from).
-   By default Lago will use the file from:
-   [http://templates.ovirt.org/repo/repo.metadata\ ]
-
 -  deployment-scripts – This directory contains the deployment scripts
    for each vm (in our case a script that will
    install the Jenkins server)
@@ -97,15 +90,19 @@ Manual Configurations:
 
 ::
 
-    lago init --template-repo-path=../../templates-repo/template-repo.json lago-work-dir init.json
+    lago init lago-work-dir init.json
 
 (This should be invoked from: /lago-tutorial/scenarios/jenkins)
 
 -  The directory /lago-work-dir will contain the files of our new Lago
    environment.
    This directory shouldn't exist before invoking lago init.
+   
 -  --template-repo-path, for specifing the path to the template-repo
-   file.
+   file. (The templates repository is the place from which the base “qcow2” virtual disks will be copied from).
+   By default Lago will use the file from: [http://templates.ovirt.org/repo/repo.metadata\ ]
+   (for internal use --template-repo-path=http://10.35.18.63/repo/repo.metadata)
+
 -  init.json, the name of the file which describes our environment.
 
 Auto Configurations
@@ -216,7 +213,7 @@ network issues.
 Specific Configurations for the environment. 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-
+`Jenkins slaves configuration <https://github.com/lago-project/lago/blob/lago-tutorial/docs/lago-tutorial/scenarios/jenkins/README.rst>`__
 
 Stop the environment
 ~~~~~~~~~~~~~~~~~~~~
