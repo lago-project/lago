@@ -51,3 +51,6 @@ class Paths(object):
     def prefix_lagofile(self):
         "This file represents a prefix that's initialized"
         return self.prefixed('initialized')
+
+    def scripts(self, *args):
+        return self.prefixed('scripts', *args)

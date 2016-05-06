@@ -166,9 +166,12 @@ def _run_command(
         )
 
     popen = subprocess.Popen(
-        command, stdout=out_pipe,
+        ' '.join('"%s"' % arg for arg in command),
+        stdout=out_pipe,
         stderr=err_pipe,
-        env=env, **kwargs
+        shell=True,
+        env=env,
+        **kwargs
     )
     out, err = popen.communicate(input_data)
     LOGGER.debug('command exit with %d', popen.returncode)
@@ -207,6 +210,9 @@ def run_command(
     Returns:
         lago.utils.CommandStatus: result of the interactive execution
     """
+    if env is None:
+        env = os.environ.copy()
+
     with LogTask(
         'Run command: %s' % ' '.join('"%s"' % arg for arg in command),
         logger=LOGGER,
@@ -547,7 +553,9 @@ def in_prefix(prefix_class, workdir_class):
                 )
             ):
                 LOGGER.debug('Looking for a prefix')
-                prefix_path = prefix_class.resolve_prefix_path(prefix_path)
+                prefix_path = os.path.realpath(
+                    prefix_class.resolve_prefix_path(prefix_path)
+                )
                 prefix = prefix_class(prefix_path)
                 kwargs['parent_workdir'] = None
 
@@ -566,7 +574,9 @@ def in_prefix(prefix_class, workdir_class):
                     prefix = workdir.get_prefix(prefix_name)
                     kwargs['perfix_name'] = prefix_name
 
-                prefix_path = os.path.join(workdir_path, prefix_name)
+                prefix_path = os.path.realpath(
+                    os.path.join(workdir_path, prefix_name)
+                )
 
             kwargs['prefix'] = prefix
             os.environ['LAGO_PREFIX_PATH'] = prefix_path or ''
