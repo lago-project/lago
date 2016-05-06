@@ -1050,6 +1050,7 @@ class Prefix(object):
 
         new_scripts = []
         for script in scripts:
+            script = os.path.expandvars(script)
             if not os.path.exists(script):
                 raise RuntimeError('Script %s does not exist' % script)
 
