@@ -187,6 +187,7 @@ class Prefix(object):
         """
         prefix = self.paths.prefix
         os.environ['LAGO_PREFIX_PATH'] = prefix
+        os.environ['LAGO_WORKDIR_PATH'] = os.path.dirname(prefix)
 
         with utils.RollbackContext() as rollback:
             with LogTask('Create prefix dirs'):
