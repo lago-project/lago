@@ -553,7 +553,9 @@ def in_prefix(prefix_class, workdir_class):
                 )
             ):
                 LOGGER.debug('Looking for a prefix')
-                prefix_path = prefix_class.resolve_prefix_path(prefix_path)
+                prefix_path = os.path.realpath(
+                    prefix_class.resolve_prefix_path(prefix_path)
+                )
                 prefix = prefix_class(prefix_path)
                 kwargs['parent_workdir'] = None
 
@@ -572,7 +574,9 @@ def in_prefix(prefix_class, workdir_class):
                     prefix = workdir.get_prefix(prefix_name)
                     kwargs['perfix_name'] = prefix_name
 
-                prefix_path = os.path.join(workdir_path, prefix_name)
+                prefix_path = os.path.realpath(
+                    os.path.join(workdir_path, prefix_name)
+                )
 
             kwargs['prefix'] = prefix
             os.environ['LAGO_PREFIX_PATH'] = prefix_path or ''
