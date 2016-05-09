@@ -237,6 +237,6 @@ More Configurations
 Here are some more configurations for other environments:
 
 .. toctree::
-    :maxdepth: 3
+    :maxdepth: 1
     
     scenarios/jenkins/README
