@@ -1,4 +1,4 @@
-lago-tutorial
+Lago-Tutorial
 =============
 
 This repository contains the default files for creating Lago
@@ -21,28 +21,28 @@ We will use only the basic mandatory commands of Lago, for further
 reading please advise:
 `Lago Hompage <http://lago.readthedocs.org/en/latest/index.html>`__
 
-Prerequisites:
-^^^^^^^^^^^^^^
+Prerequisites
+^^^^^^^^^^^^^
 
 Install Lago - follow
 `this <http://lago.readthedocs.org/en/latest/README.html>`__ tutorial
 for more information
 
-The scenario:
-^^^^^^^^^^^^^
+The scenario
+^^^^^^^^^^^^
 
 Create a Lago environment which will consist of three virtual machines
 that will host Jenkins infrastructure.
 
-The VMs:
-^^^^^^^^
+The VMs
+^^^^^^^
 
 -  "vm0-server" - Jenkins server
 -  "vm1-slave" - Jenkins slave
 -  "vm2-slave" - Jenkins slave
 
-The network:
-^^^^^^^^^^^^
+The network
+^^^^^^^^^^^
 
 All the VMs will connect to the same virtual network.
 Lago allows for a creation of 10 different lans ranging from:
@@ -50,15 +50,15 @@ Lago allows for a creation of 10 different lans ranging from:
 The subnet will be automatically assigend to the virtual network
 bridge.
 
-Creating the working directory:
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Creating the working directory
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In order to create a working directory, clone the following repo:
 
 https://github.com/gbenhaim/lago-tutorial
 
-What is in the repository?
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+What is in the repository
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  init.json – This is the file which describes the structure of our
    environment: the specification of the vms, networks, the path and
@@ -171,7 +171,7 @@ invoked from /lago-work-dir.
 -  OpenJDK will be installed on the slaves.
 
 Getting the state of the environment
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 You cae get information about the state of the enviorment with:
 
@@ -190,7 +190,7 @@ slaves,
 as we will need them when configuring the server.
 
 Interacting with the VMs
-~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 Lago allows you to connect to the vms via ssh.
 for exmaple, if we have a vm named "server" we will use the following:
@@ -210,13 +210,13 @@ network issues.
 
     lago console server
 
-Specific Configurations for the environment. 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Specific Configurations for the environment 
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 `Jenkins slaves configuration <https://github.com/lago-project/lago/blob/lago-tutorial/docs/lago-tutorial/scenarios/jenkins/README.rst>`__
 
 Stop the environment
-~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^
 
 In order to stop the machines (brute shutdown) we will use:
 
@@ -231,7 +231,7 @@ Or for a specific vm named "server":
     lago stop server
 
 Removing the enviornment
-~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 The following command will remove all the files
 that relates to the environment.
@@ -241,7 +241,7 @@ that relates to the environment.
     lago destroy
 
 Summary
-~~~~~~~
+^^^^^^^
 
 This was a basic introduction on how to use Lago.
 For further reading, or contributing to the project, please check the
