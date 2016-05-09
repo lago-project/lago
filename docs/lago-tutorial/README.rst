@@ -22,7 +22,7 @@ Prerequisites
 ^^^^^^^^^^^^^
 
 Install Lago - follow
-`this </README.html#installation>`__ tutorial
+`this <../README.html#installation>`__ tutorial
 for more information
 
 The scenario
@@ -239,4 +239,4 @@ Here are some more configurations for other environments:
 .. toctree::
     :maxdepth: 3
     
-    scenarios
+    scenarios/jenkins/README
