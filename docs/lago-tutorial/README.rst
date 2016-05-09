@@ -53,12 +53,12 @@ bridge.
 Creating the working directory
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In order to create a working directory, clone the following repo:
+You should copy 'lago/docs/lago-tutorial' from this repository to your machine.
 
-https://github.com/gbenhaim/lago-tutorial
-
-What is in the repository
+The Components  
 ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In this directory you will find the following:
 
 -  init.json – This is the file which describes the structure of our
    environment: the specification of the vms, networks, the path and
@@ -100,9 +100,8 @@ Manual Configurations:
    
 -  --template-repo-path, for specifing the path to the template-repo
    file. (The templates repository is the place from which the base “qcow2” virtual disks will be copied from).
-   By default Lago will use the file from: [http://templates.ovirt.org/repo/repo.metadata\ ]
-   (for internal use --template-repo-path=http://10.35.18.63/repo/repo.metadata)
-
+   By default Lago will use the file from: http://templates.ovirt.org/repo/repo.metadata\
+   
 -  init.json, the name of the file which describes our environment.
 
 Auto Configurations
@@ -113,17 +112,18 @@ Auto Configurations
 
 This command will use the following default configurations:
 
--  The command will serch for a file named "LagoInitFile" that will be
+-  The command will search for a file named "LagoInitFile" that will be
    used as the init file.
 -  The workdir will be named ".lago"
--  The
-   `http://templates.ovirt.org/repo/repo.metadata <default%20template%20repo%20file>`__
-   will be used.
+-  As mentioned above, The default repo will be used.
 
-Note: by default the init.json file is configured with a relative path
-from /lago-work-dir to the deployment scripts.
-If you are using the Auto configuration, or give any other name to the
-workdir, you should edit the relative path.
+Note: Lago will copy the deployment scripts into the new environment, and set up the following environment variables:
+
+- $LAGO_PREFIX_PATH = .lago/current
+- $LAGO_WORKDIR_PATH = .lago
+
+so when using a relative path to the deployment (in the init file), there is no worry that 
+the path will be broken when trying to deploy the vms from a directory that doesn't satisfy the relative path.
 
 Deploy the VMs
 ^^^^^^^^^^^^^^
@@ -155,9 +155,6 @@ Or for a specific vm named "server":
 
 The command below will run the deployment scripts (from within the
 vms) that were specified in the init.json file.
-This command should be invoked from the directory that will satisfy
-the relative path to the deployment scripts,
-as mentiod in the init.json file.
 
 so, if you used the "manual configurations", the command should be
 invoked from /lago-work-dir.
@@ -186,8 +183,7 @@ Or for a formated output as json or yaml:
     lago --out-format [json | yaml] status
 
 You can write down to yourself the ip adresses of the server and
-slaves,
-as we will need them when configuring the server.
+slaves, because we will need them when configuring the server.
 
 Interacting with the VMs
 ^^^^^^^^^^^^^^^^^^^^^^^^
