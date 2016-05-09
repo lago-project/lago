@@ -18,7 +18,7 @@
             ],
             "metadata": {
                 "deploy-scripts": [
-                    "../deployment-scripts/vm0-server-deploy-script.sh"
+                    "deployment-scripts/vm0-server-deploy-script.sh"
                 ]
             }
         },
@@ -41,7 +41,7 @@
             ],
             "metadata": {
                 "deploy-scripts": [
-                    "../deployment-scripts/vm1-slave-deploy-script.sh"
+                    "deployment-scripts/vm1-slave-deploy-script.sh"
                 ]
             }
         },
@@ -64,7 +64,7 @@
             "metadata": {
                 "ovirt-role": "host",
                 "deploy-scripts": [
-                    "../deployment-scripts/vm2-slave-deploy-script.sh"
+                    "deployment-scripts/vm2-slave-deploy-script.sh"
                 ]
             }
         }
