@@ -50,7 +50,10 @@ in_lago_prefix = in_prefix(
     'virt_config',
     help=(
         'Configuration of resources to deploy, json and yaml file formats '
-        'are supported, takes option precedence over workdir'
+        'are supported, takes option precedence over workdir. Will use '
+        '$PWD/LagoInitFile by default. You can use any env vars in that file, '
+        'inculuding the extra ones LAGO_PREFIX_PATH LAGO_WORKDIR_PATH and '
+        'LAGO_INITFILE_PATH'
     ),
     metavar='VIRT_CONFIG',
     type=os.path.abspath,
@@ -118,6 +121,10 @@ def do_init(
 
     if virt_config is None:
         virt_config = os.path.abspath('LagoInitFile')
+
+    os.environ['LAGO_INITFILE_PATH'] = os.path.dirname(
+        os.path.abspath(virt_config)
+    )
 
     if prefix_name == 'current':
         prefix_name = 'default'
