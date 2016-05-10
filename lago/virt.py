@@ -1167,6 +1167,11 @@ class VM(object):
     def save(self, path=None):
         if path is None:
             path = self._env.virt_path('vm-%s' % self.name())
+
+        dst_dir = os.path.dirname(path)
+        if not os.path.exists(dst_dir):
+            os.makedirs(dst_dir)
+
         with open(path, 'w') as f:
             utils.json_dump(self._spec, f)
 
