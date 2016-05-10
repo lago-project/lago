@@ -108,7 +108,12 @@ class ColorFormatter(logging.Formatter):
 
         message = super(ColorFormatter, self).format(record)
         if record.args:
-            message = message % record.args
+            try:
+                message = message % record.args
+            except TypeError:
+                # this happens when the message itself has some %s symbols, as
+                # in traces for tracedumps
+                pass
 
         return color + message + self.DEFAULT
 
