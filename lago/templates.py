@@ -289,8 +289,8 @@ def find_repo_by_name(name, repo_dir=None):
     ret, out, _ = utils.run_command(['find', repo_dir, '-name', '*.json', ], )
 
     repos = [
-        TemplateRepository.from_url(line.strip())
-        for line in out.split('\n') if len(line.strip())
+        TemplateRepository.from_url(line.strip()) for line in out.split('\n')
+        if len(line.strip())
     ]
 
     for repo in repos:
