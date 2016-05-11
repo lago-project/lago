@@ -66,7 +66,7 @@ def _fix_reposync_issues(reposync_out, repo_path):
         'sometimes reposync fails to update some packages that have older '
         'versions already downloaded, will remove those if any and retry'
     )
-    package_regex = re.compile(r'(?P<package_name>[^:\r]+): \[Errno 256\]')
+    package_regex = re.compile(r'(?P<package_name>[^:\r\s]+): \[Errno 256\]')
     for match in package_regex.findall(reposync_out):
         find_command = ['find', repo_path, '-name', match + '*', ]
         ret, out, _ = utils.run_command(find_command)
