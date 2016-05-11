@@ -42,6 +42,9 @@ Releases
     Releases
 
 
+Changelog
+------------
+Here you can find the `full changelog for this version`_
 
 Indices and tables
 ==================
@@ -50,3 +53,5 @@ Indices and tables
 * :ref:`modindex`
 * :ref:`search`
 
+
+.. _full changelog for this version: _static/ChangeLog.txt
