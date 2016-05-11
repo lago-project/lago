@@ -229,8 +229,8 @@ class VirtEnv(object):
         else:
             try:
                 return [
-                    net
-                    for net in self.get_nets().values() if net.is_management()
+                    net for net in self.get_nets().values()
+                    if net.is_management()
                 ].pop()
             except IndexError:
                 return self.get_nets().values().pop()
@@ -807,8 +807,7 @@ class VM(object):
             dom_raw_xml = f.read()
 
         qemu_kvm_path = [
-            path
-            for path in [
+            path for path in [
                 '/usr/libexec/qemu-kvm',
                 '/usr/bin/qemu-kvm',
             ] if os.path.exists(path)
@@ -1055,8 +1054,7 @@ class VM(object):
         gfs_cli.set_backend('direct')
         gfs_cli.launch()
         rootfs = [
-            filesystem
-            for filesystem in gfs_cli.list_filesystems()
+            filesystem for filesystem in gfs_cli.list_filesystems()
             if disk_root_part in filesystem
         ]
         if not rootfs:
@@ -1140,8 +1138,7 @@ class VM(object):
                         sysprep.config_net_interface_dhcp(
                             'eth%d' % index,
                             _ip_to_mac(nic['ip']),
-                        )
-                        for index, nic in enumerate(self._spec['nics'])
+                        ) for index, nic in enumerate(self._spec['nics'])
                         if 'ip' in nic
                     ],
                 )
