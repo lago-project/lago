@@ -26,6 +26,7 @@ import logging
 import os
 import pwd
 import socket
+import sys
 import time
 import uuid
 
@@ -652,45 +653,72 @@ class VM(object):
 
         return wrapper
 
-    @log_task('Get ssh client', level='debug')
     @_check_alive
-    def _get_ssh_client(self):
-        ssh_timeout = int(config.get('ssh_timeout'))
-        ssh_tries = int(config.get('ssh_tries'))
-        start_time = time.time()
-        while ssh_tries > 0:
-            try:
-                LOGGER.debug('still got %d tries' % ssh_tries)
+    def _get_ssh_client(self, ssh_tries=None, propagate_fail=True):
+        with LogTask(
+            'Get ssh client for %s' % self.name(),
+            level='debug',
+            propagate_fail=propagate_fail,
+        ):
+            ssh_timeout = int(config.get('ssh_timeout'))
+            if ssh_tries is None:
+                ssh_tries = int(config.get('ssh_tries'))
+
+            start_time = time.time()
+            while ssh_tries > 0:
+                LOGGER.debug(
+                    'Still got %d tries for %s',
+                    ssh_tries,
+                    self.name(),
+                )
                 client = paramiko.SSHClient()
                 client.set_missing_host_key_policy(paramiko.AutoAddPolicy(), )
-                client.connect(
-                    self.ip(),
-                    username='root',
-                    key_filename=self._env.prefix.paths.ssh_id_rsa(),
-                    timeout=ssh_timeout,
+                try:
+                    client.connect(
+                        self.ip(),
+                        username='root',
+                        key_filename=self._env.prefix.paths.ssh_id_rsa(),
+                        timeout=ssh_timeout,
+                    )
+                    break
+                except (socket.error, socket.timeout) as err:
+                    LOGGER.debug(
+                        'Socket error connecting to %s: %s',
+                        self.name(),
+                        err,
+                    )
+                    pass
+                except paramiko.ssh_exception.SSHException as err:
+                    LOGGER.debug(
+                        'SSH error connecting to %s: %s',
+                        self.name(),
+                        err,
+                    )
+                    pass
+
+                ssh_tries -= 1
+                time.sleep(1)
+            else:
+                end_time = time.time()
+                raise RuntimeError(
+                    'Timed out (in %d s) trying to ssh to %s' %
+                    (end_time - start_time, self.name())
                 )
-                return client
-            except (socket.error, socket.timeout) as err:
-                LOGGER.debug('Socket error: %s', err)
-                pass
-            except paramiko.ssh_exception.SSHException as err:
-                LOGGER.debug('SSH error %s', err)
-                pass
 
-            ssh_tries -= 1
-            time.sleep(1)
+        return client
 
-        end_time = time.time()
-        raise RuntimeError(
-            'Timed out (in %d s) trying to ssh to %s' %
-            (end_time - start_time, self.name())
-        )
-
-    def ssh(self, command, data=None, show_output=True):
+    def ssh(
+        self,
+        command,
+        data=None,
+        show_output=True,
+        propagate_fail=True,
+        tries=None,
+    ):
         if not self.alive():
             raise RuntimeError('Attempt to ssh into a not running host')
 
-        client = self._get_ssh_client()
+        client = self._get_ssh_client(propagate_fail=True, ssh_tries=tries)
         transport = client.get_transport()
         channel = transport.open_session()
 
@@ -707,6 +735,7 @@ class VM(object):
         channel.exec_command(joined_command)
         if data is not None:
             channel.send(data)
+
         channel.shutdown_write()
         rc, out, err = utils.drain_ssh_channel(
             channel, **(
@@ -747,12 +776,32 @@ class VM(object):
     def wait_for_ssh(self):
         connect_retries = self._spec.get('boot_time_sec', 50)
         while connect_retries:
-            ret, _, _ = self.ssh(['true'])
+            try:
+                ret, _, _ = self.ssh(['true'], tries=1, propagate_fail=False)
+            except Exception as err:
+                ret = -1
+                sys.exc_clear()
+                LOGGER.debug(
+                    'Got exception while sshing to %s: %s',
+                    self.name(),
+                    err,
+                )
+
             if ret == 0:
-                return
+                break
             connect_retries -= 1
             time.sleep(1)
-        raise RuntimeError('Failed to connect to remote shell')
+        else:
+            # Try one last time, using the ssh default timeout values, as we
+            # already waited for boot_time_sec for sure
+            ret, _, _ = self.ssh(['true'])
+            if ret != 0:
+                raise RuntimeError(
+                    'Failed to connect remote shell to %s',
+                    self.name(),
+                )
+
+        LOGGER.debug('Wait succeeded for ssh to %s', self.name())
 
     def ssh_script(self, path, show_output=True):
         with open(path) as f:
