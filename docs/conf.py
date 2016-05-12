@@ -13,6 +13,7 @@
 # serve to show the default.
 
 import os
+import shutil
 import sys
 import subprocess
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -39,6 +40,8 @@ subprocess.call(
         os.path.dirname(__file__), '../lago_template_repo'
     ]
 )
+subprocess.call(['make', '--directory=..', 'changelog', ])
+shutil.move('../ChangeLog', '_static/ChangeLog.txt')
 
 # Mock all the modules that are included by lago, so autoimport works as
 # expected with no need to download them (some are not in pip even)

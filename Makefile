@@ -104,7 +104,6 @@ clean:
 	rm -f ${SPECFILE}
 	rm -f AUTHORS
 
-docs: changelog
+docs:
 	$(MAKE) -C docs clean
 	$(MAKE) -C docs html
-	mv ChangeLog docs/_static/ChangeLog.txt
