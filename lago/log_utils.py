@@ -570,23 +570,30 @@ class LogTask(object):
         ...     pass
     """
 
-    def __init__(self, task, logger=logging, level='info'):
+    def __init__(
+        self,
+        task,
+        logger=logging,
+        level='info',
+        propagate_fail=True,
+    ):
         self.task = task
         self.logger = logger
         self.level = level
+        self.propagate = propagate_fail
 
     def __enter__(self):
         getattr(self.logger, self.level)(START_TASK_TRIGGER_MSG % self.task)
 
     def __exit__(self, *args, **kwargs):
         exc_type, _, _ = sys.exc_info()
-        if exc_type:
+        if exc_type and self.propagate:
             end_log_task(self.task, level='error')
         else:
             getattr(self.logger, self.level)(END_TASK_TRIGGER_MSG % self.task)
 
 
-def log_task(task, logger=logging, level='info'):
+def log_task(task, logger=logging, level='info', propagate_fail=True):
     """
     Parameterized decorator to wrap a function in a log task
 
@@ -599,7 +606,12 @@ def log_task(task, logger=logging, level='info'):
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            with LogTask(task, logger=logger, level=level):
+            with LogTask(
+                task,
+                logger=logger,
+                level=level,
+                propagate_fail=propagate_fail,
+            ):
                 return func(*args, **kwargs)
 
         return wrapper
