@@ -34,7 +34,6 @@ from lago.prefix import Prefix
 from lago.workdir import Workdir
 
 import merge_repos
-import repoverify
 import paths
 import testlib
 import utils
@@ -118,17 +117,14 @@ def _sync_rpm_repository(repo_path, yum_config, repos):
             'invalid, cleaning caches and retrying a second time'
         )
         shutil.rmtree('%s/cache' % repo_path)
-        with LogTask('Rerunning reposync'):
+        with LogTask('Rerunning reposync a last time'):
             ret, _, _ = utils.run_command(reposync_command)
-        if not ret:
-            return
+        if ret:
+            raise RuntimeError(
+                'Failed to run reposync a second time, aborting'
+            )
 
-        LOGGER.warn(
-            'Failed to run reposync the second time, making sure everyithing '
-            'is consistent before continuing'
-        )
-        with LogTask('Verifying downloads'):
-            repoverify.verify_reposync(yum_config, repo_path, repos)
+        return
 
 
 def _build_rpms(name, script, source_dir, output_dir, dists, env=None):
