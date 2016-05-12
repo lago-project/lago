@@ -718,7 +718,10 @@ class VM(object):
         if not self.alive():
             raise RuntimeError('Attempt to ssh into a not running host')
 
-        client = self._get_ssh_client(propagate_fail=True, ssh_tries=tries)
+        client = self._get_ssh_client(
+            propagate_fail=propagate_fail,
+            ssh_tries=tries,
+        )
         transport = client.get_transport()
         channel = transport.open_session()
 
