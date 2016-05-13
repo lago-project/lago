@@ -172,8 +172,8 @@ def get_merged_commits(repo, commit, first_parents, children_per_parent):
             merge_children.add(next_sha)
 
         non_first_parents = (
-            parent
-            for parent in next_commit.parents if parent not in first_parents
+            parent for parent in next_commit.parents
+            if parent not in first_parents
         )
         for child_sha in non_first_parents:
             if child_sha not in merge_children and child_sha != next_sha:
@@ -315,8 +315,7 @@ def main(args):
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        'repo_path',
-        help='Git repo to generate the changelog for'
+        'repo_path', help='Git repo to generate the changelog for'
     )
     subparsers = parser.add_subparsers()
     changelog_parser = subparsers.add_parser('changelog')
