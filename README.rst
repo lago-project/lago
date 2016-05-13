@@ -37,6 +37,9 @@ For EL distros (such as CentOS, RHEL, etc.)::
     enabled=1
     gpgcheck=0
 
+If you are install ing the ovirt plugin, you will also need to have `repoman`_
+installed or available, you can get it from the ovirt `ci-tools repo`_
+
 **TODO**: point to the release rpm once it's implemented, and use gpgcheck=1
 
 Once you have them, install the following packages::
@@ -579,3 +582,7 @@ FAQ
 
    This will show any templates being downloaded and file size
    changes.
+
+
+.. _repoman: http://repoman.readthedocs.io
+.. _ci-tools repo: http://resources.ovirt.org/repos/ci-tools
