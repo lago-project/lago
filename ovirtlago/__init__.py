@@ -23,6 +23,7 @@ import logging
 import os
 import re
 import shutil
+import time
 
 import nose.core
 import nose.config
@@ -483,7 +484,7 @@ class OvirtPrefix(Prefix):
     def serve(self):
         try:
             while True:
-                pass
+                time.sleep(0.1)
         except:
             pass
 
