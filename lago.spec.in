@@ -121,6 +121,7 @@ Requires: python-magic
 Requires: python-nose
 Requires: ovirt-engine-sdk-python
 Requires: createrepo
+Requires: repoman
 Requires: yum-utils
 Requires: rpm-build
 Requires: xz

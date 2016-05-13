@@ -21,8 +21,6 @@ import ConfigParser
 import functools
 import logging
 import os
-import re
-import shutil
 import time
 
 import nose.core
@@ -30,157 +28,16 @@ import nose.config
 from ovirtsdk.infrastructure.errors import (RequestError, ConnectionError)
 import lago
 from lago import log_utils
-from lago.utils import (LockFile, run_command, )
 from lago.prefix import Prefix
 from lago.workdir import Workdir
 
-from . import (utils, merge_repos, paths, testlib, virt, )
+from . import (paths, testlib, virt, reposetup, )
 
 # TODO: put it into some config
 PROJECTS_LIST = ['vdsm', 'ovirt-engine', 'vdsm-jsonrpc-java', 'ioprocess', ]
 LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
 log_task = functools.partial(log_utils.log_task, logger=LOGGER)
-
-
-def _with_repo_server(func):
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        with utils.repo_server_context(args[0]):
-            return func(*args, **kwargs)
-
-    return wrapper
-
-
-def _fix_reposync_issues(reposync_out, repo_path):
-    """
-    Fix for the issue described at::
-        https://bugzilla.redhat.com/show_bug.cgi?id=1332441
-    """
-    LOGGER.warn(
-        'Due to bug https://bugzilla.redhat.com/show_bug.cgi?id=1332441 '
-        'sometimes reposync fails to update some packages that have older '
-        'versions already downloaded, will remove those if any and retry'
-    )
-    package_regex = re.compile(r'(?P<package_name>[^:\r\s]+): \[Errno 256\]')
-    for match in package_regex.findall(reposync_out):
-        find_command = ['find', repo_path, '-name', match + '*', ]
-        ret, out, _ = run_command(find_command)
-
-        if ret:
-            raise RuntimeError('Failed to execute %s' % find_command)
-
-        for to_remove in out.splitlines():
-            if not to_remove.startswith(repo_path):
-                LOGGER.warn('Skipping out-of-repo file %s', to_remove)
-                continue
-
-            LOGGER.info('Removing: %s', to_remove)
-            os.unlink(to_remove)
-
-
-def _sync_rpm_repository(repo_path, yum_config, repos):
-    lock_path = os.path.join(repo_path, 'repolock')
-
-    if not os.path.exists(repo_path):
-        os.makedirs(repo_path)
-
-    reposync_command = [
-        'reposync',
-        '--config=%s' % yum_config,
-        '--download_path=%s' % repo_path,
-        '--newest-only',
-        '--delete',
-        '--cachedir=%s/cache' % repo_path,
-    ] + [
-        '--repoid=%s' % repo for repo in repos
-    ]
-
-    with LockFile(lock_path, timeout=180):
-        with LogTask('Running reposync'):
-            ret, out, _ = run_command(reposync_command)
-        if not ret:
-            return
-
-        _fix_reposync_issues(reposync_out=out, repo_path=repo_path)
-        with LogTask('Rerunning reposync'):
-            ret, _, _ = run_command(reposync_command)
-        if not ret:
-            return
-
-        LOGGER.warn(
-            'Failed to run reposync again, that usually means that '
-            'some of the local rpms might be corrupted or the metadata '
-            'invalid, cleaning caches and retrying a second time'
-        )
-        shutil.rmtree('%s/cache' % repo_path)
-        with LogTask('Rerunning reposync a last time'):
-            ret, _, _ = run_command(reposync_command)
-        if ret:
-            raise RuntimeError(
-                'Failed to run reposync a second time, aborting'
-            )
-
-        return
-
-
-def _build_rpms(name, script, source_dir, output_dir, dists, env=None):
-    with LogTask(
-        'Build %s(%s) from %s, for %s, store results in %s' %
-        (name, script, source_dir, ', '.join(dists), output_dir),
-    ):
-        ret, out, err = run_command(
-            [
-                script,
-                source_dir,
-                output_dir,
-            ] + dists,
-            env=env,
-        )
-
-        if ret:
-            LOGGER.error('%s returned with error %d', script, ret, )
-            LOGGER.error('Output was: \n%s', out)
-            LOGGER.error('Errors were: \n%s', err)
-            raise RuntimeError('%s failed, see logs' % script)
-
-        return ret
-
-
-def _build_vdsm_rpms(vdsm_dir, output_dir, dists):
-    _build_rpms('vdsm', 'build_vdsm_rpms.sh', vdsm_dir, output_dir, dists)
-
-
-def _build_engine_rpms(engine_dir, output_dir, dists, build_gwt=False):
-    env = os.environ.copy()
-    if build_gwt:
-        env['BUILD_GWT'] = '1'
-    else:
-        env['BUILD_GWT'] = '0'
-    _build_rpms(
-        'ovirt-engine', 'build_engine_rpms.sh', engine_dir, output_dir, dists,
-        env
-    )
-
-
-def _build_vdsm_jsonrpc_java_rpms(source_dir, output_dir, dists):
-    _build_rpms(
-        'vdsm-jsonrpc-java', 'build_vdsm-jsonrpc-java_rpms.sh', source_dir,
-        output_dir, dists
-    )
-
-
-def _build_ioprocess_rpms(source_dir, output_dir, dists):
-    _build_rpms(
-        'ioprocess', 'build_ioprocess_rpms.sh', source_dir, output_dir, dists
-    )
-
-
-def _git_revision_at(path):
-    ret, out, _ = run_command(['git', 'rev-parse', 'HEAD'], cwd=path)
-    if ret:
-        return 'unknown'
-    return out.strip()
 
 
 def _activate_storage_domains(api, sds):
@@ -357,9 +214,8 @@ class OvirtPrefix(Prefix):
         if not projects_list:
             projects_list = PROJECTS_LIST
 
-        def create_repo(dist):
-            dist_output = self.paths.internal_repo(dist)
-            rpm_dirs = []
+        rpm_dirs = []
+        for dist in dists:
             project_roots = [
                 self.paths.build_dir(project_name)
                 for project_name in projects_list
@@ -379,9 +235,7 @@ class OvirtPrefix(Prefix):
                 ],
             )
 
-            merge_repos.merge(dist_output, rpm_dirs)
-
-        lago.utils.invoke_in_parallel(create_repo, dists)
+        reposetup.merge(self.paths.internal_repo(), rpm_dirs)
 
     @log_task('Create prefix internal repo')
     def prepare_repo(
@@ -419,12 +273,16 @@ class OvirtPrefix(Prefix):
                 with LogTask(
                     'Syncing remote repos locally (this might take some time)'
                 ):
-                    _sync_rpm_repository(rpm_repo, reposync_yum_config, repos)
+                    reposetup.sync_rpm_repository(
+                        rpm_repo,
+                        reposync_yum_config,
+                        repos,
+                    )
 
         self._create_rpm_repository(all_dists, rpm_repo, repos)
         self.save()
 
-    @_with_repo_server
+    @reposetup.with_repo_server
     def run_test(self, path):
 
         with LogTask('Run test: %s' % os.path.basename(path)):
@@ -475,11 +333,11 @@ class OvirtPrefix(Prefix):
             return result
 
     @log_task('Deploy oVirt environment')
-    @_with_repo_server
+    @reposetup.with_repo_server
     def deploy(self):
         return super(OvirtPrefix, self).deploy()
 
-    @_with_repo_server
+    @reposetup.with_repo_server
     def serve(self):
         try:
             while True:
