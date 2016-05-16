@@ -24,8 +24,8 @@ import shutil
 import sys
 from functools import partial
 
-import utils
 from lago import log_utils
+from lago.utils import run_command
 
 LOGGER = logging.getLogger(__name__)
 
@@ -47,7 +47,7 @@ def merge(output_dir, input_dirs):
 
     for input_dir in input_dirs:
         with LogTask('Processing directory %s' % input_dir):
-            ret = utils.run_command(
+            ret = run_command(
                 [
                     'find',
                     input_dir,
@@ -73,7 +73,7 @@ def merge(output_dir, input_dirs):
                     )
 
     try:
-        ret = utils.run_command(['createrepo', output_dir], cwd=output_dir)
+        ret = run_command(['createrepo', output_dir], cwd=output_dir)
         if ret:
             raise RuntimeError('createrepo for %s failed', output_dir)
     except OSError:
