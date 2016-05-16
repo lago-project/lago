@@ -1,16 +1,51 @@
+Jenkins master and slaves scenario
+====================================
+
 About
-~~~~~~
+^^^^^^
 
-This environment will consist of 3 vm's that will simulate
-a Jenkins infrastructure.
+We will create a Lago environment which will consist of three virtual machines
+that will host Jenkins infrastructure.
 
-"vm0-server" - Jenkins server
-"vm1-slave" - Jenkins slave
-"vm2-slave" - Jenkins slave
+The VMs
+^^^^^^^
 
+-  "vm0-server" - Jenkins server
+-  "vm1-slave" - Jenkins slave
+-  "vm2-slave" - Jenkins slave
 
-Adding The Slaves
-~~~~~~~~~~~~~~~~~~
+The commands
+^^^^^^^^^^^^^^
+
+::
+
+    lago init
+    
+-  Create the environment.
+    
+::
+
+    lago start
+    
+-  Start the vms.
+
+::
+
+    lago deploy
+
+-   Installing the vms:
+   -  Jenkins will be installed on the server.
+   -  OpenJDK will be installed on the slaves.
+
+::
+
+    lago status
+    
+-  Getting the ips of the vms, as we will need them for addign the slaves to the server.
+    
+
+Adding the slaves
+^^^^^^^^^^^^^^^^^^
 
 Open your browser and enter to the Jenkins web UI.
 The address should be like: "put-your-server-ip-here:8080"
