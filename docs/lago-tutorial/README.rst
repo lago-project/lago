@@ -14,10 +14,6 @@ overhead of setting up an infrastructure.
 This tutorial will be “hands on”, and will take you through the process
 of creating, running and deploying the environment.
 
-Lago environments are flexible and can be used for all different kinds
-of tasks. For keeping things simple I will focus on one scenario, using only basic commands of Lago,
-although you will get the ability to create your own custom environment.
-
 Prerequisites
 ^^^^^^^^^^^^^
 
@@ -25,35 +21,13 @@ Install Lago - follow
 `this <../README.html#installation>`__ tutorial
 for more information
 
-The scenario
-^^^^^^^^^^^^
-
-Create a Lago environment which will consist of three virtual machines
-that will host Jenkins infrastructure.
-
-The VMs
-^^^^^^^
-
--  "vm0-server" - Jenkins server
--  "vm1-slave" - Jenkins slave
--  "vm2-slave" - Jenkins slave
-
-The network
-^^^^^^^^^^^
-
-All the VMs will connect to the same virtual network.
-Lago allows for a creation of 10 different lans ranging from:
-192.168.200.x to 192.168.209.x
-The subnet will be automatically assigend to the virtual network
-bridge.
-
 Creating the working directory
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 You should copy 'lago/docs/lago-tutorial' from this repository to your machine.
 
 The components  
-^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^
 
 In this directory you will find the following:
 
@@ -77,6 +51,15 @@ networks, so Lago can create them for us.
 
 //TODO: elaborate about the different features and values that can be
 specified within the file.
+
+
+The network
+^^^^^^^^^^^
+
+Lago allows for a creation of 10 different lans ranging from:
+192.168.200.x to 192.168.209.x
+The subnet will be automatically assigend to the virtual network
+bridge.
 
 Creating the environment
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -114,10 +97,11 @@ This command will use the following default configurations:
 -  The workdir will be named ".lago"
 -  As mentioned above, The default repo will be used.
 
-Note: Lago will copy the deployment scripts into the new environment, and set up the following environment variables:
+Note: Lago will copy the deployment scripts into the new environment and set up two environment variables.
+For example, if you were at /home/myuser/lago dir, 
 
-- $LAGO_PREFIX_PATH = FULL_PATH/.lago/current
-- $LAGO_WORKDIR_PATH = FULL_PATH/.lago
+- $LAGO_PREFIX_PATH = /home/myuser/lago/.lago/current
+- $LAGO_WORKDIR_PATH = /home/myuser/lago/.lago/
 
 so when using a relative path to the deployment (in the init file), there is no worry that 
 the path will be broken when trying to deploy the vms from a directory that doesn't satisfy the relative path.
@@ -162,13 +146,10 @@ invoked from /lago-work-dir.
     lago deploy
 
 
--  Jenkins will be installed on the server.
--  OpenJDK will be installed on the slaves.
-
 Getting the state of the environment
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-You cae get information about the state of the enviorment with:
+You can get the information about the state of the enviorment with:
 
 ::
 
@@ -237,6 +218,6 @@ More Configurations
 Here are some more configurations for other environments:
 
 .. toctree::
-    :maxdepth: 1
+    :maxdepth: 2
     
     scenarios/jenkins/README
