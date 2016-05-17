@@ -524,10 +524,15 @@ class Prefix(object):
         )
         disk_path = self._generate_disk_path(disk_name=disk_filename)
 
-        qemu_cmd = [
-            'qemu-img', 'create', '-f', disk_spec['format'], disk_path,
-            disk_spec['size']
-        ]
+        qemu_cmd = ['qemu-img', 'create']
+        if disk_spec['format'] == 'qcow2':
+            qemu_cmd += [
+                '-f', disk_spec['format'], '-o', 'preallocation=metadata'
+            ]
+        else:
+            qemu_cmd += ['-f', disk_spec['format']]
+
+        qemu_cmd += [disk_path, disk_spec['size']]
 
         if os.path.exists(disk_path):
             os.unlink(disk_path)
