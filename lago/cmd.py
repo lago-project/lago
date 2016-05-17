@@ -185,7 +185,7 @@ def do_init(
             workdir.set_current(new_current=prefix_name)
 
     except:
-        shutil.rmtree(prefix.paths.prefixed(''))
+        shutil.rmtree(prefix.paths.prefixed(''), ignore_errors=True)
         raise
 
 

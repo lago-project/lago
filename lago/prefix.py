@@ -140,6 +140,9 @@ class Prefix(object):
         Returns:
             None
         """
+        if not os.path.exists(self.paths.virt()):
+            os.makedirs(self.paths.virt())
+
         self._save_metadata()
         self.virt_env.save()
 
@@ -226,7 +229,8 @@ class Prefix(object):
         with LogTask("Tag prefix as uninitialized"):
             os.unlink(self.paths.prefix_lagofile())
 
-    def _init_net_specs(self, conf):
+    @staticmethod
+    def _init_net_specs(conf):
         """
         Given a configuration specification, initializes all the net
         definitions in it so they can be used comfortably
@@ -235,14 +239,17 @@ class Prefix(object):
             conf (dict): Configuration specification
 
         Returns:
-            None
+            dict: the adapted new conf
         """
         for net_name, net_spec in conf.get('nets', {}).items():
             net_spec['name'] = net_name
             net_spec['mapping'] = {}
             net_spec.setdefault('type', 'nat')
 
-    def _check_predefined_subnets(self, conf):
+        return conf
+
+    @staticmethod
+    def _check_predefined_subnets(conf):
         """
         Checks if all of the nets defined in the config are inside the allowed
         range, throws exception if not
@@ -257,7 +264,7 @@ class Prefix(object):
         Raises:
             RuntimeError: If there are any subnets out of the allowed range
         """
-        for net_name, net_spec in conf.get('nets', {}).items():
+        for net_spec in conf.get('nets', {}).itervalues():
             subnet = net_spec.get('gw')
             if subnet is None:
                 continue
@@ -276,11 +283,11 @@ class Prefix(object):
                 from
 
         Returns:
-            list: allocated subnets
+            tuple(list, dict): allocated subnets and modified conf
         """
         allocated_subnets = []
         try:
-            for net_name, net_spec in conf.get('nets', {}).items():
+            for net_spec in conf.get('nets', {}).itervalues():
                 if 'gw' in net_spec or net_spec['type'] != 'nat':
                     continue
                 net_spec['gw'] = subnet_lease.acquire(self.paths.uuid())
@@ -289,7 +296,7 @@ class Prefix(object):
             for subnet in allocated_subnets:
                 subnet_lease.release(subnet)
 
-        return allocated_subnets
+        return allocated_subnets, conf
 
     def _add_nic_to_mapping(self, net, dom, nic):
         """
@@ -411,9 +418,9 @@ class Prefix(object):
         Returns:
             None
         """
-        self._init_net_specs(conf)
+        conf = self._init_net_specs(conf)
         self._check_predefined_subnets(conf)
-        allocated_subnets = self._allocate_subnets(conf)
+        allocated_subnets, conf = self._allocate_subnets(conf)
         try:
             self._register_preallocated_ips(conf)
             self._allocate_ips_to_nics(conf)
@@ -421,6 +428,8 @@ class Prefix(object):
             for subnet in allocated_subnets:
                 subnet_lease.release(subnet)
             raise
+
+        return conf
 
     def _create_disk(
         self,
@@ -430,7 +439,7 @@ class Prefix(object):
         template_store=None,
     ):
         """
-        Creates a disc with the given name from the given repo or store.
+        Creates a disc with the given name from the given repo or store
 
         Args:
             name (str): Name of the domain to create the disk for
@@ -441,7 +450,7 @@ class Prefix(object):
                 use
 
         Returns:
-            Tuple(str, dict): Path with the disk and metadata
+            Tuple(str, dict): Path to the disk and disk metadata
 
         Raises:
             RuntimeError: If the type of the disk is not supported or failed to
@@ -451,102 +460,193 @@ class Prefix(object):
         with LogTask("Create disk %s" % spec['name']):
             disk_metadata = {}
 
-            disk_filename = '%s_%s.%s' % (name, spec['name'], spec['format'])
-            disk_path = self.paths.images(disk_filename)
-
             if spec['type'] == 'template':
-                template_type = spec.get('template_type', 'lago')
-                if template_type == 'lago':
-                    if template_store is None or template_repo is None:
-                        raise RuntimeError('No templates directory provided')
-
-                    template = template_repo.get_by_name(spec['template_name'])
-                    template_version = template.get_version(
-                        spec.get('template_version', None)
-                    )
-
-                    if template_version not in template_store:
-                        LOGGER.info(
-                            log_utils.log_always(
-                                "Template %s not in cache, downloading"
-                            ) % template_version.name,
-                        )
-                        template_store.download(template_version)
-                    template_store.mark_used(
-                        template_version, self.paths.uuid()
-                    )
-
-                    disk_metadata.update(
-                        template_store.get_stored_metadata(
-                            template_version,
-                        ),
-                    )
-
-                    base = template_store.get_path(template_version)
-                    qemu_img_cmd = [
-                        'qemu-img', 'create', '-f', 'qcow2', '-b', base,
-                        disk_path
-                    ]
-
-                elif template_type == 'qcow2':
-                    path = spec.get('path', '')
-                    if not path:
-                        raise RuntimeError('Partial drive spec %s' % str(spec))
-                    disk_metadata = spec.get('metadata', {})
-                    qemu_img_cmd = [
-                        'qemu-img', 'create', '-f', 'qcow2', '-b', path,
-                        disk_path
-                    ]
-                else:
-                    raise RuntimeError(
-                        'Unsupporte template spec %s' % str(spec)
-                    )
-                task_message = 'Create disk %s(%s)' % (name, spec['name'])
-
+                disk_path, disk_metadata = self._handle_template(
+                    host_name=name,
+                    template_spec=spec,
+                    template_repo=template_repo,
+                    template_store=template_store,
+                )
             elif spec['type'] == 'empty':
-                qemu_img_cmd = [
-                    'qemu-img', 'create', '-f', spec['format'], disk_path,
-                    spec['size']
-                ]
-                task_message = 'Create empty disk image'
-
+                disk_path, disk_metadata = self._handle_empty_disk(
+                    host_name=name,
+                    disk_spec=spec,
+                )
             elif spec['type'] == 'file':
-                url = spec.get('url', '')
-                path = spec.get('path', '')
-                disk_metadata = spec.get('metadata', {})
-                if not url and not path:
-                    raise RuntimeError('Partial drive spec %s' % str(spec))
-
-                if url:
-                    disk_in_prefix = self.fetch_url(url)
-                    if path:
-                        shutil.move(disk_in_prefix, spec['path'])
-                    else:
-                        spec['path'] = disk_in_prefix
-
-                # If we're using raw file, return it's path
-                return spec['path'], disk_metadata
+                disk_path, disk_metadata = self._handle_file_disk(
+                    disk_spec=spec,
+                )
             else:
                 raise RuntimeError('Unknown drive spec %s' % str(spec))
 
-            if os.path.exists(disk_path):
-                os.unlink(disk_path)
+            return disk_path, disk_metadata
 
-            with LogTask(task_message):
-                ret, _, _ = utils.run_command(qemu_img_cmd)
-                if ret != 0:
-                    raise RuntimeError(
-                        'Failed to create image, qemu-img returned %d' % ret,
-                    )
-                # To avoid losing access to the file
-                os.chmod(disk_path, 0666)
-
-            disk_rel_path = os.path.join(
-                '$LAGO_PREFIX_PATH',
-                os.path.basename(self.paths.images()),
-                os.path.basename(disk_path),
+    def _handle_file_disk(self, disk_spec):
+        url = os.path.expandvars(disk_spec.get('url', ''))
+        disk_path = os.path.expandvars(disk_spec.get('path', ''))
+        disk_metadata = disk_spec.get('metadata', {})
+        if not url and not disk_path:
+            raise RuntimeError(
+                'Partial drive spec, no url nor path provided for disk of '
+                'type file:\n%s' % str(disk_spec)
             )
-            return disk_rel_path, disk_metadata
+
+        if url:
+            disk_spec['path'] = self._retrieve_disk_url(url, disk_path)
+        else:
+            disk_spec['path'] = disk_path
+
+        # If we're using raw file, return its path
+        disk_path = disk_spec['path']
+        return disk_path, disk_metadata
+
+    def _retrieve_disk_url(self, disk_url, disk_dst_path=None):
+        disk_in_prefix = self.fetch_url(disk_url)
+        if disk_dst_path is None:
+            return disk_in_prefix
+        else:
+            shutil.move(disk_in_prefix, disk_dst_path)
+            return disk_dst_path
+
+    @staticmethod
+    def _generate_disk_name(host_name, disk_name, disk_format):
+        return '%s_%s.%s' % (host_name, disk_name, disk_format, )
+
+    def _generate_disk_path(self, disk_name):
+        return os.path.expandvars(self.paths.images(disk_name))
+
+    def _handle_empty_disk(self, host_name, disk_spec):
+        disk_metadata = disk_spec.get('metadata', {})
+        disk_filename = self._generate_disk_name(
+            host_name=host_name,
+            disk_name=disk_spec['name'],
+            disk_format=disk_spec['format'],
+        )
+        disk_path = self._generate_disk_path(disk_name=disk_filename)
+
+        qemu_cmd = ['qemu-img', 'create']
+        if disk_spec['format'] == 'qcow2':
+            qemu_cmd += [
+                '-f', disk_spec['format'], '-o', 'preallocation=metadata'
+            ]
+        else:
+            qemu_cmd += ['-f', disk_spec['format']]
+
+        qemu_cmd += [disk_path, disk_spec['size']]
+
+        if os.path.exists(disk_path):
+            os.unlink(disk_path)
+
+        with LogTask(
+            'Create empty disk %s(%s)' % (host_name, disk_spec['name'])
+        ):
+            self._run_qemu(qemu_cmd, disk_path)
+
+        disk_rel_path = os.path.join(
+            '$LAGO_PREFIX_PATH',
+            os.path.basename(self.paths.images()),
+            os.path.basename(disk_path),
+        )
+        return disk_rel_path, disk_metadata
+
+    @staticmethod
+    def _run_qemu(qemu_cmd, disk_path):
+        ret = utils.run_command(qemu_cmd)
+        if ret.code != 0:
+            raise RuntimeError(
+                'Failed to create image, qemu-img returned %d:\n'
+                'out:%s\nerr:%s' % ret,
+            )
+        # To avoid losing access to the file
+        os.chmod(disk_path, 0666)
+        return ret
+
+    def _handle_template(
+        self,
+        host_name,
+        template_spec,
+        template_store=None,
+        template_repo=None
+    ):
+        template_type = template_spec.get('template_type', 'lago')
+        disk_filename = self._generate_disk_name(
+            host_name=host_name,
+            disk_name=template_spec['name'],
+            disk_format=template_spec['format'],
+        )
+        disk_path = self._generate_disk_path(disk_name=disk_filename)
+        if template_type == 'lago':
+            qemu_cmd, disk_metadata = self._handle_lago_template(
+                disk_path=disk_path,
+                template_spec=template_spec,
+                template_store=template_store,
+                template_repo=template_repo,
+            )
+        elif template_type == 'qcow2':
+            qemu_cmd, disk_metadata = self._handle_qcow_template(
+                disk_path=disk_path,
+                template_spec=template_spec,
+            )
+        else:
+            raise RuntimeError(
+                'Unsupporte template spec %s' % str(template_spec)
+            )
+
+        if os.path.exists(disk_path):
+            os.unlink(disk_path)
+
+        with LogTask(
+            'Create disk %s(%s)' % (host_name, template_spec['name'])
+        ):
+            self._run_qemu(qemu_cmd, disk_path)
+
+        # Update the path as relative so it can be relocated
+        disk_rel_path = os.path.join(
+            '$LAGO_PREFIX_PATH',
+            os.path.basename(self.paths.images()),
+            os.path.basename(disk_path),
+        )
+        return disk_rel_path, disk_metadata
+
+    def _handle_qcow_template(self, disk_path, template_spec):
+        base_path = template_spec.get('path', '')
+        if not base_path:
+            raise RuntimeError('Partial drive spec %s' % str(template_spec))
+
+        qemu_cmd = [
+            'qemu-img', 'create', '-f', 'qcow2', '-b', base_path, disk_path
+        ]
+        disk_metadata = template_spec.get('metadata', {})
+        return qemu_cmd, disk_metadata
+
+    def _handle_lago_template(
+        self, disk_path, template_spec, template_store, template_repo
+    ):
+        disk_metadata = template_spec.get('metadata', {})
+        if template_store is None or template_repo is None:
+            raise RuntimeError('No templates directory provided')
+
+        template = template_repo.get_by_name(template_spec['template_name'])
+        template_version = template.get_version(
+            template_spec.get('template_version', None)
+        )
+        if template_version not in template_store:
+            LOGGER.info(
+                log_utils.log_always(
+                    "Template %s not in cache, downloading"
+                ) % template_version.name,
+            )
+            template_store.download(template_version)
+
+        template_store.mark_used(template_version, self.paths.uuid())
+        disk_metadata.update(
+            template_store.get_stored_metadata(
+                template_version,
+            ),
+        )
+        base = template_store.get_path(template_version)
+        qemu_cmd = ['qemu-img', 'create', '-f', 'qcow2', '-b', base, disk_path]
+        return qemu_cmd, disk_metadata
 
     def _ova_to_spec(self, filename):
         """
@@ -647,22 +747,23 @@ class Prefix(object):
 
         return disk_spec, memory, vcpus
 
-    def _use_prototype(self, spec, conf):
+    def _use_prototype(self, spec, prototypes):
         """
         Populates the given spec with the values of it's declared prototype
 
         Args:
             spec (dict): spec to update
-            conf (dict): Configuration spec containing the prototypes
+            prototypes (dict): Configuration spec containing the prototypes
 
         Returns:
             dict: updated spec
         """
-        prototype = conf['prototypes'][spec['based-on']]
+        prototype = spec['based-on']
         del spec['based-on']
         for attr in prototype:
             if attr not in spec:
                 spec[attr] = copy.deepcopy(prototype[attr])
+
         return spec
 
     def fetch_url(self, url):
@@ -712,6 +813,80 @@ class Prefix(object):
             do_bootstrap=do_bootstrap,
         )
 
+    def _prepare_domains_images(self, conf, template_repo, template_store):
+        if not os.path.exists(self.paths.images()):
+            os.makedirs(self.paths.images())
+
+        for name, domain_spec in conf['domains'].items():
+            domain_spec['name'] = name
+            conf['domains'][name] = self._prepare_domain_image(
+                domain_spec=domain_spec,
+                prototypes=conf.get('prototypes', {}),
+                template_repo=template_repo,
+                template_store=template_store,
+            )
+
+        return conf
+
+    def _prepare_domain_image(
+        self, domain_spec, prototypes, template_repo, template_store
+    ):
+        if 'based-on' in domain_spec:
+            domain_spec = self._use_prototype(
+                spec=domain_spec,
+                prototypes=prototypes,
+            )
+
+        if domain_spec.get('type', '') == 'ova':
+            domain_spec = self._handle_ova_image(domain_spec=domain_spec)
+
+        with LogTask('Create disks for VM %s' % domain_spec['name']):
+            domain_spec['disks'] = self._create_disks(
+                domain_name=domain_spec['name'],
+                disks_specs=domain_spec['disks'],
+                template_repo=template_repo,
+                template_store=template_store,
+            )
+
+        return domain_spec
+
+    def _handle_ova_image(self, domain_spec):
+        # we import the ova to template
+        domain_spec['type'] = 'template'
+        ova_file = self.fetch_url(domain_spec['url'])
+        ova_disk, domain_spec["memory"], domain_spec[
+            "vcpu"
+        ] = self._ova_to_spec(ova_file)
+        if "disks" not in domain_spec.keys():
+            domain_spec["disks"] = ova_disk
+        else:
+            domain_spec["disks"] = ova_disk + domain_spec["disks"]
+
+        return domain_spec
+
+    def _create_disks(
+        self, domain_name, disks_specs, template_repo, template_store
+    ):
+        new_disks = []
+        for disk in disks_specs:
+            path, metadata = self._create_disk(
+                name=domain_name,
+                spec=disk,
+                template_repo=template_repo,
+                template_store=template_store,
+            )
+            new_disks.append(
+                {
+                    'path': path,
+                    'dev': disk['dev'],
+                    'format': disk['format'],
+                    'metadata': metadata,
+                    'type': disk['type']
+                },
+            )
+
+        return new_disks
+
     def virt_conf(
         self,
         conf,
@@ -734,59 +909,30 @@ class Prefix(object):
         """
         os.environ['LAGO_PREFIX_PATH'] = self.paths.prefix
         with utils.RollbackContext() as rollback:
-            if not os.path.exists(self.paths.images()):
-                os.mkdir(self.paths.images())
-                rollback.prependDefer(os.unlink, self.paths.images())
+            rollback.prependDefer(
+                shutil.rmtree,
+                self.paths.prefix,
+                ignore_errors=True
+            )
+            conf = self._prepare_domains_images(
+                conf=conf,
+                template_repo=template_repo,
+                template_store=template_store,
+            )
+            conf = self._config_net_topology(conf)
 
-            if not os.path.exists(self.paths.virt()):
-                os.mkdir(self.paths.virt())
-                rollback.prependDefer(os.unlink, self.paths.virt())
-
-            for name, spec in conf['domains'].items():
-                if 'based-on' in spec:
-                    spec = self._use_prototype(spec, conf)
-
-                if spec.get('type', '') == 'ova':
-                    # we import the ova to template
-                    spec['type'] = 'template'
-                    ova_file = self.fetch_url(spec['url'])
-                    ova_disk, spec["memory"], spec[
-                        "vcpu"
-                    ] = self._ova_to_spec(ova_file)
-                    if "disks" not in spec.keys():
-                        spec["disks"] = ova_disk
-                    else:
-                        spec["disks"] = ova_disk + spec["disks"]
-
-                new_disks = []
-                spec['name'] = name
-                with LogTask('Create disks for VM %s' % name):
-                    for disk in spec['disks']:
-                        path, metadata = self._create_disk(
-                            name,
-                            disk,
-                            template_repo,
-                            template_store,
-                        )
-                        new_disks.append(
-                            {
-                                'path': path,
-                                'dev': disk['dev'],
-                                'format': disk['format'],
-                                'metadata': metadata,
-                                'type': disk['type']
-                            },
-                        )
-                conf['domains'][name]['disks'] = new_disks
-
-            self._config_net_topology(conf)
-
-            self._copy_deploy_scripts_for_hosts(domains=conf['domains'])
-            env = virt.VirtEnv(self, conf['domains'], conf['nets'])
+            conf['domains'] = self._copy_deploy_scripts_for_hosts(
+                domains=conf['domains']
+            )
+            self._virt_env = virt.VirtEnv(
+                prefix=self,
+                vm_specs=conf['domains'],
+                net_specs=conf['nets'],
+            )
             if do_bootstrap:
-                env.bootstrap()
+                self.virt_env.bootstrap()
 
-            env.save()
+            self.save()
             rollback.clear()
 
     def start(self, vm_names=None):
@@ -1031,6 +1177,8 @@ class Prefix(object):
                     host_metadata=host_metadata,
                     scripts=new_scripts,
                 )
+
+        return domains
 
     def _copy_delpoy_scripts(self, scripts):
         """
