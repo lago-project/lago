@@ -535,13 +535,7 @@ class Prefix(object):
         with LogTask(
             'Create empty disk %s(%s)' % (host_name, disk_spec['name'])
         ):
-            ret, _, _ = utils.run_command(qemu_cmd)
-            if ret != 0:
-                raise RuntimeError(
-                    'Failed to create image, qemu-img returned %d' % ret,
-                )
-            # To avoid losing access to the file
-            os.chmod(disk_path, 0666)
+            self._run_qemu(qemu_cmd, disk_path)
 
         disk_rel_path = os.path.join(
             '$LAGO_PREFIX_PATH',
@@ -549,6 +543,18 @@ class Prefix(object):
             os.path.basename(disk_path),
         )
         return disk_rel_path, disk_metadata
+
+    @staticmethod
+    def _run_qemu(qemu_cmd, disk_path):
+        ret = utils.run_command(qemu_cmd)
+        if ret.code != 0:
+            raise RuntimeError(
+                'Failed to create image, qemu-img returned %d:\n'
+                'out:%s\nerr:%s' % ret,
+            )
+        # To avoid losing access to the file
+        os.chmod(disk_path, 0666)
+        return ret
 
     def _handle_template(
         self,
@@ -587,13 +593,7 @@ class Prefix(object):
         with LogTask(
             'Create disk %s(%s)' % (host_name, template_spec['name'])
         ):
-            ret, _, _ = utils.run_command(qemu_cmd)
-            if ret != 0:
-                raise RuntimeError(
-                    'Failed to create image, qemu-img returned %d' % ret,
-                )
-            # To avoid losing access to the file
-            os.chmod(disk_path, 0666)
+            self._run_qemu(qemu_cmd, disk_path)
 
         # Update the path as relative so it can be relocated
         disk_rel_path = os.path.join(
