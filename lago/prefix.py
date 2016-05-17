@@ -496,7 +496,7 @@ class Prefix(object):
         else:
             disk_spec['path'] = disk_path
 
-        # If we're using raw file, return it's path
+        # If we're using raw file, return its path
         disk_path = disk_spec['path']
         return disk_path, disk_metadata
 
