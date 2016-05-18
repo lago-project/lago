@@ -780,7 +780,7 @@ class Prefix(object):
         dst_path = os.path.basename(url_path)
         dst_path = self.paths.prefixed(dst_path)
         with LogTask('Downloading %s' % url):
-            urllib.urlretrieve(url=url, filename=dst_path)
+            urllib.urlretrieve(url=os.path.expandvars(url), filename=dst_path)
 
         return dst_path
 
