@@ -230,8 +230,8 @@ def _deactivate_storage_domains(api, sds):
             ):
                 testlib.assert_true_within_long(
                     lambda: (
-                        dc.storagedomains.get(sd.name).status.state
-                        == 'maintenance'
+                        dc.storagedomains.get(sd.name).status.state ==
+                        'maintenance'
                     ),
                 )
 
@@ -365,15 +365,15 @@ class OvirtPrefix(Prefix):
 
             rpm_dirs.extend(
                 [
-                    os.path.join(folder, dist) for folder in project_roots
-                    if os.path.exists(folder)
+                    os.path.join(folder, dist)
+                    for folder in project_roots if os.path.exists(folder)
                 ]
             )
 
             rpm_dirs.extend(
                 [
-                    os.path.join(repos_path, name) for name in repo_names
-                    if name.endswith(dist)
+                    os.path.join(repos_path, name)
+                    for name in repo_names if name.endswith(dist)
                 ],
             )
 
@@ -408,7 +408,8 @@ class OvirtPrefix(Prefix):
                 parser.readfp(repo_conf_fd)
 
             repos = [
-                repo for repo in parser.sections()
+                repo
+                for repo in parser.sections()
                 if repo.split('-')[-1] in all_dists
             ]
 

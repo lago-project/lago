@@ -1,7 +1,9 @@
 [style]
 align_closing_bracket_with_visual_indent = true
+allow_multiline_lambdas = true
 blank_line_before_nested_class_or_def = false
 column_limit = 79
+continuation_indent_width = 4
 dedent_closing_brackets = true
 i18n_comment =
 i18n_function_call =
@@ -18,5 +20,5 @@ split_penalty_after_unary_operator = 0
 split_penalty_bitwise_operator = 0
 split_penalty_excess_character = 1000000
 split_penalty_for_added_line_split = 0
-split_penalty_import_names = 0
+split_penalty_import_names = -1
 split_penalty_logical_operator = 100
