@@ -13,4 +13,4 @@ pyyaml
 scp
 stevedore
 xmltodict
-yapf
+yapf==0.7.1

@@ -360,7 +360,8 @@ class Prefix(object):
 
                 if nic['ip'] in net['mapping'].values():
                     conflict_list = [
-                        name for name, ip in net['mapping'].items()
+                        name
+                        for name, ip in net['mapping'].items()
                         if ip == net['ip']
                     ]
                     raise RuntimeError(
