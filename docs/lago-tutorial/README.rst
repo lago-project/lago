@@ -1,18 +1,12 @@
 Lago-Tutorial
 =============
 
-This repository contains the default files for creating Lago
-environment.
+In this guide you will find an explanation about the different concepts
+and features of Lago. By reading this document, you should gain the ability to setup
+your own custom virtual environment.
 
-In this tutorial you will learn how to set up a custom virtual
-environment with Lago.
-The virtual environment will be used as an infrastructure for your
-application, so you can run tests
-in order to check the functionality of your application, without the
-overhead of setting up an infrastructure.
-
-This tutorial will be “hands on”, and will take you through the process
-of creating, running and deploying the environment.
+If it's your first time with Lago, it is advised to check `this demo <https://github.com/gbenhaim/Lago-Demo>`__,
+in order to get an overview about the flow.
 
 Prerequisites
 ^^^^^^^^^^^^^
@@ -24,27 +18,17 @@ for more information
 Creating the working directory
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-You should copy 'lago/docs/lago-tutorial' from this repository to your machine.
+//TODO: add a defualt init file to lago
 
-The components  
-^^^^^^^^^^^^^^^
+Configuring The environment  
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In this directory you will find the following:
+//TODO: explain about the init file 
 
 -  init.json – This is the file which describes the structure of our
    environment: the specification of the vms, networks, the path and
    name of the deployment scripts for each vm.
 
--  scenarios - This directory will contain default configuration files
-   for common enviornments - you are welcome
-   to conribute your on files :)
-
--  deployment-scripts – This directory contains the deployment scripts
-   for each vm (in our case a script that will
-   install the Jenkins server)
-
-Editing init.json
-^^^^^^^^^^^^^^^^^
 
 The init.json is where we need to describe our environment e.g vms and
 networks, so Lago can create them for us.
@@ -53,6 +37,11 @@ networks, so Lago can create them for us.
 specified within the file.
 
 
+Templates and storage
+^^^^^^^^^^^
+
+//TODO: explain about install from templae, usin qucow2 file, iso etc... 
+
 The network
 ^^^^^^^^^^^
 
@@ -60,6 +49,7 @@ Lago allows for a creation of 10 different lans ranging from:
 192.168.200.x to 192.168.209.x
 The subnet will be automatically assigend to the virtual network
 bridge.
+
 
 Creating the environment
 ^^^^^^^^^^^^^^^^^^^^^^^^
