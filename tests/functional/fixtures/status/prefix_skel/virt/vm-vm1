@@ -2,7 +2,7 @@
     "root-password": "cubswin:)", 
     "name": "vm1", 
     "memory": 1024, 
-    "service_class": "systemd", 
+    "service_provider": "systemd", 
     "nics": [
         {
             "ip": "192.168.201.3", 
