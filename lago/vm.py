@@ -32,6 +32,32 @@ class DefaultVM(vm.VMPlugin):
     pass
 
 
+class SSHVMProvider(vm.VMProviderPlugin):
+    def start(self, *args, **kwargs):
+        pass
+
+    def stop(self, *args, **kwargs):
+        pass
+
+    def defined(self, *args, **kwargs):
+        return True
+
+    def bootstrap(self, *args, **kwargs):
+        pass
+
+    def state(self, *args, **kwargs):
+        return 'running'
+
+    def create_snapshot(self, name, *args, **kwargs):
+        pass
+
+    def revert_snapshot(self, name, *args, **kwargs):
+        pass
+
+    def vnc_port(self, *args, **kwargs):
+        return 'no-vnc'
+
+
 class LocalLibvirtVMProvider(vm.VMProviderPlugin):
     def __init__(self, vm):
         super(LocalLibvirtVMProvider, self).__init__(vm)
