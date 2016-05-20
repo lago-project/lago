@@ -15,6 +15,8 @@ if [[ "$files" == "" ]]; then
     exit 0
 fi
 
+yapf --version
+
 git diff \
     HEAD^ \
     --name-status \
