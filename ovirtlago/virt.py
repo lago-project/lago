@@ -18,13 +18,17 @@
 # Refer to the README and COPYING files for full details of the license
 #
 import os
+import warnings
 
 import ovirtsdk.api
 import lago
+import lago.vm
 from ovirtsdk.infrastructure.errors import (RequestError, ConnectionError)
 
-import constants
-import testlib
+from . import (
+    constants,
+    testlib,
+)
 
 
 class OvirtVirtEnv(lago.virt.VirtEnv):
@@ -36,19 +40,30 @@ class OvirtVirtEnv(lago.virt.VirtEnv):
     def _create_vm(self, vm_spec):
         metadata = vm_spec.get('metadata', {})
         role = metadata.get('ovirt-role', None)
-        if role == 'engine':
+        if role:
+            warnings.warn(
+                'ovirt-role metadata entry will be soon deprecated, instead '
+                'you should use the vm_provider entry in the domain '
+                'definiton and set it no one of: ovirt-node, ovirt-engine, '
+                'ovirt-host'
+            )
+            provider_name = 'ovirt-' + role
+
+        if provider_name == 'ovirt-engine':
             if self._engine_vm is not None:
                 raise RuntimeError('Engine VM already exists')
-            self._engine_vm = EngineVM(self, vm_spec)
+
+            self._engine_vm = super(OvirtVirtEnv, self)._create_vm(vm_spec)
             return self._engine_vm
-        elif role == 'host':
-            self._host_vms.append(HostVM(self, vm_spec))
+
+        elif provider_name in ('ovirt-host', 'ovirt-node'):
+            self._host_vms.append(
+                super(OvirtVirtEnv, self)._create_vm(vm_spec)
+            )
             return self._host_vms[-1]
-        elif role == 'node':
-            self._host_vms.append(NodeVM(self, vm_spec))
-            return self._host_vms[-1]
+
         else:
-            return lago.virt.VM(self, vm_spec)
+            return super(OvirtVirtEnv, self)._create_vm(vm_spec)
 
     def engine_vm(self):
         return self._engine_vm
@@ -58,7 +73,7 @@ class OvirtVirtEnv(lago.virt.VirtEnv):
 
 
 # TODO : solve the problem of ssh to the Node
-class NodeVM(lago.virt.VM):
+class NodeVM(lago.vm.LocalLibvirtVM):
     def _artifact_paths(self):
         return []
 
@@ -69,7 +84,7 @@ class NodeVM(lago.virt.VM):
         return
 
 
-class EngineVM(lago.virt.VM):
+class EngineVM(lago.vm.LocalLibvirtVM):
     def __init__(self, *args, **kwargs):
         super(EngineVM, self).__init__(*args, **kwargs)
         self._api = None
@@ -146,7 +161,7 @@ class EngineVM(lago.virt.VM):
             raise RuntimeError('Failed to setup the engine')
 
 
-class HostVM(lago.virt.VM):
+class HostVM(lago.vm.LocalLibvirtVM):
     def _artifact_paths(self):
         inherited_artifacts = super(HostVM, self)._artifact_paths()
         if self.distro() not in ['fc22', 'fc23']:

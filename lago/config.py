@@ -31,6 +31,8 @@ DEFAULTS = {
     'default_root_password': '123456',
     'ssh_tries': '100',
     'ssh_timeout': '10',
+    'default_vm_provider': 'local_libvirt',
+    'libvirt_url': 'qemu:///system'
 }
 
 

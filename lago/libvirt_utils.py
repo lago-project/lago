@@ -34,6 +34,9 @@ DOMAIN_STATES = {
     libvirt.VIR_DOMAIN_PMSUSPENDED: 'suspended',
 }
 
+#: Singleton with the cached opened libvirt connections
+LIBVIRT_CONNECTIONS = {}
+
 
 class Domain(object):
     """
@@ -54,3 +57,10 @@ class Domain(object):
                 if the state is not in the known list
         """
         return DOMAIN_STATES.get(state_number[0], 'unknown')
+
+
+def get_libvirt_connection(name, libvirt_url='qemu://system'):
+    if name not in LIBVIRT_CONNECTIONS:
+        LIBVIRT_CONNECTIONS[name] = libvirt.open(libvirt_url)
+
+    return LIBVIRT_CONNECTIONS[name]

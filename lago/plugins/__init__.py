@@ -26,7 +26,17 @@ from stevedore import ExtensionManager
 PLUGIN_ENTRY_POINTS = {
     'cli': 'lago.plugins.cli',
     'out': 'lago.plugins.output',
+    'vm_service': 'lago.plugins.vm_service',
+    'vm_provider': 'lago.plugins.vm_provider',
 }
+
+
+class PluginError(Exception):
+    pass
+
+
+class NoSuchPluginError(PluginError):
+    pass
 
 
 class Plugin(object):
@@ -36,21 +46,26 @@ class Plugin(object):
     pass
 
 
-def load_plugins(namespace):
+def load_plugins(namespace, instantiate=True):
     """
     Loads all the plugins for the given namespace
 
     Args:
-        namespace (str): Namespace string, as in the setuptools entry_points
+        namespace(str): Namespace string, as in the setuptools entry_points
+        instantiate(bool): If true, will instantiate the plugins too
 
     Returns:
-        dict of str, object: Returns the list of loaded plugins already
-            instantiated
+        dict of str, object: Returns the list of loaded plugins
     """
     mgr = ExtensionManager(namespace=namespace, )
-    return dict(
-        (
-            ext.name, ext.plugin if isinstance(ext.plugin, Plugin) else
-            ext.plugin()
-        ) for ext in mgr
-    )
+    if instantiate:
+        plugins = dict(
+            (
+                ext.name, ext.plugin if isinstance(ext.plugin, Plugin) else
+                ext.plugin()
+            ) for ext in mgr
+        )
+    else:
+        plugins = dict((ext.name, ext.plugin) for ext in mgr)
+
+    return plugins
