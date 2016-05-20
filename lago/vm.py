@@ -6,15 +6,8 @@ import pwd
 import libvirt
 import guestfs
 
-from . import (
-    log_utils,
-    utils,
-    sysprep,
-    libvirt_utils,
-    config,
-)
+from . import (log_utils, utils, sysprep, libvirt_utils, config, )
 from .plugins import vm
-
 
 LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
@@ -29,64 +22,64 @@ def _check_defined(func):
     @functools.wraps(func)
     def wrapper(self, *args, **kwargs):
         if not self.defined():
-            raise RuntimeError('VM %s is not defined' % self.name())
+            raise RuntimeError('VM %s is not defined' % self.vm.name())
         return func(self, *args, **kwargs)
 
     return wrapper
 
 
-class LocalLibvirtVM(vm.VMPlugin):
-    def __init__(self, env, spec, *args, **kwargs):
-        super(LocalLibvirtVM, self).__init__(env, spec, *args, **kwargs)
+class DefaultVM(vm.VMPlugin):
+    pass
+
+
+class LocalLibvirtVMProvider(vm.VMProviderPlugin):
+    def __init__(self, vm):
+        super(LocalLibvirtVMProvider, self).__init__(vm)
         libvirt_url = config.get('libvirt_url')
         self.libvirt_con = libvirt_utils.get_libvirt_connection(
-            name=env.uuid + libvirt_url,
+            name=self.vm.virt_env.uuid + libvirt_url,
             libvirt_url=libvirt_url,
         )
 
     def start(self):
-        super(LocalLibvirtVM, self).start()
+        super(LocalLibvirtVMProvider, self).start()
         if not self.defined():
-            with LogTask('Starting VM %s' % self.name()):
+            with LogTask('Starting VM %s' % self.vm.name()):
                 self.libvirt_con.createXML(self._libvirt_xml())
 
     def stop(self):
-        super(LocalLibvirtVM, self).stop()
+        super(LocalLibvirtVMProvider, self).stop()
         if self.defined():
-            self._ssh_client = None
-            with LogTask('Destroying VM %s' % self.name()):
-                self.libvirt_con.lookupByName(
-                    self._libvirt_name(),
-                ).destroy()
+            self.vm._ssh_client = None
+            with LogTask('Destroying VM %s' % self.vm.name()):
+                self.libvirt_con.lookupByName(self._libvirt_name(), ).destroy()
 
     def defined(self):
-        dom_names = [
-            dom.name() for dom in self.libvirt_con.listAllDomains()
-        ]
+        dom_names = [dom.name() for dom in self.libvirt_con.listAllDomains()]
         return self._libvirt_name() in dom_names
 
     def bootstrap(self):
-        with LogTask('Bootstrapping %s' % self.name()):
-            if self._spec['disks'][0]['type'] != 'empty' and self._spec[
+        with LogTask('Bootstrapping %s' % self.vm.name()):
+            if self.vm._spec['disks'][0]['type'] != 'empty' and self.vm._spec[
                 'disks'
             ][0]['format'] != 'iso':
                 sysprep.sysprep(
-                    self._spec['disks'][0]['path'],
+                    self.vm._spec['disks'][0]['path'],
                     [
-                        sysprep.set_hostname(self.name()),
-                        sysprep.set_root_password(self.root_password()),
+                        sysprep.set_hostname(self.vm.name()),
+                        sysprep.set_root_password(self.vm.root_password()),
                         sysprep.add_ssh_key(
-                            self.virt_env.prefix.paths.ssh_id_rsa_pub(),
-                            with_restorecon_fix=(self.distro() == 'fc23'),
+                            self.vm.virt_env.prefix.paths.ssh_id_rsa_pub(),
+                            with_restorecon_fix=(self.vm.distro() == 'fc23'),
                         ),
-                        sysprep.set_iscsi_initiator_name(self.iscsi_name()),
+                        sysprep.set_iscsi_initiator_name(self.vm.iscsi_name()),
                         sysprep.set_selinux_mode('enforcing'),
                     ] + [
                         sysprep.config_net_interface_dhcp(
                             'eth%d' % index,
                             utils.ip_to_mac(nic['ip']),
                         )
-                        for index, nic in enumerate(self._spec['nics'])
+                        for index, nic in enumerate(self.vm._spec['nics'])
                         if 'ip' in nic
                     ],
                 )
@@ -102,31 +95,31 @@ class LocalLibvirtVM(vm.VMPlugin):
         if not self.defined():
             return 'down'
 
-        state = self.libvirt_con.lookupByName(
-            self._libvirt_name()
-        ).state()
+        state = self.libvirt_con.lookupByName(self._libvirt_name()).state()
         return libvirt_utils.Domain.resolve_state(state)
 
     def create_snapshot(self, name):
-        if self.alive():
+        if self.vm.alive():
             self._create_live_snapshot(name)
         else:
             self._create_dead_snapshot(name)
 
-        self.save()
+        self.vm.save()
 
     def revert_snapshot(self, name):
         try:
-            snap_info = self._spec['snapshots'][name]
+            snap_info = self.vm._spec['snapshots'][name]
         except KeyError:
-            raise RuntimeError('No snapshot %s for %s' % (name, self.name()))
+            raise RuntimeError(
+                'No snapshot %s for %s' % (name, self.vm.name())
+            )
 
-        with LogTask('Reverting %s to snapshot %s' % (self.name(), name)):
+        with LogTask('Reverting %s to snapshot %s' % (self.vm.name(), name)):
 
             was_defined = self.defined()
             if was_defined:
                 self.stop()
-            for disk, disk_template in zip(self._spec['disks'], snap_info):
+            for disk, disk_template in zip(self.vm._spec['disks'], snap_info):
                 os.unlink(os.path.expandvars(disk['path']))
                 ret, _, _ = utils.run_command(
                     [
@@ -147,44 +140,22 @@ class LocalLibvirtVM(vm.VMPlugin):
             if was_defined:
                 self.start()
 
-    def has_guest_agent(self):
-        try:
-            self.guest_agent()
-        except RuntimeError:
-            return False
-
-        return True
-
     def extract_paths(self, paths):
-        if self.alive() and self.ssh_reachable() and self.has_guest_agent():
+        if (
+            self.vm.alive() and self.vm.ssh_reachable()
+            and self.vm.has_guest_agent()
+        ):
             self._extract_paths_live(paths=paths)
-        elif not self.alive():
+        elif not self.vm.alive():
             self._extract_paths_dead(paths=paths)
         else:
-            super(LocalLibvirtVM, self).extract_paths(paths=paths)
+            super(LocalLibvirtVMProvider, self).extract_paths(paths=paths)
 
     @_check_defined
     def vnc_port(self):
         dom = self.libvirt_con.lookupByName(self._libvirt_name())
         dom_xml = lxml.etree.fromstring(dom.XMLDesc())
         return dom_xml.xpath('devices/graphics').pop().attrib['port']
-
-    def guest_agent(self):
-        if 'guest-agent' not in self._spec:
-            for possible_name in ('qemu-ga', 'qemu-guest-agent'):
-                try:
-                    if self.service(possible_name).exists():
-                        self._spec['guest-agent'] = possible_name
-                        self.save()
-                        break
-                except RuntimeError as err:
-                    raise RuntimeError(
-                        'Could not find guest agent service: %s' % err
-                    )
-            else:
-                raise RuntimeError('Could not find guest agent service')
-
-        return self.service(self._spec['guest-agent'])
 
     @_check_defined
     def interactive_console(self):
@@ -204,7 +175,7 @@ class LocalLibvirtVM(vm.VMPlugin):
         return utils.run_interactive_command(command=virsh_command, )
 
     def _libvirt_name(self):
-        return self.virt_env.prefixed_name(self.name())
+        return self.vm.virt_env.prefixed_name(self.vm.name())
 
     def _libvirt_xml(self):
         with open(_path_to_xml('dom_template.xml')) as xml_fd:
@@ -220,9 +191,9 @@ class LocalLibvirtVM(vm.VMPlugin):
 
         replacements = {
             '@NAME@': self._libvirt_name(),
-            '@VCPU@': self._spec.get('vcpu', 2),
-            '@CPU@': self._spec.get('cpu', 2),
-            '@MEM_SIZE@': self._spec.get('memory', 16 * 1024),
+            '@VCPU@': self.vm._spec.get('vcpu', 2),
+            '@CPU@': self.vm._spec.get('cpu', 2),
+            '@MEM_SIZE@': self.vm._spec.get('memory', 16 * 1024),
             '@QEMU_KVM@': qemu_kvm_path,
         }
 
@@ -235,7 +206,7 @@ class LocalLibvirtVM(vm.VMPlugin):
         disk = devices.xpath('disk')[0]
         devices.remove(disk)
 
-        for disk_order, dev_spec in enumerate(self._spec['disks']):
+        for disk_order, dev_spec in enumerate(self.vm._spec['disks']):
 
             # we have to make some adjustments
             # we use iso to indicate cdrom
@@ -284,12 +255,12 @@ class LocalLibvirtVM(vm.VMPlugin):
             )
             devices.append(disk)
 
-        for dev_spec in self._spec['nics']:
+        for dev_spec in self.vm._spec['nics']:
             interface = lxml.etree.Element('interface', type='network', )
             interface.append(
                 lxml.etree.Element(
                     'source',
-                    network=self.virt_env.prefixed_name(
+                    network=self.vm.virt_env.prefixed_name(
                         dev_spec['net'], max_length=15
                     ),
                 ),
@@ -310,13 +281,13 @@ class LocalLibvirtVM(vm.VMPlugin):
 
     def _create_live_snapshot(self, name):
         with LogTask(
-            'Creating live snapshot named %s for %s' % (name, self.name()),
+            'Creating live snapshot named %s for %s' % (name, self.vm.name()),
             level='debug',
         ):
 
-            self.wait_for_ssh()
-            self.guest_agent().start()
-            self.ssh('sync'.split(' '))
+            self.vm.wait_for_ssh()
+            self.vm.guest_agent().start()
+            self.vm.ssh('sync'.split(' '))
 
             dom = self.libvirt_con.lookupByName(self._libvirt_name())
             dom_xml = lxml.etree.fromstring(dom.XMLDesc())
@@ -344,7 +315,7 @@ class LocalLibvirtVM(vm.VMPlugin):
                 LOGGER.exception(
                     'Failed to create snapshot %s for %s',
                     name,
-                    self.name(),
+                    self.vm.name(),
                 )
                 raise
 
@@ -352,7 +323,7 @@ class LocalLibvirtVM(vm.VMPlugin):
             new_disks = lxml.etree.fromstring(
                 dom.XMLDesc()
             ).xpath('devices/disk')
-            for disk, xml_node in zip(self._spec['disks'], new_disks):
+            for disk, xml_node in zip(self.vm._spec['disks'], new_disks):
                 disk['path'] = xml_node.xpath('source')[0].attrib['file']
                 disk['format'] = 'qcow2'
                 snap_disk = disk.copy()
@@ -364,10 +335,10 @@ class LocalLibvirtVM(vm.VMPlugin):
                 snap_info.append(snap_disk)
 
             self._reclaim_disks()
-            self._spec['snapshots'][name] = snap_info
+            self.vm._spec['snapshots'][name] = snap_info
 
     def _extract_paths_live(self, paths):
-        self.guest_agent().start()
+        self.vm.guest_agent().start()
         dom = self.libvirt_con.lookupByName(self._libvirt_name())
         dom.fsFreeze()
         try:
@@ -376,8 +347,8 @@ class LocalLibvirtVM(vm.VMPlugin):
             dom.fsThaw()
 
     def _extract_paths_dead(self, paths):
-        disk_path = os.path.expandvars(self._spec['disks'][0]['path'])
-        disk_root_part = self._spec['disks'][0]['metadata'].get(
+        disk_path = os.path.expandvars(self.vm._spec['disks'][0]['path'])
+        disk_root_part = self.vm._spec['disks'][0]['metadata'].get(
             'root-partition',
             'root',
         )
@@ -402,7 +373,7 @@ class LocalLibvirtVM(vm.VMPlugin):
         for (guest_path, host_path) in paths:
             LOGGER.debug(
                 'Extracting guestfs://%s:%s to %s',
-                self.name(),
+                self.vm.name(),
                 host_path,
                 guest_path,
             )
@@ -412,7 +383,7 @@ class LocalLibvirtVM(vm.VMPlugin):
                 LOGGER.exception(
                     'Failed to copy %s from %s',
                     guest_path,
-                    self.name(),
+                    self.vm.name(),
                 )
         gfs_cli.shutdown()
         gfs_cli.close()
@@ -424,7 +395,7 @@ class LocalLibvirtVM(vm.VMPlugin):
             os.chmod(path, 0666)
 
     def _reclaim_disks(self):
-        for disk in self._spec['disks']:
+        for disk in self.vm._spec['disks']:
             self._reclaim_disk(disk['path'])
 
 

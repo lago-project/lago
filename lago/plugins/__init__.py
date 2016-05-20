@@ -26,6 +26,7 @@ from stevedore import ExtensionManager
 PLUGIN_ENTRY_POINTS = {
     'cli': 'lago.plugins.cli',
     'out': 'lago.plugins.output',
+    'vm': 'lago.plugins.vm',
     'vm_service': 'lago.plugins.vm_service',
     'vm_provider': 'lago.plugins.vm_provider',
 }

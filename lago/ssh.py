@@ -12,11 +12,7 @@ import logging
 
 import paramiko
 
-from . import (
-    config,
-    utils,
-    log_utils,
-)
+from . import (config, utils, log_utils, )
 
 LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
@@ -289,11 +285,7 @@ def get_ssh_client(
 
         start_time = time.time()
         while ssh_tries > 0:
-            LOGGER.debug(
-                'Still got %d tries for %s',
-                ssh_tries,
-                host_name,
-            )
+            LOGGER.debug('Still got %d tries for %s', ssh_tries, host_name, )
             client = paramiko.SSHClient()
             client.set_missing_host_key_policy(paramiko.AutoAddPolicy(), )
             try:

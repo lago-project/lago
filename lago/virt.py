@@ -26,14 +26,7 @@ import uuid
 
 import lxml.etree
 
-from . import (
-    config,
-    brctl,
-    utils,
-    log_utils,
-    plugins,
-    libvirt_utils,
-)
+from . import (config, brctl, utils, log_utils, plugins, libvirt_utils, )
 
 LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
@@ -84,8 +77,8 @@ class VirtEnv(object):
     '''
 
     def __init__(self, prefix, vm_specs, net_specs):
-        self.vm_providers = plugins.load_plugins(
-            plugins.PLUGIN_ENTRY_POINTS['vm_provider'],
+        self.vm_types = plugins.load_plugins(
+            plugins.PLUGIN_ENTRY_POINTS['vm'],
             instantiate=False,
         )
         self.prefix = prefix
@@ -115,11 +108,11 @@ class VirtEnv(object):
         return cls(self, net_spec)
 
     def _create_vm(self, vm_spec):
-        default_provider = config.get('default_vm_provider')
-        provider_name = vm_spec.get('vm_provider', default_provider)
-        provider = self.vm_providers.get(provider_name)
-        vm_spec['vm_provider'] = provider_name
-        return provider(self, vm_spec)
+        default_vm_type = config.get('default_vm_type')
+        vm_type_name = vm_spec.get('vm_type', default_vm_type)
+        vm_type = self.vm_types.get(vm_type_name)
+        vm_spec['vm_type'] = vm_type_name
+        return vm_type(self, vm_spec)
 
     def prefixed_name(self, unprefixed_name, max_length=0):
         """
@@ -344,9 +337,7 @@ class Network(object):
         return self._env.prefixed_name(self.name(), max_length=15)
 
     def alive(self):
-        net_names = [
-            net.name() for net in self.libvirt_con.listAllNetworks()
-        ]
+        net_names = [net.name() for net in self.libvirt_con.listAllNetworks()]
         return self._libvirt_name() in net_names
 
     def start(self):

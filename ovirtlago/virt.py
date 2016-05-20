@@ -25,10 +25,7 @@ import lago
 import lago.vm
 from ovirtsdk.infrastructure.errors import (RequestError, ConnectionError)
 
-from . import (
-    constants,
-    testlib,
-)
+from . import (constants, testlib, )
 
 
 class OvirtVirtEnv(lago.virt.VirtEnv):
@@ -73,7 +70,7 @@ class OvirtVirtEnv(lago.virt.VirtEnv):
 
 
 # TODO : solve the problem of ssh to the Node
-class NodeVM(lago.vm.LocalLibvirtVM):
+class NodeVM(lago.vm.DefaultVM):
     def _artifact_paths(self):
         return []
 
@@ -84,7 +81,7 @@ class NodeVM(lago.vm.LocalLibvirtVM):
         return
 
 
-class EngineVM(lago.vm.LocalLibvirtVM):
+class EngineVM(lago.vm.DefaultVM):
     def __init__(self, *args, **kwargs):
         super(EngineVM, self).__init__(*args, **kwargs)
         self._api = None
@@ -161,7 +158,7 @@ class EngineVM(lago.vm.LocalLibvirtVM):
             raise RuntimeError('Failed to setup the engine')
 
 
-class HostVM(lago.vm.LocalLibvirtVM):
+class HostVM(lago.vm.DefaultVM):
     def _artifact_paths(self):
         inherited_artifacts = super(HostVM, self)._artifact_paths()
         if self.distro() not in ['fc22', 'fc23']:
