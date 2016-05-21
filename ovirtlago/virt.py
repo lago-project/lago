@@ -20,10 +20,10 @@
 import os
 import warnings
 
-import ovirtsdk.api
 import lago
 import lago.config
 import lago.vm
+import ovirtsdk.api
 from ovirtsdk.infrastructure.errors import (RequestError, ConnectionError)
 
 from . import (constants, testlib, )

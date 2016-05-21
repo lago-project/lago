@@ -18,22 +18,22 @@
 # Refer to the README and COPYING files for full details of the license
 #
 import ConfigParser
-import glob
 import functools
+import glob
 import os
 
 _SYSTEM_CONFIG_DIR = '/etc/lago.d'
 _USER_CONFIG = os.path.join(os.path.expanduser('~'), '.lago')
 DEFAULTS = {
-    'log_level': 'debug',
-    'template_store': '/var/lib/lago/store',
-    'template_repos': '/var/lib/lago/repos',
     'default_root_password': '123456',
-    'ssh_tries': '100',
-    'ssh_timeout': '10',
-    'default_vm_type': 'default',
     'default_vm_provider': 'local-libvirt',
-    'libvirt_url': 'qemu:///system'
+    'default_vm_type': 'default',
+    'libvirt_url': 'qemu:///system',
+    'log_level': 'debug',
+    'ssh_timeout': '10',
+    'ssh_tries': '100',
+    'template_repos': '/var/lib/lago/repos',
+    'template_store': '/var/lib/lago/store',
 }
 
 
