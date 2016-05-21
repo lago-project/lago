@@ -41,7 +41,7 @@ class OvirtVirtEnv(lago.virt.VirtEnv):
         if role:
             warnings.warn(
                 'ovirt-role metadata entry will be soon deprecated, instead '
-                'you should use the vm_provider entry in the domain '
+                'you should use the vm-provider entry in the domain '
                 'definiton and set it no one of: ovirt-node, ovirt-engine, '
                 'ovirt-host'
             )
