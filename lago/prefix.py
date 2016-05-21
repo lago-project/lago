@@ -93,6 +93,7 @@ class Prefix(object):
         _virt_env (lago.virt.VirtEnv): Lazily loaded virtual env handler
         _metadata (dict): Lazily loaded metadata
     """
+    VIRT_ENV_CLASS = virt.VirtEnv
 
     def __init__(self, prefix):
         """
@@ -925,7 +926,7 @@ class Prefix(object):
             conf['domains'] = self._copy_deploy_scripts_for_hosts(
                 domains=conf['domains']
             )
-            self._virt_env = virt.VirtEnv(
+            self._virt_env = self.VIRT_ENV_CLASS(
                 prefix=self,
                 vm_specs=conf['domains'],
                 net_specs=conf['nets'],
@@ -1000,7 +1001,7 @@ class Prefix(object):
         Returns:
             lago.virt.VirtEnv: virt env created from this prefix
         """
-        return virt.VirtEnv.from_prefix(self)
+        return self.VIRT_ENV_CLASS.from_prefix(self)
 
     @property
     def virt_env(self):

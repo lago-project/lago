@@ -308,6 +308,8 @@ def _activate_all_storage_domains(api):
 
 
 class OvirtPrefix(Prefix):
+    VIRT_ENV_CLASS = virt.OvirtVirtEnv
+
     def __init__(self, *args, **kwargs):
         super(OvirtPrefix, self).__init__(*args, **kwargs)
         self.paths = paths.OvirtPaths(self._prefix)
