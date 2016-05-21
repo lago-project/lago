@@ -41,7 +41,7 @@ class OvirtVirtEnv(lago.virt.VirtEnv):
         if role:
             warnings.warn(
                 'ovirt-role metadata entry will be soon deprecated, instead '
-                'you should use the vm-provider entry in the domain '
+                'you should use the vm_provider entry in the domain '
                 'definiton and set it no one of: ovirt-node, ovirt-engine, '
                 'ovirt-host'
             )
@@ -53,10 +53,12 @@ class OvirtVirtEnv(lago.virt.VirtEnv):
             if self._engine_vm is not None:
                 raise RuntimeError('Engine VM already exists')
 
+            vm_spec['vm-type'] = provider_name
             self._engine_vm = super(OvirtVirtEnv, self)._create_vm(vm_spec)
             return self._engine_vm
 
         elif provider_name in ('ovirt-host', 'ovirt-node'):
+            vm_spec['vm-type'] = provider_name
             self._host_vms.append(
                 super(OvirtVirtEnv, self)._create_vm(vm_spec)
             )
