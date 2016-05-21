@@ -40,8 +40,8 @@ _test_prefix = None
 def get_test_prefix():
     global _test_prefix
     if _test_prefix is None:
-        workdir_path = ovirtlago.Workdir.resolve_workdir_path()
-        workdir = ovirtlago.OvirtWorkdir(path=workdir_path)
+        cur_workdir_path = os.environ.get('LAGO_WORKDIR_PATH', os.curdir)
+        workdir = ovirtlago.OvirtWorkdir(path=cur_workdir_path)
         _test_prefix = workdir.get_prefix('current')
     return _test_prefix
 
