@@ -109,9 +109,9 @@ class VirtEnv(object):
 
     def _create_vm(self, vm_spec):
         default_vm_type = config.get('default_vm_type')
-        vm_type_name = vm_spec.get('vm_type', default_vm_type)
+        vm_type_name = vm_spec.get('vm-type', default_vm_type)
         vm_type = self.vm_types.get(vm_type_name)
-        vm_spec['vm_type'] = vm_type_name
+        vm_spec['vm-type'] = vm_type_name
         return vm_type(self, vm_spec)
 
     def prefixed_name(self, unprefixed_name, max_length=0):

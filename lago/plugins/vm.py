@@ -139,12 +139,12 @@ class VMPlugin(plugins.Plugin):
 
         self._ssh_client = None
         self.service_providers = plugins.load_plugins(
-            namespace=plugins.PLUGIN_ENTRY_POINTS['vm_service'],
+            namespace=plugins.PLUGIN_ENTRY_POINTS['vm-service'],
             instantiate=False,
         )
         self._service_class = self._get_service_provider()
         self.vm_providers = plugins.load_plugins(
-            namespace=plugins.PLUGIN_ENTRY_POINTS['vm_provider'],
+            namespace=plugins.PLUGIN_ENTRY_POINTS['vm-provider'],
             instantiate=False,
         )
         self.provider = self._get_vm_provider()
@@ -340,9 +340,9 @@ class VMPlugin(plugins.Plugin):
 
     def _get_vm_provider(self):
         default_provider = config.get('default_vm_provider')
-        provider_name = self._spec.get('vm_provider', default_provider)
+        provider_name = self._spec.get('vm-provider', default_provider)
         provider = self.vm_providers.get(provider_name)
-        self._spec['vm_provider'] = provider_name
+        self._spec['vm-provider'] = provider_name
         return provider(vm=self)
 
     @classmethod
