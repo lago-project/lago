@@ -20,3 +20,5 @@ AUTHORS
 */*venv
 .bash*
 .cache*
+tags
+cscope.out
