@@ -45,6 +45,23 @@ Templates and storage
 The network
 ^^^^^^^^^^^
 
+In order to access the vms, and also allowing them to interact with
+each other and the internet, Lago offers two types of networks:
+
+- Nat
+   In Nat option, Lago will handle all the required configurations, this means:
+   
+   - Lago will choose the subnet of the network.
+   
+   - Lago will create a and configure a bridge that will forward packets to an from the vms and the host, and also from the vms to the internet.
+   
+   - Lago will open a DHCP server that will serve the environment.
+   
+   Note
+   	- Lago allows for the use of up to 10 Nat networks
+   	- You can reserve a specific ip address for each machine (Check out the spec file about the init file to know how)
+
+
 Lago allows for a creation of 10 different lans ranging from:
 192.168.200.x to 192.168.209.x
 The subnet will be automatically assigend to the virtual network
