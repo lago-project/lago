@@ -38,7 +38,10 @@ For EL distros (such as CentOS, RHEL, etc.)::
     enabled=1
     gpgcheck=0
 
-**TODO**: point to the release rpm once it's implemented, and use gpgcheck=1
+**TODO**: point to the lago release rpm once it's implemented, and use gpgcheck=1
+
+    You will need EPEL repo as well, you the following rpm to install the repos:
+    http://epel.mirrors.arminco.com/epel-release-latest-7.noarch.rpm
 
 Once you have them, install the following packages::
 
