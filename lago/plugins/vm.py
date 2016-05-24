@@ -17,6 +17,16 @@
 #
 # Refer to the README and COPYING files for full details of the license
 #
+"""
+VM Plugins
+============
+There are two VM-related plugin extension points, there's the
+`VM Type Plugin`_, that allows you to modify at a higher level the inner
+workings of the VM class (domain concept in the initfile).
+The other plugin extension point, the [VM Provider Plugin], that allows you to
+create an alternative implementation of the provisioning details for the VM,
+for example, using a remote libvirt instance or similar.
+"""
 import contextlib
 import functools
 import logging
@@ -55,7 +65,10 @@ class VMProviderPlugin(plugins.Plugin):
     If you want to use a custom provider for you VMs (say, ovirt for example),
     you have to inherit from this class, and then define the
     'default_vm_provider' in your config to be your plugin, or explicitly
-    specify it on each domain definition in the initfile with 'vm_provider' key
+    specify it on each domain definition in the initfile with 'vm-provider' key
+
+    You will have to override at least all the abstractmethods in order to
+    write a provider plugin, even if they are just runnig `pass`.
     """
 
     def __init__(self, vm):
@@ -63,40 +76,110 @@ class VMProviderPlugin(plugins.Plugin):
 
     @abstractmethod
     def start(self, *args, **kwargs):
+        """
+        Start a domain
+
+        Returns:
+            None
+        """
         pass
 
     @abstractmethod
     def stop(self, *args, **kwargs):
+        """
+        Stop a domain
+
+        Returns:
+            None
+        """
         pass
 
     @abstractmethod
     def defined(self, *args, **kwargs):
+        """
+        Return if the domain is defined (libvirt concept), currently used only
+        by the libvirt provider, put here to allow backwards compatibility.
+
+        Returns:
+            bool: True if the domain is already defined (libvirt concept)
+        """
         pass
 
     @abstractmethod
     def bootstrap(self, *args, **kwargs):
+        """
+        Does any actions needed to get the domain ready to be used, ran on
+        prefix init.
+
+        Return:
+            None
+        """
         pass
 
     @abstractmethod
     def state(self, *args, **kwargs):
+        """
+        Return the current state of the domain
+
+        Returns:
+            str: Small description of the current domain state
+        """
         pass
 
     @abstractmethod
     def create_snapshot(self, name, *args, **kwargs):
+        """
+        Take any actions needed to create a snapshot
+
+        Args:
+            name(str): Name for the snapshot, will be used as key to retrieve
+                it later
+
+        Returns:
+            None
+        """
         pass
 
     @abstractmethod
     def revert_snapshot(self, name, *args, **kwargs):
+        """
+        Take any actions needed to revert/restore a snapshot
+
+        Args:
+            name(str): Name for the snapshot, same that was set on creation
+
+        Returns:
+            None
+        """
         pass
 
     @abstractmethod
     def vnc_port(self, *args, **kwargs):
+        """
+        Retrieve the vnc port that was configured for the domain
+
+        Returns:
+            str: string representing the vnc port number (or a helpful message,
+                like 'no-vnc')
+        """
         pass
 
     def interactive_console(self):
+        """
+        Run an interactive console
+
+        Returns:
+            lago.utils.CommandStatus: resulf of the interactive execution
+        """
         return self.vm.interactive_ssh()
 
     def extract_paths(self, paths):
+        """
+        Extract the given paths from the domain
+
+        Args:
+            paths(list of str): paths to extract
+        """
         if self.vm.alive() and self.vm.ssh_reachable():
             self._extract_paths_scp(paths=paths)
         elif self.vm.alive():
@@ -123,7 +206,15 @@ class VMProviderPlugin(plugins.Plugin):
 
 class VMPlugin(plugins.Plugin):
     __metaclass__ = ABCMeta
-    '''VM properties:
+    '''
+    This class takes care of the high level abstraction for a VM (a domain in
+    the initfile lingo). From starting/stopping it to loading and calling the
+    provider if needed. If you want to change only the way the VM is
+    provisioned you can take a look to the `class:VMProviderPlugin` instead.
+
+    This base class includes also some basic methods implemented with ssh.
+
+    VM properties:
     * name
     * cpus
     * memory
@@ -150,33 +241,63 @@ class VMPlugin(plugins.Plugin):
         self.provider = self._get_vm_provider()
 
     def start(self, *args, **kwargs):
+        """
+        Thin method that just uses the provider
+        """
         return self.provider.start(*args, **kwargs)
 
     def stop(self, *args, **kwargs):
+        """
+        Thin method that just uses the provider
+        """
         return self.provider.stop(*args, **kwargs)
 
     def defined(self, *args, **kwargs):
+        """
+        Thin method that just uses the provider
+        """
         return self.provider.defined(*args, **kwargs)
 
     def bootstrap(self, *args, **kwargs):
+        """
+        Thin method that just uses the provider
+        """
         return self.provider.bootstrap(*args, **kwargs)
 
     def state(self, *args, **kwargs):
+        """
+        Thin method that just uses the provider
+        """
         return self.provider.state(*args, **kwargs)
 
     def create_snapshot(self, name, *args, **kwargs):
+        """
+        Thin method that just uses the provider
+        """
         return self.provider.create_snapshot(name, *args, **kwargs)
 
     def revert_snapshot(self, name, *args, **kwargs):
+        """
+        Thin method that just uses the provider
+        """
         return self.provider.revert_snapshot(name, *args, **kwargs)
 
     def interactive_console(self, *args, **kwargs):
+        """
+        Thin method that just uses the provider
+        """
         return self.provider.interactive_console(*args, **kwargs)
 
     def vnc_port(self, *args, **kwargs):
+        """
+        Thin method that just uses the provider
+        """
         return self.provider.vnc_port(*args, **kwargs)
 
     def extract_paths(self, paths, *args, **kwargs):
+        """
+        Thin method that just uses the provider
+        """
         return self.provider.extract_paths(paths, *args, **kwargs)
 
     def copy_to(self, local_path, remote_path):

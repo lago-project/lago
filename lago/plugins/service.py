@@ -17,6 +17,13 @@
 #
 # Refer to the README and COPYING files for full details of the license
 #
+"""
+Service Plugin
+=================
+
+This plugins are used in order to manage services in the vms
+
+"""
 from abc import (abstractmethod, abstractproperty, ABCMeta)
 
 from enum import Enum
@@ -25,6 +32,7 @@ from . import Plugin
 
 
 class ServiceState(Enum):
+    #: This state corresponds to a service that is not available in the domain
     MISSING = 0
     INACTIVE = 1
     ACTIVE = 2
@@ -39,18 +47,46 @@ class ServicePlugin(Plugin):
 
     @abstractmethod
     def state(self):
+        """
+        Check the current status of the service
+
+        Returns:
+            ServiceState: Which state the service is at right now
+        """
         pass
 
     @abstractmethod
     def _request_start(self):
+        """
+        Low level implementation of the service start request, used by the
+        `func:start` method
+
+        Returns:
+            bool: True if the service succeeded to start, False otherwise
+        """
         pass
 
     @abstractmethod
     def _request_stop(self):
+        """
+        Low level implementation of the service stop request, used by the
+        `func:stop` method
+
+        Returns:
+            bool: True if the service succeeded to stop, False otherwise
+        """
         pass
 
     @abstractproperty
     def BIN_PATH(self):
+        """
+        Path to the binary used to manage services in the vm, will be checked
+        for existence when trying to decide if the serviece is supported on the
+        VM (see `func:is_supported`).
+
+        Returns:
+            str: Full path to the binary insithe the domain
+        """
         pass
 
     def exists(self):
