@@ -1,5 +1,6 @@
 # not provided by pip
 #python-libguestfs
+enum
 dulwich
 flake8
 libvirt-python

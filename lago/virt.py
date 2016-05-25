@@ -17,38 +17,20 @@
 #
 # Refer to the README and COPYING files for full details of the license
 #
-import collections
-import contextlib
 import functools
 import hashlib
 import json
 import logging
 import os
-import pwd
-import socket
-import sys
-import time
 import uuid
 
-import guestfs
-import libvirt
 import lxml.etree
-import paramiko
-from scp import SCPClient
 
-import config
-import brctl
-import utils
-import sysprep
-from . import log_utils
-from . import libvirt_utils
+from . import (config, brctl, utils, log_utils, plugins, libvirt_utils, )
 
 LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
 log_task = functools.partial(log_utils.log_task, logger=LOGGER)
-
-#: Url to the libvirt daemon
-LIBVIRT_URL = 'qemu:///system'
 
 
 def _gen_ssh_command_id():
@@ -95,10 +77,14 @@ class VirtEnv(object):
     '''
 
     def __init__(self, prefix, vm_specs, net_specs):
+        self.vm_types = plugins.load_plugins(
+            plugins.PLUGIN_ENTRY_POINTS['vm'],
+            instantiate=False,
+        )
         self.prefix = prefix
 
-        with open(self.prefix.paths.uuid(), 'r') as f:
-            self._uuid = f.read().strip()
+        with open(self.prefix.paths.uuid(), 'r') as uuid_fd:
+            self.uuid = uuid_fd.read().strip()
 
         self._nets = {}
         for name, spec in net_specs.items():
@@ -108,7 +94,11 @@ class VirtEnv(object):
         for name, spec in vm_specs.items():
             self._vms[name] = self._create_vm(spec)
 
-        self._libvirt_con = None
+        libvirt_url = config.get('libvirt_url')
+        self.libvirt_con = libvirt_utils.get_libvirt_connection(
+            name=self.uuid + libvirt_url,
+            libvirt_url=libvirt_url,
+        )
 
     def _create_net(self, net_spec):
         if net_spec['type'] == 'nat':
@@ -118,7 +108,11 @@ class VirtEnv(object):
         return cls(self, net_spec)
 
     def _create_vm(self, vm_spec):
-        return VM(self, vm_spec)
+        default_vm_type = config.get('default_vm_type')
+        vm_type_name = vm_spec.get('vm-type', default_vm_type)
+        vm_type = self.vm_types.get(vm_type_name)
+        vm_spec['vm-type'] = vm_type_name
+        return vm_type(self, vm_spec)
 
     def prefixed_name(self, unprefixed_name, max_length=0):
         """
@@ -133,7 +127,7 @@ class VirtEnv(object):
             str: prefixed identifier for the given unprefixed name
         """
         if max_length == 0:
-            prefixed_name = '%s-%s' % (self._uuid[:8], unprefixed_name)
+            prefixed_name = '%s-%s' % (self.uuid[:8], unprefixed_name)
         else:
             if max_length < 6:
                 raise RuntimeError(
@@ -141,9 +135,9 @@ class VirtEnv(object):
                     unprefixed_name
                 )
             if max_length < 16:
-                _uuid = self._uuid[:4]
+                _uuid = self.uuid[:4]
             else:
-                _uuid = self._uuid[:8]
+                _uuid = self.uuid[:8]
 
             name_max_length = max_length - len(_uuid) - 1
 
@@ -160,12 +154,6 @@ class VirtEnv(object):
 
     def bootstrap(self):
         utils.invoke_in_parallel(lambda vm: vm.bootstrap(), self._vms.values())
-
-    @property
-    def libvirt_con(self):
-        if self._libvirt_con is None:
-            self._libvirt_con = libvirt.open(LIBVIRT_URL)
-        return self._libvirt_con
 
     def start(self, vm_names=None):
         if not vm_names:
@@ -316,6 +304,11 @@ class VirtEnv(object):
 class Network(object):
     def __init__(self, env, spec):
         self._env = env
+        libvirt_url = config.get('libvirt_url')
+        self.libvirt_con = libvirt_utils.get_libvirt_connection(
+            name=env.uuid + libvirt_url,
+            libvirt_url=libvirt_url,
+        )
         self._spec = spec
 
     def name(self):
@@ -344,20 +337,18 @@ class Network(object):
         return self._env.prefixed_name(self.name(), max_length=15)
 
     def alive(self):
-        net_names = [
-            net.name() for net in self._env.libvirt_con.listAllNetworks()
-        ]
+        net_names = [net.name() for net in self.libvirt_con.listAllNetworks()]
         return self._libvirt_name() in net_names
 
     def start(self):
         if not self.alive():
             with LogTask('Create network %s' % self.name()):
-                self._env.libvirt_con.networkCreateXML(self._libvirt_xml())
+                self.libvirt_con.networkCreateXML(self._libvirt_xml())
 
     def stop(self):
         if self.alive():
             with LogTask('Destroy network %s' % self.name()):
-                self._env.libvirt_con.networkLookupByName(
+                self.libvirt_con.networkLookupByName(
                     self._libvirt_name(),
                 ).destroy()
 
@@ -438,896 +429,3 @@ class BridgeNetwork(Network):
         super(BridgeNetwork, self).stop()
         if brctl.exists(self._libvirt_name()):
             brctl.destroy(self._libvirt_name())
-
-
-class ServiceState:
-    MISSING = 0
-    INACTIVE = 1
-    ACTIVE = 2
-
-
-class _Service:
-    def __init__(self, vm, name):
-        self._vm = vm
-        self._name = name
-
-    def exists(self):
-        return self.state() != ServiceState.MISSING
-
-    def alive(self):
-        return self.state() == ServiceState.ACTIVE
-
-    def start(self):
-        state = self.state()
-        if state == ServiceState.MISSING:
-            raise RuntimeError('Service %s not present' % self._name)
-        elif state == ServiceState.ACTIVE:
-            return
-
-        if self._request_start():
-            raise RuntimeError('Failed to start service')
-
-    def stop(self):
-        state = self.state()
-        if state == ServiceState.MISSING:
-            raise RuntimeError('Service %s not present' % self._name)
-        elif state == ServiceState.INACTIVE:
-            return
-
-        if self._request_stop():
-            raise RuntimeError('Failed to stop service')
-
-    @classmethod
-    def is_supported(cls, vm):
-        return vm.ssh(['test', '-e', cls.BIN_PATH]).code == 0
-
-
-class _SystemdService(_Service):
-    BIN_PATH = '/usr/bin/systemctl'
-
-    def _request_start(self):
-        return self._vm.ssh([self.BIN_PATH, 'start', self._name])
-
-    def _request_stop(self):
-        return self._vm.ssh([self.BIN_PATH, 'stop', self._name])
-
-    def state(self):
-        ret = self._vm.ssh([self.BIN_PATH, 'status --lines=0', self._name])
-        if not ret:
-            return ServiceState.ACTIVE
-
-        lines = [l.strip() for l in ret.out.split('\n')]
-        loaded = [l for l in lines if l.startswith('Loaded:')].pop()
-
-        if loaded.split()[1] == 'loaded':
-            return ServiceState.INACTIVE
-
-        return ServiceState.MISSING
-
-
-class _SysVInitService(_Service):
-    BIN_PATH = '/sbin/service'
-
-    def _request_start(self):
-        return self._vm.ssh([self.BIN_PATH, self._name, 'start'])
-
-    def _request_stop(self):
-        return self._vm.ssh([self.BIN_PATH, self._name, 'stop'])
-
-    def state(self):
-        ret = self._vm.ssh([self.BIN_PATH, self._name, 'status'])
-
-        if ret.code == 0:
-            return ServiceState.ACTIVE
-
-        if ret.out.strip().endswith('is stopped'):
-            return ServiceState.INACTIVE
-
-        return ServiceState.MISSING
-
-
-class _SystemdContainerService(_Service):
-    BIN_PATH = '/usr/bin/docker'
-    HOST_BIN_PATH = '/usr/bin/systemctl'
-
-    def _request_start(self):
-        ret = self._vm.ssh(
-            [self.BIN_PATH, 'exec vdsmc systemctl start', self._name]
-        )
-
-        if ret.code == 0:
-            return ret
-
-        return self._vm.ssh([self.HOST_BIN_PATH, 'start', self._name])
-
-    def _request_stop(self):
-        ret = self._vm.ssh(
-            [self.BIN_PATH, 'exec vdsmc systemctl stop', self._name]
-        )
-
-        if ret.code == 0:
-            return ret
-
-        return self._vm.ssh([self.HOST_BIN_PATH, 'stop', self._name])
-
-    def state(self):
-        ret = self._vm.ssh(
-            [
-                self.BIN_PATH, 'exec vdsmc systemctl status --lines=0',
-                self._name
-            ]
-        )
-        if ret.code == 0:
-            return ServiceState.ACTIVE
-
-        lines = [l.strip() for l in ret.out.split('\n')]
-        loaded = [l for l in lines if l.startswith('Loaded:')].pop()
-
-        if loaded.split()[1] == 'loaded':
-            return ServiceState.INACTIVE
-
-        ret = self._vm.ssh([self.HOST_BIN_PATH, 'status', self._name])
-        if ret.code == 0:
-            return ServiceState.ACTIVE
-
-        lines = [l.strip() for l in ret.out.split('\n')]
-        loaded = [l for l in lines if l.startswith('Loaded:')].pop()
-
-        if loaded.split()[1] == 'loaded':
-            return ServiceState.INACTIVE
-
-        return ServiceState.MISSING
-
-
-_SERVICE_WRAPPERS = collections.OrderedDict()
-_SERVICE_WRAPPERS['systemd_container'] = _SystemdContainerService
-_SERVICE_WRAPPERS['systemd'] = _SystemdService
-_SERVICE_WRAPPERS['sysvinit'] = _SysVInitService
-
-
-class VM(object):
-    '''VM properties:
-    * name
-    * cpus
-    * memory
-    * disks
-    * metadata
-    * network/mac addr
-    '''
-
-    def __init__(self, env, spec):
-        self._env = env
-        self._spec = self._normalize_spec(spec.copy())
-
-        self._service_class = _SERVICE_WRAPPERS.get(
-            self._spec.get('service_class', None),
-            None,
-        )
-        self._ssh_client = None
-
-    def virt_env(self):
-        return self._env
-
-    @classmethod
-    def _normalize_spec(cls, spec):
-        spec['snapshots'] = spec.get('snapshots', {})
-        spec['metadata'] = spec.get('metadata', {})
-
-        if 'root-password' not in spec:
-            spec['root-password'] = config.get('default_root_password')
-
-        return spec
-
-    def _open_ssh_client(self):
-        while self._ssh_client is None:
-            try:
-                client = paramiko.SSHClient()
-                client.set_missing_host_key_policy(paramiko.AutoAddPolicy(), )
-                client.connect(
-                    self.ip(),
-                    username='root',
-                    key_filename=self._env.prefix.paths.ssh_id_rsa(),
-                    timeout=1,
-                )
-                return client
-            except socket.error:
-                pass
-            except socket.timeout:
-                pass
-
-    def _check_defined(func):
-        @functools.wraps(func)
-        def wrapper(self, *args, **kwargs):
-            if not self.defined():
-                raise RuntimeError('VM %s is not defined' % self.name())
-            return func(self, *args, **kwargs)
-
-        return wrapper
-
-    def _check_alive(func):
-        @functools.wraps(func)
-        def wrapper(self, *args, **kwargs):
-            if not self.alive():
-                raise RuntimeError('VM %s is not running' % self.name())
-            return func(self, *args, **kwargs)
-
-        return wrapper
-
-    @_check_alive
-    def _get_ssh_client(self, ssh_tries=None, propagate_fail=True):
-        with LogTask(
-            'Get ssh client for %s' % self.name(),
-            level='debug',
-            propagate_fail=propagate_fail,
-        ):
-            ssh_timeout = int(config.get('ssh_timeout'))
-            if ssh_tries is None:
-                ssh_tries = int(config.get('ssh_tries'))
-
-            start_time = time.time()
-            while ssh_tries > 0:
-                LOGGER.debug(
-                    'Still got %d tries for %s',
-                    ssh_tries,
-                    self.name(),
-                )
-                client = paramiko.SSHClient()
-                client.set_missing_host_key_policy(paramiko.AutoAddPolicy(), )
-                try:
-                    client.connect(
-                        self.ip(),
-                        username='root',
-                        key_filename=self._env.prefix.paths.ssh_id_rsa(),
-                        timeout=ssh_timeout,
-                    )
-                    break
-                except (socket.error, socket.timeout) as err:
-                    LOGGER.debug(
-                        'Socket error connecting to %s: %s',
-                        self.name(),
-                        err,
-                    )
-                    pass
-                except paramiko.ssh_exception.SSHException as err:
-                    LOGGER.debug(
-                        'SSH error connecting to %s: %s',
-                        self.name(),
-                        err,
-                    )
-                    pass
-
-                ssh_tries -= 1
-                time.sleep(1)
-            else:
-                end_time = time.time()
-                raise RuntimeError(
-                    'Timed out (in %d s) trying to ssh to %s' %
-                    (end_time - start_time, self.name())
-                )
-
-        return client
-
-    def ssh(
-        self,
-        command,
-        data=None,
-        show_output=True,
-        propagate_fail=True,
-        tries=None,
-    ):
-        if not self.alive():
-            raise RuntimeError('Attempt to ssh into a not running host')
-
-        client = self._get_ssh_client(
-            propagate_fail=propagate_fail,
-            ssh_tries=tries,
-        )
-        transport = client.get_transport()
-        channel = transport.open_session()
-
-        joined_command = ' '.join(command)
-        command_id = _gen_ssh_command_id()
-        LOGGER.debug(
-            'Running %s on %s: %s%s',
-            command_id,
-            self.name(),
-            joined_command,
-            data is not None and (' < "%s"' % data) or '',
-        )
-
-        channel.exec_command(joined_command)
-        if data is not None:
-            channel.send(data)
-
-        channel.shutdown_write()
-        rc, out, err = utils.drain_ssh_channel(
-            channel, **(
-                show_output and {} or {
-                    'stdout': None,
-                    'stderr': None
-                }
-            )
-        )
-
-        channel.close()
-        transport.close()
-        client.close()
-
-        LOGGER.debug(
-            'Command %s on %s returned with %d',
-            command_id,
-            self.name(),
-            rc,
-        )
-
-        if out:
-            LOGGER.debug(
-                'Command %s on %s output:\n %s',
-                command_id,
-                self.name(),
-                out,
-            )
-        if err:
-            LOGGER.debug(
-                'Command %s on %s  errors:\n %s',
-                command_id,
-                self.name(),
-                err,
-            )
-        return utils.CommandStatus(rc, out, err)
-
-    def wait_for_ssh(self):
-        connect_retries = self._spec.get('boot_time_sec', 50)
-        while connect_retries:
-            try:
-                ret, _, _ = self.ssh(['true'], tries=1, propagate_fail=False)
-            except Exception as err:
-                ret = -1
-                sys.exc_clear()
-                LOGGER.debug(
-                    'Got exception while sshing to %s: %s',
-                    self.name(),
-                    err,
-                )
-
-            if ret == 0:
-                break
-            connect_retries -= 1
-            time.sleep(1)
-        else:
-            # Try one last time, using the ssh default timeout values, as we
-            # already waited for boot_time_sec for sure
-            ret, _, _ = self.ssh(['true'])
-            if ret != 0:
-                raise RuntimeError(
-                    'Failed to connect remote shell to %s',
-                    self.name(),
-                )
-
-        LOGGER.debug('Wait succeeded for ssh to %s', self.name())
-
-    def ssh_script(self, path, show_output=True):
-        with open(path) as f:
-            return self.ssh(
-                ['bash', '-s'],
-                data=f.read(),
-                show_output=show_output
-            )
-
-    @contextlib.contextmanager
-    def _scp(self):
-        client = self._get_ssh_client()
-        scp = SCPClient(client.get_transport())
-        try:
-            yield scp
-        finally:
-            client.close()
-
-    def copy_to(self, local_path, remote_path):
-        with LogTask(
-            'Copy %s to %s:%s' % (local_path, self.name(), remote_path),
-        ):
-            with self._scp() as scp:
-                scp.put(local_path, remote_path)
-
-    def copy_from(self, remote_path, local_path, recursive=True):
-        with self._scp() as scp:
-            scp.get(
-                recursive=recursive,
-                remote_path=remote_path,
-                local_path=local_path,
-            )
-
-    @property
-    def metadata(self):
-        return self._spec['metadata'].copy()
-
-    def name(self):
-        return str(self._spec['name'])
-
-    def iscsi_name(self):
-        return 'iqn.2014-07.org.lago:%s' % self.name()
-
-    def ip(self):
-        return str(self._env.get_net().resolve(self.name()))
-
-    def _libvirt_name(self):
-        return self._env.prefixed_name(self.name())
-
-    def _libvirt_xml(self):
-        with open(_path_to_xml('dom_template.xml')) as f:
-            dom_raw_xml = f.read()
-
-        qemu_kvm_path = [
-            path
-            for path in [
-                '/usr/libexec/qemu-kvm',
-                '/usr/bin/qemu-kvm',
-            ] if os.path.exists(path)
-        ].pop()
-
-        replacements = {
-            '@NAME@': self._libvirt_name(),
-            '@VCPU@': self._spec.get('vcpu', 2),
-            '@CPU@': self._spec.get('cpu', 2),
-            '@MEM_SIZE@': self._spec.get('memory', 16 * 1024),
-            '@QEMU_KVM@': qemu_kvm_path,
-        }
-
-        for k, v in replacements.items():
-            dom_raw_xml = dom_raw_xml.replace(k, str(v), 1)
-
-        dom_xml = lxml.etree.fromstring(dom_raw_xml)
-        devices = dom_xml.xpath('/domain/devices')[0]
-
-        disk = devices.xpath('disk')[0]
-        devices.remove(disk)
-
-        for disk_order, dev_spec in enumerate(self._spec['disks']):
-
-            # we have to make some adjustments
-            # we use iso to indicate cdrom
-            # but the ilbvirt wants it named raw
-            # and we need to use cdrom device
-            disk_device = 'disk'
-            bus = 'virtio'
-            if dev_spec['format'] == 'iso':
-                disk_device = 'cdrom'
-                dev_spec['format'] = 'raw'
-                bus = 'ide'
-            # names converted
-
-            disk = lxml.etree.Element(
-                'disk',
-                type='file',
-                device=disk_device,
-            )
-
-            disk.append(
-                lxml.etree.Element(
-                    'driver',
-                    name='qemu',
-                    type=dev_spec['format'],
-                ),
-            )
-
-            disk.append(
-                lxml.etree.Element(
-                    'boot', order="{}".format(disk_order + 1)
-                ),
-            )
-
-            disk.append(
-                lxml.etree.Element(
-                    'source',
-                    file=os.path.expandvars(dev_spec['path']),
-                ),
-            )
-            disk.append(
-                lxml.etree.Element(
-                    'target',
-                    dev=dev_spec['dev'],
-                    bus=bus,
-                ),
-            )
-            devices.append(disk)
-
-        for dev_spec in self._spec['nics']:
-            interface = lxml.etree.Element('interface', type='network', )
-            interface.append(
-                lxml.etree.Element(
-                    'source',
-                    network=self._env.prefixed_name(
-                        dev_spec['net'], max_length=15
-                    ),
-                ),
-            )
-            interface.append(lxml.etree.Element('model', type='virtio', ), )
-            if 'ip' in dev_spec:
-                interface.append(
-                    lxml.etree.Element(
-                        'mac', address=_ip_to_mac(dev_spec['ip'])
-                    ),
-                )
-            devices.append(interface)
-
-        return lxml.etree.tostring(dom_xml)
-
-    def start(self):
-        if not self.defined():
-            with LogTask('Starting VM %s' % self.name()):
-                self._env.libvirt_con.createXML(self._libvirt_xml())
-
-    def stop(self):
-        if self.defined():
-            self._ssh_client = None
-            with LogTask('Destroying VM %s' % self.name()):
-                self._env.libvirt_con.lookupByName(
-                    self._libvirt_name(),
-                ).destroy()
-
-    def alive(self):
-        return self.state() == 'running'
-
-    def defined(self):
-        dom_names = [
-            dom.name() for dom in self._env.libvirt_con.listAllDomains()
-        ]
-        return self._libvirt_name() in dom_names
-
-    def create_snapshot(self, name):
-        if self.alive():
-            self._create_live_snapshot(name)
-        else:
-            self._create_dead_snapshot(name)
-
-        self.save()
-
-    def _create_dead_snapshot(self, name):
-        raise RuntimeError('Dead snapshots are not implemented yet')
-
-    def _create_live_snapshot(self, name):
-        with LogTask(
-            'Creating live snapshot named %s for %s' % (name, self.name()),
-            level='debug',
-        ):
-
-            self.wait_for_ssh()
-            self.guest_agent().start()
-            self.ssh('sync'.split(' '))
-
-            dom = self._env.libvirt_con.lookupByName(self._libvirt_name())
-            dom_xml = lxml.etree.fromstring(dom.XMLDesc())
-            disks = dom_xml.xpath('devices/disk')
-
-            with open(_path_to_xml('snapshot_template.xml')) as f:
-                snapshot_xml = lxml.etree.fromstring(f.read())
-            snapshot_disks = snapshot_xml.xpath('disks')[0]
-
-            for disk in disks:
-                target_dev = disk.xpath('target')[0].attrib['dev']
-                snapshot_disks.append(
-                    lxml.etree.Element(
-                        'disk', name=target_dev
-                    )
-                )
-
-            try:
-                dom.snapshotCreateXML(
-                    lxml.etree.tostring(snapshot_xml),
-                    libvirt.VIR_DOMAIN_SNAPSHOT_CREATE_DISK_ONLY |
-                    libvirt.VIR_DOMAIN_SNAPSHOT_CREATE_QUIESCE,
-                )
-            except libvirt.libvirtError:
-                LOGGER.exception(
-                    'Failed to create snapshot %s for %s',
-                    name,
-                    self.name(),
-                )
-                raise
-
-            snap_info = []
-            new_disks = lxml.etree.fromstring(
-                dom.XMLDesc()
-            ).xpath('devices/disk')
-            for disk, xml_node in zip(self._spec['disks'], new_disks):
-                disk['path'] = xml_node.xpath('source')[0].attrib['file']
-                disk['format'] = 'qcow2'
-                snap_disk = disk.copy()
-                snap_disk['path'] = xml_node.xpath(
-                    'backingStore',
-                )[0].xpath(
-                    'source',
-                )[0].attrib['file']
-                snap_info.append(snap_disk)
-
-            self._reclaim_disks()
-            self._spec['snapshots'][name] = snap_info
-
-    def revert_snapshot(self, name):
-        try:
-            snap_info = self._spec['snapshots'][name]
-        except KeyError:
-            raise RuntimeError('No snapshot %s for %s' % (name, self.name()))
-
-        with LogTask('Reverting %s to snapshot %s' % (self.name(), name)):
-
-            was_defined = self.defined()
-            if was_defined:
-                self.stop()
-            for disk, disk_template in zip(self._spec['disks'], snap_info):
-                os.unlink(os.path.expandvars(disk['path']))
-                ret, _, _ = utils.run_command(
-                    [
-                        'qemu-img',
-                        'create',
-                        '-f',
-                        'qcow2',
-                        '-b',
-                        disk_template['path'],
-                        disk['path'],
-                    ],
-                    cwd=os.path.dirname(os.path.expandvars(disk['path'])),
-                )
-                if ret != 0:
-                    raise RuntimeError('Failed to revert disk')
-
-            self._reclaim_disks()
-            if was_defined:
-                self.start()
-
-    def _extract_paths_scp(self, paths):
-        for host_path, guest_path in paths:
-            LOGGER.debug(
-                'Extracting scp://%s:%s to %s',
-                self.name(),
-                host_path,
-                guest_path,
-            )
-            self.copy_from(local_path=guest_path, remote_path=host_path)
-
-    def _extract_paths_live(self, paths):
-        self.guest_agent().start()
-        dom = self._env.libvirt_con.lookupByName(self._libvirt_name())
-        dom.fsFreeze()
-        try:
-            self._extract_paths_dead(paths=paths)
-        finally:
-            dom.fsThaw()
-
-    def _extract_paths_dead(self, paths):
-        disk_path = os.path.expandvars(self._spec['disks'][0]['path'])
-        disk_root_part = self._spec['disks'][0]['metadata'].get(
-            'root-partition',
-            'root',
-        )
-
-        gfs_cli = guestfs.GuestFS(python_return_dict=True)
-        gfs_cli.add_drive_opts(disk_path, format='qcow2', readonly=1)
-        gfs_cli.set_backend('direct')
-        gfs_cli.launch()
-        rootfs = [
-            filesystem
-            for filesystem in gfs_cli.list_filesystems()
-            if disk_root_part in filesystem
-        ]
-        if not rootfs:
-            raise RuntimeError(
-                'No root fs (%s) could be found for %s form list %s' %
-                (disk_root_part, disk_path, str(gfs_cli.list_filesystems()))
-            )
-        else:
-            rootfs = rootfs[0]
-        gfs_cli.mount_ro(rootfs, '/')
-        for (guest_path, host_path) in paths:
-            LOGGER.debug(
-                'Extracting guestfs://%s:%s to %s',
-                self.name(),
-                host_path,
-                guest_path,
-            )
-            try:
-                _guestfs_copy_path(gfs_cli, guest_path, host_path)
-            except Exception:
-                LOGGER.exception(
-                    'Failed to copy %s from %s',
-                    guest_path,
-                    self.name(),
-                )
-        gfs_cli.shutdown()
-        gfs_cli.close()
-
-    def has_guest_agent(self):
-        try:
-            self.guest_agent()
-        except RuntimeError:
-            return False
-
-        return True
-
-    def ssh_reachable(self):
-        try:
-            self._get_ssh_client()
-        except RuntimeError:
-            return False
-
-        return True
-
-    def extract_paths(self, paths):
-        if self.alive() and self.ssh_reachable() and self.has_guest_agent():
-            self._extract_paths_live(paths=paths)
-        elif self.alive() and self.ssh_reachable():
-            self._extract_paths_scp(paths=paths)
-        elif self.alive():
-            raise RuntimeError(
-                'Unable to extract logs from alive but unreachable host %s. '
-                'Try stopping it first' % self.name()
-            )
-        else:
-            self._extract_paths_dead(paths=paths)
-
-    def save(self, path=None):
-        if path is None:
-            path = self._env.virt_path('vm-%s' % self.name())
-
-        dst_dir = os.path.dirname(path)
-        if not os.path.exists(dst_dir):
-            os.makedirs(dst_dir)
-
-        with open(path, 'w') as f:
-            utils.json_dump(self._spec, f)
-
-    def bootstrap(self):
-        with LogTask('Bootstrapping %s' % self.name()):
-            if self._spec['disks'][0]['type'] != 'empty' and self._spec[
-                'disks'
-            ][0]['format'] != 'iso':
-                sysprep.sysprep(
-                    self._spec['disks'][0]['path'],
-                    [
-                        sysprep.set_hostname(self.name()),
-                        sysprep.set_root_password(self.root_password()),
-                        sysprep.add_ssh_key(
-                            self._env.prefix.paths.ssh_id_rsa_pub(),
-                            with_restorecon_fix=(self.distro() == 'fc23'),
-                        ),
-                        sysprep.set_iscsi_initiator_name(self.iscsi_name()),
-                        sysprep.set_selinux_mode('enforcing'),
-                    ] + [
-                        sysprep.config_net_interface_dhcp(
-                            'eth%d' % index,
-                            _ip_to_mac(nic['ip']),
-                        )
-                        for index, nic in enumerate(self._spec['nics'])
-                        if 'ip' in nic
-                    ],
-                )
-
-    def _reclaim_disk(self, path):
-        if pwd.getpwuid(os.stat(path).st_uid).pw_name == 'qemu':
-            utils.run_command(['sudo', '-u', 'qemu', 'chmod', 'a+rw', path])
-        else:
-            os.chmod(path, 0666)
-
-    def _reclaim_disks(self):
-        for disk in self._spec['disks']:
-            self._reclaim_disk(disk['path'])
-
-    @_check_defined
-    def vnc_port(self):
-        dom = self._env.libvirt_con.lookupByName(self._libvirt_name())
-        dom_xml = lxml.etree.fromstring(dom.XMLDesc())
-        return dom_xml.xpath('devices/graphics').pop().attrib['port']
-
-    def _detect_service_manager(self):
-        LOGGER.debug('Detecting service manager for %s', self.name())
-        for manager_name, service_class in _SERVICE_WRAPPERS.items():
-            if service_class.is_supported(self):
-                LOGGER.debug(
-                    'Setting %s as service manager for %s',
-                    manager_name,
-                    self.name(),
-                )
-                self._service_class = service_class
-                self._spec['service_class'] = manager_name
-                self.save()
-                return
-
-        raise RuntimeError('No service manager detected for %s' % self.name())
-
-    @_check_alive
-    def service(self, name):
-        if self._service_class is None:
-            self._detect_service_manager()
-
-        return self._service_class(self, name)
-
-    def guest_agent(self):
-        if 'guest-agent' not in self._spec:
-            for possible_name in ('qemu-ga', 'qemu-guest-agent'):
-                try:
-                    if self.service(possible_name).exists():
-                        self._spec['guest-agent'] = possible_name
-                        self.save()
-                        break
-                except RuntimeError as err:
-                    raise RuntimeError(
-                        'Could not find guest agent service: %s' % err
-                    )
-            else:
-                raise RuntimeError('Could not find guest agent service')
-
-        return self.service(self._spec['guest-agent'])
-
-    @_check_alive
-    def interactive_ssh(self, command):
-        client = self._get_ssh_client()
-        transport = client.get_transport()
-        channel = transport.open_session()
-        try:
-            return utils.interactive_ssh_channel(channel, ' '.join(command))
-        finally:
-            channel.close()
-            transport.close()
-            client.close()
-
-    @_check_defined
-    def interactive_console(self):
-        """
-        Opens an interactive console
-
-        Returns:
-            lago.utils.CommandStatus: result of the virsh command execution
-        """
-        virsh_command = [
-            "virsh",
-            "-c",
-            LIBVIRT_URL,
-            "console",
-            self._libvirt_name(),
-        ]
-        return utils.run_interactive_command(command=virsh_command, )
-
-    def nics(self):
-        return self._spec['nics'][:]
-
-    def nets(self):
-        return [nic['net'] for nic in self._spec['nics']]
-
-    def _template_metadata(self):
-        return self._spec['disks'][0].get('metadata', {})
-
-    def distro(self):
-        return self._template_metadata().get('distro', None)
-
-    def root_password(self):
-        return self._spec['root-password']
-
-    def state(self):
-        """
-        Return a small description of the current status of the domain
-
-        Returns:
-            str: small description of the domain status, 'down' if it's not
-            defined at all.
-        """
-        if not self.defined():
-            return 'down'
-
-        state = self._env.libvirt_con.lookupByName(
-            self._libvirt_name()
-        ).state()
-        return libvirt_utils.Domain.resolve_state(state)
-
-    def _artifact_paths(self):
-        return self._spec.get('artifacts', [])
-
-    def collect_artifacts(self, host_path):
-        self.extract_paths(
-            [
-                (
-                    guest_path,
-                    os.path.join(host_path, guest_path.replace('/', '_')),
-                ) for guest_path in self._artifact_paths()
-            ]
-        )

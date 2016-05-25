@@ -14,8 +14,8 @@
 
 import os
 import shutil
-import sys
 import subprocess
+import sys
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
@@ -46,6 +46,7 @@ shutil.move('../ChangeLog', '_static/ChangeLog.txt')
 # Mock all the modules that are included by lago, so autoimport works as
 # expected with no need to download them (some are not in pip even)
 autodoc_mock_imports = [
+    'enum',
     'guestfs',
     'libvirt',
     'lockfile',

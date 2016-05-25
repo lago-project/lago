@@ -12,17 +12,17 @@ common-host-settings: &common-host-settings
 domains:
   lago_functional_tests_host:
       <<: *common-host-settings
+      vm-type: ovirt-host
       metadata:
-        ovirt-scripts:
+        deploy-scripts:
           - scripts/generate_host_logs.sh
-        ovirt-role: host
 
   lago_functional_tests_engine:
       <<: *common-host-settings
+      vm-type: ovirt-engine
       metadata:
-        ovirt-scripts:
+        deploy-scripts:
           - scripts/generate_engine_logs.sh
-        ovirt-role: engine
 
 nets:
   lago_functional_tests:

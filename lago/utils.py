@@ -18,7 +18,6 @@
 # Refer to the README and COPYING files for full details of the license
 #
 import Queue
-import array
 import collections
 import datetime
 import fcntl
@@ -26,21 +25,17 @@ import functools
 import json
 import logging
 import os
-import select
 import shutil
 import signal
-import socket
 import subprocess
 import sys
-import termios
 import threading
 import time
-import tty
 import yaml
 
 import lockfile
 
-import constants
+from . import constants
 from .log_utils import (LogTask, setup_prefix_logging)
 
 LOGGER = logging.getLogger(__name__)
@@ -393,108 +388,17 @@ class LockFile(object):
         self.lock.release()
 
 
-def _read_nonblocking(f):
-    oldfl = fcntl.fcntl(f.fileno(), fcntl.F_GETFL)
+def read_nonblocking(file_descriptor):
+    oldfl = fcntl.fcntl(file_descriptor.fileno(), fcntl.F_GETFL)
     try:
-        fcntl.fcntl(f.fileno(), fcntl.F_SETFL, oldfl | os.O_NONBLOCK)
-        return f.read()
+        fcntl.fcntl(
+            file_descriptor.fileno(),
+            fcntl.F_SETFL,
+            oldfl | os.O_NONBLOCK,
+        )
+        return file_descriptor.read()
     finally:
-        fcntl.fcntl(f.fileno(), fcntl.F_SETFL, oldfl)
-
-
-def drain_ssh_channel(chan, stdin=None, stdout=sys.stdout, stderr=sys.stderr):
-    chan.settimeout(0)
-    out_queue = []
-    out_all = []
-    err_queue = []
-    err_all = []
-
-    try:
-        stdout_is_tty = stdout.isatty()
-        tty_w = tty_h = -1
-    except AttributeError:
-        stdout_is_tty = False
-
-    done = False
-    while not done:
-        if stdout_is_tty:
-            arr = array.array('h', range(4))
-            if not fcntl.ioctl(stdout.fileno(), termios.TIOCGWINSZ, arr):
-                if tty_h != arr[0] or tty_w != arr[1]:
-                    tty_h, tty_w = arr[:2]
-                    chan.resize_pty(width=tty_w, height=tty_h)
-
-        read_streams = []
-        if not chan.closed:
-            read_streams.append(chan)
-
-            if stdin and not stdin.closed:
-                read_streams.append(stdin)
-
-        write_streams = []
-        if stdout and out_queue:
-            write_streams.append(stdout)
-        if stderr and err_queue:
-            write_streams.append(stderr)
-
-        read, write, _ = select.select(read_streams, write_streams, [], 0.1, )
-
-        if stdin in read:
-            c = _read_nonblocking(stdin)
-            if c:
-                chan.send(c)
-            else:
-                chan.shutdown_write()
-
-        try:
-            if chan.recv_ready():
-                c = chan.recv(1024)
-                if stdout:
-                    out_queue.append(c)
-                out_all.append(c)
-
-            if chan.recv_stderr_ready():
-                c = chan.recv_stderr(1024)
-                if stderr:
-                    err_queue.append(c)
-                err_all.append(c)
-        except socket.error:
-            pass
-
-        if stdout in write:
-            stdout.write(out_queue.pop(0))
-            stdout.flush()
-        if stderr in write:
-            stderr.write(err_queue.pop(0))
-            stderr.flush()
-
-        if chan.closed and not out_queue and not err_queue:
-            done = True
-
-    return (chan.exit_status, ''.join(out_all), ''.join(err_all))
-
-
-def interactive_ssh_channel(chan, command=None, stdin=sys.stdin):
-    try:
-        stdin_is_tty = stdin.isatty()
-    except Exception:
-        stdin_is_tty = False
-
-    if stdin_is_tty:
-        oldtty = termios.tcgetattr(stdin)
-        chan.get_pty()
-
-    if command is not None:
-        chan.exec_command(command)
-
-    try:
-        if stdin_is_tty:
-            tty.setraw(stdin.fileno())
-            tty.setcbreak(stdin.fileno())
-        return CommandStatus(*drain_ssh_channel(chan, stdin))
-    finally:
-        if stdin_is_tty:
-            termios.tcsetattr(stdin, termios.TCSADRAIN, oldtty)
+        fcntl.fcntl(file_descriptor.fileno(), fcntl.F_SETFL, oldfl)
 
 
 def json_dump(obj, f):
@@ -605,3 +509,10 @@ def add_timestamp_suffix(base_string):
 
 def rotate_dir(base_dir):
     shutil.move(base_dir, add_timestamp_suffix(base_dir))
+
+
+def ip_to_mac(ip):
+    # Mac addrs of domains are 54:52:xx:xx:xx:xx where the last 4 octets are
+    # the hex repr of the IP address)
+    mac_addr_pieces = [0x54, 0x52] + [int(y) for y in ip.split('.')]
+    return ':'.join([('%02x' % x) for x in mac_addr_pieces])

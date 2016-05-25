@@ -62,6 +62,7 @@ Requires: python-scp
 Requires: python-setuptools
 Requires: python-stevedore
 Requires: python-yaml
+Requires: python-enum
 Requires: qemu-img >= 2.1.2
 Requires: qemu-kvm >= 2.1.2
 Requires: git
