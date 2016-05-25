@@ -311,9 +311,18 @@ class Prefix(object):
 
         Returns:
             None
+
+        Raises:
+            RuntimeError: If the provided domain name is empty string
         """
         dom_name = dom['name']
         idx = dom['nics'].index(nic)
+        if not dom_name:
+            raise RuntimeError(
+                'Invalid (empty) domain name. A name must be specified for '
+                'the domain'
+            )
+
         name = idx == 0 and dom_name or '%s-eth%d' % (dom_name, idx)
         net['mapping'][name] = nic['ip']
 
