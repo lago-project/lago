@@ -181,18 +181,18 @@ download them, you can run the following to get a copy of the repository::
 
     $ git clone git://gerrit.ovirt.org/ovirt-system-tests
 
-As the tests that we are going to run are for ovirt-engine 3.5, we have to add
-the oVirt 3.5 release repository to our system so it will pull in the sdk
+As the tests that we are going to run are for ovirt-engine 3.6, we have to add
+the oVirt 3.6 release repository to our system so it will pull in the sdk
 package, the following works for any centos/fedora distro::
 
     $ yum install -y http://resources.ovirt.org/pub/yum-repo/ovirt-release35.rpm
 
 Once you have the code and the repo, you can run the run_suite.sh script to
-run any of the suites available (right now, only 3.5 and 3.6 basic_suites are
+run any of the suites available (right now, only 3.6 basic_suites are
 fully working)::
 
     $ cd ovirt-system-tests
-    $ ./run_suite.sh basic_suite_3.5
+    $ ./run_suite.sh basic_suite_3.6
 
 **NOTE**: this will download a lot of vm images the first time it runs, check
 the section "`template-repo.json: Sources for templates`_" on how to use local
@@ -208,8 +208,8 @@ If you are still worried that its stuck, please refer to the FAQ_
 to see if the issue you're seeing is documented.
 
 Once it is done, you will get the results in the directory
-`deployment-basic_suite_3.5`, that will include an initialized prefix with a
-3.5 engine vm with all the hosts and storages added.
+`deployment-basic_suite_3.6`, that will include an initialized prefix with a
+3.6 engine vm with all the hosts and storages added.
 
 To access it, log in to the web-ui at
 
@@ -238,7 +238,7 @@ Poke around in the env
 
 You can now open a shell to any of the vms, start/stop them all, etc.::
 
-    $ cd deployment-basic_suite_3.5
+    $ cd deployment-basic_suite_3.6
     $ lagocli shell engine
     [root@engine ~]# exit
 
@@ -268,7 +268,7 @@ Cleanup
 
 Once you're done with the environment, run::
 
-    $ cd deployment-basic_suite_3.5
+    $ cd deployment-basic_suite_3.6
     $ lagocli cleanup
 
 That will stop any running vms and remove the lago metadata in the prefix, it
@@ -286,9 +286,9 @@ lago only command to give you a better idea of what you have to do in a usual
 project.
 
 So, let's get back to the root of the ovirt-system-tests repo, and cd into the
-basic_suite_3.5 dir::
+basic_suite_3.6 dir::
 
-    cd ovirt-system-tests/basic_suite_3.5
+    cd ovirt-system-tests/basic_suite_3.6
 
 Let's take a look to what is in there::
 
@@ -359,7 +359,7 @@ directory that will contain our env). To do so we have to run this::
 
     $ lagocli init \
         --template-repo-path=template-repo.json \
-        deployment-basic_suite_3.5 \
+        deployment-basic_suite_3.6 \
         init.json
 
 Remember that if you are in the Red Hat office, you might want to use the repo
@@ -367,10 +367,10 @@ mirror that's hosted there, if so, run this command instead::
 
     $ lagocli init \
         --template-repo-path=common/template-repos/office.json \
-        deployment-basic_suite_3.5 \
+        deployment-basic_suite_3.6 \
         init.json
 
-This will create the `deployment-basic_suite_3.5` directory and populate it
+This will create the `deployment-basic_suite_3.6` directory and populate it
 with all the disks defined in the `init.json` file, and some other info
 (network info, uuid... not relevant now).
 
@@ -431,7 +431,7 @@ considerably.
 **NOTE**: From now on, all the `lagocli` command will be run inside the
 prefix, so cd to it::
 
-    $ cd deployment-basic_suite_3.5
+    $ cd deployment-basic_suite_3.6
 
 Bring up the virtual resources
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -442,7 +442,7 @@ We are ready to start powering up vms!
 
     # make sure you are in the prefix
     $ pwd
-    /path/to/ovirt-system-tests/deployment-basic_suite_3.5
+    /path/to/ovirt-system-tests/deployment-basic_suite_3.6
     $ lagocli start
 
 This starts all resources (VMs, bridges), at any time, you can use the `stop`
