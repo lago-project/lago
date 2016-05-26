@@ -208,11 +208,14 @@ class OvirtPrefix(Prefix):
         dists,
         repos_path,
         repo_names,
+        custom_sources=None,
         projects_list=None,
     ):
 
         if not projects_list:
             projects_list = PROJECTS_LIST
+
+        custom_sources = custom_sources or []
 
         rpm_dirs = []
         for dist in dists:
@@ -235,7 +238,10 @@ class OvirtPrefix(Prefix):
                 ],
             )
 
-        reposetup.merge(self.paths.internal_repo(), rpm_dirs)
+        reposetup.merge(
+            output_dir=self.paths.internal_repo(),
+            sources=custom_sources + rpm_dirs,
+        )
 
     @log_task('Create prefix internal repo')
     def prepare_repo(
@@ -243,7 +249,9 @@ class OvirtPrefix(Prefix):
         rpm_repo=None,
         reposync_yum_config=None,
         skip_sync=False,
+        custom_sources=None
     ):
+        custom_sources = custom_sources or []
         # Detect distros from template metadata
         engine_dists = [self.virt_env.engine_vm().distro()] \
             if self.virt_env.engine_vm() else []
@@ -279,7 +287,12 @@ class OvirtPrefix(Prefix):
                         repos,
                     )
 
-        self._create_rpm_repository(all_dists, rpm_repo, repos)
+        self._create_rpm_repository(
+            dists=all_dists,
+            repos_path=rpm_repo,
+            repo_names=repos,
+            custom_sources=custom_sources,
+        )
         self.save()
 
     @reposetup.with_repo_server
