@@ -300,12 +300,16 @@ class VMPlugin(plugins.Plugin):
         """
         return self.provider.extract_paths(paths, *args, **kwargs)
 
-    def copy_to(self, local_path, remote_path):
+    def copy_to(self, local_path, remote_path, recursive=True):
         with LogTask(
             'Copy %s to %s:%s' % (local_path, self.name(), remote_path),
         ):
             with self._scp() as scp:
-                scp.put(local_path, remote_path)
+                scp.put(
+                    files=local_path,
+                    remote_path=remote_path,
+                    recursive=recursive,
+                )
 
     def copy_from(self, remote_path, local_path, recursive=True):
         with self._scp() as scp:
