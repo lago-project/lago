@@ -48,7 +48,9 @@ REPO_NAME="local_tests_repo"
     helpers.run_ok "$LAGOCLI" shell vm01 <<EOC
         echo "mytest" > /var/log/something.log
         echo "mytest2" > /var/log/something_else.log
+        sync
 EOC
+    sync
 }
 
 

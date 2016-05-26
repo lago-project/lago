@@ -28,6 +28,7 @@ WORKDIR="$FIXTURES"/.lago
     outdir="$FIXTURES/output"
     rm -rf "$outdir"
     helpers.run_ok "$LAGOCLI" ovirt deploy
+    sync
 }
 
 

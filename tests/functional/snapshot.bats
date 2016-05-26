@@ -27,6 +27,7 @@ WORKDIR="$FIXTURES"/.lago
     helpers.run_ok "$LAGOCLI" start
     helpers.run_ok "$LAGOCLI" shell "lago_functional_tests_vm01" <<EOC
         echo "content before tests" > /root/nicefile
+        sync
 EOC
     helpers.run_ok "$LAGOCLI" snapshot 'snapshot_number_1'
     helpers.run_ok "$LAGOCLI" status
@@ -47,6 +48,7 @@ EOC
     pushd "$FIXTURES"
     helpers.run_ok "$LAGOCLI" shell "lago_functional_tests_vm01" <<EOC
         echo "content after tests" > /root/nicefile
+        sync
 EOC
     helpers.run_ok "$LAGOCLI" \
         copy-from-vm \
