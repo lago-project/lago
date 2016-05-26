@@ -13,10 +13,9 @@ from a repository.
 Latest lago RPMs are built by jenkins job and you can find them in the ci
 jobs::
 
-    http://jenkins.ovirt.org/job/lago_master_build-artifacts-$DIST-x86_64
+    http://jenkins.ovirt.org/search/?q=lago_master_build-artifacts
 
-Where `$DIST` is either el7, fc21, fc22 or fc23 (this list might be outdated,
-take a look at the repo to see the supported distros).
+Choose one of the results in this list according to your preferred distribution.
 
 Or you can use the yum repo (it's updated often right now, and a bit
 unstable), you can add it as a repository creating a file under
