@@ -315,8 +315,7 @@ def main(args):
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        'repo_path',
-        help='Git repo to generate the changelog for'
+        'repo_path', help='Git repo to generate the changelog for'
     )
     subparsers = parser.add_subparsers()
     changelog_parser = subparsers.add_parser('changelog')

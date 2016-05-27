@@ -135,10 +135,19 @@ def do_ovirt_runtest(prefix, test_file, **kwargs):
     '--ioprocess-dir',
     help=('Deprecated, left here for backwards compatibility'),
 )
+@cli_plugin_add_argument(
+    '--custom-source',
+    help=(
+        'Add an extra rpm source to the repo (will have priority over the '
+        'repos), allows any source string allowed by repoman'
+    ),
+    dest='custom_sources',
+    action='append',
+)
 @in_ovirt_prefix
 @with_logging
 def do_ovirt_reposetup(
-    prefix, rpm_repo, reposync_yum_config, skip_sync, **kwargs
+    prefix, rpm_repo, reposync_yum_config, skip_sync, custom_sources, **kwargs
 ):
 
     if kwargs['engine_dir']:
@@ -164,6 +173,7 @@ def do_ovirt_reposetup(
         rpm_repo=rpm_repo,
         reposync_yum_config=reposync_config,
         skip_sync=skip_sync,
+        custom_sources=custom_sources,
     )
 
 
