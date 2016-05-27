@@ -172,8 +172,8 @@ def get_merged_commits(repo, commit, first_parents, children_per_parent):
             merge_children.add(next_sha)
 
         non_first_parents = (
-            parent for parent in next_commit.parents
-            if parent not in first_parents
+            parent
+            for parent in next_commit.parents if parent not in first_parents
         )
         for child_sha in non_first_parents:
             if child_sha not in merge_children and child_sha != next_sha:
