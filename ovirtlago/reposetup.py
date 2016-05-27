@@ -47,6 +47,7 @@ def merge(output_dir, sources):
         res = run_command(
             [
                 'repoman',
+                '--option=main.on_empty_source=warn',
                 '--option=store.RPMStore.on_wrong_distro=copy_to_all',
                 '--option=store.RPMStore.rpm_dir=', output_dir, 'add'
             ] + sources
