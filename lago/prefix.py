@@ -312,18 +312,9 @@ class Prefix(object):
 
         Returns:
             None
-
-        Raises:
-            RuntimeError: If the provided domain name is empty string
         """
         dom_name = dom['name']
         idx = dom['nics'].index(nic)
-        if not dom_name:
-            raise RuntimeError(
-                'Invalid (empty) domain name. A name must be specified for '
-                'the domain'
-            )
-
         name = idx == 0 and dom_name or '%s-eth%d' % (dom_name, idx)
         net['mapping'][name] = nic['ip']
 
@@ -829,6 +820,13 @@ class Prefix(object):
             os.makedirs(self.paths.images())
 
         for name, domain_spec in conf['domains'].items():
+            if not name:
+                raise RuntimeError(
+                    'An invalid (empty) domain name was found in the '
+                    'configuration file. Cannot continue. A name must be '
+                    'specified for the domain'
+                )
+
             domain_spec['name'] = name
             conf['domains'][name] = self._prepare_domain_image(
                 domain_spec=domain_spec,
