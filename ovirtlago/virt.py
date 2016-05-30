@@ -49,7 +49,7 @@ class OvirtVirtEnv(lago.virt.VirtEnv):
         else:
             provider_name = vm_spec.get(
                 'vm-type',
-                default=lago.config.get('default_vm_provider', 'default'),
+                lago.config.get('default_vm_provider', 'default'),
             )
 
         if provider_name == 'ovirt-engine':

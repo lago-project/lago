@@ -352,6 +352,8 @@ class VMPlugin(plugins.Plugin):
             propagate_fail=True,
             tries=None,
             ssh_key=self.virt_env.prefix.paths.ssh_id_rsa(),
+            username=self._spec.get('ssh-user'),
+            password=self._spec.get('ssh-password'),
         )
 
     def wait_for_ssh(self):
@@ -360,6 +362,8 @@ class VMPlugin(plugins.Plugin):
             host_name=self.name(),
             connect_retries=self._spec.get('boot_time_sec', 50),
             ssh_key=self.virt_env.prefix.paths.ssh_id_rsa(),
+            username=self._spec.get('ssh-user'),
+            password=self._spec.get('ssh-password'),
         )
 
     def ssh_script(self, path, show_output=True):
@@ -369,6 +373,8 @@ class VMPlugin(plugins.Plugin):
             ssh_key=self.virt_env.prefix.paths.ssh_id_rsa(),
             path=path,
             show_output=show_output,
+            username=self._spec.get('ssh-user'),
+            password=self._spec.get('ssh-password'),
         )
 
     def alive(self):
@@ -380,6 +386,8 @@ class VMPlugin(plugins.Plugin):
                 ip_addr=self.ip(),
                 host_name=self.name(),
                 ssh_key=self.virt_env.prefix.paths.ssh_id_rsa(),
+                username=self._spec.get('ssh-user'),
+                password=self._spec.get('ssh-password'),
             )
         except RuntimeError:
             return False
@@ -414,6 +422,8 @@ class VMPlugin(plugins.Plugin):
             host_name=self.name(),
             ssh_key=self.virt_env.prefix.paths.ssh_id_rsa(),
             command=command,
+            username=self._spec.get('ssh-user'),
+            password=self._spec.get('ssh-password'),
         )
 
     def nics(self):
@@ -430,7 +440,11 @@ class VMPlugin(plugins.Plugin):
         return distro
 
     def root_password(self):
-        return self._spec['root-password']
+        root_password = self._spec.get('root-password', None)
+        if root_password is None:
+            root_password = self._spec.get('ssh-password', '')
+
+        return root_password
 
     def collect_artifacts(self, host_path):
         self.extract_paths(
@@ -480,7 +494,14 @@ class VMPlugin(plugins.Plugin):
         spec['metadata'] = spec.get('metadata', {})
 
         if 'root-password' not in spec:
-            spec['root-password'] = config.get('default_root_password')
+            root_password = config.get('default_root_password')
+            if root_password:
+                spec['ssh-password'] = root_password
+            else:
+                spec['ssh-password'] = config.get('default_ssh_password')
+
+        if 'ssh-user' not in spec:
+            spec['ssh-user'] = config.get('default_ssh_user')
 
         return spec
 
@@ -490,6 +511,8 @@ class VMPlugin(plugins.Plugin):
             ip_addr=self.ip(),
             host_name=self.name(),
             ssh_key=self.virt_env.prefix.paths.ssh_id_rsa(),
+            username=self._spec.get('ssh-user'),
+            password=self._spec.get('ssh-password'),
         )
         scp = SCPClient(client.get_transport())
         try:
