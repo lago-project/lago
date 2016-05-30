@@ -423,10 +423,11 @@ class VMPlugin(plugins.Plugin):
         return [nic['net'] for nic in self._spec['nics']]
 
     def distro(self):
-        return self._spec.get(
-            'distro',
-            self._template_metadata().get('distro', None),
-        )
+        distro = self._spec.get('distro', None)
+        if distro is None:
+            distro = self._template_metadata().get('distro', None)
+
+        return distro
 
     def root_password(self):
         return self._spec['root-password']
