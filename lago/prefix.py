@@ -854,7 +854,7 @@ class Prefix(object):
         with LogTask('Create disks for VM %s' % domain_spec['name']):
             domain_spec['disks'] = self._create_disks(
                 domain_name=domain_spec['name'],
-                disks_specs=domain_spec['disks'],
+                disks_specs=domain_spec.get('disks', []),
                 template_repo=template_repo,
                 template_store=template_store,
             )
