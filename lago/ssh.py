@@ -28,6 +28,8 @@ def ssh(
     propagate_fail=True,
     tries=None,
     ssh_key=None,
+    username='root',
+    password='123456',
 ):
     host_name = host_name or ip_addr
     client = get_ssh_client(
@@ -36,6 +38,8 @@ def ssh(
         propagate_fail=propagate_fail,
         ssh_tries=tries,
         ssh_key=ssh_key,
+        username=username,
+        password=password,
     )
     transport = client.get_transport()
     channel = transport.open_session()
@@ -92,7 +96,14 @@ def ssh(
     return utils.CommandStatus(return_code, out, err)
 
 
-def wait_for_ssh(ip_addr, host_name=None, connect_retries=50, ssh_key=None):
+def wait_for_ssh(
+    ip_addr,
+    host_name=None,
+    connect_retries=50,
+    ssh_key=None,
+    username='root',
+    password='123456',
+):
     host_name = host_name or ip_addr
     while connect_retries:
         try:
@@ -103,6 +114,8 @@ def wait_for_ssh(ip_addr, host_name=None, connect_retries=50, ssh_key=None):
                 tries=1,
                 propagate_fail=False,
                 ssh_key=ssh_key,
+                username=username,
+                password=password,
             )
         except Exception as err:
             ret = -1
@@ -125,6 +138,8 @@ def wait_for_ssh(ip_addr, host_name=None, connect_retries=50, ssh_key=None):
             host_name=host_name,
             command=['true'],
             ssh_key=ssh_key,
+            username=username,
+            password=password,
         )
         if ret != 0:
             raise RuntimeError(
@@ -135,7 +150,15 @@ def wait_for_ssh(ip_addr, host_name=None, connect_retries=50, ssh_key=None):
     LOGGER.debug('Wait succeeded for ssh to %s', host_name)
 
 
-def ssh_script(ip_addr, path, host_name=None, show_output=True, ssh_key=None):
+def ssh_script(
+    ip_addr,
+    path,
+    host_name=None,
+    show_output=True,
+    ssh_key=None,
+    username='root',
+    password='123456',
+):
     host_name = host_name or ip_addr
     with open(path) as script_fd:
         return ssh(
@@ -145,10 +168,19 @@ def ssh_script(ip_addr, path, host_name=None, show_output=True, ssh_key=None):
             data=script_fd.read(),
             show_output=show_output,
             ssh_key=ssh_key,
+            username=username,
+            password=password,
         )
 
 
-def interactive_ssh(ip_addr, command=None, host_name=None, ssh_key=None):
+def interactive_ssh(
+    ip_addr,
+    command=None,
+    host_name=None,
+    ssh_key=None,
+    username='root',
+    password='123456',
+):
     if command is None:
         command = ['bash']
 
@@ -156,6 +188,8 @@ def interactive_ssh(ip_addr, command=None, host_name=None, ssh_key=None):
         ip_addr=ip_addr,
         host_name=host_name,
         ssh_key=ssh_key,
+        username=username,
+        password=password,
     )
     transport = client.get_transport()
     channel = transport.open_session()
@@ -272,6 +306,8 @@ def get_ssh_client(
     host_name=None,
     ssh_tries=None,
     propagate_fail=True,
+    username='root',
+    password='123456',
 ):
     host_name = host_name or ip_addr
     with LogTask(
@@ -292,7 +328,8 @@ def get_ssh_client(
                 if ssh_key:
                     client.connect(
                         ip_addr,
-                        username='root',
+                        username=username,
+                        password=password,
                         key_filename=ssh_key,
                         timeout=ssh_timeout,
                     )
