@@ -21,6 +21,9 @@
 """
 """
 from stevedore import ExtensionManager
+import logging
+
+LOGGER = logging.getLogger(__name__)
 
 #: Map of plugin type string -> setuptools entry point
 PLUGIN_ENTRY_POINTS = {
@@ -58,7 +61,14 @@ def load_plugins(namespace, instantiate=True):
     Returns:
         dict of str, object: Returns the list of loaded plugins
     """
-    mgr = ExtensionManager(namespace=namespace, )
+    mgr = ExtensionManager(
+        namespace=namespace,
+        on_load_failure_callback=(
+            lambda _, ep, err: LOGGER.debug(
+                'Could not load %r: %s', ep.name, err
+            )
+        )
+    )
     if instantiate:
         plugins = dict(
             (
