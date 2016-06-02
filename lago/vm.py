@@ -24,6 +24,7 @@ import logging
 import lxml
 import os
 import pwd
+import time
 
 from . import (log_utils, utils, sysprep, libvirt_utils, config, )
 from .plugins import vm
@@ -86,11 +87,23 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
             libvirt_url=libvirt_url,
         )
 
-    def start(self):
+    def start(self, tries=3):
         super(LocalLibvirtVMProvider, self).start()
         if not self.defined():
             with LogTask('Starting VM %s' % self.vm.name()):
-                self.libvirt_con.createXML(self._libvirt_xml())
+                for cur_try in xrange(tries):
+                    try:
+                        self.libvirt_con.createXML(self._libvirt_xml())
+                        break
+                    except libvirt.libvirtError as error:
+                        if cur_try == (tries - 1):
+                            raise
+
+                        LOGGER.debug(
+                            'Got error %s when trying to start VM %s, '
+                            'retrying' % (error, self.vm.name())
+                        )
+                        time.sleep(1)
 
     def stop(self):
         super(LocalLibvirtVMProvider, self).stop()
@@ -345,9 +358,7 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
             for disk in disks:
                 target_dev = disk.xpath('target')[0].attrib['dev']
                 snapshot_disks.append(
-                    lxml.etree.Element(
-                        'disk', name=target_dev
-                    )
+                    lxml.etree.Element('disk', name=target_dev)
                 )
 
             try:
@@ -372,9 +383,7 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
                 disk['path'] = xml_node.xpath('source')[0].attrib['file']
                 disk['format'] = 'qcow2'
                 snap_disk = disk.copy()
-                snap_disk['path'] = xml_node.xpath(
-                    'backingStore',
-                )[0].xpath(
+                snap_disk['path'] = xml_node.xpath('backingStore', )[0].xpath(
                     'source',
                 )[0].attrib['file']
                 snap_info.append(snap_disk)
@@ -458,7 +467,5 @@ def _guestfs_copy_path(guestfs_conn, guest_path, host_path):
                     guest_path,
                     path,
                 ),
-                os.path.join(
-                    host_path, os.path.basename(path)
-                ),
+                os.path.join(host_path, os.path.basename(path)),
             )
