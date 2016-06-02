@@ -20,6 +20,7 @@
 import functools
 import hashlib
 import json
+import libvirt
 import logging
 import os
 import uuid
@@ -113,6 +114,51 @@ class VirtEnv(object):
         vm_type = self.vm_types.get(vm_type_name)
         vm_spec['vm-type'] = vm_type_name
         return vm_type(self, vm_spec)
+
+    def check_memory_requirements(self, conf):
+        """
+        Checks if sum of memory requirements for the domains can be satisfied
+        by available system memory on the virtualization host
+
+        Args:
+            conf (dict): Configuration spec
+
+        Returns:
+            None
+
+        Raises:
+            RuntimeError: if unable to get capabilities from libvirt connection
+            RuntimeError: if system memory on the virtualization host is less
+                than sum of memory requirements for the domains
+        """
+
+        (required_memory, host_memory) = (0, 0)
+        for name, domain_spec in conf['domains'].items():
+            required_memory += int(conf['domains'][name]['memory'])
+
+        try:
+            caps_xml = self.libvirt_con.getCapabilities()
+        except libvirt.libvirtError:
+            raise RuntimeError(
+                'Unable to get host capabilities from the libvirt connection'
+            )
+
+        raw_xml = lxml.etree.fromstring(caps_xml)
+        mem_elem = raw_xml.xpath("host/topology/cells/cell[@id='0']/memory")[0]
+        mem_unit = mem_elem.get('unit')
+        host_memory = int(mem_elem.text)
+        host_memory //= 1024 if mem_unit.lower() == 'kib' else host_memory
+        msg = 'Available memory: %s MiB Required memory: %s MiB' % \
+            (host_memory, required_memory)
+        if required_memory < host_memory:
+            LOGGER.info(msg)
+        else:
+            LOGGER.error(msg)
+            raise RuntimeError(
+                'Insufficient system memory on the virtualization host to '
+                'start the domains.\nPlease allocate more memory and rerun '
+                'again'
+            )
 
     def prefixed_name(self, unprefixed_name, max_length=0):
         """
