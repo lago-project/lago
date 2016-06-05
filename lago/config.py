@@ -28,6 +28,7 @@ DEFAULTS = {
     'default_root_password': '123456',
     'default_ssh_password': '123456',
     'default_ssh_user': 'root',
+    'default_prefix_provider': 'default',
     'default_vm_provider': 'local-libvirt',
     'default_vm_type': 'default',
     'libvirt_url': 'qemu:///system',

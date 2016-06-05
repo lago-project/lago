@@ -86,7 +86,7 @@ class Workdir(object):
         prefix_class(type): Class to use when creating prefixes
     """
 
-    def __init__(self, path, prefix_class=prefix.Prefix):
+    def __init__(self, path, prefix_class=prefix.DefaultPrefix):
         self.path = path
         self.prefixes = {}
         self.current = None
@@ -409,7 +409,7 @@ class Workdir(object):
     action='store',
     help='Name of the prefix to set as current',
 )
-@utils.in_prefix(prefix_class=prefix.Prefix, workdir_class=Workdir, )
+@utils.in_prefix(prefix_class=prefix.DefaultPrefix, workdir_class=Workdir, )
 def set_current(prefix_name, parent_workdir, **kwargs):
     """
     Changes the current to point to the given prefix

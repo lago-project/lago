@@ -27,27 +27,27 @@ def local_prefix(tmpdir, monkeypatch):
 class TestPrefixPathResolution(object):
     def test_non_existent_prefix(self):
         with pytest.raises(RuntimeError):
-            prefix.Prefix.resolve_prefix_path('/')
+            prefix.DefaultPrefix.resolve_prefix_path('/')
 
     def test_curdir_is_prefix(self, tmpdir, monkeypatch):
         cur_paths = PathsMock(str(tmpdir))
         lagofile = tmpdir.join(os.path.basename(cur_paths.prefix_lagofile()))
         lagofile.write('')
         monkeypatch.setattr(lago.paths, 'Paths', PathsMock)
-        result = prefix.Prefix.resolve_prefix_path(str(tmpdir))
+        result = prefix.DefaultPrefix.resolve_prefix_path(str(tmpdir))
         assert result == os.path.abspath(str(tmpdir))
 
     def test_curdir_has_prefix(self, tmpdir, local_prefix):
-        result = prefix.Prefix.resolve_prefix_path(str(tmpdir))
+        result = prefix.DefaultPrefix.resolve_prefix_path(str(tmpdir))
         assert result == os.path.abspath(str(local_prefix))
 
     def test_parent_has_prefix(self, tmpdir, local_prefix):
         sub_dir = tmpdir.mkdir('subdir')
-        result = prefix.Prefix.resolve_prefix_path(str(sub_dir))
+        result = prefix.DefaultPrefix.resolve_prefix_path(str(sub_dir))
         assert result == os.path.abspath(str(local_prefix))
 
     def test_many_parent_has_prefix(self, tmpdir, local_prefix):
         sub_dir = tmpdir.mkdir('subdir')
         subsub_dir = sub_dir.mkdir('subsubdir')
-        result = prefix.Prefix.resolve_prefix_path(str(subsub_dir))
+        result = prefix.DefaultPrefix.resolve_prefix_path(str(subsub_dir))
         assert result == os.path.abspath(str(local_prefix))

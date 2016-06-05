@@ -28,7 +28,7 @@ import nose.config
 from ovirtsdk.infrastructure.errors import (RequestError, ConnectionError)
 import lago
 from lago import log_utils
-from lago.prefix import Prefix
+from lago.prefix import DefaultPrefix
 from lago.workdir import Workdir
 
 from . import (paths, testlib, virt, reposetup, )
@@ -164,7 +164,7 @@ def _activate_all_storage_domains(api):
                 )
 
 
-class OvirtPrefix(Prefix):
+class OvirtPrefix(DefaultPrefix):
     VIRT_ENV_CLASS = virt.OvirtVirtEnv
 
     def __init__(self, *args, **kwargs):

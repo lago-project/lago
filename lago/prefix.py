@@ -39,6 +39,8 @@ import utils
 import virt
 import log_utils
 
+from .plugins import prefix
+
 LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
 log_task = functools.partial(log_utils.log_task, logger=LOGGER)
@@ -82,7 +84,7 @@ def _ip_in_subnet(subnet, ip):
     )
 
 
-class Prefix(object):
+class DefaultPrefix(prefix.PrefixPlugin):
     """
     A prefix is a directory that will contain all the data needed to setup the
     environment.
