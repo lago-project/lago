@@ -9,7 +9,9 @@ Getting started
 .. toctree::
     :maxdepth: 3
 
-    README
+    Install
+    EnableNested
+    oVirt_System_Tests
 
 Developing
 ------------
