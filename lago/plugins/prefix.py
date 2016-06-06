@@ -24,14 +24,11 @@ Prefix Plugins
 of high level prefix methods to define custom approach to load init file,
 start, stop, or deploy the prefix.
 """
-import contextlib
 import functools
 import logging
-import os
-import warnings
 from abc import (ABCMeta, abstractmethod)
 
-from .. import (config, utils, log_utils, plugins, )
+from .. import (config, log_utils, plugins, )
 
 LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
