@@ -9,10 +9,16 @@ Installing the Lago oVirt module
 ----------------------------------
 
 Before you start you should install the oVirt module for Lago.
-This module can be installed from Lago's repository with::
+This module has a dependency called `repoman <http://repoman.readthedocs.io>`_.
+repoman will help lago-ovirt to build a local repository for the vms.
+
+In order to get repoman, you should configure the ci tools repo which can be
+found in the following link: http://resources.ovirt.org/repos/ci-tools
+
+Assuming that `Lago's repo <Install>`_ is allready configured,
+we are ready to install lago-ovirt with::
 
     $ yum install python-lago-ovirt
-
 
 Preparing the workspace
 -------------------------
@@ -23,7 +29,7 @@ We will be using the example configurations of lago, for a custom setup you
 might want to create your own.
 
 You will also have to enable nested virtualization on your machine.
-Check out `enable nested virtualization<<EnableNested>`_.
+Check out `enable nested virtualization<EnableNested>`_.
 
 
 Running lago

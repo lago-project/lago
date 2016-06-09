@@ -115,7 +115,3 @@ cool virtual environment :)
 
 **NOTE**: In order to enable nested virtualization check this
 `document <EnableNested>`_
-
-.. _repoman: http://repoman.readthedocs.io
-
-.. _ci-tools repo: http://resources.ovirt.org/repos/ci-tools
