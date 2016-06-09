@@ -296,6 +296,7 @@ class Prefix(object):
         except:
             for subnet in allocated_subnets:
                 subnet_lease.release(subnet)
+            raise
 
         return allocated_subnets, conf
 
