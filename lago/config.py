@@ -36,6 +36,8 @@ DEFAULTS = {
     'ssh_tries': '100',
     'template_repos': '/var/lib/lago/repos',
     'template_store': '/var/lib/lago/store',
+    'libvirt_username': '',
+    'libvirt_password': '',
 }
 
 
