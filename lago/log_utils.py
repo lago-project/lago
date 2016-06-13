@@ -670,6 +670,23 @@ def hide_paramiko_logs():
     paramiko_logger.setLevel(logging.ERROR)
 
 
+def hide_stevedore_logs():
+    """
+    Hides the logs of stevedore, this function was
+    added in order to support older versions of stevedore
+
+    We are using the NullHandler in order to get rid from
+    'No handlers could be found for logger...' msg
+
+    Returns:
+        None
+    """
+    stevedore_logger = logging.getLogger('stevedore.extension')
+    stevedore_logger.propagate = False
+    stevedore_logger.setLevel(logging.ERROR)
+    stevedore_logger.addHandler(logging.NullHandler())
+
+
 def setup_prefix_logging(logdir):
     """
     Sets up a file logger that will create a log in the given logdir (usually a
@@ -698,3 +715,4 @@ def setup_prefix_logging(logdir):
     file_handler.setFormatter(file_formatter)
     logging.root.addHandler(file_handler)
     hide_paramiko_logs()
+    hide_stevedore_logs()
