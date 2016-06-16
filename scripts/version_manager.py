@@ -21,7 +21,7 @@ MAJOR_HEADER = re.compile(r'\nsem-ver:\s*.*break.*\n', flags=re.IGNORECASE)
 def fit_to_cols(what, indent, cols=79):
     lines = []
     free_cols = cols - len(indent)
-    while len(what) > free_cols:
+    while len(what) > free_cols and ' ' in what.lstrip():
         cutpoint = free_cols
         extra_indent = ''
         if what[free_cols] != ' ':
