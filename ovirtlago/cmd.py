@@ -114,6 +114,11 @@ def do_ovirt_runtest(prefix, test_file, **kwargs):
     type=os.path.abspath,
 )
 @cli_plugin_add_argument(
+    '--repo-path',
+    help='Path to local rpm repository',
+    type=os.path.abspath,
+)
+@cli_plugin_add_argument(
     '--reposync-yum-config',
     help=('Path to configuration to use when updating local rpm repository'),
     type=os.path.abspath,
@@ -157,6 +162,7 @@ def do_ovirt_reposetup(
     if kwargs['ioprocess_dir']:
         warnings.warn('Deprecated option --ioprocess-dir ignored')
 
+    _repo_path = kwargs['repo_path']
     rpm_repo = (
         rpm_repo
         or lago.config.get('reposync_dir', CONF_DEFAULTS['reposync_dir'])
@@ -174,13 +180,20 @@ def do_ovirt_reposetup(
         reposync_yum_config=reposync_config,
         skip_sync=skip_sync,
         custom_sources=custom_sources,
+        dist_out=_repo_path,
     )
 
 
 @cli_plugin(help='Run scripts that install necessary RPMs and configuration')
+@cli_plugin_add_argument(
+    '--internal-repo',
+    help='Path to local rpm repository',
+    type=os.path.abspath,
+)
 @in_ovirt_prefix
 @with_logging
 def do_deploy(prefix, **kwargs):
+    prefix._set_internal_repo(kwargs['internal_repo'])
     prefix.deploy()
 
 

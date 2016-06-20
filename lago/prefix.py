@@ -104,6 +104,14 @@ class Prefix(object):
         self.paths = paths.Paths(self._prefix)
         self._virt_env = None
         self._metadata = None
+        self._internal_repo = None
+
+    def _get_internal_repo (self):
+        return self._internal_repo
+
+    def _set_internal_repo (self, path):
+        self._internal_repo = path
+
 
     def _get_metadata(self):
         """
