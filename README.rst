@@ -62,8 +62,8 @@ Virtualization and nested virtualization support
 
     kvm: disabled by BIOS
 
-   **NOTE**: you can wait until everyithing is setup to reboot and change the
-   bios, to make sure that everyithing will persist after reboot
+   **NOTE**: you can wait until everything is setup to reboot and change the
+   bios, to make sure that everything will persist after reboot
 
 #. To make sure that nested virtualization is enabled, run::
 
