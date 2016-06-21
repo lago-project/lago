@@ -37,7 +37,7 @@ For EL distros (such as CentOS, RHEL, etc.)::
     enabled=1
     gpgcheck=0
 
-If you are install ing the ovirt plugin, you will also need to have `repoman`_
+If you are installing the ovirt plugin, you will also need to have `repoman`_
 installed or available, you can get it from the ovirt `ci-tools repo`_
 
 **TODO**: point to the release rpm once it's implemented, and use gpgcheck=1
