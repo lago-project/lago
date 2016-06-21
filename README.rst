@@ -138,7 +138,7 @@ rights, to make sure you can just run::
 And, just to be sure, let's refresh libvirtd service to ensure that it
 refreshes it's permissions and picks up any newly created users::
 
-    $ sudo service libvirtd restart
+    $ sudo systemctl restart libvirtd
 
 
 **NOTE**: if you just added your user, make sure to restart libvirtd service
