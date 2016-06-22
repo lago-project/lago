@@ -210,15 +210,20 @@ class OvirtPrefix(Prefix):
         repo_names,
         custom_sources=None,
         projects_list=None,
+        internal_repo_path=None,
     ):
 
         if not projects_list:
             projects_list = PROJECTS_LIST
 
+
         custom_sources = custom_sources or []
 
         rpm_dirs = []
+
         for dist in dists:
+
+
             project_roots = [
                 self.paths.build_dir(project_name)
                 for project_name in projects_list
@@ -238,8 +243,10 @@ class OvirtPrefix(Prefix):
                 ],
             )
 
+        _internal_repo_path = internal_repo_path or self.paths.internal_repo()
+
         reposetup.merge(
-            output_dir=self.paths.internal_repo(),
+            output_dir=_internal_repo_path,
             sources=custom_sources + rpm_dirs,
         )
 
@@ -249,7 +256,8 @@ class OvirtPrefix(Prefix):
         rpm_repo=None,
         reposync_yum_config=None,
         skip_sync=False,
-        custom_sources=None
+        custom_sources=None,
+        internal_repo_path=None,
     ):
         custom_sources = custom_sources or []
         # Detect distros from template metadata
@@ -263,6 +271,7 @@ class OvirtPrefix(Prefix):
             )
         )
         all_dists = list(set(engine_dists + vdsm_dists))
+        all_dists = filter(lambda dist: dist is not None, all_dists)
 
         repos = []
 
@@ -292,6 +301,7 @@ class OvirtPrefix(Prefix):
             repos_path=rpm_repo,
             repo_names=repos,
             custom_sources=custom_sources,
+            internal_repo_path=internal_repo_path,
         )
         self.save()
 

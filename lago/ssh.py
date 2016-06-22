@@ -354,7 +354,7 @@ def get_ssh_client(
                 )
 
             ssh_tries -= 1
-            time.sleep(1)
+            time.sleep(5)
         else:
             end_time = time.time()
             raise RuntimeError(
