@@ -88,10 +88,7 @@ def repo_server_context(prefix):
     Returns:
         None
     """
-    _root_dir = prefix._get_internal_repo()
-
-    if (_root_dir is None):
-        _root_dir=prefix.paths.internal_repo()
+    _root_dir = prefix._get_internal_repo() or prefix.paths.internal_repo()
 
     gw_ip = prefix.virt_env.get_net().gw()
     port = constants.REPO_SERVER_PORT
