@@ -155,7 +155,7 @@ might want to create your own.
 Running lago
 -------------------------------
 
-**This tests require that you have at least 36GB of free space under the
+**These tests require that you have at least 36GB of free space under the
 /var/lib/lago directory and an extra 200MB wherever you are running them.**
 
 If you don't have enough disk space on /var (for e.g, a default fedora
