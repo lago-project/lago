@@ -172,4 +172,9 @@ class HostVM(lago.vm.DefaultVM):
         if self.distro() not in ['fc22', 'fc23']:
             inherited_artifacts.append('/var/log/messages')
 
-        return set(inherited_artifacts + ['/var/log/vdsm', ])
+        return set(
+            inherited_artifacts + [
+                '/var/log/vdsm',
+                '/var/log/sanlock.log',
+            ]
+        )
