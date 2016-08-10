@@ -99,13 +99,14 @@ def ssh(
 def wait_for_ssh(
     ip_addr,
     host_name=None,
-    connect_retries=50,
+    connect_timeout=600, # 10 minutes
     ssh_key=None,
     username='root',
     password='123456',
 ):
     host_name = host_name or ip_addr
-    while connect_retries:
+    start_time = time.time()
+    while (time.time() - start_time) < connect_timeout:
         try:
             ret, _, _ = ssh(
                 ip_addr=ip_addr,
@@ -128,7 +129,7 @@ def wait_for_ssh(
 
         if ret == 0:
             break
-        connect_retries -= 1
+
         time.sleep(1)
     else:
         # Try one last time, using the ssh default timeout values, as we
@@ -354,7 +355,7 @@ def get_ssh_client(
                 )
 
             ssh_tries -= 1
-            time.sleep(5)
+            time.sleep(1)
         else:
             end_time = time.time()
             raise RuntimeError(
