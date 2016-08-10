@@ -37,14 +37,14 @@ For EL distros (such as CentOS, RHEL, etc.)::
     enabled=1
     gpgcheck=0
 
-If you are install ing the ovirt plugin, you will also need to have `repoman`_
+If you are installing the ovirt plugin, you will also need to have `repoman`_
 installed or available, you can get it from the ovirt `ci-tools repo`_
 
 **TODO**: point to the release rpm once it's implemented, and use gpgcheck=1
 
 Once you have them, install the following packages::
 
-    $ yum install python-lago lago python-lago-ovirt lago-ovirt
+    # yum install python-lago lago python-lago-ovirt lago-ovirt
 
 This will install all the needed packages.
 
@@ -62,8 +62,8 @@ Virtualization and nested virtualization support
 
     kvm: disabled by BIOS
 
-   **NOTE**: you can wait until everyithing is setup to reboot and change the
-   bios, to make sure that everyithing will persist after reboot
+   **NOTE**: you can wait until everything is setup to reboot and change the
+   bios, to make sure that everything will persist after reboot
 
 #. To make sure that nested virtualization is enabled, run::
 
@@ -84,8 +84,8 @@ libvirt
 
 Make sure libvirt is configured to run::
 
-    $ systemctl enable libvirtd
-    $ systemctl start libvirtd
+    # systemctl enable libvirtd
+    # systemctl start libvirtd
 
 SELinux
 ~~~~~~~~
@@ -94,7 +94,7 @@ policy is enforced.
 
 To disable SELinux on the running system, run::
 
-    $ setenforce 0
+    # setenforce 0
 
 To disable SELinux from start-up, edit `/etc/selinux/config` and set::
 
@@ -109,13 +109,13 @@ part of certain groups.
 
 Add yourself to lago and qemu groups::
 
-    $ usermod -a -G lago USERNAME
-    $ usermod -a -G qemu USERNAME
+    # usermod -a -G lago USERNAME
+    # usermod -a -G qemu USERNAME
 
 It is also advised to add qemu user to your group (to be able to store VM files
 in home directory)::
 
-    $ usermod -a -G USERNAME qemu
+    # usermod -a -G USERNAME qemu
 
 For the group changes to take place, you'll need to re-login to the shell.
 Make sure running `id` returns all the aforementioned groups.
@@ -138,7 +138,7 @@ rights, to make sure you can just run::
 And, just to be sure, let's refresh libvirtd service to ensure that it
 refreshes it's permissions and picks up any newly created users::
 
-    $ sudo service libvirtd restart
+    $ sudo systemctl restart libvirtd
 
 
 **NOTE**: if you just added your user, make sure to restart libvirtd service
@@ -155,7 +155,7 @@ might want to create your own.
 Running lago
 -------------------------------
 
-**This tests require that you have at least 36GB of free space under the
+**These tests require that you have at least 36GB of free space under the
 /var/lib/lago directory and an extra 200MB wherever you are running them.**
 
 If you don't have enough disk space on /var (for e.g, a default fedora
@@ -172,7 +172,7 @@ You can change the default values from::
 
 to use your homedir, for e.g::
 
-    $ vim /etc/lago.d/lago.conf
+    # vim /etc/lago.d/lago.conf
     [lago]
     log_level = debug
     template_store = /home/USERNAME/lago/store
@@ -188,7 +188,7 @@ As the tests that we are going to run are for ovirt-engine 3.6, we have to add
 the oVirt 3.6 release repository to our system so it will pull in the sdk
 package, the following works for any centos/fedora distro::
 
-    $ yum install -y http://resources.ovirt.org/pub/yum-repo/ovirt-release35.rpm
+    # yum install -y http://resources.ovirt.org/pub/yum-repo/ovirt-release35.rpm
 
 Once you have the code and the repo, you can run the run_suite.sh script to
 run any of the suites available (right now, only 3.6 basic_suites are
