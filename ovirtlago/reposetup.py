@@ -129,8 +129,12 @@ def sync_rpm_repository(repo_path, yum_config, repos):
         )
         shutil.rmtree('%s/cache' % repo_path)
         with LogTask('Rerunning reposync a last time'):
-            ret, _, _ = run_command(reposync_command)
+            ret, out, err = run_command(reposync_command)
         if ret:
+            LOGGER.error(
+                'reposync command failed with following output: %s\n'
+                'and following error: %s', out, err
+            )
             raise RuntimeError(
                 'Failed to run reposync a second time, aborting'
             )
