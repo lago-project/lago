@@ -104,6 +104,7 @@ class Prefix(object):
         self.paths = paths.Paths(self._prefix)
         self._virt_env = None
         self._metadata = None
+        self.internal_repo = None
 
     def _get_metadata(self):
         """

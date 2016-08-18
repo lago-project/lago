@@ -88,12 +88,13 @@ def repo_server_context(prefix):
     Returns:
         None
     """
+    root_dir = prefix.internal_repo or prefix.paths.internal_repo()
     gw_ip = prefix.virt_env.get_net().gw()
     port = constants.REPO_SERVER_PORT
     server = _create_http_server(
         listen_ip=gw_ip,
         listen_port=port,
-        root_dir=prefix.paths.internal_repo(),
+        root_dir=root_dir,
     )
     try:
         yield
