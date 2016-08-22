@@ -230,6 +230,18 @@ class VirtEnv(object):
     def get_vm(self, name):
         return self._vms[name]
 
+    def get_vms_by_name(self, names):
+        vm_pool = set(names)
+        requested_vms = []
+        for vm_name in vm_pool:
+            if vm_name not in self._vms.keys():
+                LOGGER.info('Available vms:\n' + '\n'.join(self._vms.keys()))
+                raise RuntimeError('vm {} does not exist'.format(vm_name))
+
+            requested_vms.append(self._vms[vm_name])
+
+        return requested_vms
+
     @classmethod
     def from_prefix(cls, prefix):
         virt_path = functools.partial(prefix.paths.prefixed, 'virt')

@@ -35,6 +35,7 @@ import lago.plugins.cli
 import lago.templates
 from lago import (log_utils, workdir as lago_workdir, )
 from lago.utils import (in_prefix, with_logging)
+import lago.info
 
 LOGGER = logging.getLogger('cli')
 in_lago_prefix = in_prefix(
@@ -576,6 +577,39 @@ def do_collect(prefix, output, **kwargs):
 @with_logging
 def do_deploy(prefix, **kwargs):
     prefix.deploy()
+
+
+@lago.plugins.cli.cli_plugin(help='Show info about virtual resources')
+@lago.plugins.cli.cli_plugin_add_argument(
+    'requested_vms',
+    nargs='*',
+    help='The names of the vms to query, if no name is specified, '
+    'all the vms in the env will be query',
+)
+@lago.plugins.cli.cli_plugin_add_argument(
+    '-a',
+    '--attribute',
+    dest='attribute',
+    required=True,
+    action='store',
+    choices=['ip'],
+    help='List requested information about the virtual resources'
+)
+@in_lago_prefix
+@with_logging
+def do_info(prefix, attribute, requested_vms, out_format, **kwargs):
+    if requested_vms:
+        requested_vms = prefix.virt_env.get_vms_by_name(requested_vms)
+    else:
+        requested_vms = prefix.virt_env.get_vms().values()
+
+    func = getattr(lago.info.Info, attribute)
+    print out_format.format(
+        func(
+            prefix=prefix, requested_vms=requested_vms,
+            **kwargs
+        )
+    )
 
 
 def create_parser(cli_plugins, out_plugins):
