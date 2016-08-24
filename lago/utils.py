@@ -469,6 +469,7 @@ def in_prefix(prefix_class, workdir_class):
                     workdir_path = 'auto'
 
                 workdir_path = workdir_class.resolve_workdir_path(workdir_path)
+                kwargs['workdir_path'] = workdir_path
                 workdir = workdir_class(path=workdir_path)
                 kwargs['parent_workdir'] = workdir
                 if kwargs.get('all_envs', False):
