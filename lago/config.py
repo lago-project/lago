@@ -34,6 +34,7 @@ DEFAULTS = {
     'log_level': 'debug',
     'ssh_timeout': '10',
     'ssh_tries': '100',
+    'lease_dir': '/var/lib/lago/subnets',
     'template_repos': '/var/lib/lago/repos',
     'template_store': '/var/lib/lago/store',
     'libvirt_username': '',

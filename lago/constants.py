@@ -18,4 +18,3 @@
 # Refer to the README and COPYING files for full details of the license
 #
 LIBEXEC_DIR = '/usr/libexec/lago/'
-SUBNET_LEASE_DIR = '/var/lib/lago/subnets/'
