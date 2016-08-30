@@ -95,6 +95,16 @@ class VMProviderPlugin(plugins.Plugin):
         pass
 
     @abstractmethod
+    def restart(self, *args, **kwargs):
+        """
+        Restart a domain
+
+        Returns:
+            None
+        """
+        pass
+
+    @abstractmethod
     def defined(self, *args, **kwargs):
         """
         Return if the domain is defined (libvirt concept), currently used only
@@ -251,6 +261,12 @@ class VMPlugin(plugins.Plugin):
         Thin method that just uses the provider
         """
         return self.provider.stop(*args, **kwargs)
+
+    def restart(self, *args, **kwargs):
+        """
+        Thin method that just uses the provider
+        """
+        return self.provider.restart(*args, **kwargs)
 
     def defined(self, *args, **kwargs):
         """

@@ -268,6 +268,19 @@ def do_stop(prefix, vm_names, **kwargs):
     prefix.stop(vm_names=vm_names)
 
 
+@lago.plugins.cli.cli_plugin(help='Redeploy lago resources')
+@lago.plugins.cli.cli_plugin_add_argument(
+    'vm_names',
+    help='Name of the vm to restart',
+    metavar='VM_NAME',
+    nargs='*',
+)
+@in_lago_prefix
+@with_logging
+def do_restart(prefix, vm_names=None, **kwargs):
+    prefix.restart(vm_names=vm_names)
+
+
 @lago.plugins.cli.cli_plugin(
     help='Create snapshots for all deployed resources'
 )

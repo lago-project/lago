@@ -209,6 +209,34 @@ class VirtEnv(object):
                 for net in nets:
                     net.stop()
 
+
+    def restart(self, vm_names=None):
+        if not vm_names:
+            log_msg = 'Restart Prefix'
+            vms = self._vms.values()
+            nets = self._nets.values()
+        else:
+            log_msg = 'Restart specified VMs'
+            vms = [self._vms[vm_name] for vm_name in vm_names]
+            nets = set()
+            for vm in vms:
+                nets = nets.union(
+                    set(
+                        self._nets[net_name] for net_name in vm.nets()
+                    )
+                )
+
+        with LogTask(log_msg), utils.RollbackContext() as rollback:
+#            with LogTask('ReStart nets'):
+#                for net in nets:
+#                    net.start()
+#                    rollback.prependDefer(net.stop)
+
+            with LogTask('ReStart vms'):
+                for vm in vms:
+                    vm.restart()
+
+
     def get_nets(self):
         return self._nets.copy()
 

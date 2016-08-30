@@ -969,6 +969,18 @@ class Prefix(object):
         """
         self.virt_env.stop(vm_names=vm_names)
 
+    def restart(self, vm_names=None):
+        """
+        Restart this prefix
+
+        Args:
+            vm_names(list of str): List of the vms to restart
+
+        Returns:
+            None
+        """
+        self.virt_env.restart(vm_names=vm_names)
+
     def create_snapshots(self, name):
         """
         Creates one snapshot on all the domains with the given name
