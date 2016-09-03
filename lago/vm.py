@@ -122,7 +122,7 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
                     ] + [
                         sysprep.config_net_interface_dhcp(
                             'eth%d' % index,
-                            utils.ip_to_mac(nic['ip']),
+                            utils.ipv4_to_mac(nic['ip']),
                         )
                         for index, nic in enumerate(self.vm._spec['nics'])
                         if 'ip' in nic
@@ -314,7 +314,7 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
             if 'ip' in dev_spec:
                 interface.append(
                     lxml.etree.Element(
-                        'mac', address=utils.ip_to_mac(dev_spec['ip'])
+                        'mac', address=utils.ipv4_to_mac(dev_spec['ip'])
                     ),
                 )
             devices.append(interface)
