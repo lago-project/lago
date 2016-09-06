@@ -265,6 +265,10 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
                 bus = 'ide'
             # names converted
 
+            # support virtio-scsi - sdX devices
+            if dev_spec['dev'].startswith('sd'):
+                bus = 'scsi'
+
             disk = lxml.etree.Element(
                 'disk',
                 type='file',
@@ -276,6 +280,7 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
                     'driver',
                     name='qemu',
                     type=dev_spec['format'],
+                    discard='unmap',
                 ),
             )
 
