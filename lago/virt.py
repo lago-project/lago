@@ -37,13 +37,6 @@ def _gen_ssh_command_id():
     return uuid.uuid1().hex[:8]
 
 
-def _ip_to_mac(ip):
-    # Mac addrs of domains are 54:52:xx:xx:xx:xx where the last 4 octets are
-    # the hex repr of the IP address)
-    mac_addr_pieces = [0x54, 0x52] + [int(y) for y in ip.split('.')]
-    return ':'.join([('%02x' % x) for x in mac_addr_pieces])
-
-
 def _guestfs_copy_path(g, guest_path, host_path):
     if g.is_file(guest_path):
         with open(host_path, 'w') as f:
@@ -371,33 +364,72 @@ class NATNetwork(Network):
             net_raw_xml = net_raw_xml.replace(k, v, 1)
 
         net_xml = lxml.etree.fromstring(net_raw_xml)
+        dns_domain_name = self._spec.get('dns_domain_name', None)
+        if dns_domain_name is not None:
+            domain_xml = lxml.etree.Element(
+                'domain',
+                name=dns_domain_name,
+                localOnly='yes',
+            )
+            net_xml.append(domain_xml)
         if 'dhcp' in self._spec:
-            ip = net_xml.xpath('/network/ip')[0]
+            IPV6_PREFIX = 'fd8f:1391:3a82:5e0d::'
+            ipv4 = net_xml.xpath('/network/ip')[0]
+            ipv6 = net_xml.xpath('/network/ip')[1]
+            dns = net_xml.xpath('/network/dns')[0]
 
-            def make_ip(last):
+            def make_ipv4(last):
                 return '.'.join(self.gw().split('.')[:-1] + [str(last)])
 
             dhcp = lxml.etree.Element('dhcp')
-            ip.append(dhcp)
+            dhcpv6 = lxml.etree.Element('dhcp')
+            ipv4.append(dhcp)
+            ipv6.append(dhcpv6)
 
             dhcp.append(
                 lxml.etree.Element(
                     'range',
-                    start=make_ip(self._spec['dhcp']['start']),
-                    end=make_ip(self._spec['dhcp']['end']),
+                    start=make_ipv4(self._spec['dhcp']['start']),
+                    end=make_ipv4(self._spec['dhcp']['end']),
+                )
+            )
+            dhcpv6.append(
+                lxml.etree.Element(
+                    'range',
+                    start=IPV6_PREFIX + make_ipv4(self._spec['dhcp']['start']),
+                    end=IPV6_PREFIX + make_ipv4(self._spec['dhcp']['end']),
                 )
             )
 
             if self.is_management():
-                for hostname, ip in self._spec['mapping'].items():
+                for hostname, ip4 in self._spec['mapping'].items():
                     dhcp.append(
                         lxml.etree.Element(
                             'host',
-                            mac=_ip_to_mac(ip),
-                            ip=ip,
+                            mac=utils.ipv4_to_mac(ip4),
+                            ip=ip4,
                             name=hostname
                         )
                     )
+                    dhcpv6.append(
+                        lxml.etree.Element(
+                            'host',
+                            id='0:3:0:1:' + utils.ipv4_to_mac(ip4),
+                            ip=IPV6_PREFIX + ip4,
+                            name=hostname
+                        )
+                    )
+                    dns_host = lxml.etree.SubElement(dns, 'host', ip=ip4)
+                    dns_name = lxml.etree.SubElement(dns_host, 'hostname')
+                    dns_name.text = hostname
+                    dns6_host = lxml.etree.SubElement(
+                        dns, 'host', ip=IPV6_PREFIX + ip4
+                    )
+                    dns6_name = lxml.etree.SubElement(dns6_host, 'hostname')
+                    dns6_name.text = hostname
+                    dns.append(dns_host)
+                    dns.append(dns6_host)
+
         return lxml.etree.tostring(net_xml)
 
 
