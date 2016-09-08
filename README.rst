@@ -138,7 +138,7 @@ rights, to make sure you can just run::
 And, just to be sure, let's refresh libvirtd service to ensure that it
 refreshes it's permissions and picks up any newly created users::
 
-    $ sudo service libvirtd restart
+    $ sudo systemctl restart libvirtd
 
 
 **NOTE**: if you just added your user, make sure to restart libvirtd service
@@ -155,7 +155,7 @@ might want to create your own.
 Running lago
 -------------------------------
 
-**This tests require that you have at least 36GB of free space under the
+**These tests require that you have at least 36GB of free space under the
 /var/lib/lago directory and an extra 200MB wherever you are running them.**
 
 If you don't have enough disk space on /var (for e.g, a default fedora

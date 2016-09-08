@@ -28,6 +28,8 @@ import collections
 import json
 import yaml
 from abc import (abstractmethod, ABCMeta)
+import copy
+from operator import itemgetter
 
 from . import Plugin
 
@@ -99,3 +101,51 @@ class JSONOutFormatPlugin(OutFormatPlugin):
 class YAMLOutFormatPlugin(OutFormatPlugin):
     def format(self, info_dict):
         return yaml.dump(info_dict)
+
+
+class FlatOutFormatPlugin(OutFormatPlugin):
+    def format(self, info_dict, delimiter='/'):
+        """
+        This formatter will take a data structure that
+        represent a tree and will print all the paths
+        from the root to the leaves
+
+        in our case it will print each value and the keys
+        that needed to get to it, for example:
+
+        vm0:
+            net: lago
+            memory: 1024
+
+        will be output as:
+
+        vm0/net/lago
+        vm0/memory/1024
+
+            Args:
+                info_dict (dict): information to reformat
+                delimiter (str): a delimiter for the path components
+            Returns:
+                str: String representing the formatted info
+        """
+
+        def dfs(father, path, acc):
+            if isinstance(father, list):
+                for child in father:
+                    dfs(child, path, acc)
+            elif isinstance(father, collections.Mapping):
+                for child in sorted(father.items(), key=itemgetter(0)), :
+                    dfs(child, path, acc)
+            elif isinstance(father, tuple):
+                path = copy.copy(path)
+                path.append(father[0])
+                dfs(father[1], path, acc)
+            else:
+                # join the last key with it's value
+                path[-1] = '{}: {}'.format(path[-1], str(father))
+                acc.append(delimiter.join(path))
+
+        result = []
+        dfs(info_dict['Prefix'], [], result)
+
+        return '\n'.join(result)

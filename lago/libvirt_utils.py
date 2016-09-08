@@ -22,6 +22,8 @@ Utilities to help deal with the libvirt python bindings
 """
 import libvirt
 
+import lago.config
+
 #: Mapping of domain statuses values to human readable strings
 DOMAIN_STATES = {
     libvirt.VIR_DOMAIN_NOSTATE: 'no state',
@@ -59,8 +61,23 @@ class Domain(object):
         return DOMAIN_STATES.get(state_number[0], 'unknown')
 
 
+def auth_callback(credentials, user_data):
+    for credential in credentials:
+        if credential[0] == libvirt.VIR_CRED_AUTHNAME:
+            credential[4] = lago.config.get('libvirt_username')
+        elif credential[0] == libvirt.VIR_CRED_PASSPHRASE:
+            credential[4] = lago.config.get('libvirt_password')
+
+    return 0
+
+
 def get_libvirt_connection(name, libvirt_url='qemu://system'):
     if name not in LIBVIRT_CONNECTIONS:
-        LIBVIRT_CONNECTIONS[name] = libvirt.open(libvirt_url)
+        auth = [
+            [libvirt.VIR_CRED_AUTHNAME, libvirt.VIR_CRED_PASSPHRASE],
+            auth_callback, None
+        ]
+
+        LIBVIRT_CONNECTIONS[name] = libvirt.openAuth(libvirt_url, auth)
 
     return LIBVIRT_CONNECTIONS[name]
