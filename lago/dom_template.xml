@@ -2,12 +2,13 @@
     <name>@NAME@</name>
     <memory unit='MiB'>@MEM_SIZE@</memory>
     <vcpu>@VCPU@</vcpu>
+    <iothreads>1</iothreads>
     <cpu mode='host-passthrough'>
       <topology sockets='@CPU@' cores='1' threads='1'/>
     </cpu>
     <os>
       <type arch='x86_64' machine='pc'>hvm</type>
-      <bootmenu enable='yes'/>
+      <bootmenu enable='no'/>
     </os>
     <features>
       <acpi/>
@@ -17,6 +18,11 @@
     <devices>
       <emulator>@QEMU_KVM@</emulator>
       <memballoon model='none'/>
+      <controller type='usb' model='none'>
+      </controller>
+      <controller type='scsi' index='0' model='virtio-scsi'>
+        <driver iothread='1'/>
+      </controller>
       <disk type='file' device='disk'>
         <driver name='qemu' type='qcow2'/>
         <source file='DISK_PATH'/>

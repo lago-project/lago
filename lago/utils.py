@@ -511,7 +511,7 @@ def rotate_dir(base_dir):
     shutil.move(base_dir, add_timestamp_suffix(base_dir))
 
 
-def ip_to_mac(ip):
+def ipv4_to_mac(ip):
     # Mac addrs of domains are 54:52:xx:xx:xx:xx where the last 4 octets are
     # the hex repr of the IP address)
     mac_addr_pieces = [0x54, 0x52] + [int(y) for y in ip.split('.')]
