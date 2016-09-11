@@ -24,6 +24,7 @@ import logging
 import lxml
 import os
 import pwd
+import platform
 
 from . import (log_utils, utils, sysprep, libvirt_utils, config, )
 from .plugins import vm
@@ -229,10 +230,15 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
         qemu_kvm_path = [
             path
             for path in [
+                '/usr/bin/qemu-system-{arch}'.format(
+                    arch=platform.processor()
+                ),
                 '/usr/libexec/qemu-kvm',
                 '/usr/bin/qemu-kvm',
             ] if os.path.exists(path)
         ].pop()
+
+        LOGGER.debug('qemu-kvm path: {}'.format(qemu_kvm_path))
 
         replacements = {
             '@NAME@': self._libvirt_name(),
