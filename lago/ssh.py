@@ -270,7 +270,7 @@ def drain_ssh_channel(chan, stdin=None, stdout=sys.stdout, stderr=sys.stderr):
         if chan.closed and not out_queue and not err_queue:
             done = True
 
-    return (chan.exit_status, ''.join(out_all), ''.join(err_all))
+    return chan.exit_status, ''.join(out_all), ''.join(err_all)
 
 
 def interactive_ssh_channel(chan, command=None, stdin=sys.stdin):

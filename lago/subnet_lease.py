@@ -127,7 +127,7 @@ def _lease_owned(path, current_uuid_path):
 
     Args:
         path (str): Path to the lease
-        current_uuid_path (str): Path to the uuid to check ownersip of
+        current_uuid_path (str): Path to the uuid to check ownership of
 
     Returns:
         bool: ``True`` if the given lease in owned by the prefix, ``False``
@@ -143,7 +143,7 @@ def _lease_owned(path, current_uuid_path):
 
 def _lease_valid(path):
     """
-    Checs if the given lease still has a prefix that owns it
+    Checks if the given lease still has a prefix that owns it
 
     Args:
         path (str): Path to the lease
@@ -201,7 +201,7 @@ def acquire(uuid_path):
     Returns:
         str: the dotted ip of the gateway for the leased net
 
-    .. todo:: _aquire might return None, this will throw a TypeError
+    .. todo:: _acquire might return None, this will throw a TypeError
     """
     return '192.168.%d.1' % _acquire(uuid_path)
 

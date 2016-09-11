@@ -42,7 +42,7 @@ log_task = functools.partial(log_utils.log_task, logger=LOGGER)
 
 def _activate_storage_domains(api, sds):
     if not sds:
-        LOGGER.info('No storages to activate')
+        LOGGER.info('No storage domains to activate')
         return
 
     for sd in sds:
@@ -68,7 +68,7 @@ def _activate_storage_domains(api, sds):
 
 def _deactivate_storage_domains(api, sds):
     if not sds:
-        LOGGER.info('No storages to deactivate')
+        LOGGER.info('No storage domains to deactivate')
         return
 
     for sd in sds:

@@ -49,7 +49,7 @@ class Paths(object):
         return self.prefixed('metadata')
 
     def prefix_lagofile(self):
-        "This file represents a prefix that's initialized"
+        """"This file represents a prefix that's initialized"""
         return self.prefixed('initialized')
 
     def scripts(self, *args):

@@ -62,13 +62,13 @@ def _path_to_xml(basename):
 
 
 class VirtEnv(object):
-    '''Env properties:
+    """Env properties:
     * prefix
     * vms
     * net
 
     * libvirt_con
-    '''
+    """
 
     def __init__(self, prefix, vm_specs, net_specs):
         self.vm_types = plugins.load_plugins(
@@ -110,7 +110,7 @@ class VirtEnv(object):
 
     def prefixed_name(self, unprefixed_name, max_length=0):
         """
-        Returns a uuid pefixed identifier
+        Returns a uuid prefixed identifier
 
         Args:
             unprefixed_name(str): Name to add a prefix to
@@ -282,7 +282,7 @@ class VirtEnv(object):
         Get the list of snapshots for each domain
 
         Args:
-            domanins(list of str): list of the domains to get the snapshots
+            domains(list of str): list of the domains to get the snapshots
             for, all will be returned if none or empty list passed
 
         Returns:
