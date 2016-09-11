@@ -284,6 +284,10 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
                 ),
             )
 
+            serial = lxml.etree.SubElement(disk, 'serial')
+            serial.text = "{}".format(disk_order + 1)
+            disk.append(serial)
+
             disk.append(
                 lxml.etree.Element(
                     'boot', order="{}".format(disk_order + 1)
