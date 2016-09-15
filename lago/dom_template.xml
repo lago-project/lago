@@ -8,7 +8,7 @@
     </cpu>
     <os>
       <type arch='x86_64' machine='pc'>hvm</type>
-      <bootmenu enable='no'/>
+      <bootmenu enable='yes'/>
     </os>
     <features>
       <acpi/>
