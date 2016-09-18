@@ -63,6 +63,12 @@ Requires: python-setuptools
 Requires: python-stevedore
 Requires: python-yaml
 Requires: python-enum
+Requires: pyxdg
+%if 0%{?fedora} >= 24
+Requires: python2-configparser
+%else
+Requires: python-configparser
+%endif
 Requires: qemu-img >= 2.1.2
 Requires: qemu-kvm >= 2.1.2
 Requires: git

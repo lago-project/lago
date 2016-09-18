@@ -1,5 +1,5 @@
 #
-# Copyright 2014 Red Hat, Inc.
+# Copyright 2016 Red Hat, Inc.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,4 +17,13 @@
 #
 # Refer to the README and COPYING files for full details of the license
 #
+
 LIBEXEC_DIR = '/usr/libexec/lago/'
+"""
+LIBEXEC_DIR -
+"""
+
+CONFS_PATH = ['/etc/lago/lago.conf']
+"""
+CONFS_PATH - default path to first look for configuration files.
+"""

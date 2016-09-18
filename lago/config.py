@@ -1,5 +1,5 @@
 #
-# Copyright 2014 Red Hat, Inc.
+# Copyright 2016 Red Hat, Inc.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,88 +14,231 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
-#
-# Refer to the README and COPYING files for full details of the license
-#
-import ConfigParser
-import functools
-import glob
 import os
+import re
+from collections import defaultdict
+from io import StringIO
+from warnings import warn
 
-_SYSTEM_CONFIG_DIR = '/etc/lago.d'
-_USER_CONFIG = os.path.join(os.path.expanduser('~'), '.lago')
-DEFAULTS = {
-    'default_root_password': '123456',
-    'default_ssh_password': '123456',
-    'default_ssh_user': 'root',
-    'default_vm_provider': 'local-libvirt',
-    'default_vm_type': 'default',
-    'libvirt_url': 'qemu:///system',
-    'log_level': 'debug',
-    'ssh_timeout': '10',
-    'ssh_tries': '100',
-    'lease_dir': '/var/lib/lago/subnets',
-    'template_repos': '/var/lib/lago/repos',
-    'template_store': '/var/lib/lago/store',
-    'libvirt_username': '',
-    'libvirt_password': '',
-}
+import configparser
+from xdg import BaseDirectory as base_dirs
+
+from lago.constants import CONFS_PATH
+from lago.utils import argparse_to_ini
 
 
-def _get_environ():
-    return os.environ
+def _get_configs_path():
+    """Get a list of possible configuration files, from the following
+    sources:
+    1. All files that exists in constants.CONFS_PATH.
+    2. All XDG standard config files for "lago.conf", in reversed
+    order of importance.
 
 
-def _get_from_env(key):
-    return _get_environ()['LAGO_%s' % key.upper()]
+    Returns:
+        list(str): list of files
 
+    """
 
-def _get_from_files(paths, key):
-    config = ConfigParser.ConfigParser(defaults=DEFAULTS)
-    config.read(paths)
-    try:
-        return config.get('lago', key)
-    except ConfigParser.Error:
-        raise KeyError(key)
-
-
-def _get_from_dir(path, key):
-    config_files = glob.glob(os.path.join(path, '*.conf'))
-    return _get_from_files(config_files, key)
-
-
-def _get_providers():
-    return [
-        _get_from_env,
-        functools.partial(
-            _get_from_files,
-            [_USER_CONFIG],
-        ),
-        functools.partial(
-            _get_from_dir,
-            _SYSTEM_CONFIG_DIR,
-        ),
+    paths = []
+    xdg_paths = [
+        path for path in base_dirs.load_config_paths(
+            'lago', 'lago.conf'
+        )
     ]
+    paths.extend([path for path in CONFS_PATH if os.path.exists(path)])
+    paths.extend(reversed(xdg_paths))
+    return paths
 
 
-_cache = {}
-_GET_DEFAULT = object()
+def get_env_dict(root_section):
+    """Read all Lago variables from the environment.
+    The lookup format is:
+      LAGO_VARNAME - will land into 'lago' section
+      LAGO__SECTION1__VARNAME - will land into 'section1' section, notice
+      the double '__'.
+      LAGO__LONG_SECTION_NAME__VARNAME - will land into 'long_section_name'
 
 
-def get(key, default=_GET_DEFAULT):
-    if key in _cache:
-        return _cache[key]
+    Returns:
+        dict: dict of section configuration dicts
 
-    for provider in _get_providers():
-        try:
-            val = provider(key)
-            _cache[key] = val
-            return val
-        except KeyError:
-            pass
+    Examples:
+        >>> os.environ['LAGO_GLOBAL_VAR'] = 'global'
+        >>> os.environ['LAGO__INIT__REPO_PATH'] = '/tmp/store'
+        >>>
+        >>> config.get_env_dict()
+        {'init': {'repo_path': '/tmp/store'}, 'lago': {'global_var': 'global'}}
 
-    # Nothing was found
-    if default is _GET_DEFAULT:
-        raise KeyError(key)
-    else:
-        return default
+    """
+    env_lago = defaultdict(dict)
+    decider = re.compile(
+        (
+            r'^{0}(?:_(?!_)|(?P<has>__))'
+            r'(?(has)(?P<section>.+?)__)'
+            r'(?P<name>.+)$'
+        ).format(root_section.upper())
+    )
+
+    for key, value in os.environ.iteritems():
+        match = decider.match(key)
+        if not match:
+            continue
+        if not match.group('name') or not value:
+            warn(
+                'empty environment variable definition:'
+                '{0}, ignoring.'.format(key)
+            )
+        else:
+            section = match.group('section') or root_section
+            env_lago[section.lower()][match.group('name').lower()] = value
+    return dict(env_lago)
+
+
+class ConfigLoad(object):
+    """Merges configuration parameters from 3 different sources:
+    1. Enviornment vairables
+    2. config files in .INI format
+    3. argparse.ArgumentParser
+
+    The assumed order(but not necessary) order of calls is:
+    load() - load from config files and environment variables
+    update_parser(parser) - update from the declared argparse parser
+    update_args(args) - update from passed arguments to the parser
+
+    """
+
+    def __init__(self, root_section='lago'):
+        """__init__
+        Args:
+            root_section (str):
+        """
+
+        self.root_section = root_section
+        self._config = defaultdict(dict)
+        self._config.update(self.load())
+        self._parser = None
+
+    def load(self):
+        """Load all configuration from INI format files and ENV, always
+        preferring the last read. Order of loading is:
+          1) Custom paths as defined in constants.CONFS_PATH
+          2) XDG standard paths
+          3) Environment variables
+
+        Returns:
+            dict: dict of section configuration dicts
+
+        """
+
+        configp = configparser.ConfigParser()
+        for path in _get_configs_path():
+            try:
+                with open(path, 'r') as config_file:
+                    configp.read_file(config_file)
+            except IOError:
+                pass
+        configp.read_dict(get_env_dict(self.root_section))
+        return {s: dict(configp.items(s)) for s in configp.sections()}
+
+    def update_args(self, args):
+        """Update config dictionary with parsed args, as resolved by argparse.
+        Only root positional arguments that already exist will overridden.
+
+        Args:
+            args (namespace): args parsed by argparse
+
+        """
+
+        for arg in vars(args):
+            if self.get(arg):
+                self._config[self.root_section][arg] = getattr(args, arg)
+
+    def update_parser(self, parser):
+        """Update config dictionary with declared arguments in an argparse.parser
+        New variables will be created, and existing ones overridden.
+
+        Args:
+            parser (argparse.ArgumentParser): parser to read variables from
+
+        """
+
+        self._parser = parser
+        ini_str = argparse_to_ini(parser)
+        configp = configparser.ConfigParser(allow_no_value=True)
+        configp.read_dict(self._config)
+        configp.read_string(ini_str)
+        self._config.update(
+            {
+                s: dict(configp.items(s))
+                for s in configp.sections()
+            }
+        )
+
+    def get(self, *args):
+        """Get a variable from the default section
+        Args:
+            *args (args): dict.get() args
+
+        Returns:
+            str: config variable
+
+        """
+
+        return self._config[self.root_section].get(*args)
+
+    def __getitem__(self, key):
+        """Get a variable from the default section, good for fail-fast
+        if key does not exists.
+
+        Args:
+            key (str): key
+
+        Returns:
+            str: config variable
+
+        """
+
+        return self._config[self.root_section][key]
+
+    def get_section(self, *args):
+        """get a section dictionary
+        Args:
+
+        Returns:
+            dict: section config dictionary
+
+        """
+
+        return self._config.get(*args)
+
+    def get_ini(self, defaults_only=False, incl_unset=False):
+        """Return the config dictionary in INI format
+        Args:
+            defaults_only (bool): if set, will ignore arguments set by the CLI.
+
+        Returns:
+            str: string of the config file in INI format
+
+        """
+        if self._parser:
+            if not defaults_only:
+                self._parser.set_defaults(
+                    **self.get_section(self.root_section)
+                )
+            return argparse_to_ini(parser=self._parser, incl_unset=incl_unset)
+        else:
+            configp = configparser.ConfigParser(allow_no_value=True)
+            configp.read_dict(self._config)
+            with StringIO() as out_ini:
+                configp.write(out_ini)
+                return out_ini.getvalue()
+
+    def __repr__(self):
+        return self._config.__repr__()
+
+    def __str__(self):
+        return self._config.__str__()
+
+
+config = ConfigLoad()

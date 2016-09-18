@@ -17,11 +17,12 @@
 #
 # Refer to the README and COPYING files for full details of the license
 #
-import ConfigParser
+
 import functools
 import logging
 import os
 import time
+from configparser import SafeConfigParser
 
 import nose.core
 import nose.config
@@ -267,7 +268,7 @@ class OvirtPrefix(Prefix):
         repos = []
 
         if rpm_repo and reposync_yum_config:
-            parser = ConfigParser.SafeConfigParser()
+            parser = SafeConfigParser()
             with open(reposync_yum_config) as repo_conf_fd:
                 parser.readfp(repo_conf_fd)
 

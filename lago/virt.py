@@ -26,8 +26,8 @@ import uuid
 
 import lxml.etree
 
-from . import (config, brctl, utils, log_utils, plugins, libvirt_utils, )
-
+from . import (brctl, utils, log_utils, plugins, libvirt_utils, )
+from .config import config
 LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
 log_task = functools.partial(log_utils.log_task, logger=LOGGER)

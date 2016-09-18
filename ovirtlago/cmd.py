@@ -27,6 +27,7 @@ import lago
 import ovirtlago
 from lago.plugins.cli import (CLIPlugin, cli_plugin, cli_plugin_add_argument)
 from lago.utils import (in_prefix, with_logging)
+from lago.config import config as lago_config
 
 LOGGER = logging.getLogger('ovirt-cli')
 in_ovirt_prefix = in_prefix(
@@ -159,11 +160,11 @@ def do_ovirt_reposetup(
 
     rpm_repo = (
         rpm_repo
-        or lago.config.get('reposync_dir', CONF_DEFAULTS['reposync_dir'])
+        or lago_config.get('reposync_dir', CONF_DEFAULTS['reposync_dir'])
     )
 
     reposync_config = (
-        reposync_yum_config or lago.config.get(
+        reposync_yum_config or lago_config.get(
             'reposync_config',
             CONF_DEFAULTS['reposync_config'],
         )

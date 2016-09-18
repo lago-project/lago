@@ -29,10 +29,10 @@ import sys
 import warnings
 
 import lago
-import lago.config
 import lago.plugins
 import lago.plugins.cli
 import lago.templates
+from lago.config import config
 from lago import (log_utils, workdir as lago_workdir, )
 from lago.utils import (in_prefix, with_logging)
 
@@ -83,6 +83,13 @@ in_lago_prefix = in_prefix(
 @lago.plugins.cli.cli_plugin_add_argument(
     '--template-store',
     help='Location to store templates at',
+    default='/var/lib/lago/store',
+    type=os.path.abspath,
+)
+@lago.plugins.cli.cli_plugin_add_argument(
+    '--template-repos',
+    help='Location to store repos',
+    default='/var/lib/lago/repos',
     type=os.path.abspath,
 )
 @lago.plugins.cli.cli_plugin_add_argument(
@@ -107,6 +114,7 @@ def do_init(
     template_repo_path=None,
     template_repo_name=None,
     template_store=None,
+    template_repos=None,
     set_current=False,
     skip_bootstrap=False,
     **kwargs
@@ -154,24 +162,17 @@ def do_init(
                 template_repo_path
             )
         else:
-            try:
-                repo_name = (
-                    template_repo_name
-                    or lago.config.get('template_default_repo')
+            if template_repo_name:
+                repo = lago.templates.find_repo_by_name(
+                    name=template_repo_name
                 )
-            except KeyError:
+
+            else:
                 raise RuntimeError(
                     'No template repo was configured or specified'
                 )
 
-            repo = lago.templates.find_repo_by_name(repo_name)
-
-        template_store_path = (
-            template_store or lago.config.get(
-                'template_store', default=None
-            )
-        )
-        store = lago.templates.TemplateStore(template_store_path)
+        store = lago.templates.TemplateStore(template_store)
 
         with open(virt_config, 'r') as virt_fd:
             prefix.virt_conf_from_stream(
@@ -578,22 +579,40 @@ def do_deploy(prefix, **kwargs):
     prefix.deploy()
 
 
+@lago.plugins.cli.cli_plugin(help="Dump configuration file")
+@lago.plugins.cli.cli_plugin_add_argument(
+    '--defaults_only',
+    help='Ignore CLI parameters and print loaded configs only.',
+    action='store_true',
+    default=False
+)
+@lago.plugins.cli.cli_plugin_add_argument(
+    '--verbose',
+    help='Include parameters with no default value.',
+    action='store_true',
+    default=False,
+)
+def do_generate(defaults_only, verbose, **kwargs):
+    print config.get_ini(defaults_only=defaults_only, incl_unset=verbose)
+
+
 def create_parser(cli_plugins, out_plugins):
     parser = argparse.ArgumentParser(
-        description='Command line interface to oVirt testing framework.'
+        description='Command line interface to Lago',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     parser.add_argument(
         '-l',
         '--loglevel',
         default='info',
         choices=['info', 'debug', 'error', 'warning'],
-        help='Log level to use, by default %(default)s'
+        help='Log level to use'
     )
     parser.add_argument(
         '--logdepth',
         default=3,
         type=int,
-        help='How many task levels to show, by default %(default)s'
+        help='How many task levels to show'
     )
     pkg_info = pkg_resources.require("lago")[0]
     parser.add_argument(
@@ -623,7 +642,7 @@ def create_parser(cli_plugins, out_plugins):
         '-w',
         action='store',
         default=None,
-        help='Path to the workdir to use',
+        help='Path to the workdir to use.',
     )
     parser.add_argument(
         '--prefix-name',
@@ -631,15 +650,102 @@ def create_parser(cli_plugins, out_plugins):
         action='store',
         default='current',
         dest='prefix_name',
-        help='Name of the prefix to use',
+        help='Name of the prefix to use.',
     )
-    parser.add_argument('--ignore-warnings', action='store_true', )
+    parser.add_argument(
+        '--ssh-user',
+        action='store',
+        default='root',
+        help='User for SSH provider.',
+    )
+    parser.add_argument(
+        '--ssh-password',
+        action='store',
+        default='123456',
+        help='Password for SSH provider.',
+    )
+    parser.add_argument(
+        '--ssh-tries',
+        action='store',
+        default=100,
+        type=int,
+        help='Number of ssh time outs to wait before failing.',
+    )
+    parser.add_argument(
+        '--ssh-timeout',
+        action='store',
+        default=10,
+        type=int,
+        help='Seconds to wait before marking SSH connection as failed.'
+    )
+    parser.add_argument(
+        '--libvirt_url',
+        action='store',
+        default='qemu:///system',
+        help='libvirt URI, currently only '
+        'system'
+        ' is supported.'
+    )
+    parser.add_argument(
+        '--libvirt-user',
+        action='store',
+        help='libvirt user',
+    )
+    parser.add_argument(
+        '--libvirt-password',
+        action='store',
+        help='libvirt password',
+    )
+    parser.add_argument(
+        '--default_vm_type',
+        action='store',
+        default='default',
+        help='Default vm type',
+    )
+
+    parser.add_argument(
+        '--default_vm_provider',
+        action='store',
+        default='local-libvirt',
+        help='Default vm provider',
+    )
+    parser.add_argument(
+        '--default_root_password',
+        action='store',
+        default='123456',
+        help='Default root password',
+    )
+    parser.add_argument(
+        '--lease_dir',
+        action='store',
+        default='/var/lib/lago/subnets',
+        help='Path to store created subnets configurations'
+    )
+    parser.add_argument(
+        '--reposync-dir',
+        action='store',
+        default='/var/lib/lago/reposync',
+        help='Reposync dir if used',
+    )
+    parser.add_argument(
+        '--reposync-config',
+        help='Reposync config',
+        default='config.repo',
+        action='store',
+    )
+
+    parser.add_argument('--ignore-warnings', action='store_true')
+    parser.set_defaults(**config.get_section('lago', {}))
     verbs_parser = parser.add_subparsers(dest='verb', metavar='VERB')
     for cli_plugin_name, cli_plugin in cli_plugins.items():
         plugin_parser = verbs_parser.add_parser(
-            cli_plugin_name, **cli_plugin.init_args
+            name=cli_plugin_name,
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+            **cli_plugin.init_args
         )
         cli_plugin.populate_parser(plugin_parser)
+        plugin_parser.set_defaults(**config.get_section(cli_plugin_name, {}))
+    config.update_parser(parser=parser)
 
     return parser
 
@@ -656,8 +762,9 @@ def main():
     out_plugins = lago.plugins.load_plugins(
         lago.plugins.PLUGIN_ENTRY_POINTS['out']
     )
-    parser = create_parser(cli_plugins=cli_plugins, out_plugins=out_plugins)
+    parser = create_parser(cli_plugins=cli_plugins, out_plugins=out_plugins, )
     args = parser.parse_args()
+    config.update_args(args)
 
     logging.basicConfig(level=logging.DEBUG)
     logging.root.handlers = [
@@ -683,13 +790,12 @@ def main():
     if args.prefix_path:
         warnings.warn(
             'The option --prefix-path is going to be deprecated, use '
-            '--wordir and --prefix instead',
+            '--workdir and --prefix instead',
             DeprecationWarning,
         )
 
     try:
         cli_plugins[args.verb].do_run(args)
-
     except Exception:
         LOGGER.exception('Error occured, aborting')
         sys.exit(1)
