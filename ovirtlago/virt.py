@@ -33,6 +33,7 @@ class OvirtVirtEnv(lago.virt.VirtEnv):
     def __init__(self, prefix, vm_specs, net_spec):
         self._engine_vm = None
         self._host_vms = []
+        self._ovirt_cpu_family = None
         super(OvirtVirtEnv, self).__init__(prefix, vm_specs, net_spec)
 
     def _create_vm(self, vm_spec):
@@ -75,6 +76,31 @@ class OvirtVirtEnv(lago.virt.VirtEnv):
 
     def host_vms(self):
         return self._host_vms[:]
+
+    def get_ovirt_cpu_family(self):
+        ovirt_cpu_families = {
+            'Broadwell': 'Intel Broadwell Family',
+            'Broadwell-noTSX': 'Intel Broadwell-noTSX Family',
+            'Haswell': 'Intel Haswell Family',
+            'Haswell-noTSX': 'Intel Haswell-noTSX Family',
+            'SandyBridge': 'Intel SandyBridge Family',
+            'Westmere': 'Intel Westmere Family',
+            'Nehalem': 'Intel Nehalem Family',
+            'Penryn': 'Intel Penryn Family',
+            'Conroe': 'Intel Conroe Family',
+            'Opteron_G5': 'AMD Opteron G5',
+            'Opteron_G4': 'AMD Opteron G4',
+            'Opteron_G3': 'AMD Opteron G3',
+            'Opteron_G2': 'AMD Opteron G2',
+            'Opteron_G1': 'AMD Opteron G1',
+        }
+
+        if self._ovirt_cpu_family is None:
+            cpu_model = super(OvirtVirtEnv, self).get_cpu_model()
+            self._ovirt_cpu_family = ovirt_cpu_families.get(
+                cpu_model, ovirt_cpu_families['Conroe']
+            )
+        return self._ovirt_cpu_family
 
 
 # TODO : solve the problem of ssh to the Node
