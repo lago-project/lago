@@ -476,7 +476,7 @@ def in_prefix(prefix_class, workdir_class):
                 else:
                     prefix_name = kwargs.get('prefix_name', 'current')
                     prefix = workdir.get_prefix(prefix_name)
-                    kwargs['perfix_name'] = prefix_name
+                    kwargs['prefix_name'] = prefix_name
 
                 prefix_path = os.path.realpath(
                     os.path.join(workdir_path, prefix_name)
