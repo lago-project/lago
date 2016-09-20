@@ -93,6 +93,11 @@ class VirtEnv(object):
             libvirt_url=libvirt_url,
         )
 
+    def get_cpu_model(self):
+        cap_tree = lxml.etree.fromstring(self.libvirt_con.getCapabilities())
+        cpu_model = cap_tree.xpath('/capabilities/host/cpu/model')[0].text
+        return cpu_model
+
     def _create_net(self, net_spec):
         if net_spec['type'] == 'nat':
             cls = NATNetwork
