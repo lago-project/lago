@@ -168,6 +168,7 @@ You can change the default values from::
     log_level = debug
     template_store = /var/lib/lago/store
     template_repos = /var/lib/lago/repos
+    lease_dir = /var/lib/lago/subnets
     default_root_password = 123456
 
 to use your homedir, for e.g::
@@ -177,6 +178,7 @@ to use your homedir, for e.g::
     log_level = debug
     template_store = /home/USERNAME/lago/store
     template_repos = /home/USERNAME/lago/repos
+    lease_dir = /home/USERNAME/lago/subnets
     default_root_password = 123456
 
 As an example, we will use the basic suite of the ovirt tests, so we have to
