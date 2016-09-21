@@ -43,7 +43,7 @@ def mock_prefix(tmpdir, **kwargs):
     if 'initialized' not in kwargs:
         kwargs['initialized'] = lambda: True
 
-    return mock.Mock(spec_set=lago.prefix.Prefix(str(tmpdir)), **kwargs)
+    return mock.Mock(spec_set=lago.prefix.DefaultPrefix(str(tmpdir)), **kwargs)
 
 
 @pytest.fixture()
@@ -63,7 +63,7 @@ def generate_workdir_props(**kwargs):
         'path': '.',
         'prefixes': {},
         'current': None,
-        'prefix_class': lago.prefix.Prefix
+        'prefix_class': lago.prefix.DefaultPrefix
     }
     default_props.update(kwargs)
     return default_props
@@ -122,7 +122,7 @@ class TestWorkdir(object):
             assert workdir.join(*paths) == os.path.join(workdir.path)
 
     def test_initialize_existing_workdir(self, monkeypatch):
-        my_prefix = mock.Mock(spec=lago.prefix.Prefix)
+        my_prefix = mock.Mock(spec=lago.prefix.DefaultPrefix)
         my_workdir = lago.workdir.Workdir(
             path='idontexist',
             prefix_class=my_prefix,
@@ -163,7 +163,7 @@ class TestWorkdir(object):
         mock_load.assert_called_with()
 
     def test_initialize_non_existing_workdir(self, monkeypatch):
-        my_prefix = mock.Mock(spec=lago.prefix.Prefix)
+        my_prefix = mock.Mock(spec=lago.prefix.DefaultPrefix)
         my_workdir = lago.workdir.Workdir(
             path='idontexist',
             prefix_class=my_prefix,
@@ -550,7 +550,7 @@ class TestWorkdir(object):
             lago.workdir.Workdir.add_prefix,
             mock_workdir,
         )
-        mock_workdir.prefix_class = mock.Mock(spec=lago.prefix.Prefix)
+        mock_workdir.prefix_class = mock.Mock(spec=lago.prefix.DefaultPrefix)
         mock_exists = mock_patch(
             monkeypatch=monkeypatch,
             topatch=os.path,
@@ -637,9 +637,9 @@ class TestWorkdir(object):
         mock_workdir.path = 'shrubbery'
         mock_workdir.current = 'nini!'
         mock_workdir.prefixes = {
-            'ni!': mock.Mock(spec=lago.prefix.Prefix),
-            'nini!': mock.Mock(spec=lago.prefix.Prefix),
-            'ninini!': mock.Mock(spec=lago.prefix.Prefix),
+            'ni!': mock.Mock(spec=lago.prefix.DefaultPrefix),
+            'nini!': mock.Mock(spec=lago.prefix.DefaultPrefix),
+            'ninini!': mock.Mock(spec=lago.prefix.DefaultPrefix),
         }
         mock_workdir.destroy = functools.partial(
             lago.workdir.Workdir.destroy,

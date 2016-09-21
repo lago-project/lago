@@ -38,7 +38,7 @@ from lago.utils import (in_prefix, with_logging)
 
 LOGGER = logging.getLogger('cli')
 in_lago_prefix = in_prefix(
-    prefix_class=lago.prefix.Prefix,
+    prefix_class=lago.prefix.DefaultPrefix,
     workdir_class=lago_workdir.Workdir,
 )
 
