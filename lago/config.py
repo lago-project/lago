@@ -17,27 +17,30 @@
 #
 # Refer to the README and COPYING files for full details of the license
 #
-import ConfigParser
+
 import functools
 import glob
 import os
+import configparser
 
 _SYSTEM_CONFIG_DIR = '/etc/lago.d'
-_USER_CONFIG = os.path.join(os.path.expanduser('~'), '.lago')
+_USER_CONFIG = os.path.join(os.path.expanduser('~'), '.lago.conf')
 DEFAULTS = {
-    'default_root_password': '123456',
-    'default_ssh_password': '123456',
-    'default_ssh_user': 'root',
-    'default_vm_provider': 'local-libvirt',
-    'default_vm_type': 'default',
-    'libvirt_url': 'qemu:///system',
-    'log_level': 'debug',
-    'ssh_timeout': '10',
-    'ssh_tries': '100',
-    'template_repos': '/var/lib/lago/repos',
-    'template_store': '/var/lib/lago/store',
-    'libvirt_username': '',
-    'libvirt_password': '',
+    'lago': {
+        'default_root_password': '123456',
+        'default_ssh_password': '123456',
+        'default_ssh_user': 'root',
+        'default_vm_provider': 'local-libvirt',
+        'default_vm_type': 'default',
+        'libvirt_url': 'qemu:///system',
+        'log_level': 'debug',
+        'ssh_timeout': '10',
+        'ssh_tries': '100',
+        'template_repos': '/var/lib/lago/repos',
+        'template_store': '/var/lib/lago/store',
+        'libvirt_username': '',
+        'libvirt_password': '',
+    },
 }
 
 
@@ -50,11 +53,12 @@ def _get_from_env(key):
 
 
 def _get_from_files(paths, key):
-    config = ConfigParser.ConfigParser(defaults=DEFAULTS)
+    config = configparser.ConfigParser()
+    config.read_dict(DEFAULTS)
     config.read(paths)
     try:
-        return config.get('lago', key)
-    except ConfigParser.Error:
+        return str(config.get('lago', key))
+    except configparser.Error:
         raise KeyError(key)
 
 

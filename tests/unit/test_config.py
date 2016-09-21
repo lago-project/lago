@@ -3,7 +3,8 @@ import functools
 import os
 import shutil
 import tempfile
-
+from collections import OrderedDict
+import mock
 import pytest
 
 import lago.config as config
@@ -123,3 +124,23 @@ def test_user_shadows_system():
 def test_get_from_system():
     assert config.get('system_var_1') == 'system_val_1'
     assert config.get('system_var_2') == 'system_val_2'
+
+
+@mock.patch('os.environ', {})
+@mock.patch.dict('lago.config._cache', {})
+@mock.patch('lago.config._SYSTEM_CONFIG_DIR', '')
+@mock.patch('lago.config._USER_CONFIG', '')
+def test_get_only_defaults():
+    result = {k: config.get(k) for k in config.DEFAULTS.get('lago').keys()}
+    assert (
+        OrderedDict(sorted(config.DEFAULTS.get('lago').items())) ==
+        OrderedDict(sorted(result.items()))
+    )
+
+
+@mock.patch('os.environ', {'LAGO_SSH_TRIES': -99})
+@mock.patch.dict('lago.config._cache', {})
+@mock.patch('lago.config._SYSTEM_CONFIG_DIR', '')
+@mock.patch('lago.config._USER_CONFIG', '')
+def test_env_shadows_defaults():
+    assert config.get('ssh_tries') == -99
