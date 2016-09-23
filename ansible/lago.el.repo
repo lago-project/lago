@@ -1,0 +1,5 @@
+[lago]
+baseurl=http://resources.ovirt.org/repos/lago/stable/0.0/rpm/el$releasever
+name=Lago
+enabled=1
+gpgcheck=0

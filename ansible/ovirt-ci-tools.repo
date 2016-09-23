@@ -1,0 +1,5 @@
+[ovirt-ci-tools]
+baseurl=http://resources.ovirt.org/repos/ci-tools/el$releasever
+name=ovirt-ci-tools
+enabled=1
+gpgcheck=0

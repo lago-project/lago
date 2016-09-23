@@ -7,6 +7,27 @@ Hello, this describes how to get started with Lago.
 Installation
 ----------------
 
+There are 2 installation methods:
+ - ansible-playbook
+ - manual
+
+
+Install using ansible-playbook
+------------------------------
+
+Use simple `hosts.ini` with `lago` section::
+
+ [lago]
+ my.lago.host
+
+, and run the playbook::
+
+ ansible-playbook -i hosts.ini ansible/lago-install.yml
+
+
+Manual installation
+-------------------
+
 In order to install the framework, you'll need to build RPMs or acquire them
 from a repository.
 

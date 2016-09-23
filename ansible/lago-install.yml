@@ -1,0 +1,54 @@
+---
+- name: Install lago and ovirt system-tests on a machine (Follows the README.md instructions)
+  hosts: lago
+  remote_user: root
+  tasks:
+    - name: Create the lago yum repositories
+      copy:
+        src: lago-el.repo
+        dest: /etc/yum.repos.d/lago-el.repo
+
+    - name: Create ovirt-ci-tools repo
+      copy:
+        src: ovirt-ci-tools.repo
+        dest: /etc/yum.repos.d/ovirt-ci-tools.repo
+
+    - name: Install lago and dependencies
+      yum: name={{ item }} state=present
+      with_items:
+        - lago
+        - lago-ovirt
+        - python-lago
+        - python-lago-ovirt
+        - http://resources.ovirt.org/pub/yum-repo/ovirt-release40.rpm
+        - https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+
+    - name: Configure nested virtualization
+      modprobe: name=kvm_intel state=present params="nested=y"
+
+    - name: Configure services
+      service: name=libvirtd enabled=yes state=started
+
+    - name: Disable selinux
+      selinux: policy=targeted state=permissive
+
+    - name: ovirt user setup
+      user: name=ovirt shell=/bin/bash groups=lago,qemu append=yes
+
+    - name: ovirt path permissions
+      file: path=/home/ovirt state=directory mode="g+x"
+
+    - name: qemu user setup
+      user: name=qemu shell=/bin/bash groups=ovirt append=yes
+
+    - name: Libvirtd restart
+      service: name=libvirtd state=restarted
+
+    - name: Override lago.conf
+      template: src=lago.conf.j2 dest=/etc/lago.d/lago.conf
+
+    - name: Clone ovirt system-tests
+      git:
+        repo: git://gerrit.ovirt.org/ovirt-system-tests
+        dest: /home/ovirt/ovirt-system-tests
+      become_user: ovirt
