@@ -37,8 +37,19 @@ For EL distros (such as CentOS, RHEL, etc.)::
     enabled=1
     gpgcheck=0
 
-If you are installing the ovirt plugin, you will also need to have `repoman`_
-installed or available, you can get it from the ovirt `ci-tools repo`_
+For EL7 distros include those repositories for dependency:
+
+EPEL::
+
+    yum install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+
+ovirt-ci-tools::
+
+    [ovirt-ci-tools]
+    baseurl=http://resources.ovirt.org/repos/ci-tools/el$releasever
+    name=ovirt-ci-tools
+    enabled=1
+    gpgcheck=0
 
 **TODO**: point to the release rpm once it's implemented, and use gpgcheck=1
 
