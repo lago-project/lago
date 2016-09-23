@@ -15,7 +15,7 @@ you are runnig Fedora::
 And you'll need also a few Python libs, which you can install from the repos or
 use venv or similar, for the sake of this example we will use the repos ones::
 
-  > sudo dnf install python-flake8 python-nose python-dulwich yapf
+  > sudo dnf install python-flake8 python-nose python-dulwich python-pbr yapf
 
 Yapf is not available on older Fedoras or CentOS, you can get it from the
 `official yapf repo`_ or try on `copr`_.

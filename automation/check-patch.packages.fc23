@@ -1,6 +1,7 @@
 bats
 git
 python-dulwich
+python-pbr
 python2-devel
 python-virtualenv
 #not provided by pip

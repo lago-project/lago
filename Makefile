@@ -1,4 +1,4 @@
-VERSION=$(shell scripts/version_manager.py . version)
+VERSION=$(shell python -c 'import pbr.packaging; print(pbr.packaging.get_version("lago"))')
 NAME=lago
 TAR_FILE=${NAME}-${VERSION}.tar
 TARBALL_FILE=${TAR_FILE}.gz

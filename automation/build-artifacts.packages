@@ -1,6 +1,7 @@
 git
 python
 python-dulwich
+python-pbr
 python-setuptools
 yum
 yum-utils
