@@ -1,0 +1,9 @@
+lxml
+lockfile
+paramiko
+xmltodict
+scp
+setuptools
+stevedore
+PyYAML
+enum
