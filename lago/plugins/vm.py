@@ -38,6 +38,7 @@ from scp import SCPClient
 
 from .. import (utils, log_utils, plugins, ssh, )
 from lago.config import config
+
 LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
 
