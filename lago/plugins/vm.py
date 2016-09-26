@@ -458,7 +458,7 @@ class VMPlugin(plugins.Plugin):
 
     def guest_agent(self):
         if 'guest-agent' not in self._spec:
-            for possible_name in ('qemu-ga', 'qemu-guest-agent'):
+            for possible_name in ('qemu-guest-agent', 'qemu-ga'):
                 try:
                     if self.service(possible_name).exists():
                         self._spec['guest-agent'] = possible_name
