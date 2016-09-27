@@ -3,9 +3,7 @@ Installing Lago
 
 Running Lago & the various supported deployments requires installation of Lago_ & repoman_ projects.
 
-Currently only RPM installation is avaialbe but we are working on adding support for Ubuntu and Debian soona
-
-So stay tuned!
+Currently only RPM installation is available but we are working on adding support for Ubuntu and Debian soon.
 
 Add the following repos to a lago.repo file in your /etc/yum.repos.d/ dir:
 

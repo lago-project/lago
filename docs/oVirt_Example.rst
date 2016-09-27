@@ -1,5 +1,5 @@
-oVirt Installtion Example
-=========================
+oVirt Installation Example
+==========================
 In this advanced example, you'll use the oVirt system tests framework
 to run a full instance of oVirt with hypervisors and storage.
 
