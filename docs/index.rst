@@ -1,15 +1,24 @@
-Welcome to Lago's documentation!
-================================
+Welcome to the Lago project documentation!
+==========================================
 
-Lago is an add-hoc virtual testing environment framework
+Lago Introduction
+-----------------
+Lago is an add-hoc virtual framework which helps you build virtualized
+environments on your server or laptop for various use cases.
+
+It currently utilizes 'libvirt' for creating VMs, but we are working on adding
+more providers such as 'containers'.
+
+TODO: Add the 'Lago story' and introduction.
 
 Getting started
 ----------------
 
 .. toctree::
-    :maxdepth: 3
+    :maxdepth: 0
 
-    README
+    Installation
+    Lago_Examples
 
 Developing
 ------------

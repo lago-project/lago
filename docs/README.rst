@@ -1,1 +1,1 @@
-../README.rst
+index.rst
