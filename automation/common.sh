@@ -113,10 +113,6 @@ run_installation_tests() {
 
 run_basic_functional_tests() {
     local res
-    # Ugly fix to be able to run el* on fc*
-    if ! [[ -e /usr/bin/qemu-kvm ]]; then
-        ln -s /usr/libexec/qemu-kvm /usr/bin/qemu-kvm
-    fi
     # Avoid any heavy tests (for example, any that download templates)
     bats \
         tests/functional/*basic.bats \
@@ -136,10 +132,6 @@ run_full_functional_tests() {
     [[ -e /etc/sudoers ]] \
     && sed -i -e 's/^Defaults\s*requiretty/Defaults !requiretty/' /etc/sudoers
 
-    # Ugly fix to be able to run el* on fc*
-    if ! [[ -e /usr/bin/qemu-kvm ]]; then
-        ln -s /usr/libexec/qemu-kvm /usr/bin/qemu-kvm
-    fi
     bats tests/functional/*.bats \
     | tee exported-artifacts/functional_tests.tap
     res=${PIPESTATUS[0]}
