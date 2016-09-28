@@ -46,6 +46,13 @@ def get_test_prefix():
     return _test_prefix
 
 
+def get_prefixed_name(entity_name):
+    suite = os.environ.get('SUITE')
+    return (
+        'lago-' + os.path.basename(suite).replace('.', '-') + '-' + entity_name
+    )
+
+
 def with_ovirt_prefix(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
