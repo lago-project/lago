@@ -226,14 +226,14 @@ class OvirtPrefix(Prefix):
 
             rpm_dirs.extend(
                 [
-                    os.path.join(folder, dist) + ':only-missing'
+                    os.path.join(folder, dist)
                     for folder in project_roots if os.path.exists(folder)
                 ]
             )
 
             rpm_dirs.extend(
                 [
-                    os.path.join(repos_path, name) + ':only-missing'
+                    os.path.join(repos_path, name)
                     for name in repo_names if name.endswith(dist)
                 ],
             )
