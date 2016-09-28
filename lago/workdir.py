@@ -80,7 +80,7 @@ class Workdir(object):
 
     Properties:
         path(str): Path to the workdir
-        perfixes(dict of str->self.prefix_class): dict with the prefixes in
+        prefixes(dict of str->self.prefix_class): dict with the prefixes in
         the workdir, by name
         current(str): Name of the current prefix
         prefix_class(type): Class to use when creating prefixes

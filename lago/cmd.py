@@ -52,7 +52,7 @@ in_lago_prefix = in_prefix(
         'Configuration of resources to deploy, json and yaml file formats '
         'are supported, takes option precedence over workdir. Will use '
         '$PWD/LagoInitFile by default. You can use any env vars in that file, '
-        'inculuding the extra ones LAGO_PREFIX_PATH LAGO_WORKDIR_PATH and '
+        'including the extra ones LAGO_PREFIX_PATH LAGO_WORKDIR_PATH and '
         'LAGO_INITFILE_PATH'
     ),
     metavar='VIRT_CONFIG',
