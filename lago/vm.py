@@ -226,13 +226,22 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
         with open(_path_to_xml('dom_template.xml')) as xml_fd:
             dom_raw_xml = xml_fd.read()
 
-        qemu_kvm_path = [
-            path
-            for path in [
-                '/usr/libexec/qemu-kvm',
-                '/usr/bin/qemu-kvm',
-            ] if os.path.exists(path)
-        ].pop()
+        capabilities_raw_xml = self.libvirt_con.getCapabilities()
+        capabilities_xml = lxml.etree.fromstring(capabilities_raw_xml)
+        qemu_kvm_path = capabilities_xml.findtext(
+            "guest[os_type='hvm']/arch[@name='x86_64']/domain[@type='kvm']"
+            "/emulator"
+        )
+
+        if not qemu_kvm_path:
+            LOGGER.warning("hardware acceleration not available")
+            qemu_kvm_path = capabilities_xml.findtext(
+                "guest[os_type='hvm']/arch[@name='x86_64']"
+                "/domain[@type='qemu']/../emulator"
+            )
+
+        if not qemu_kvm_path:
+            raise Exception('kvm executable not found')
 
         replacements = {
             '@NAME@': self._libvirt_name(),
