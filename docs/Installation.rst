@@ -47,21 +47,6 @@ Make sure libvirt is configured to run::
         $ systemctl start libvirtd
 
 
-Configuring SELinux
-^^^^^^^^^^^^^^^^^^^
-
-At the moment, this framework might encounter problems running while SELinux
-policy is enforced.
-
-To disable SELinux on the running system, run::
-
-    $ setenforce 0
-
-To disable SELinux from start-up, edit `/etc/selinux/config` and set::
-
-    SELINUX=permissive
-
-
 User permissions setup
 ^^^^^^^^^^^^^^^^^^^^^^
 
