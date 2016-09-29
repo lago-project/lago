@@ -15,10 +15,11 @@ Getting started
 ----------------
 
 .. toctree::
-    :maxdepth: 0
+    :maxdepth: 2
 
     Installation
     Lago_Examples
+    Debugging_and_Troubleshooting
 
 Developing
 ------------
