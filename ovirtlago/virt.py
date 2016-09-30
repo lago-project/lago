@@ -25,6 +25,11 @@ import lago.config
 import lago.vm
 import ovirtsdk.api
 from ovirtsdk.infrastructure.errors import (RequestError, ConnectionError)
+try:
+    import ovirtsdk4 as sdk4
+    API_V4 = True
+except ImportError:
+    API_V4 = False
 
 from . import (constants, testlib, )
 
@@ -118,34 +123,51 @@ class NodeVM(lago.vm.DefaultVM):
 class EngineVM(lago.vm.DefaultVM):
     def __init__(self, *args, **kwargs):
         super(EngineVM, self).__init__(*args, **kwargs)
-        self._api = None
+        self._api_v3 = None
+        self._api_v4 = None
 
     def stop(self):
         super(EngineVM, self).stop()
-        self._api = None
+        self._api_v3 = None
 
     def _artifact_paths(self):
         inherited_artifacts = super(EngineVM, self)._artifact_paths()
         return set(inherited_artifacts + ['/var/log/ovirt-engine', ])
 
-    def _create_api(self):
+    def _create_api(self, api_ver):
         url = 'https://%s/ovirt-engine/api' % self.ip()
-        return ovirtsdk.api.API(
-            url=url,
-            username=constants.ENGINE_USER,
-            password=str(self.metadata['ovirt-engine-password']),
-            validate_cert_chain=False,
-            insecure=True,
-        )
+        if api_ver == 3:
+            return ovirtsdk.api.API(
+                url=url,
+                username=constants.ENGINE_USER,
+                password=str(self.metadata['ovirt-engine-password']),
+                validate_cert_chain=False,
+                insecure=True,
+            )
+        if api_ver == 4:
+            if not API_V4:
+                raise RuntimeError('oVirt Python SDK v4 not found.')
+            return sdk4.Connection(
+                url=url,
+                username=constants.ENGINE_USER,
+                password=str(self.metadata['ovirt-engine-password']),
+                insecure=True,
+                debug=True,
+            )
+        raise RuntimeError('Unknown API requested: %s' % api_ver)
 
-    def _get_api(self):
+    def _get_api(self, api_ver):
         try:
-            api = []
+            api_v3 = []
+            api_v4 = []
 
             def get():
-                instance = self._create_api()
+                instance = self._create_api(api_ver)
                 if instance:
-                    api.append(instance)
+                    if api_ver == 3:
+                        api_v3.append(instance)
+                    else:
+                        api_v4.append(instance)
                     return True
                 return False
 
@@ -156,12 +178,26 @@ class EngineVM(lago.vm.DefaultVM):
         except AssertionError:
             raise RuntimeError('Failed to connect to the engine')
 
-        return api.pop()
+        if api_ver == 3:
+            return api_v3.pop()
+        else:
+            return api_v4.pop()
 
-    def get_api(self):
-        if self._api is None or not self._api.test():
-            self._api = self._get_api()
-        return self._api
+    def get_api(self, api_ver=3):
+        if api_ver == 3:
+            return self.get_api_v3()
+        if api_ver == 4:
+            return self.get_api_v4()
+
+    def get_api_v3(self):
+        if self._api_v3 is None or not self._api_v3.test():
+            self._api_v3 = self._get_api(api_ver=3)
+        return self._api_v3
+
+    def get_api_v4(self):
+        if self._api_v4 is None or not self._api_v4.test():
+            self._api_v4 = self._get_api(api_ver=4)
+        return self._api_v4
 
     def add_iso(self, path):
         iso_name = os.path.basename(path)
