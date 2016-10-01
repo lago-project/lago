@@ -99,6 +99,10 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
             with LogTask('Destroying VM %s' % self.vm.name()):
                 self.libvirt_con.lookupByName(self._libvirt_name(), ).destroy()
 
+    def restart(self):
+       self.stop()
+       self.start()
+
     def defined(self):
         dom_names = [dom.name() for dom in self.libvirt_con.listAllDomains()]
         return self._libvirt_name() in dom_names
