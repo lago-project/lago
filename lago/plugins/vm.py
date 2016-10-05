@@ -360,7 +360,7 @@ class VMPlugin(plugins.Plugin):
         return ssh.wait_for_ssh(
             ip_addr=self.ip(),
             host_name=self.name(),
-            connect_retries=self._spec.get('boot_time_sec', 50),
+            connect_timeout=self._spec.get('boot_time_sec', 600),
             ssh_key=self.virt_env.prefix.paths.ssh_id_rsa(),
             username=self._spec.get('ssh-user'),
             password=self._spec.get('ssh-password'),
