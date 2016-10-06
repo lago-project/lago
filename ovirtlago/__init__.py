@@ -329,7 +329,7 @@ class OvirtPrefix(Prefix):
                 env=env,
                 plugins=nose.core.DefaultPluginManager(),
                 stream=DummyStream(),
-                stopOnError=True,
+                stopOnError=False,
             )
             addplugins = [
                 testlib.TaskLogNosePlugin(),
