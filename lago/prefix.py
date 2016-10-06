@@ -1182,7 +1182,7 @@ class Prefix(object):
             for host_name, host_spec in domains.iteritems():
                 host_metadata = host_spec.get('metadata', {})
                 deploy_scripts = self._get_scripts(host_metadata)
-                new_scripts = self._copy_delpoy_scripts(deploy_scripts)
+                new_scripts = self._copy_deploy_scripts(deploy_scripts)
                 self._set_scripts(
                     host_metadata=host_metadata,
                     scripts=new_scripts,
@@ -1190,7 +1190,7 @@ class Prefix(object):
 
         return domains
 
-    def _copy_delpoy_scripts(self, scripts):
+    def _copy_deploy_scripts(self, scripts):
         """
         Copy the given deploy scripts to the scripts dir in the prefix
 
