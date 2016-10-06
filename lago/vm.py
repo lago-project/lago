@@ -255,8 +255,16 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
             dom_raw_xml = dom_raw_xml.replace(key, str(val), 1)
 
         dom_xml = lxml.etree.fromstring(dom_raw_xml)
-        devices = dom_xml.xpath('/domain/devices')[0]
+        self._compat_libvirt_devices(
+            dom_xml.xpath('/domain/devices')[0])
 
+        return lxml.etree.tostring(dom_xml)
+
+    def _compat_libvirt_devices(self, devices):
+        self._compat_libvirt_disks(devices)
+        self._compat_libvirt_nics(devices)
+
+    def _compat_libvirt_disks(self, devices):
         disk = devices.xpath('disk')[0]
         devices.remove(disk)
 
@@ -318,6 +326,9 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
             )
             devices.append(disk)
 
+        return devices
+
+    def _compat_libvirt_nics(self, devices):
         for dev_spec in self.vm._spec['nics']:
             interface = lxml.etree.Element('interface', type='network', )
             interface.append(
@@ -337,7 +348,7 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
                 )
             devices.append(interface)
 
-        return lxml.etree.tostring(dom_xml)
+        return devices
 
     def _create_dead_snapshot(self, name):
         raise RuntimeError('Dead snapshots are not implemented yet')
