@@ -41,8 +41,10 @@ BuildRequires: python2-devel
 BuildRequires: python-pbr
 %if 0%{?fedora} >= 23
 BuildRequires: python2-dulwich
+BuildRequires: python2-pbr
 %else
 BuildRequires: python-dulwich
+BuildRequires: python-pbr
 %endif
 BuildRequires: python-flake8
 BuildRequires: python-nose

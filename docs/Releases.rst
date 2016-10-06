@@ -40,11 +40,11 @@ For example::
     v1
 
 
-There's a helper script to resolve the current version, based on the last tag
-and the compatibility breaking commits since then, to get the version for the
-current repo run::
+There's a command to resolve the current version, based on the last tag and the
+compatibility breaking commits since then, to get the version for the current
+repo run::
 
-    $ scripts/version_manager.py . version
+    $ python -c 'import pbr.packaging; print(pbr.packaging.get_version("lago"))'
 
 
 RPM Versioning
@@ -121,20 +121,20 @@ manually.
 The promotion of the artifacts is done in these cases:
 
   * New major version bump (``X+1.0``, for example ``1.0 -> 2.0``)
-  * New minor version bump (``X.Y+1``, for exampyre ``1.1 -> 1.2``)
+  * New minor version bump (``X.Y+1``, for example ``1.1 -> 1.2``)
   * If it passed certain time since the last ``X`` or ``Y`` version bumps
     (``X.Y.Z+n``, for example ``1.0.1 -> 1.0.2``)
   * If there are blocking/important bugfixes (``X.Y.Z+n``)
-  * If there are important new features (``X.Y+1`` or ``X.Y.Z+n``)
+  * If there are new features (``X.Y+1``)
 
 
 How to mark a major version
 ----------------------------
 
-Whenever there's a commit that breaks the backwards compatibility, you should
+Whenever there's a commit that breaks the backwards compatibility, you must
 add to it the pseudo-header::
 
-    Sem-Ver: api-breaking
+    Sem-Ver: api-break
 
 And that will force a major version bump for any package built from it, that is
 done so in the moment when you submit the commit in gerrit, the packages that
