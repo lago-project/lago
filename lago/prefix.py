@@ -1182,6 +1182,14 @@ class Prefix(object):
             for host_name, host_spec in domains.iteritems():
                 host_metadata = host_spec.get('metadata', {})
                 deploy_scripts = self._get_scripts(host_metadata)
+                if host_metadata.get('custom-xml', None):
+                    host_metadata['custom-xml'] = os.path.expanduser(
+                        os.path.expandvars(
+                            self._copy_deploy_scripts(
+                                [host_metadata['custom-xml']]
+                            )[0]
+                        )
+                    )
                 new_scripts = self._copy_deploy_scripts(deploy_scripts)
                 self._set_scripts(
                     host_metadata=host_metadata,

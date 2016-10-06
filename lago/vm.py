@@ -223,8 +223,13 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
         return self.vm.virt_env.prefixed_name(self.vm.name())
 
     def _libvirt_xml(self):
-        with open(_path_to_xml('dom_template.xml')) as xml_fd:
-            dom_raw_xml = xml_fd.read()
+        metadata = self.vm.metadata
+        if metadata and 'custom-xml' in metadata:
+            with open(metadata['custom-xml']) as xml_fd:
+                dom_raw_xml = xml_fd.read()
+        else:
+            with open(_path_to_xml('dom_template.xml')) as xml_fd:
+                dom_raw_xml = xml_fd.read()
 
         capabilities_raw_xml = self.libvirt_con.getCapabilities()
         capabilities_xml = lxml.etree.fromstring(capabilities_raw_xml)
@@ -255,8 +260,7 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
             dom_raw_xml = dom_raw_xml.replace(key, str(val), 1)
 
         dom_xml = lxml.etree.fromstring(dom_raw_xml)
-        self._compat_libvirt_devices(
-            dom_xml.xpath('/domain/devices')[0])
+        self._compat_libvirt_devices(dom_xml.xpath('/domain/devices')[0])
 
         return lxml.etree.tostring(dom_xml)
 
