@@ -70,6 +70,19 @@ def with_ovirt_api(func):
     return wrapper
 
 
+def with_ovirt_api4(func):
+    @functools.wraps(func)
+    @with_ovirt_prefix
+    def wrapper(prefix, *args, **kwargs):
+        return func(
+            prefix.virt_env.engine_vm().get_api(api_ver=4),
+            *args,
+            **kwargs
+        )
+
+    return wrapper
+
+
 def continue_on_failure(func):
     func.continue_on_failure = True
     return func
@@ -132,8 +145,9 @@ def test_sequence_gen(test_list):
                     failure_occured[0] = True
                 raise
 
-        wrapped_test.description = test.__name__
-        yield wrapped_test
+        if test is not None:
+            wrapped_test.description = test.__name__
+            yield wrapped_test
 
 
 class LogCollectorPlugin(nose.plugins.Plugin):
