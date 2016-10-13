@@ -41,7 +41,7 @@ import json
 import lockfile
 import os
 
-from . import config
+from .config import config
 from . import utils
 
 #: Lower range for the allowed subnets
@@ -72,7 +72,7 @@ def _validate_lease_dir_present(func):
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
-        lease_dir = config.get('lease_dir')
+        lease_dir = config['lease_dir']
         if not os.path.isdir(lease_dir):
             os.makedirs(lease_dir)
         return func(*args, **kwargs)
@@ -88,7 +88,7 @@ def _locked(func):
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
-        lease_dir = config.get('lease_dir')
+        lease_dir = config['lease_dir']
         lock_file = os.path.join(lease_dir, 'leases.lock')
 
         with lockfile.LockFile(lock_file):
@@ -178,7 +178,7 @@ def _acquire(uuid_path):
         caller can handle the failure case
     """
 
-    lease_dir = config.get('lease_dir')
+    lease_dir = config['lease_dir']
     for index in range(MIN_SUBNET, MAX_SUBNET + 1):
         lease_file = os.path.join(lease_dir, '%d.lease' % index)
         if os.path.exists(lease_file):
@@ -220,7 +220,7 @@ def _release(index):
         None
     """
 
-    lease_dir = config.get('lease_dir')
+    lease_dir = config['lease_dir']
     lease_file = os.path.join(lease_dir, '%d.lease' % index)
     os.unlink(lease_file)
 

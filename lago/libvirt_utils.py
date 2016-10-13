@@ -22,7 +22,7 @@ Utilities to help deal with the libvirt python bindings
 """
 import libvirt
 
-import lago.config
+from lago.config import config
 
 #: Mapping of domain statuses values to human readable strings
 DOMAIN_STATES = {
@@ -64,9 +64,9 @@ class Domain(object):
 def auth_callback(credentials, user_data):
     for credential in credentials:
         if credential[0] == libvirt.VIR_CRED_AUTHNAME:
-            credential[4] = lago.config.get('libvirt_username')
+            credential[4] = config.get('libvirt_username')
         elif credential[0] == libvirt.VIR_CRED_PASSPHRASE:
-            credential[4] = lago.config.get('libvirt_password')
+            credential[4] = config.get('libvirt_password')
 
     return 0
 

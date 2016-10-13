@@ -23,7 +23,8 @@ import logging
 import os
 import sys
 
-from lago import (config, utils)
+from lago import utils
+from lago.config import config
 from lago.plugins.cli import CLIPlugin
 
 

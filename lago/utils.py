@@ -30,11 +30,13 @@ import signal
 import subprocess
 import sys
 import threading
+import textwrap
 import time
 import yaml
-
+from io import StringIO
 import lockfile
-
+import argparse
+import configparser
 from . import constants
 from .log_utils import (LogTask, setup_prefix_logging)
 
@@ -516,3 +518,54 @@ def ipv4_to_mac(ip):
     # the hex repr of the IP address)
     mac_addr_pieces = [0x54, 0x52] + [int(y) for y in ip.split('.')]
     return ':'.join([('%02x' % x) for x in mac_addr_pieces])
+
+
+def argparse_to_ini(parser, root_section='lago', incl_unset=False):
+    subparsers_actions = [
+        action
+        for action in parser._actions
+        if isinstance(action, argparse._SubParsersAction)
+    ]
+
+    root_actions = [
+        action
+        for action in parser._actions
+        if not isinstance(action, argparse._SubParsersAction)
+    ]
+
+    cp = configparser.ConfigParser(allow_no_value=True)
+
+    _add_subparser_to_cp(cp, root_section, root_actions, incl_unset)
+    for subparsers_action in subparsers_actions:
+        for choice, subparser in subparsers_action.choices.items():
+            _add_subparser_to_cp(cp, choice, subparser._actions, incl_unset)
+
+    header = '# Lago configuration file, generated: {0}'.format(
+        time.strftime(
+            "%c"
+        )
+    )
+    with StringIO() as ini_str:
+        cp.write(ini_str)
+        return '\n'.join([header, ini_str.getvalue()])
+
+
+def _add_subparser_to_cp(cp, section, actions, incl_unset):
+    cp.add_section(section)
+    print_actions = (
+        action
+        for action in actions
+        if (action.default and action.default != '==SUPPRESS==') or (
+            action.default is None and incl_unset
+        )
+    )
+    for action in print_actions:
+        var = str(action.dest)
+        if action.default is None:
+            var = '#{0}'.format(var)
+        cp.set(section, var, str(action.default))
+        if action.help:
+            for line in textwrap.wrap(action.help, width=70):
+                cp.set(section, '# {0}'.format(line))
+    if len(cp.items(section)) == 0:
+        cp.remove_section(section)
