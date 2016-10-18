@@ -259,5 +259,5 @@ class OvirtCLI(CLIPlugin):
             self.cli_plugins[args.ovirtverb].do_run(args)
 
         except Exception:
-            logging.exception('Error occured, aborting')
+            logging.exception('Error occurred, aborting')
             sys.exit(1)

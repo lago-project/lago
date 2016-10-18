@@ -50,7 +50,7 @@ def _create_ip(subnet, index):
     from the subnet (255.255.255.0 mask only subnets)
 
     Args:
-        subnet (str): Strign containing the three first elements of the decimal
+        subnet (str): String containing the three first elements of the decimal
             representation of a subnet (X.Y.Z) or a full ip (X.Y.Z.A)
         index (int or str): Last element of a decimal ip representation, for
             example, 123 for the ip 1.2.3.123
@@ -69,7 +69,7 @@ def _ip_in_subnet(subnet, ip):
         only 255.255.255.0 masks allowed
 
     Args:
-        subnet (str): Strign containing the three first elements of the decimal
+        subnet (str): String containing the three first elements of the decimal
             representation of a subnet (X.Y.Z) or a full ip (X.Y.Z.A)
         ip (str or int): Decimal ip representation
 
@@ -89,7 +89,7 @@ class Prefix(object):
 
     Attributes:
         _prefix (str): Path to the directory of this prefix
-        _paths (lago.path.Paths): Path handler class
+        paths (lago.path.Paths): Path handler class
         _virt_env (lago.virt.VirtEnv): Lazily loaded virtual env handler
         _metadata (dict): Lazily loaded metadata
     """
@@ -219,8 +219,9 @@ class Prefix(object):
     @log_task('Cleanup prefix')
     def cleanup(self):
         """
-        Stops any running entities in the prefix and uninitializes it, usually
-        you want to do this if you are going to remove the prefix afterwards
+        Stops any running entities in the prefix and un-initializes it.
+        Usually you want to do this if you are going to remove the prefix
+        afterwards
 
         Returns:
             None
@@ -379,7 +380,7 @@ class Prefix(object):
     def _allocate_ips_to_nics(self, conf):
         """
         For all the nics of all the domains in the conf that have dynamic ip,
-        allocate one and addit to the network mapping
+        allocate one and add it to the network mapping
 
         Args:
             conf (dict): Configuration spec to extract the domains from
@@ -412,11 +413,11 @@ class Prefix(object):
     def _config_net_topology(self, conf):
         """
         Initialize and populate all the network related elements, like
-        reserving ips and populating network specs of the given confiiguration
+        reserving ips and populating network specs of the given configuration
         spec
 
         Args:
-            conf (dict): Configuration spec to initalize
+            conf (dict): Configuration spec to initialize
 
         Returns:
             None
@@ -592,7 +593,7 @@ class Prefix(object):
             )
         else:
             raise RuntimeError(
-                'Unsupporte template spec %s' % str(template_spec)
+                'Unsupported template spec %s' % str(template_spec)
             )
 
         if os.path.exists(disk_path):
@@ -659,24 +660,24 @@ class Prefix(object):
         The disk will be cached in the template repo
 
         Args:
-            filename(str): the url to retrive the data from
+            filename(str): the url to retrieve the data from
 
         TODO:
             * Add hash checking against the server
               for faster download and latest version
             * Add config script running on host - other place
-            * Add cloud init support - by using cdroms in other place
+            * Add cloud init support - by using cd-roms in other place
             * Handle cpu in some way - some other place need to pick it up
             * Handle the memory units properly - we just assume MegaBytes
 
         Returns:
             list of dict: list with the disk specification
             int: VM memory, None if none defined
-            int: Number of virtual cpus, None if none defined
+            int: Number of virtual CPUs, None if none defined
 
         Raises:
             RuntimeError: If the ova format is not supported
-            TypeError: If the memory units in the ova are noot supported
+            TypeError: If the memory units in the ova are not supported
                 (currently only 'MegaBytes')
         """
         # extract if needed
@@ -801,8 +802,9 @@ class Prefix(object):
 
         Args:
             conf_fd (File): File like object to read the config from
-            template_repo (TemplateRepository): template repository intance
+            template_repo (TemplateRepository): template repository instance
             template_store (TemplateStore): template store instance
+            do_bootstrap (Boolean): perform bootstrap yes/no
 
         Returns:
             None
@@ -911,8 +913,9 @@ class Prefix(object):
 
         Args:
             conf (dict): Configuration spec
-            template_repo (TemplateRepository): template repository intance
+            template_repo (TemplateRepository): template repository instance
             template_store (TemplateStore): template store instance
+            do_bootstrap (Boolean): perform bootstrap yes/no
 
         Returns:
             None
@@ -929,11 +932,9 @@ class Prefix(object):
                 template_repo=template_repo,
                 template_store=template_store,
             )
-            conf = self._config_net_topology(conf)
+            self._config_net_topology(conf)
 
-            conf['domains'] = self._copy_deploy_scripts_for_hosts(
-                domains=conf['domains']
-            )
+            self._copy_deploy_scripts_for_hosts(domains=conf['domains'])
             self._virt_env = self.VIRT_ENV_CLASS(
                 prefix=self,
                 vm_specs=conf['domains'],
@@ -1161,7 +1162,7 @@ class Prefix(object):
             dict: the updated metadata
         """
         scripts_key = 'deploy-scripts'
-        if 'ovirt-scritps' in host_metadata:
+        if 'ovirt-scripts' in host_metadata:
             scripts_key = 'ovirt-scripts'
 
         host_metadata[scripts_key] = scripts

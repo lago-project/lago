@@ -17,6 +17,7 @@
 #
 # Refer to the README and COPYING files for full details of the license
 #
+import collections
 import functools
 import hashlib
 import json
@@ -61,13 +62,13 @@ def _path_to_xml(basename):
 
 
 class VirtEnv(object):
-    '''Env properties:
+    """Env properties:
     * prefix
     * vms
     * net
 
     * libvirt_con
-    '''
+    """
 
     def __init__(self, prefix, vm_specs, net_specs):
         self.vm_types = plugins.load_plugins(
@@ -79,11 +80,11 @@ class VirtEnv(object):
         with open(self.prefix.paths.uuid(), 'r') as uuid_fd:
             self.uuid = uuid_fd.read().strip()
 
-        self._nets = {}
+        self._nets = collections.OrderedDict()
         for name, spec in net_specs.items():
             self._nets[name] = self._create_net(spec)
 
-        self._vms = {}
+        self._vms = collections.OrderedDict()
         for name, spec in vm_specs.items():
             self._vms[name] = self._create_vm(spec)
 
@@ -114,7 +115,7 @@ class VirtEnv(object):
 
     def prefixed_name(self, unprefixed_name, max_length=0):
         """
-        Returns a uuid pefixed identifier
+        Returns a uuid prefixed identifier
 
         Args:
             unprefixed_name(str): Name to add a prefix to
@@ -233,17 +234,21 @@ class VirtEnv(object):
         virt_path = functools.partial(prefix.paths.prefixed, 'virt')
 
         with open(virt_path('env'), 'r') as f:
-            env_dom = json.load(f)
+            env_dom = json.load(f, object_pairs_hook=collections.OrderedDict)
 
-        net_specs = {}
+        net_specs = collections.OrderedDict()
         for name in env_dom['nets']:
             with open(virt_path('net-%s' % name), 'r') as f:
-                net_specs[name] = json.load(f)
+                net_specs[name] = json.load(
+                    f, object_pairs_hook=collections.OrderedDict
+                )
 
-        vm_specs = {}
+        vm_specs = collections.OrderedDict()
         for name in env_dom['vms']:
             with open(virt_path('vm-%s' % name), 'r') as f:
-                vm_specs[name] = json.load(f)
+                vm_specs[name] = json.load(
+                    f, object_pairs_hook=collections.OrderedDict
+                )
 
         return cls(prefix, vm_specs, net_specs)
 
@@ -282,7 +287,7 @@ class VirtEnv(object):
         Get the list of snapshots for each domain
 
         Args:
-            domanins(list of str): list of the domains to get the snapshots
+            domains(list of str): list of the domains to get the snapshots
             for, all will be returned if none or empty list passed
 
         Returns:

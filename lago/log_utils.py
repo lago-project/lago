@@ -125,7 +125,7 @@ class Task(deque):
     Attributes:
         name (str): name for this task
         failed (bool): If this task has failed or not (if there was any error
-            log shown during it's execution)
+            log shown during its execution)
         force_show (bool): If set, will show any log records generated inside
             this task even if it's out of nested depth limit
     """
@@ -294,7 +294,7 @@ class TaskHandler(logging.StreamHandler):
 
     def mark_main_tasks_as_failed(self):
         """
-        Flags to the main thread that all it's tasks sholud fail
+        Flags to the main thread that all its tasks should fail
 
         Returns:
             None
@@ -317,7 +317,7 @@ class TaskHandler(logging.StreamHandler):
         if cur_level is None:
             cur_level = self.cur_depth_level
 
-        return (self.task_tree_depth < 0 or self.task_tree_depth >= cur_level)
+        return self.task_tree_depth < 0 or self.task_tree_depth >= cur_level
 
     def should_show_by_level(self, record_level, base_level=None):
         """
@@ -474,7 +474,7 @@ class TaskHandler(logging.StreamHandler):
                 for, if None, will use the current tasks depth
 
         Returns:
-            str: char to prepend to the task logs to indicate it's level
+            str: char to prepend to the task logs to indicate its level
         """
         if task_level is None:
             task_level = len(self.tasks)
@@ -595,7 +595,7 @@ class LogTask(object):
 
 def log_task(task, logger=logging, level='info', propagate_fail=True):
     """
-    Parameterized decorator to wrap a function in a log task
+    Parametrized decorator to wrap a function in a log task
 
     Example:
         >>> @log_task('mytask')

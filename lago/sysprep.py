@@ -29,19 +29,19 @@ _ISCSI_DIR = '/etc/iscsi'
 
 
 def set_hostname(hostname):
-    return ('--hostname', hostname)
+    return '--hostname', hostname
 
 
 def set_root_password(password):
-    return ('--root-password', 'password:%s' % password)
+    return '--root-password', 'password:%s' % password
 
 
 def _write_file(path, content):
-    return ('--write', '%s:%s' % (path, content))
+    return '--write', '%s:%s' % (path, content)
 
 
 def _upload_file(local_path, remote_path):
-    return ('--upload', '%s:%s' % (remote_path, local_path))
+    return '--upload', '%s:%s' % (remote_path, local_path)
 
 
 def set_iscsi_initiator_name(name):
@@ -65,7 +65,7 @@ def add_ssh_key(key, with_restorecon_fix=False):
     ) + _upload_file(
         _AUTHORIZED_KEYS, key
     )
-    if (not os.stat(key).st_uid == 0 or not os.stat(key).st_gid == 0):
+    if not os.stat(key).st_uid == 0 or not os.stat(key).st_gid == 0:
         extra_options += (
             '--run-command',
             'chown root.root %s' % _AUTHORIZED_KEYS,

@@ -797,7 +797,7 @@ def main():
     try:
         cli_plugins[args.verb].do_run(args)
     except Exception:
-        LOGGER.exception('Error occured, aborting')
+        LOGGER.exception('Error occurred, aborting')
         sys.exit(1)
 
 

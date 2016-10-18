@@ -11,7 +11,7 @@ definitions:
         Local store to cache templates
 
     * Template:
-        Unititialized disk image to use as base for other disk images
+        Un-initialized disk image to use as base for other disk images
 
     * Template version:
         Specific version of a template, to allow getting updates without
@@ -69,7 +69,7 @@ class FileSystemTemplateProvider:
 
     def download_image(self, handle, dest):
         """
-        Copies over the handl to the destination
+        Copies over the handle to the destination
 
         Args:
             handle (str): path to copy over
@@ -304,7 +304,7 @@ class TemplateRepository:
     A template repository is a single source for templates, that uses different
     providers to actually retrieve them. That means for example that the
     'ovirt' template repository, could support the 'http' and a theoretical
-    'gluster' template providers.
+    'Gluster' template providers.
 
 
     Attributes:

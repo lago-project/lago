@@ -17,6 +17,7 @@
 #
 # Refer to the README and COPYING files for full details of the license
 #
+import copy
 import Queue
 import collections
 import datetime
@@ -66,6 +67,7 @@ class VectorThread:
     def __init__(self, targets):
         self.targets = targets
         self.results = None
+        self.thread_handles = None
 
     def start_all(self):
         self.thread_handles = []
@@ -267,7 +269,7 @@ def service_is_enabled(name):
 
 # Copied from VDSM: lib/vdsm/utils.py
 class RollbackContext(object):
-    '''
+    """"
     A context manager for recording and playing rollback.
     The first exception will be remembered and re-raised after rollback
 
@@ -279,8 +281,8 @@ class RollbackContext(object):
     >     step2()
     >     rollback.prependDefer(undoStep2, arg)
 
-    More examples see tests/utilsTests.py @ vdsm code
-    '''
+    More examples see tests/utilsTests.py @ VDSM code
+    """
 
     def __init__(self, *args):
         self._finally = []
@@ -410,7 +412,7 @@ def json_dump(obj, f):
 def deepcopy(original_obj):
     """
     Creates a deep copy of an object with no crossed referenced lists or dicts,
-    useful when loading from yaml as anchors generate those cross-referenced
+    useful when loading from YAML as anchors generate those cross-referenced
     dicts and lists
 
     Args:
@@ -421,6 +423,10 @@ def deepcopy(original_obj):
     """
     if isinstance(original_obj, list):
         return list(deepcopy(item) for item in original_obj)
+    elif isinstance(original_obj, collections.OrderedDict):
+        return collections.OrderedDict(
+            (key, deepcopy(val)) for key, val in original_obj.items()
+        )
     elif isinstance(original_obj, dict):
         return dict((key, deepcopy(val)) for key, val in original_obj.items())
     else:
@@ -433,18 +439,20 @@ def load_virt_stream(virt_fd):
     needed
 
     Args:
-        virt_fd (str): file like objcect with the virt config to load
+        virt_fd (str): file like object with the virt config to load
 
     Returns:
         dict: Loaded virt config
     """
     try:
-        virt_conf = json.load(virt_fd)
+        virt_conf = json.load(
+            virt_fd, object_pairs_hook=collections.OrderedDict
+        )
     except ValueError:
         virt_fd.seek(0)
         virt_conf = yaml.load(virt_fd)
 
-    return deepcopy(virt_conf)
+    return copy.deepcopy(virt_conf)
 
 
 def in_prefix(prefix_class, workdir_class):
@@ -514,7 +522,7 @@ def rotate_dir(base_dir):
 
 
 def ipv4_to_mac(ip):
-    # Mac addrs of domains are 54:52:xx:xx:xx:xx where the last 4 octets are
+    # Mac address of domains are 54:52:xx:xx:xx:xx where the last 4 octets are
     # the hex repr of the IP address)
     mac_addr_pieces = [0x54, 0x52] + [int(y) for y in ip.split('.')]
     return ':'.join([('%02x' % x) for x in mac_addr_pieces])
