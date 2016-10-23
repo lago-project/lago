@@ -13,7 +13,8 @@ Prefix:
         eth1: {ip: !!python/unicode '192.168.202.2', network: !!python/unicode 'n1'}
       VNC port: null
       distro: !!python/unicode 'cirros'
-      metadata: {}
+      metadata: !!python/object/apply:collections.OrderedDict
+      - []
       root password: !!python/unicode '123456'
       snapshots: ''
       status: down
@@ -23,7 +24,8 @@ Prefix:
         eth1: {ip: !!python/unicode '192.168.202.3', network: !!python/unicode 'n1'}
       VNC port: null
       distro: !!python/unicode 'cirros'
-      metadata: {}
+      metadata: !!python/object/apply:collections.OrderedDict
+      - []
       root password: !!python/unicode 'cubswin:)'
       snapshots: ''
       status: down

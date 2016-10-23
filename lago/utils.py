@@ -420,6 +420,10 @@ def deepcopy(original_obj):
     """
     if isinstance(original_obj, list):
         return list(deepcopy(item) for item in original_obj)
+    elif isinstance(original_obj, collections.OrderedDict):
+        return collections.OrderedDict(
+            (key, deepcopy(val)) for key, val in original_obj.items()
+        )
     elif isinstance(original_obj, dict):
         return dict((key, deepcopy(val)) for key, val in original_obj.items())
     else:
@@ -438,9 +442,21 @@ def load_virt_stream(virt_fd):
         dict: Loaded virt config
     """
     try:
-        virt_conf = json.load(virt_fd)
+        virt_conf = json.load(
+            virt_fd, object_pairs_hook=collections.OrderedDict
+        )
     except ValueError:
         virt_fd.seek(0)
+
+        # Ensure ordered dict loading from YAML. Based on
+        # http://stackoverflow.com/questions/5121931/in-python-how-can-you-load-yaml-mappings-as-ordereddicts
+        _mapping_tag = yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG
+
+        def dict_constructor(loader, node):
+            return collections.OrderedDict(loader.construct_pairs(node))
+
+        yaml.add_constructor(_mapping_tag, dict_constructor)
+
         virt_conf = yaml.load(virt_fd)
 
     return deepcopy(virt_conf)
