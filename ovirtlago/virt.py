@@ -245,6 +245,7 @@ class HostVM(lago.vm.DefaultVM):
             ]
         )
 
+
 class HEHostVM(HostVM):
     def _artifact_paths(self):
         inherited_artifacts = super(HEHostVM, self)._artifact_paths()
