@@ -563,9 +563,9 @@ def _add_subparser_to_cp(cp, section, actions, incl_unset):
         var = str(action.dest)
         if action.default is None:
             var = '#{0}'.format(var)
-        cp.set(section, var, str(action.default))
         if action.help:
             for line in textwrap.wrap(action.help, width=70):
                 cp.set(section, '# {0}'.format(line))
+        cp.set(section, var, str(action.default))
     if len(cp.items(section)) == 0:
         cp.remove_section(section)
