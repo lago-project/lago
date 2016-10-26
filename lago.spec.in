@@ -27,12 +27,22 @@ install -d -m 755 %{buildroot}/%{_sysconfdir}/lago
 PYTHONPATH="$PYTHONPATH:%{buildroot}/%{python_sitelib}"\
              %{buildroot}/usr/bin/lago --ignore-warnings generate-config > "%{buildroot}/%{_sysconfdir}/lago/lago.conf"
 sed -i 's/^\([^#]\)\(.*\)/#\0/' "%{buildroot}/%{_sysconfdir}/lago/lago.conf"
+chmod 0644 "%{buildroot}/%{_sysconfdir}/lago/lago.conf"
 
 install -d %{buildroot}/var/lib/lago/subnets
 install -d %{buildroot}/var/lib/lago/store
 install -d %{buildroot}/var/lib/lago/repos
+
+install -d -m 755 %{buildroot}%{_sysconfdir}/polkit-1/localauthority/50-local.d
+install -d -m 755 %{buildroot}%{_sysconfdir}/sudoers.d
+
+install -p -D -m 644 etc/polkit/*.pkla %{buildroot}%{_sysconfdir}/polkit-1/localauthority/50-local.d/
+install -p -D -m 644 etc/sudo/* %{buildroot}%{_sysconfdir}/sudoers.d/
+
 # this is for python-lago-ovirt
 install -d %{buildroot}/var/lib/lago/reposync
+install -d -m 755 %{buildroot}%{_sysconfdir}/firewalld/services
+install -p -D -m 644 etc/firewalld/services/* %{buildroot}%{_sysconfdir}/firewalld/services/
 
 %files
 
@@ -104,11 +114,13 @@ Requires: sudo
 %{python2_sitelib}/%{name}_template_repo/*.py*
 %{python2_sitelib}/%{name}/*.xml
 %{python2_sitelib}/%{name}-%{version}-py*.egg-info
-%{_sysconfdir}/polkit-1/localauthority/50-local.d/
 %{_bindir}/lagocli
 %{_bindir}/lago
-%attr(0775, root, root) %{_sysconfdir}/sudoers.d/*
+
 %config(noreplace) %{_sysconfdir}/lago/lago.conf
+%config(noreplace) %{_sysconfdir}/polkit-1/localauthority/50-local.d/*
+%config(noreplace) %{_sysconfdir}/sudoers.d/*
+
 %dir %attr(2775, root, lago) /var/lib/lago/
 %dir %attr(2775, root, lago) /var/lib/lago/subnets/
 %dir %attr(2775, root, lago) /var/lib/lago/store/
@@ -159,7 +171,7 @@ Requires: xz
 
 %files -n python-%{name}-ovirt
 %{python2_sitelib}/ovirt%{name}/*.py*
-%{_sysconfdir}/firewalld/services/*
+%config(noreplace) %{_sysconfdir}/firewalld/services/*
 %dir %attr(2775, root, lago) /var/lib/lago/reposync/
 
 %post -n python-%{name}-ovirt
