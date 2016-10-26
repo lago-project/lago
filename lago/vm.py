@@ -25,7 +25,8 @@ import lxml
 import os
 import pwd
 
-from . import (log_utils, utils, sysprep, libvirt_utils, config, )
+from . import (log_utils, utils, sysprep, libvirt_utils)
+from .config import config
 from .plugins import vm
 
 LOGGER = logging.getLogger(__name__)

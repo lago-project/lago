@@ -14,4 +14,6 @@ pyyaml
 scp
 stevedore
 xmltodict
+configparser
+pyxdg
 yapf==0.7.1

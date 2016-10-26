@@ -36,7 +36,8 @@ from abc import (ABCMeta, abstractmethod)
 
 from scp import SCPClient
 
-from .. import (config, utils, log_utils, plugins, ssh, )
+from .. import (utils, log_utils, plugins, ssh, )
+from lago.config import config
 
 LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
@@ -494,14 +495,14 @@ class VMPlugin(plugins.Plugin):
         spec['metadata'] = spec.get('metadata', {})
 
         if 'root-password' not in spec:
-            root_password = config.get('default_root_password')
+            root_password = config.get('root_password')
             if root_password:
                 spec['ssh-password'] = root_password
             else:
-                spec['ssh-password'] = config.get('default_ssh_password')
+                spec['ssh-password'] = config.get('ssh_password')
 
         if 'ssh-user' not in spec:
-            spec['ssh-user'] = config.get('default_ssh_user')
+            spec['ssh-user'] = config.get('ssh_user')
 
         return spec
 

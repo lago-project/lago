@@ -12,7 +12,8 @@ import logging
 
 import paramiko
 
-from . import (config, utils, log_utils, )
+from . import (utils, log_utils, )
+from .config import config
 
 LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)

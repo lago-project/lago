@@ -33,9 +33,9 @@ import sys
 
 import lockfile
 
-import config
 import utils
 from . import log_utils
+from .config import config
 
 LOGGER = logging.getLogger(__name__)
 

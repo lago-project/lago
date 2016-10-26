@@ -21,8 +21,9 @@ import os
 import warnings
 
 import lago
-import lago.config
 import lago.vm
+from lago.config import config as lago_config
+
 import ovirtsdk.api
 from ovirtsdk.infrastructure.errors import (RequestError, ConnectionError)
 try:
@@ -55,7 +56,7 @@ class OvirtVirtEnv(lago.virt.VirtEnv):
         else:
             provider_name = vm_spec.get(
                 'vm-type',
-                lago.config.get('default_vm_provider', 'default'),
+                lago_config.get('default_vm_provider', 'default'),
             )
 
         if provider_name == 'ovirt-engine':
