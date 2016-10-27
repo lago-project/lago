@@ -1,7 +1,7 @@
 Installing Lago
 ---------------
 
-You'll notice that some of the actions you need to do to run Lago are 
+You'll notice that some of the actions you need to do to run Lago are
 currently manual, but we are working to add them as part of the standard
 Python packaging for Lago which is in progress.
 
@@ -19,7 +19,7 @@ For Fedora::
   enabled=1
   gpgcheck=0
 
-For EL distros (such as CentOS, RHEL, etc.)::
+For EL distros (such as CentOS, RHEL, etc.), make sure you have EPEL and::
 
   [lago]
   baseurl=http://resources.ovirt.org/repos/lago/stable/0.0/rpm/el$releasever
@@ -28,7 +28,7 @@ For EL distros (such as CentOS, RHEL, etc.)::
   gpgcheck=0
 
 
-**TODO**: point to the release rpm once it's implemented, and use gpgcheck=1
+.. todo:: point to the release rpm once it's implemented, and use gpgcheck=1
 
 Installing the packages
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -60,7 +60,7 @@ Add yourself to lago and qemu groups::
 
 It is also advised to add qemu user to your group (to be able to store VM files
 in home directory)::
-    
+
     $ usermod -a -G USERNAME qemu
 
 For the group changes to take place, you'll need to re-login to the shell.
@@ -68,7 +68,7 @@ Make sure running `id` returns all the aforementioned groups.
 
 Make sure that the qemu user has execution rights to the dir where you will be
 creating the prefixes, you can try it out with::
-    
+
     $ sudo -u qemu ls /path/to/the/destination/dir
 
 If it can't access it, make sure that all the dirs in the path have your user
@@ -83,7 +83,7 @@ rights, to make sure you can just run::
 
 And, just to be sure, let's refresh libvirtd service to ensure that it
 refreshes it's permissions and picks up any newly created users::
-    
+
     $ sudo service libvirtd restart
 
 
