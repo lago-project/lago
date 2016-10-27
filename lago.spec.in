@@ -51,7 +51,6 @@ install -p -D -m 644 etc/firewalld/services/* %{buildroot}%{_sysconfdir}/firewal
 Summary: Library to perform lago operations
 BuildArch: noarch
 BuildRequires: python2-devel
-BuildRequires: python-pbr
 BuildRequires: python-stevedore
 BuildRequires: python-setuptools
 BuildRequires: python-magic
@@ -71,7 +70,9 @@ BuildRequires: python-configparser
 
 %if 0%{?fedora} >= 23
 BuildRequires: python2-dulwich
+BuildRequires: python2-pbr
 %else
+BuildRequires: python-pbr
 BuildRequires: python-dulwich
 %endif
 BuildRequires: python-flake8
