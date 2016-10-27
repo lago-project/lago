@@ -7,3 +7,5 @@ setuptools
 stevedore
 PyYAML
 enum
+pyxdg
+configparser
