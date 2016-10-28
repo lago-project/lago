@@ -108,7 +108,14 @@ class VirtEnv(object):
     def _create_vm(self, vm_spec):
         default_vm_type = config.get('default_vm_type')
         vm_type_name = vm_spec.get('vm-type', default_vm_type)
-        vm_type = self.vm_types.get(vm_type_name)
+        try:
+            vm_type = self.vm_types[vm_type_name]
+        except KeyError:
+            raise RuntimeError(
+                'Unknown VM type: {0}, available types: {1}'.format(
+                    vm_type_name, ','.join(self.vm_types.keys())
+                )
+            )
         vm_spec['vm-type'] = vm_type_name
         return vm_type(self, vm_spec)
 
