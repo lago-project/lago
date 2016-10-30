@@ -614,11 +614,23 @@ def create_parser(cli_plugins, out_plugins):
         type=int,
         help='How many task levels to show'
     )
-    pkg_info = pkg_resources.require("lago")[0]
+
+    try:
+        # Checks that all the deps are installed
+        pkg_resources.require("lago")[0]
+    except pkg_resources.VersionConflict as e:
+        # Hack that allows to run stevedore without checking
+        # for it's dep. it is required for systems running stevedore 1.1.0
+        # and pbr > 1.
+        LOGGER.debug(e.message)
+        pkgs = e[2]
+        if len(pkgs) > 1 or 'stevedore' not in pkgs:
+            raise e
+
     parser.add_argument(
         '--version',
         action='version',
-        version='%(prog)s ' + pkg_info.version,
+        version='%(prog)s ' + pkg_resources.get_distribution("lago").version,
     )
     parser.add_argument(
         '--out-format',
