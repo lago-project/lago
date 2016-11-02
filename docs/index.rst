@@ -12,13 +12,14 @@ more providers such as 'containers'.
 TODO: Add the 'Lago story' and introduction.
 
 Getting started
-----------------
+---------------
 
 .. toctree::
     :maxdepth: 2
 
     Installation
     Lago_Examples
+    Configuration
     Debugging_and_Troubleshooting
 
 Developing
