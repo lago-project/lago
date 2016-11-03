@@ -163,6 +163,21 @@ class VMProviderPlugin(plugins.Plugin):
         """
         pass
 
+    def export_disks(self, standalone, dst_dir, compress, *args, **kwargs):
+        """
+        Export 'disks' as a standalone image or a layered image.
+
+        Args:
+            disks(list): The names of the disks to export
+              (None means all the disks)
+            standalone(bool): If true create a copy of the layered image
+              else create a new disk which is a combination of the current
+              layer and the base disk.
+            dst_dir (str): dir to place the exported images
+            compress (bool): if true, compress the exported image.
+        """
+        pass
+
     def interactive_console(self):
         """
         Run an interactive console
@@ -310,6 +325,16 @@ class VMPlugin(plugins.Plugin):
         """
         return self.provider.extract_paths(paths, *args, **kwargs)
 
+    def export_disks(
+        self, standalone=True, dst_dir=None, compress=False, *args, **kwargs
+    ):
+        """
+        Thin method that just uses the provider
+        """
+        return self.provider.export_disks(
+            standalone, dst_dir, compress, *args, **kwargs
+        )
+
     def copy_to(self, local_path, remote_path, recursive=True):
         with LogTask(
             'Copy %s to %s:%s' % (local_path, self.name(), remote_path),
@@ -334,6 +359,10 @@ class VMPlugin(plugins.Plugin):
     @property
     def metadata(self):
         return self._spec['metadata'].copy()
+
+    @property
+    def disks(self):
+        return self._spec['disks'][:]
 
     def name(self):
         return str(self._spec['name'])

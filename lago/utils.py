@@ -40,6 +40,7 @@ import configparser
 import uuid as uuid_m
 from . import constants
 from .log_utils import (LogTask, setup_prefix_logging)
+import hashlib
 
 LOGGER = logging.getLogger(__name__)
 
@@ -566,3 +567,132 @@ def _add_subparser_to_cp(cp, section, actions, incl_unset):
         cp.set(section, var, str(action.default))
     if len(cp.items(section)) == 0:
         cp.remove_section(section)
+
+
+def run_command_with_validation(
+    cmd, fail_on_error=True, msg='An error has occurred'
+):
+    result = run_command(cmd)
+    if result and fail_on_error:
+        raise RuntimeError('{}\n{}'.format(msg, result.err))
+
+    return result
+
+
+def get_qemu_info(path, backing_chain=False, fail_on_error=True):
+    """
+    Get info on a given qemu disk
+
+    Args:
+        path(str): Path to the required disk
+        backing_chain(boo): if true, include also info about
+        the image predecessors.
+    Return:
+        object: if backing_chain == True then a list of dicts else a dict
+    """
+
+    cmd = ['qemu-img', 'info', '--output=json', path]
+
+    if backing_chain:
+        cmd.insert(-1, '--backing-chain')
+
+    result = run_command_with_validation(
+        cmd, fail_on_error, msg='Failed to get info for {}'.format(path)
+    )
+
+    return json.loads(result.out)
+
+
+def qemu_rebase(target, backing_file, safe=True, fail_on_error=True):
+    """
+    changes the backing file of 'source' to 'backing_file'
+    If backing_file is specified as "" (the empty string),
+    then the image is rebased onto no backing file
+    (i.e. it will exist independently of any backing file).
+    (Taken from qemu-img man page)
+
+    Args:
+        target(str): Path to the source disk
+        backing_file(str): path to the base disk
+        safe(bool): if false, allow unsafe rebase
+         (check qemu-img docs for more info)
+    """
+    cmd = ['qemu-img', 'rebase', '-b', backing_file, target]
+    if not safe:
+        cmd.insert(2, '-u')
+
+    return run_command_with_validation(
+        cmd,
+        fail_on_error,
+        msg='Failed to rebase {target} onto {backing_file}'.format(
+            target=target, backing_file=backing_file
+        )
+    )
+
+
+def compress(input_file, block_size, fail_on_error=True):
+    cmd = [
+        'xz', '--compress', '--keep', '--threads=0', '--best', '--force',
+        '--verbose', '--block-size={}'.format(block_size), input_file
+    ]
+    return run_command_with_validation(
+        cmd, fail_on_error, msg='Failed to compress {}'.format(input_file)
+    )
+
+
+def cp(input_file, output_file, fail_on_error=True):
+    if not os.path.basename(output_file):
+        output_file = os.path.join(output_file, os.path.basename(input_file))
+
+    cmd = ['cp', input_file, output_file]
+    return run_command_with_validation(
+        cmd,
+        fail_on_error,
+        msg='Failed to copy {} to {}'.format(input_file, output_file)
+    )
+
+
+def sparse(input_file, input_format, fail_on_error=True):
+    cmd = [
+        'virt-sparsify',
+        '-q',
+        '-v',
+        '--format',
+        input_format,
+        '--in-place',
+        input_file,
+    ]
+    return run_command_with_validation(
+        cmd, fail_on_error, msg='Failed to sparse {}'.format(input_file)
+    )
+
+
+def get_hash(file_path, checksum='sha1'):
+    """
+    Generate a hash for the given file
+
+    Args:
+        file_path (str): Path to the file to generate the hash for
+        checksum (str): hash to apply, one of the supported by hashlib, for
+            example sha1 or sha512
+
+    Returns:
+        str: hash for that file
+    """
+
+    sha = getattr(hashlib, checksum)()
+    with open(file_path) as file_descriptor:
+        while True:
+            chunk = file_descriptor.read(65536)
+            if not chunk:
+                break
+            sha.update(chunk)
+    return sha.hexdigest()
+
+
+class LagoException(Exception):
+    pass
+
+
+class LagoUserException(LagoException):
+    pass

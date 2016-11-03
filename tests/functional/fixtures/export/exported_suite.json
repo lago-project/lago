@@ -1,0 +1,32 @@
+{
+    "domains": {
+        "lago_functional_tests_vm01": {
+            "memory": 64,
+            "nics": [
+                {
+                    "net": "lago_functional_tests"
+                }
+            ],
+            "disks": [
+                {
+                    "type": "template",
+                    "template_type": "qcow2",
+                    "path": "$EXPORTED_ENV/lago_functional_tests_vm01_root.qcow2",
+                    "name": "root",
+                    "dev": "vda",
+                    "format": "qcow2"
+                }
+            ]
+        }
+    },
+    "nets": {
+        "lago_functional_tests": {
+            "type": "nat",
+            "dhcp": {
+                "start": 100,
+                "end": 254
+            },
+            "management": true
+        }
+    }
+}
