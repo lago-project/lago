@@ -621,18 +621,6 @@ def create_parser(cli_plugins, out_plugins):
         '--logdepth', default=3, type=int, help='How many task levels to show'
     )
 
-    try:
-        # Checks that all the deps are installed
-        pkg_resources.require("lago")[0]
-    except pkg_resources.VersionConflict as e:
-        # Hack that allows to run stevedore without checking
-        # for it's dep. it is required for systems running stevedore 1.1.0
-        # and pbr > 1.
-        LOGGER.debug(e.message)
-        pkgs = e[2]
-        if len(pkgs) > 1 or 'stevedore' not in pkgs:
-            raise e
-
     parser.add_argument(
         '--version',
         action='version',
@@ -773,6 +761,20 @@ def check_group_membership():
         warnings.warn('current session does not belong to lago group.')
 
 
+def check_deps():
+    try:
+        # Checks that all the deps are installed
+        pkg_resources.require("lago")
+    except pkg_resources.ContextualVersionConflict as e:
+        # Hack that allows to run stevedore without checking
+        # for it's dep. it is required for systems running stevedore 1.1.0
+        # and pbr > 1.
+        LOGGER.debug(e, exc_info=True)
+        pkgs = e[2]
+        if set(['stevedore']) != pkgs:
+            raise e
+
+
 def main():
     cli_plugins = lago.plugins.load_plugins(
         lago.plugins.PLUGIN_ENTRY_POINTS['cli']
@@ -805,6 +807,7 @@ def main():
     else:
         warnings.formatwarning = lambda message, *args, **kwargs: message
 
+    check_deps()
     check_group_membership()
 
     args.out_format = out_plugins[args.out_format]
