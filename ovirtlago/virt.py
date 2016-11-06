@@ -249,9 +249,7 @@ class HostVM(lago.vm.DefaultVM):
 class HEHostVM(HostVM):
     def _artifact_paths(self):
         inherited_artifacts = super(HEHostVM, self)._artifact_paths()
-        return set(
-            inherited_artifacts + [
-                '/var/log/ovirt-hosted-engine-setup',
-                '/var/log/ovirt-hosted-engine-ha',
-            ]
-        )
+        return inherited_artifacts | set((
+            '/var/log/ovirt-hosted-engine-setup',
+            '/var/log/ovirt-hosted-engine-ha',
+        ))
