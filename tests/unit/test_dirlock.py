@@ -86,8 +86,7 @@ def test_lock_twice(lock_dir_path, key_path, lock_type):
     exclusive = LOCK_TYPES[lock_type]
     assert dirlock.trylock(
         path=lock_dir_path,
-        excl=exclusive,
-        key_path=key_path
+        excl=exclusive, key_path=key_path
     )
     if exclusive:
         assert not dirlock.trylock(
@@ -107,14 +106,12 @@ def test_lock_twice_with_unlock(lock_dir_path, key_path, lock_type):
     exclusive = LOCK_TYPES[lock_type]
     assert dirlock.trylock(
         path=lock_dir_path,
-        excl=exclusive,
-        key_path=key_path
+        excl=exclusive, key_path=key_path
     )
     unlock(lock_dir_path, key_path)
     assert dirlock.trylock(
         path=lock_dir_path,
-        excl=exclusive,
-        key_path=key_path
+        excl=exclusive, key_path=key_path
     )
 
 
