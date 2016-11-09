@@ -16,6 +16,7 @@ VERBS=(
     stop
     template-repo
     console
+    generate-config
 )
 FIXTURES="$BATS_TEST_DIRNAME/fixtures"
 
