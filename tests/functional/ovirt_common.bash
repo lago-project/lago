@@ -4,16 +4,11 @@ OVIRT_VERBS=(
     deploy
     engine-setup
     reposetup
-    revert
     runtest
     serve
-    snapshot
-    start
-    stop
 )
 
 OVIRTCLI=(
     lagocli
     ovirt
 )
-

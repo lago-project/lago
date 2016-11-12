@@ -26,12 +26,9 @@ from configparser import SafeConfigParser
 
 import nose.core
 import nose.config
-from ovirtsdk.infrastructure.errors import (RequestError, ConnectionError)
-import lago
-from lago import log_utils
 from lago.prefix import Prefix
 from lago.workdir import Workdir
-
+from lago import log_utils
 from . import (paths, testlib, virt, reposetup, )
 
 # TODO: put it into some config
@@ -41,168 +38,12 @@ LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
 log_task = functools.partial(log_utils.log_task, logger=LOGGER)
 
 
-def _activate_storage_domains(api, sds):
-    if not sds:
-        LOGGER.info('No storages to activate')
-        return
-
-    for sd in sds:
-        if sd.status.get_state() != 'active':
-            sd.activate()
-            LOGGER.info('Started activation of storage domain %s', sd.name)
-        else:
-            LOGGER.info('Storage domain %s already active', sd.name)
-
-    with LogTask('Waiting for the domains to become active'):
-        for sd in sds:
-            dc = api.datacenters.get(id=sd.get_data_center().get_id(), )
-            with LogTask(
-                'Waiting for storage domain %s to become active' % sd.name,
-                level='debug'
-            ):
-                testlib.assert_true_within_long(
-                    lambda: (
-                        dc.storagedomains.get(sd.name).status.state == 'active'
-                    )
-                )
-
-
-def _deactivate_storage_domains(api, sds):
-    if not sds:
-        LOGGER.info('No storages to deactivate')
-        return
-
-    for sd in sds:
-        if sd.status.get_state() != 'maintenance':
-            sd.deactivate()
-            LOGGER.info('Started deactivation of storage domain %s', sd.name)
-        else:
-            LOGGER.info('Storage domain %s already inactive', sd.name)
-
-    with LogTask('Waiting for the domains to get into maintenance'):
-        for sd in sds:
-            dc = api.datacenters.get(id=sd.get_data_center().get_id())
-            with LogTask(
-                'Waiting for storage domain %s to become inactive' % sd.name,
-                level='debug'
-            ):
-                testlib.assert_true_within_long(
-                    lambda: (
-                        dc.storagedomains.get(sd.name).status.state ==
-                        'maintenance'
-                    ),
-                )
-
-
-@log_task('Deactivating all storage domains')
-def _deactivate_all_storage_domains(api):
-    for dc in api.datacenters.list():
-        with LogTask('Deactivating domains for datacenter %s' % dc.name):
-            sds = dc.storagedomains.list()
-            with LogTask('Deactivating non-master storage domains'):
-                _deactivate_storage_domains(
-                    api,
-                    [sd for sd in sds if not sd.master],
-                )
-            with LogTask('Deactivating master storage domains'):
-                _deactivate_storage_domains(
-                    api,
-                    [sd for sd in sds if sd.master],
-                )
-
-
-def _deactivate_all_hosts(api):
-    hosts = api.hosts.list()
-
-    while hosts:
-        host = hosts.pop()
-        try:
-            host.deactivate()
-            LOGGER.info('Sent host %s to maintenance', host.name)
-        except RequestError:
-            LOGGER.exception('Failed to maintenance host %s', host.name)
-            hosts.insert(0, host)
-
-    for host in api.hosts.list():
-        with LogTask(
-            'Wait for %s to go into maintenance' % host.name,
-            level='debug',
-        ):
-            testlib.assert_true_within_short(
-                lambda: api.hosts.get(host.name).status.state == 'maintenance',
-            )
-
-
-def _activate_all_hosts(api):
-    names = [host.name for host in api.hosts.list()]
-
-    for name in names:
-        try:
-            api.hosts.get(name).activate()
-        except RequestError:
-            pass
-
-    for name in names:
-        testlib.assert_true_within_short(
-            lambda: api.hosts.get(name).status.state == 'up',
-        )
-
-
-@log_task('Activating all storage domains')
-def _activate_all_storage_domains(api):
-    for dc in api.datacenters.list():
-        with LogTask('Activating domains for datacenter %s' % dc.name):
-            sds = dc.storagedomains.list()
-            with LogTask('Activating master storage domains'):
-                _activate_storage_domains(
-                    api,
-                    [sd for sd in sds if sd.master],
-                )
-            with LogTask('Activating non-master storage domains'):
-                _activate_storage_domains(
-                    api,
-                    [sd for sd in sds if not sd.master],
-                )
-
-
 class OvirtPrefix(Prefix):
     VIRT_ENV_CLASS = virt.OvirtVirtEnv
 
     def __init__(self, *args, **kwargs):
         super(OvirtPrefix, self).__init__(*args, **kwargs)
         self.paths = paths.OvirtPaths(self._prefix)
-
-    def create_snapshots(self, name, restore=True):
-        with lago.utils.RollbackContext() as rollback, \
-                LogTask('Create snapshots'):
-            engine = self.virt_env.engine_vm()
-
-            self._deactivate()
-            rollback.prependDefer(self._activate)
-
-            # stop engine:
-            engine.service('ovirt-engine').stop()
-            rollback.prependDefer(engine.get_api)
-            rollback.prependDefer(engine.service('ovirt-engine').start)
-
-            # stop VDSMs:
-            def stop_host(host):
-                host.service('vdsmd').stop()
-                rollback.prependDefer(host.service('vdsmd').start)
-
-                host.service('supervdsmd').stop()
-                rollback.prependDefer(host.service('supervdsmd').start)
-
-            lago.utils.invoke_in_parallel(stop_host, self.virt_env.host_vms())
-
-            super(OvirtPrefix, self).create_snapshots(name)
-
-            if not restore:
-                rollback.clear()
-
-    def revert_snapshots(self, name):
-        super(OvirtPrefix, self).revert_snapshots(name)
-        self._activate()
 
     def _create_rpm_repository(
         self,
@@ -361,43 +202,6 @@ class OvirtPrefix(Prefix):
 
     def _create_virt_env(self):
         return virt.OvirtVirtEnv.from_prefix(self)
-
-    def _activate(self):
-        with LogTask('Wait for ssh connectivity'):
-            for vm in self.virt_env.get_vms().values():
-                vm.wait_for_ssh()
-
-        with LogTask('Wait for engine to go online'):
-            testlib.assert_true_within_long(
-                lambda: self.virt_env.engine_vm().get_api() or True,
-                allowed_exceptions=[RequestError, ConnectionError],
-            )
-
-        api = self.virt_env.engine_vm().get_api()
-        with LogTask('Activate hosts'):
-            _activate_all_hosts(api)
-        with LogTask('Activate storage domains'):
-            _activate_all_storage_domains(api)
-
-    def _deactivate(self):
-        api = self.virt_env.engine_vm().get_api()
-
-        with LogTask('Deactivate storage domains'):
-            _deactivate_all_storage_domains(api)
-
-        with LogTask('Deactivate hosts'):
-            _deactivate_all_hosts(api)
-
-    def start(self):
-        super(OvirtPrefix, self).start()
-        with LogTask('Activate'):
-            self._activate()
-
-    def stop(self):
-        with LogTask('Deactivate'):
-            self._deactivate()
-
-        super(OvirtPrefix, self).stop()
 
 
 class OvirtWorkdir(Workdir):
