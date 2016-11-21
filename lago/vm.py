@@ -408,14 +408,16 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
             self._reclaim_disks()
             self.vm._spec['snapshots'][name] = snap_info
 
-    def _extract_paths_live(self, paths):
-        self.vm.guest_agent().start()
-        dom = self.libvirt_con.lookupByName(self._libvirt_name())
-        dom.fsFreeze()
+    def _extract_paths_live(self, paths, freeze=False):
+        if freeze:
+            dom = self.libvirt_con.lookupByName(self._libvirt_name())
+            self.vm.guest_agent().start()
+            dom.fsFreeze()
         try:
             self._extract_paths_dead(paths=paths)
         finally:
-            dom.fsThaw()
+            if freeze:
+                dom.fsThaw()
 
     def _extract_paths_dead(self, paths):
         disk_path = os.path.expandvars(self.vm._spec['disks'][0]['path'])
