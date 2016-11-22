@@ -42,9 +42,8 @@ def get_version(project_dir=os.curdir):
                     version = line.split(' ', 1)[-1]
 
     elif os.path.exists(version_manager):
-        version = check_output(
-            [version_manager, project_dir, 'version']
-        ).strip()
+        version = check_output([version_manager, project_dir, 'version']
+                               ).strip()
 
     if version is None:
         raise RuntimeError('Failed to get package version')
@@ -58,4 +57,7 @@ def get_version(project_dir=os.curdir):
 
 if __name__ == '__main__':
     os.environ['PBR_VERSION'] = get_version()
-    setup(setup_requires=['pbr'], pbr=True, )
+    setup(
+        setup_requires=['pbr'],
+        pbr=True,
+    )

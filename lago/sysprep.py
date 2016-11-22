@@ -62,9 +62,7 @@ def add_ssh_key(key, with_restorecon_fix=False):
         _DOT_SSH,
         '--chmod',
         '0700:%s' % _DOT_SSH,
-    ) + _upload_file(
-        _AUTHORIZED_KEYS, key
-    )
+    ) + _upload_file(_AUTHORIZED_KEYS, key)
     if (not os.stat(key).st_uid == 0 or not os.stat(key).st_gid == 0):
         extra_options += (
             '--run-command',
@@ -73,7 +71,10 @@ def add_ssh_key(key, with_restorecon_fix=False):
     if with_restorecon_fix:
         # Fix for fc23 not relabeling on boot
         # https://bugzilla.redhat.com/1049656
-        extra_options += ('--firstboot-command', 'restorecon -R /root/.ssh', )
+        extra_options += (
+            '--firstboot-command',
+            'restorecon -R /root/.ssh',
+        )
     return extra_options
 
 
@@ -85,10 +86,8 @@ def set_selinux_mode(mode):
         '0755:%s' % _SELINUX_CONF_DIR,
     ) + _write_file(
         _SELINUX_CONF_PATH,
-        (
-            'SELINUX=%s\n'
-            'SELINUXTYPE=targeted\n'
-        ) % mode,
+        ('SELINUX=%s\n'
+         'SELINUXTYPE=targeted\n') % mode,
     )
 
 

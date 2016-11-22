@@ -62,9 +62,15 @@ def _args_to_parser(args):
 )
 def test_get_env_dict_sections():
     assert config.get_env_dict('lago') == {
-        'lago': {'global_var_1': 'v1'},
-        'section': {'var': 'v2'},
-        'long_section_name': {'long_var_name': 'v3'},
+        'lago': {
+            'global_var_1': 'v1'
+        },
+        'section': {
+            'var': 'v2'
+        },
+        'long_section_name': {
+            'long_var_name': 'v3'
+        },
     }
 
 
@@ -170,12 +176,7 @@ def test_cli_shadows_env(mocked_configs_path):
     assert config_load['arg'] == 'cli'
 
 
-@patch.dict(
-    'lago.config.os.environ', {
-        'LAGO_ARG1': 'env',
-        'LAGO_ARG2': 'env'
-    }
-)
+@patch.dict('lago.config.os.environ', {'LAGO_ARG1': 'env', 'LAGO_ARG2': 'env'})
 @patch('lago.config.open', new_callable=mock_open)
 @patch('lago.config._get_configs_path', return_value=['file1', 'file2'])
 def test_all_sources_root_section(mocked_configs_path, mocked_open):
@@ -183,11 +184,13 @@ def test_all_sources_root_section(mocked_configs_path, mocked_open):
     file2 = {'lago': {'arg1': 'file2', 'arg2': 'file2'}}
     parser = _args_to_parser(
         [
-            ('--arg1', {'default': 'parser'}), (
-                '--arg2', {
-                    'default': 'parser'
-                }
-            ), ('--arg3', {'default': 'parser'})
+            ('--arg1', {
+                'default': 'parser'
+            }), ('--arg2', {
+                'default': 'parser'
+            }), ('--arg3', {
+                'default': 'parser'
+            })
         ]
     )
     args = ['--arg2', 'cli']

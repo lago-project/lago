@@ -17,7 +17,10 @@
 #
 # Refer to the README and COPYING files for full details of the license
 #
-from lago.plugins.service import (ServicePlugin, ServiceState, )
+from lago.plugins.service import (
+    ServicePlugin,
+    ServiceState,
+)
 
 
 class SystemdService(ServicePlugin):

@@ -32,7 +32,10 @@ try:
 except ImportError:
     API_V4 = False
 
-from . import (constants, testlib, )
+from . import (
+    constants,
+    testlib,
+)
 
 
 class OvirtVirtEnv(lago.virt.VirtEnv):
@@ -224,9 +227,8 @@ class EngineVM(lago.vm.DefaultVM):
             self.copy_to(config, 'engine-answer-file')
 
         result = self.interactive_ssh(
-            [
-                'engine-setup',
-            ] + (config and ['--config-append=engine-answer-file'] or []),
+            ['engine-setup', ] +
+            (config and ['--config-append=engine-answer-file'] or []),
         )
         if result.code != 0:
             raise RuntimeError('Failed to setup the engine')

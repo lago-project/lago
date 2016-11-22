@@ -26,7 +26,13 @@ import uuid
 
 import lxml.etree
 
-from . import (brctl, utils, log_utils, plugins, libvirt_utils, )
+from . import (
+    brctl,
+    utils,
+    log_utils,
+    plugins,
+    libvirt_utils,
+)
 from .config import config
 LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
@@ -50,14 +56,15 @@ def _guestfs_copy_path(g, guest_path, host_path):
                     guest_path,
                     path,
                 ),
-                os.path.join(
-                    host_path, os.path.basename(path)
-                ),
+                os.path.join(host_path, os.path.basename(path)),
             )
 
 
 def _path_to_xml(basename):
-    return os.path.join(os.path.dirname(__file__), basename, )
+    return os.path.join(
+        os.path.dirname(__file__),
+        basename,
+    )
 
 
 class VirtEnv(object):
@@ -112,9 +119,8 @@ class VirtEnv(object):
             vm_type = self.vm_types[vm_type_name]
         except KeyError:
             raise RuntimeError(
-                'Unknown VM type: {0}, available types: {1}'.format(
-                    vm_type_name, ','.join(self.vm_types.keys())
-                )
+                'Unknown VM type: {0}, available types: {1}'.
+                format(vm_type_name, ','.join(self.vm_types.keys()))
             )
         vm_spec['vm-type'] = vm_type_name
         return vm_type(self, vm_spec)
@@ -171,9 +177,7 @@ class VirtEnv(object):
             nets = set()
             for vm in vms:
                 nets = nets.union(
-                    set(
-                        self._nets[net_name] for net_name in vm.nets()
-                    )
+                    set(self._nets[net_name] for net_name in vm.nets())
                 )
 
         with LogTask(log_msg), utils.RollbackContext() as rollback:
@@ -223,8 +227,8 @@ class VirtEnv(object):
         else:
             try:
                 return [
-                    net
-                    for net in self.get_nets().values() if net.is_management()
+                    net for net in self.get_nets().values()
+                    if net.is_management()
                 ].pop()
             except IndexError:
                 return self.get_nets().values().pop()
@@ -264,7 +268,10 @@ class VirtEnv(object):
             for vm in self._vms.values():
                 vm.save()
 
-        spec = {'nets': self._nets.keys(), 'vms': self._vms.keys(), }
+        spec = {
+            'nets': self._nets.keys(),
+            'vms': self._vms.keys(),
+        }
 
         with LogTask('Save env'):
             with open(self.virt_path('env'), 'w') as f:
@@ -353,9 +360,8 @@ class Network(object):
     def stop(self):
         if self.alive():
             with LogTask('Destroy network %s' % self.name()):
-                self.libvirt_con.networkLookupByName(
-                    self._libvirt_name(),
-                ).destroy()
+                self.libvirt_con.networkLookupByName(self._libvirt_name(),
+                                                     ).destroy()
 
     def save(self):
         with open(self._env.virt_path('net-%s' % self.name()), 'w') as f:

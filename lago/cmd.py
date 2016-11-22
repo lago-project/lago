@@ -33,7 +33,10 @@ import lago.plugins
 import lago.plugins.cli
 import lago.templates
 from lago.config import config
-from lago import (log_utils, workdir as lago_workdir, )
+from lago import (
+    log_utils,
+    workdir as lago_workdir,
+)
 from lago.utils import (in_prefix, with_logging)
 
 LOGGER = logging.getLogger('cli')
@@ -130,9 +133,8 @@ def do_init(
     if virt_config is None:
         virt_config = os.path.abspath('LagoInitFile')
 
-    os.environ['LAGO_INITFILE_PATH'] = os.path.dirname(
-        os.path.abspath(virt_config)
-    )
+    os.environ['LAGO_INITFILE_PATH'
+               ] = os.path.dirname(os.path.abspath(virt_config))
 
     if prefix_name == 'current':
         prefix_name = 'default'
@@ -339,10 +341,8 @@ def do_shell(prefix, host, args=None, **kwargs):
     except KeyError:
         LOGGER.error('Unable to find VM %s', host)
         LOGGER.info(
-            'Available VMs:\n\t' + '\n\t'.join(
-                prefix.virt_env.get_vms().keys(
-                )
-            )
+            'Available VMs:\n\t' +
+            '\n\t'.join(prefix.virt_env.get_vms().keys())
         )
         raise
 
@@ -380,10 +380,8 @@ def do_console(prefix, host, **kwargs):
     except KeyError:
         LOGGER.error('Unable to find VM %s', host)
         LOGGER.info(
-            'Available VMs:\n\t' + '\n\t'.join(
-                prefix.virt_env.get_vms().keys(
-                )
-            )
+            'Available VMs:\n\t' +
+            '\n\t'.join(prefix.virt_env.get_vms().keys())
         )
         raise
 
@@ -402,44 +400,51 @@ def do_status(prefix, out_format, **kwargs):
         uuid = f.read()
 
     info_dict = {
-        'Prefix': {
-            'Base directory': prefix.paths.prefix,
-            'UUID': uuid,
-            'Networks': dict(
-                (
-                    net.name(),
-                    {
-                        'gateway': net.gw(),
-                        'status': net.alive() and 'up' or 'down',
-                        'management': net.is_management(),
-                    }
-                ) for net in prefix.virt_env.get_nets().values()
-            ),
-            'VMs': dict(
-                (
-                    vm.name(),
-                    {
-                        'distro': vm.distro(),
-                        'root password': vm.root_password(),
-                        'status': vm.state(),
-                        'snapshots': ', '.join(vm._spec['snapshots'].keys()),
-                        'VNC port': vm.vnc_port() if vm.alive() else None,
-                        'metadata': vm.metadata,
-                        'NICs': dict(
-                            (
-                                'eth%d' % i,
-                                {
-                                    'network': nic['net'],
-                                    'ip': nic.get('ip', 'N/A'),
-                                }
-
-                            ) for i, nic in enumerate(vm.nics())
-                        ),
-                    }
-
-                ) for vm in prefix.virt_env.get_vms().values()
-            ),
-        },
+        'Prefix':
+            {
+                'Base directory':
+                    prefix.paths.prefix,
+                'UUID':
+                    uuid,
+                'Networks':
+                    dict(
+                        (
+                            net.name(), {
+                                'gateway': net.gw(),
+                                'status': net.alive() and 'up' or 'down',
+                                'management': net.is_management(),
+                            }
+                        ) for net in prefix.virt_env.get_nets().values()
+                    ),
+                'VMs':
+                    dict(
+                        (
+                            vm.name(), {
+                                'distro':
+                                    vm.distro(),
+                                'root password':
+                                    vm.root_password(),
+                                'status':
+                                    vm.state(),
+                                'snapshots':
+                                    ', '.join(vm._spec['snapshots'].keys()),
+                                'VNC port':
+                                    vm.vnc_port() if vm.alive() else None,
+                                'metadata':
+                                    vm.metadata,
+                                'NICs':
+                                    dict(
+                                        (
+                                            'eth%d' % i, {
+                                                'network': nic['net'],
+                                                'ip': nic.get('ip', 'N/A'),
+                                            }
+                                        ) for i, nic in enumerate(vm.nics())
+                                    ),
+                            }
+                        ) for vm in prefix.virt_env.get_vms().values()
+                    ),
+            },
     }
 
     print out_format.format(info_dict)
@@ -499,10 +504,8 @@ def do_copy_from_vm(prefix, host, remote_path, local_path, **kwargs):
     except KeyError:
         LOGGER.error('Unable to find VM %s', host)
         LOGGER.info(
-            'Available VMs:\n\t' + '\n\t'.join(
-                prefix.virt_env.get_vms().keys(
-                )
-            )
+            'Available VMs:\n\t' +
+            '\n\t'.join(prefix.virt_env.get_vms().keys())
         )
         raise
 
@@ -541,10 +544,8 @@ def do_copy_to_vm(prefix, host, remote_path, local_path, **kwargs):
     except KeyError:
         LOGGER.error('Unable to find VM %s', host)
         LOGGER.info(
-            'Available VMs:\n\t' + '\n\t'.join(
-                prefix.virt_env.get_vms().keys(
-                )
-            )
+            'Available VMs:\n\t' +
+            '\n\t'.join(prefix.virt_env.get_vms().keys())
         )
         raise
 
@@ -609,10 +610,7 @@ def create_parser(cli_plugins, out_plugins):
         help='Log level to use'
     )
     parser.add_argument(
-        '--logdepth',
-        default=3,
-        type=int,
-        help='How many task levels to show'
+        '--logdepth', default=3, type=int, help='How many task levels to show'
     )
 
     try:
@@ -774,7 +772,10 @@ def main():
     out_plugins = lago.plugins.load_plugins(
         lago.plugins.PLUGIN_ENTRY_POINTS['out']
     )
-    parser = create_parser(cli_plugins=cli_plugins, out_plugins=out_plugins, )
+    parser = create_parser(
+        cli_plugins=cli_plugins,
+        out_plugins=out_plugins,
+    )
     args = parser.parse_args()
     config.update_args(args)
 

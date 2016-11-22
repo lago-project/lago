@@ -33,8 +33,7 @@ import lago.prefix
 def mock_workdir(tmpdir, **kwargs):
     default_props = generate_workdir_props(**kwargs)
     return mock.Mock(
-        spec_set=lago.workdir.Workdir(str(tmpdir)),
-        **default_props
+        spec_set=lago.workdir.Workdir(str(tmpdir)), **default_props
     )
 
 
@@ -378,7 +377,10 @@ class TestWorkdir(object):
         with pytest.raises(AssertionError):
             mock_workdir._set_current.assert_called_with()
 
-    def test__update_current_sets_default_if_there(self, mock_workdir, ):
+    def test__update_current_sets_default_if_there(
+        self,
+        mock_workdir,
+    ):
         mock_workdir.prefixes = {'default': None, 'another': None}
         mock_workdir.current = None
         mock_workdir._update_current = functools.partial(
@@ -665,7 +667,12 @@ class TestWorkdir(object):
             'all prefixes',
         ),
     )
-    def test_destroy(self, mock_workdir, monkeypatch, to_destroy, ):
+    def test_destroy(
+        self,
+        mock_workdir,
+        monkeypatch,
+        to_destroy,
+    ):
         mock_rmtree, mock_workdir = self._destroy_mocks(
             monkeypatch,
             mock_workdir,
@@ -702,7 +709,9 @@ class TestWorkdir(object):
         (
             (
                 os.curdir,
-                {'start_path': 'auto'},
+                {
+                    'start_path': 'auto'
+                },
                 True,
             ),
             (
@@ -712,17 +721,23 @@ class TestWorkdir(object):
             ),
             (
                 '/one/two',
-                {'start_path': '/one/two/three'},
+                {
+                    'start_path': '/one/two/three'
+                },
                 True,
             ),
             (
                 '/one',
-                {'start_path': '/one/two/three'},
+                {
+                    'start_path': '/one/two/three'
+                },
                 True,
             ),
             (
                 'shrubbery',
-                {'start_path': '/one/two/three'},
+                {
+                    'start_path': '/one/two/three'
+                },
                 False,
             ),
         ),
@@ -770,7 +785,9 @@ class TestWorkdir(object):
         (
             (
                 os.curdir,
-                {'start_path': 'auto'},
+                {
+                    'start_path': 'auto'
+                },
                 True,
             ),
             (
@@ -780,7 +797,9 @@ class TestWorkdir(object):
             ),
             (
                 'shrubbery',
-                {'start_path': '/one/two/three'},
+                {
+                    'start_path': '/one/two/three'
+                },
                 False,
             ),
         ),

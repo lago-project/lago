@@ -12,7 +12,10 @@ import logging
 
 import paramiko
 
-from . import (utils, log_utils, )
+from . import (
+    utils,
+    log_utils,
+)
 from .config import config
 
 LOGGER = logging.getLogger(__name__)
@@ -61,12 +64,10 @@ def ssh(
 
     channel.shutdown_write()
     return_code, out, err = drain_ssh_channel(
-        channel, **(
-            show_output and {} or {
-                'stdout': None,
-                'stderr': None
-            }
-        )
+        channel, **(show_output and {} or {
+            'stdout': None,
+            'stderr': None
+        })
     )
 
     channel.close()
@@ -100,7 +101,7 @@ def ssh(
 def wait_for_ssh(
     ip_addr,
     host_name=None,
-    connect_timeout=600,    # 10 minutes
+    connect_timeout=600,  # 10 minutes
     ssh_key=None,
     username='root',
     password='123456',
@@ -238,7 +239,12 @@ def drain_ssh_channel(chan, stdin=None, stdout=sys.stdout, stderr=sys.stderr):
         if stderr and err_queue:
             write_streams.append(stderr)
 
-        read, write, _ = select.select(read_streams, write_streams, [], 0.1, )
+        read, write, _ = select.select(
+            read_streams,
+            write_streams,
+            [],
+            0.1,
+        )
 
         if stdin in read:
             chunk = utils.read_nonblocking(stdin)
@@ -323,7 +329,11 @@ def get_ssh_client(
 
         start_time = time.time()
         while ssh_tries > 0:
-            LOGGER.debug('Still got %d tries for %s', ssh_tries, host_name, )
+            LOGGER.debug(
+                'Still got %d tries for %s',
+                ssh_tries,
+                host_name,
+            )
             client = paramiko.SSHClient()
             client.set_missing_host_key_policy(paramiko.AutoAddPolicy(), )
             try:

@@ -42,9 +42,7 @@ def _get_configs_path():
 
     paths = []
     xdg_paths = [
-        path for path in base_dirs.load_config_paths(
-            'lago', 'lago.conf'
-        )
+        path for path in base_dirs.load_config_paths('lago', 'lago.conf')
     ]
     paths.extend([path for path in CONFS_PATH if os.path.exists(path)])
     paths.extend(reversed(xdg_paths))
@@ -54,10 +52,10 @@ def _get_configs_path():
 def get_env_dict(root_section):
     """Read all Lago variables from the environment.
     The lookup format is:
-      LAGO_VARNAME - will land into 'lago' section
-      LAGO__SECTION1__VARNAME - will land into 'section1' section, notice
-      the double '__'.
-      LAGO__LONG_SECTION_NAME__VARNAME - will land into 'long_section_name'
+    LAGO_VARNAME - will land into 'lago' section
+    LAGO__SECTION1__VARNAME - will land into 'section1' section, notice
+    the double '__'.
+    LAGO__LONG_SECTION_NAME__VARNAME - will land into 'long_section_name'
 
 
     Returns:
@@ -122,9 +120,9 @@ class ConfigLoad(object):
     def load(self):
         """Load all configuration from INI format files and ENV, always
         preferring the last read. Order of loading is:
-          1) Custom paths as defined in constants.CONFS_PATH
-          2) XDG standard paths
-          3) Environment variables
+        1) Custom paths as defined in constants.CONFS_PATH
+        2) XDG standard paths
+        3) Environment variables
 
         Returns:
             dict: dict of section configuration dicts
@@ -169,10 +167,8 @@ class ConfigLoad(object):
         configp.read_dict(self._config)
         configp.read_string(ini_str)
         self._config.update(
-            {
-                s: dict(configp.items(s))
-                for s in configp.sections()
-            }
+            {s: dict(configp.items(s))
+             for s in configp.sections()}
         )
 
     def get(self, *args):

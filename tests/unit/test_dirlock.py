@@ -27,7 +27,10 @@ import pytest
 from lago import dirlock
 from lago.dirlock import unlock
 
-LOCK_TYPES = {'inclusive': True, 'exclusive': False, }
+LOCK_TYPES = {
+    'inclusive': True,
+    'exclusive': False,
+}
 
 
 # Helper functions
@@ -76,42 +79,33 @@ def lock_type(request):
 # Tests
 def test_lock_once(lock_dir_path, key_path, lock_type):
     assert dirlock.trylock(
-        path=lock_dir_path,
-        excl=LOCK_TYPES[lock_type],
-        key_path=key_path
+        path=lock_dir_path, excl=LOCK_TYPES[lock_type], key_path=key_path
     )
 
 
 def test_lock_twice(lock_dir_path, key_path, lock_type):
     exclusive = LOCK_TYPES[lock_type]
     assert dirlock.trylock(
-        path=lock_dir_path,
-        excl=exclusive, key_path=key_path
+        path=lock_dir_path, excl=exclusive, key_path=key_path
     )
     if exclusive:
         assert not dirlock.trylock(
-            path=lock_dir_path,
-            excl=exclusive,
-            key_path=key_path
+            path=lock_dir_path, excl=exclusive, key_path=key_path
         )
     else:
         assert dirlock.trylock(
-            path=lock_dir_path,
-            excl=exclusive,
-            key_path=key_path
+            path=lock_dir_path, excl=exclusive, key_path=key_path
         )
 
 
 def test_lock_twice_with_unlock(lock_dir_path, key_path, lock_type):
     exclusive = LOCK_TYPES[lock_type]
     assert dirlock.trylock(
-        path=lock_dir_path,
-        excl=exclusive, key_path=key_path
+        path=lock_dir_path, excl=exclusive, key_path=key_path
     )
     unlock(lock_dir_path, key_path)
     assert dirlock.trylock(
-        path=lock_dir_path,
-        excl=exclusive, key_path=key_path
+        path=lock_dir_path, excl=exclusive, key_path=key_path
     )
 
 

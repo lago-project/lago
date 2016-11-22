@@ -25,7 +25,10 @@ import logging
 import os
 
 from lago import log_utils
-from lago.utils import (run_command, LockFile, )
+from lago.utils import (
+    run_command,
+    LockFile,
+)
 
 from . import utils
 
@@ -78,7 +81,12 @@ def _fix_reposync_issues(reposync_out, repo_path):
     )
     package_regex = re.compile(r'(?P<package_name>[^:\r\s]+): \[Errno 256\]')
     for match in package_regex.findall(reposync_out):
-        find_command = ['find', repo_path, '-name', match + '*', ]
+        find_command = [
+            'find',
+            repo_path,
+            '-name',
+            match + '*',
+        ]
         ret, out, _ = run_command(find_command)
 
         if ret:
@@ -106,9 +114,7 @@ def sync_rpm_repository(repo_path, yum_config, repos):
         '--newest-only',
         '--delete',
         '--cachedir=%s/cache' % repo_path,
-    ] + [
-        '--repoid=%s' % repo for repo in repos
-    ]
+    ] + ['--repoid=%s' % repo for repo in repos]
 
     with LockFile(lock_path, timeout=180):
         with LogTask('Running reposync'):

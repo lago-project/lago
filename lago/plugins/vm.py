@@ -21,7 +21,7 @@
 VM Plugins
 ============
 There are two VM-related plugin extension points, there's the
-`VM Type Plugin`_, that allows you to modify at a higher level the inner
+VM Type Plugin, that allows you to modify at a higher level the inner
 workings of the VM class (domain concept in the initfile).
 The other plugin extension point, the [VM Provider Plugin], that allows you to
 create an alternative implementation of the provisioning details for the VM,
@@ -36,7 +36,12 @@ from abc import (ABCMeta, abstractmethod)
 
 from scp import SCPClient
 
-from .. import (utils, log_utils, plugins, ssh, )
+from .. import (
+    utils,
+    log_utils,
+    plugins,
+    ssh,
+)
 from lago.config import config
 
 LOGGER = logging.getLogger(__name__)

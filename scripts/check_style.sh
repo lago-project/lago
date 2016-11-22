@@ -16,35 +16,39 @@ if [[ "$files" == "" ]]; then
 fi
 
 yapf --version
+echo "running yapf on the following files:"
+echo "$files"
+# see: https://github.com/google/yapf/issues/325
+# yapf --diff will always exit with '0' as return code
+yapf_diff=$(yapf --style .style.yapf --diff --parallel $files)
 
-git diff \
-    HEAD^ \
-    --name-status \
-| grep -v "^D" \
-| grep "\.py$" \
-| awk '{ print $2 }' \
-| xargs yapf \
-    --style .style.yapf \
-    --diff \
-|| {
+if [[ -n "${yapf_diff// }" ]]; then
+    echo "yapf diff: "
+    echo -e "$yapf_diff\n"
     cat <<EOF
-Yapf failed, make sure to run:
-    yapf --style .style.yapf --in-place --recursive .
+    ***************************************************************************
+    Yapf failed, make sure to run:
+        yapf --style .style.yapf --in-place --recursive .
 
-to format any python files automatically, it is higly recommended that you
-install formatting tools to your editor, check the yapf repo:
+    If you want to make it run faster, on python2 ensure you have 'futures'
+    installed from pip and run:
+        yapf --style .style.yapf --in-place --parallel --recursive .
 
-     https://github.com/google/yapf/tree/master/plugins
+    To format any python files automatically, it is higly recommended that you
+    install formatting tools to your editor, check the yapf repo:
 
-to check for official support (always helpful).
-You can also install the pre-commit hook provided in this repo:
+        https://github.com/google/yapf/tree/master/plugins
 
-    ln -s scripts/pre-commit.style .git/pre-commit
+    To check for official support (always helpful).
+    You can also install the pre-commit hook provided in this repo:
 
-and it will format any files changed at commit time.
+        ln -s scripts/pre-commit.style .git/pre-commit
 
+    and it will format any files changed at commit time.
+    ***************************************************************************
 EOF
     exit 1
-}
+fi
 
+echo "yapf style check: OK"
 exit 0

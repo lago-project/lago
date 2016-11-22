@@ -81,7 +81,7 @@ the full command line.
 **NOTE**: You can use any other template repo if you specify your own json file
 there
 
-**TODO**: document the repo store json file format
+.. todo:: document the repo store json file format
 
 
 Initializing the prefix

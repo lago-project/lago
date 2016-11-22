@@ -95,7 +95,11 @@ class DefaultOutFormatPlugin(OutFormatPlugin):
 
 class JSONOutFormatPlugin(OutFormatPlugin):
     def format(self, info_dict):
-        return json.dumps(info_dict, sort_keys=True, indent=4, )
+        return json.dumps(
+            info_dict,
+            sort_keys=True,
+            indent=4,
+        )
 
 
 class YAMLOutFormatPlugin(OutFormatPlugin):

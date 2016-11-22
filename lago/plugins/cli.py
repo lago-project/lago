@@ -95,7 +95,11 @@ TODO: Allow per-plugin namespacing to get rid of the `**kwargs` parameter
 """
 
 import functools
-from abc import (abstractmethod, abstractproperty, ABCMeta, )
+from abc import (
+    abstractmethod,
+    abstractproperty,
+    ABCMeta,
+)
 
 from . import Plugin
 

@@ -16,4 +16,5 @@ stevedore
 xmltodict
 configparser
 pyxdg
-yapf==0.7.1
+futures
+yapf==0.14.0

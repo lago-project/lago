@@ -155,9 +155,8 @@ def _run_command(
         env['PATH'] = ':'.join(
             list(
                 set(
-                    env.get('PATH', '').split(':') + os.environ[
-                        'PATH'
-                    ].split(':')
+                    env.get('PATH', '').split(':') + os.environ['PATH']
+                    .split(':')
                 ),
             ),
         )
@@ -504,9 +503,8 @@ def with_logging(func):
 
 
 def add_timestamp_suffix(base_string):
-    return datetime.datetime.fromtimestamp(
-        time.time()
-    ).strftime(base_string + '.%Y-%m-%d_%H:%M:%S')
+    return datetime.datetime.fromtimestamp(time.time(
+    )).strftime(base_string + '.%Y-%m-%d_%H:%M:%S')
 
 
 def rotate_dir(base_dir):
@@ -522,14 +520,12 @@ def ipv4_to_mac(ip):
 
 def argparse_to_ini(parser, root_section='lago', incl_unset=False):
     subparsers_actions = [
-        action
-        for action in parser._actions
+        action for action in parser._actions
         if isinstance(action, argparse._SubParsersAction)
     ]
 
     root_actions = [
-        action
-        for action in parser._actions
+        action for action in parser._actions
         if not isinstance(action, argparse._SubParsersAction)
     ]
 
@@ -541,9 +537,7 @@ def argparse_to_ini(parser, root_section='lago', incl_unset=False):
             _add_subparser_to_cp(cp, choice, subparser._actions, incl_unset)
 
     header = '# Lago configuration file, generated: {0}'.format(
-        time.strftime(
-            "%c"
-        )
+        time.strftime("%c")
     )
     with StringIO() as ini_str:
         cp.write(ini_str)
@@ -553,11 +547,9 @@ def argparse_to_ini(parser, root_section='lago', incl_unset=False):
 def _add_subparser_to_cp(cp, section, actions, incl_unset):
     cp.add_section(section)
     print_actions = (
-        action
-        for action in actions
-        if (action.default and action.default != '==SUPPRESS==') or (
-            action.default is None and incl_unset
-        )
+        action for action in actions
+        if (action.default and action.default != '==SUPPRESS=='
+            ) or (action.default is None and incl_unset)
     )
     for action in print_actions:
         var = str(action.dest)

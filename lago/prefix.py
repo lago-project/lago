@@ -362,8 +362,7 @@ class Prefix(object):
 
                 if nic['ip'] in net['mapping'].values():
                     conflict_list = [
-                        name
-                        for name, ip in net['mapping'].items()
+                        name for name, ip in net['mapping'].items()
                         if ip == net['ip']
                     ]
                     raise RuntimeError(
@@ -398,12 +397,9 @@ class Prefix(object):
 
                 allocated = net['mapping'].values()
                 vacant = _create_ip(
-                    net['gw'], set(range(2, 255)).difference(
-                        set(
-                            [
-                                int(ip.split('.')[-1]) for ip in allocated
-                            ]
-                        )
+                    net['gw'],
+                    set(range(2, 255)).difference(
+                        set([int(ip.split('.')[-1]) for ip in allocated])
                     ).pop()
                 )
                 nic['ip'] = vacant
@@ -513,7 +509,11 @@ class Prefix(object):
 
     @staticmethod
     def _generate_disk_name(host_name, disk_name, disk_format):
-        return '%s_%s.%s' % (host_name, disk_name, disk_format, )
+        return '%s_%s.%s' % (
+            host_name,
+            disk_name,
+            disk_format,
+        )
 
     def _generate_disk_path(self, disk_name):
         return os.path.expandvars(self.paths.images(disk_name))
@@ -635,17 +635,14 @@ class Prefix(object):
         )
         if template_version not in template_store:
             LOGGER.info(
-                log_utils.log_always(
-                    "Template %s not in cache, downloading"
-                ) % template_version.name,
+                log_utils.log_always("Template %s not in cache, downloading") %
+                template_version.name,
             )
             template_store.download(template_version)
 
         template_store.mark_used(template_version, self.paths.uuid())
         disk_metadata.update(
-            template_store.get_stored_metadata(
-                template_version,
-            ),
+            template_store.get_stored_metadata(template_version, ),
         )
         base = template_store.get_path(template_version)
         qemu_cmd = ['qemu-img', 'create', '-f', 'qcow2', '-b', base, disk_path]
@@ -685,9 +682,7 @@ class Prefix(object):
         if not os.path.exists(ova_extracted_dir):
             os.makedirs(ova_extracted_dir)
             subprocess.check_output(
-                [
-                    "tar", "-xvf", filename, "-C", ova_extracted_dir
-                ],
+                ["tar", "-xvf", filename, "-C", ova_extracted_dir],
                 stderr=subprocess.STDOUT
             )
 
@@ -738,15 +733,17 @@ class Prefix(object):
 
         if image_file is not None:
             disk_meta = {"root-partition": "/dev/sda1"}
-            disk_spec = [{"type": "template",
-                          "template_type": "qcow2",
-                          "format": "qcow2",
-                          "dev": "vda",
-                          "name": "root",
-                          "name": os.path.basename(image_file),
-                          "path": ova_extracted_dir +
-                                 "/images/" + image_file,
-                          "metadata": disk_meta}]
+            disk_spec = [
+                {
+                    "type": "template",
+                    "template_type": "qcow2",
+                    "format": "qcow2",
+                    "dev": "vda",
+                    "name": os.path.basename(image_file),
+                    "path": ova_extracted_dir + "/images/" + image_file,
+                    "metadata": disk_meta
+                }
+            ]
 
         return disk_spec, memory, vcpus
 
@@ -898,11 +895,7 @@ class Prefix(object):
         return new_disks
 
     def virt_conf(
-        self,
-        conf,
-        template_repo=None,
-        template_store=None,
-        do_bootstrap=True
+        self, conf, template_repo=None, template_store=None, do_bootstrap=True
     ):
         """
         Initializes all the virt infrastructure of the prefix, creating the
@@ -920,9 +913,7 @@ class Prefix(object):
         os.environ['LAGO_PREFIX_PATH'] = self.paths.prefix
         with utils.RollbackContext() as rollback:
             rollback.prependDefer(
-                shutil.rmtree,
-                self.paths.prefix,
-                ignore_errors=True
+                shutil.rmtree, self.paths.prefix, ignore_errors=True
             )
             conf = self._prepare_domains_images(
                 conf=conf,
