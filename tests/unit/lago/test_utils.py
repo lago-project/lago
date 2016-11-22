@@ -63,22 +63,33 @@ class TestDeepCopy(object):
 
 class TestLoadVirtStream(object):
     virt_conf = {
-        'domains': [
-            {
-                'domain01': {
-                    'disks': [
-                        {'name': 'disk1'},
-                        {'name': 'disk2'},
-                    ]
-                },
-                'domain02': {
-                    'disks': [
-                        {'name': 'disk1'},
-                        {'name': 'disk2'},
-                    ]
+        'domains':
+            [
+                {
+                    'domain01':
+                        {
+                            'disks': [
+                                {
+                                    'name': 'disk1'
+                                },
+                                {
+                                    'name': 'disk2'
+                                },
+                            ]
+                        },
+                    'domain02':
+                        {
+                            'disks': [
+                                {
+                                    'name': 'disk1'
+                                },
+                                {
+                                    'name': 'disk2'
+                                },
+                            ]
+                        }
                 }
-            }
-        ]
+            ]
     }
 
     def test_load_yaml(self):

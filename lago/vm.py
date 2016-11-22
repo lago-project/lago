@@ -35,7 +35,10 @@ log_task = functools.partial(log_utils.log_task, logger=LOGGER)
 
 
 def _path_to_xml(basename):
-    return os.path.join(os.path.dirname(__file__), basename, )
+    return os.path.join(
+        os.path.dirname(__file__),
+        basename,
+    )
 
 
 def _check_defined(func):
@@ -124,8 +127,7 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
                         sysprep.config_net_interface_dhcp(
                             'eth%d' % index,
                             utils.ipv4_to_mac(nic['ip']),
-                        )
-                        for index, nic in enumerate(self.vm._spec['nics'])
+                        ) for index, nic in enumerate(self.vm._spec['nics'])
                         if 'ip' in nic
                     ],
                 )
@@ -320,7 +322,10 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
             devices.append(disk)
 
         for dev_spec in self.vm._spec['nics']:
-            interface = lxml.etree.Element('interface', type='network', )
+            interface = lxml.etree.Element(
+                'interface',
+                type='network',
+            )
             interface.append(
                 lxml.etree.Element(
                     'source',
@@ -329,7 +334,12 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
                     ),
                 ),
             )
-            interface.append(lxml.etree.Element('model', type='virtio', ), )
+            interface.append(
+                lxml.etree.Element(
+                    'model',
+                    type='virtio',
+                ),
+            )
             if 'ip' in dev_spec:
                 interface.append(
                     lxml.etree.Element(
@@ -384,16 +394,13 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
                 raise
 
             snap_info = []
-            new_disks = lxml.etree.fromstring(
-                dom.XMLDesc()
-            ).xpath('devices/disk')
+            new_disks = lxml.etree.fromstring(dom.XMLDesc()
+                                              ).xpath('devices/disk')
             for disk, xml_node in zip(self.vm._spec['disks'], new_disks):
                 disk['path'] = xml_node.xpath('source')[0].attrib['file']
                 disk['format'] = 'qcow2'
                 snap_disk = disk.copy()
-                snap_disk['path'] = xml_node.xpath(
-                    'backingStore',
-                )[0].xpath(
+                snap_disk['path'] = xml_node.xpath('backingStore', )[0].xpath(
                     'source',
                 )[0].attrib['file']
                 snap_info.append(snap_disk)
@@ -422,8 +429,7 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
         gfs_cli.set_backend('direct')
         gfs_cli.launch()
         rootfs = [
-            filesystem
-            for filesystem in gfs_cli.list_filesystems()
+            filesystem for filesystem in gfs_cli.list_filesystems()
             if disk_root_part in filesystem
         ]
         if not rootfs:
@@ -477,7 +483,5 @@ def _guestfs_copy_path(guestfs_conn, guest_path, host_path):
                     guest_path,
                     path,
                 ),
-                os.path.join(
-                    host_path, os.path.basename(path)
-                ),
+                os.path.join(host_path, os.path.basename(path)),
             )

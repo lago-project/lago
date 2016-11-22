@@ -172,9 +172,8 @@ class HttpTemplateProvider:
         def report(count, block_size, total_size):
             percent = (count * block_size * 100 / float(total_size))
             sys.stdout.write(
-                "\r% 3.1f%%" % percent + " complete (%d " % (
-                    count * block_size / 1024
-                ) + "Kilobytes)"
+                "\r% 3.1f%%" % percent + " complete (%d " %
+                (count * block_size / 1024) + "Kilobytes)"
             )
             sys.stdout.flush()
 
@@ -260,6 +259,7 @@ class HttpTemplateProvider:
         finally:
             response.close()
 
+
 #: Registry for template providers
 _PROVIDERS = {
     'file': FileSystemTemplateProvider,
@@ -286,11 +286,16 @@ def find_repo_by_name(name, repo_dir=None):
     if repo_dir is None:
         repo_dir = config.get('template_repos')
 
-    ret, out, _ = utils.run_command(['find', repo_dir, '-name', '*.json', ], )
+    ret, out, _ = utils.run_command([
+        'find',
+        repo_dir,
+        '-name',
+        '*.json',
+    ], )
 
     repos = [
-        TemplateRepository.from_url(line.strip())
-        for line in out.split('\n') if len(line.strip())
+        TemplateRepository.from_url(line.strip()) for line in out.split('\n')
+        if len(line.strip())
     ]
 
     for repo in repos:

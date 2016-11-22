@@ -79,13 +79,8 @@ def get_tags(repo):
     return {
         commit: os.path.basename(tag_ref)
         for tag_ref, commit in repo.get_refs().items()
-        if tag_ref.startswith('refs/tags/') and VALID_TAG.match(
-            tag_ref[
-                len(
-                    'refs/tags/'
-                ):
-            ]
-        )
+        if tag_ref.startswith('refs/tags/') and
+        VALID_TAG.match(tag_ref[len('refs/tags/'):])
     }
 
 
@@ -172,8 +167,8 @@ def get_merged_commits(repo, commit, first_parents, children_per_parent):
             merge_children.add(next_sha)
 
         non_first_parents = (
-            parent
-            for parent in next_commit.parents if parent not in first_parents
+            parent for parent in next_commit.parents
+            if parent not in first_parents
         )
         for child_sha in non_first_parents:
             if child_sha not in merge_children and child_sha != next_sha:
@@ -269,7 +264,10 @@ def get_changelog(repo_path, from_commit=None):
             start_including or commit_sha.startswith(from_commit)
             or fuzzy_matches_refs(from_commit, refs.get(commit_sha, []))
         ):
-            cur_line = pretty_commit(commit, version, )
+            cur_line = pretty_commit(
+                commit,
+                version,
+            )
             for child in children:
                 cur_line += pretty_commit(repo.get_object(child), version=None)
             start_including = True

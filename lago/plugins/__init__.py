@@ -64,9 +64,8 @@ def load_plugins(namespace, instantiate=True):
     mgr = ExtensionManager(
         namespace=namespace,
         on_load_failure_callback=(
-            lambda _, ep, err: LOGGER.debug(
-                'Could not load %r: %s', ep.name, err
-            )
+            lambda _, ep, err: LOGGER.
+            debug('Could not load %r: %s', ep.name, err)
         )
     )
     if instantiate:

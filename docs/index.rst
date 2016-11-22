@@ -9,7 +9,7 @@ environments on your server or laptop for various use cases.
 It currently utilizes 'libvirt' for creating VMs, but we are working on adding
 more providers such as 'containers'.
 
-TODO: Add the 'Lago story' and introduction.
+.. todo:: Add the 'Lago story' and introduction.
 
 Getting started
 ---------------

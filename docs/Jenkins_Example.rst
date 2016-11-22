@@ -44,6 +44,7 @@ From within the cloned repository, run the following commands:
     lago start
 
 -   Installing the vms:
+
    -  Jenkins will be installed on the server.
    -  OpenJDK will be installed on the slaves.
 
@@ -81,8 +82,6 @@ When you done with the enviroment:
 Note:
  To turn on the vms, use::
 
-::
-
     lago start
 
 And if you will not have a need for the environment in the future:
@@ -97,4 +96,4 @@ And if you will not have a need for the environment in the future:
 If this simple example just got you even more interested, join the major leauge and try out the
 oVirt example! oVirt_Example_
 
-.. _oVirt_Example: oVirt_Example.html 
+.. _oVirt_Example: oVirt_Example.html

@@ -44,9 +44,7 @@ def do_add(args):
 def do_update(args):
     repos_dir = config.get('template_repos')
     ret, out, _ = utils.run_command(
-        [
-            'find', repos_dir, '-type', 'd', '-name', '.git'
-        ],
+        ['find', repos_dir, '-type', 'd', '-name', '.git'],
     )
 
     for line in [l.strip() for l in out.split('\n') if len(l)]:
@@ -72,17 +70,12 @@ ARGUMENTS = collections.OrderedDict()
 ARGUMENTS[Verbs.ADD] = (
     'Add a git repository with JSON repo files to the directory with repos',
     (
-        (
-            'url',
-            {
-                'help': (
-                    'Path to config that describes the scripts needed to run'
-                ),
-            },
-        ),
+        ('url',
+         {'help': 'Path to config that describes the scripts needed to run'}),
     ),
     do_add,
-)
+)  # yapf: disable
+
 ARGUMENTS[Verbs.UPDATE] = (
     'Update the saved repositories (to origin/master).',
     (),

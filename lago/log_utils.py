@@ -27,7 +27,10 @@ import re
 import sys
 import datetime
 import threading
-from collections import (OrderedDict, deque, )
+from collections import (
+    OrderedDict,
+    deque,
+)
 from functools import wraps
 
 #: Message to be shown when a task is started
@@ -439,7 +442,10 @@ class TaskHandler(logging.StreamHandler):
             return
 
         # All the parents inherit the failure
-        self.mark_parent_tasks_as_failed(self.cur_task, flush_logs=True, )
+        self.mark_parent_tasks_as_failed(
+            self.cur_task,
+            flush_logs=True,
+        )
 
         # Show the start headers for all the parent tasks if they were not
         # shown by the depth level limit
@@ -501,9 +507,9 @@ class TaskHandler(logging.StreamHandler):
 
         if is_header:
             extra_prefix = (
-                self.get_task_indicator(task_level - 1) + ' ' + (
-                    '' if self.am_i_main_thread else '[%s] ' % self.cur_thread
-                ) + task + ': '
+                self.get_task_indicator(task_level - 1) + ' ' +
+                ('' if self.am_i_main_thread else '[%s] ' % self.cur_thread) +
+                task + ': '
             )
             record.levelno = logging.INFO
         else:

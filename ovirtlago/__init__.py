@@ -29,10 +29,20 @@ import nose.config
 from lago.prefix import Prefix
 from lago.workdir import Workdir
 from lago import log_utils
-from . import (paths, testlib, virt, reposetup, )
+from . import (
+    paths,
+    testlib,
+    virt,
+    reposetup,
+)
 
 # TODO: put it into some config
-PROJECTS_LIST = ['vdsm', 'ovirt-engine', 'vdsm-jsonrpc-java', 'ioprocess', ]
+PROJECTS_LIST = [
+    'vdsm',
+    'ovirt-engine',
+    'vdsm-jsonrpc-java',
+    'ioprocess',
+]
 LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
 log_task = functools.partial(log_utils.log_task, logger=LOGGER)
@@ -98,11 +108,7 @@ class OvirtPrefix(Prefix):
         engine_dists = [self.virt_env.engine_vm().distro()] \
             if self.virt_env.engine_vm() else []
         vdsm_dists = list(
-            set(
-                [
-                    host.distro() for host in self.virt_env.host_vms()
-                ]
-            )
+            set([host.distro() for host in self.virt_env.host_vms()])
         )
         all_dists = list(set(engine_dists + vdsm_dists))
 
@@ -114,8 +120,7 @@ class OvirtPrefix(Prefix):
                 parser.readfp(repo_conf_fd)
 
             repos = [
-                repo
-                for repo in parser.sections()
+                repo for repo in parser.sections()
                 if repo.split('-')[-1] in all_dists
             ]
 

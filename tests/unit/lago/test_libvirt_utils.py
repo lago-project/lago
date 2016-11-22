@@ -24,8 +24,7 @@ import lago.libvirt_utils
 
 class TestDomain(object):
     @pytest.mark.parametrize(
-        'state,expected',
-        [
+        'state,expected', [
             ([state_int, 9], state_desc)
             for state_int, state_desc in
             lago.libvirt_utils.DOMAIN_STATES.items()

@@ -36,11 +36,13 @@ in_ovirt_prefix = in_prefix(
 )
 # TODO: Remove this, and properly complain on unset config values
 CONF_DEFAULTS = {
-    'reposync_dir': '/var/lib/lago/reposync',
-    'reposync_config': (
-        '/usr/share/ovirtlago/config/repos/'
-        'ovirt-master-snapshot-external.repo'
-    ),
+    'reposync_dir':
+        '/var/lib/lago/reposync',
+    'reposync_config':
+        (
+            '/usr/share/ovirtlago/config/repos/'
+            'ovirt-master-snapshot-external.repo'
+        ),
 }
 DISTS = ['el6', 'el7', 'fc20']
 
@@ -236,7 +238,10 @@ def do_ovirt_serve(prefix, **kwargs):
 
 
 def _populate_parser(cli_plugins, parser):
-    verbs_parser = parser.add_subparsers(dest='ovirtverb', metavar='VERB', )
+    verbs_parser = parser.add_subparsers(
+        dest='ovirtverb',
+        metavar='VERB',
+    )
     for cli_plugin_name, plugin in cli_plugins.items():
         plugin_parser = verbs_parser.add_parser(
             cli_plugin_name, **plugin.init_args

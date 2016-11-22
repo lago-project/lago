@@ -43,7 +43,8 @@ def generate_request_handler(root_dir):
 
         def translate_path(self, path):
             return os.path.join(
-                self.__root_dir, SimpleHTTPRequestHandler.translate_path(
+                self.__root_dir,
+                SimpleHTTPRequestHandler.translate_path(
                     self, path
                 )[len(os.getcwd()):].lstrip('/')
             )

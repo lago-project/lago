@@ -75,9 +75,7 @@ def with_ovirt_api4(func):
     @with_ovirt_prefix
     def wrapper(prefix, *args, **kwargs):
         return func(
-            prefix.virt_env.engine_vm().get_api(api_ver=4),
-            *args,
-            **kwargs
+            prefix.virt_env.engine_vm().get_api(api_ver=4), *args, **kwargs
         )
 
     return wrapper
@@ -193,14 +191,12 @@ class TaskLogNosePlugin(nose.plugins.Plugin):
 
     def startTest(self, test):
         log_utils.start_log_task(
-            test.shortDescription() or str(test),
-            logger=self.logger
+            test.shortDescription() or str(test), logger=self.logger
         )
 
     def stopTest(self, test):
         log_utils.end_log_task(
-            test.shortDescription() or str(test),
-            logger=self.logger
+            test.shortDescription() or str(test), logger=self.logger
         )
 
 
