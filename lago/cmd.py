@@ -339,12 +339,20 @@ def do_shell(prefix, host, args=None, **kwargs):
     try:
         host = prefix.virt_env.get_vm(host)
     except KeyError:
-        LOGGER.error('Unable to find VM %s', host)
-        LOGGER.info(
-            'Available VMs:\n\t' +
-            '\n\t'.join(prefix.virt_env.get_vms().keys())
-        )
-        raise
+        ssh_host = None
+        for possible_host in prefix.virt_env.get_vms():
+            if possible_host.endswith(host):
+                ssh_host = prefix.virt_env.get_vm(possible_host)
+                break
+        if ssh_host:
+            host = ssh_host
+        else:
+            LOGGER.error('Unable to find VM %s', host)
+            LOGGER.info(
+                'Available VMs:\n\t' +
+                '\n\t'.join(prefix.virt_env.get_vms().keys())
+            )
+            raise
 
     if not host.alive():
         raise RuntimeError(
