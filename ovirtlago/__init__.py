@@ -124,7 +124,7 @@ class OvirtPrefix(Prefix):
                 if repo.split('-')[-1] in all_dists
             ]
 
-            if not skip_sync:
+            if not skip_sync and len(repos) > 0:
                 with LogTask(
                     'Syncing remote repos locally (this might take some time)'
                 ):
