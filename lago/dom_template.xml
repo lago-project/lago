@@ -20,9 +20,6 @@
       <memballoon model='none'/>
       <controller type='usb' model='none'>
       </controller>
-      <controller type='scsi' index='0' model='virtio-scsi'>
-        <driver iothread='1'/>
-      </controller>
       <disk type='file' device='disk'>
         <driver name='qemu' type='qcow2'/>
         <source file='DISK_PATH'/>
