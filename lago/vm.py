@@ -263,6 +263,7 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
         disk = devices.xpath('disk')[0]
         devices.remove(disk)
 
+        scsi_con_exists = False
         for disk_order, dev_spec in enumerate(self.vm._spec['disks']):
 
             # we have to make some adjustments
@@ -280,6 +281,20 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
             # support virtio-scsi - sdX devices
             if dev_spec['dev'].startswith('sd'):
                 bus = 'scsi'
+                if not scsi_con_exists:
+                    controller = lxml.etree.Element(
+                        'controller',
+                        type='scsi',
+                        index='0',
+                        model='virtio-scsi',
+                    )
+                    driver = lxml.etree.Element(
+                        'driver',
+                        iothread='1',
+                    )
+                    controller.append(driver)
+                    devices.append(controller)
+                    scsi_con_exists = True
 
             disk = lxml.etree.Element(
                 'disk',
