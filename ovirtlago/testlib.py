@@ -94,7 +94,7 @@ def _vms_capable(vms, caps):
 
     existing_caps = set()
     for vm in vms:
-        existing_caps.union(get_vm_caps(vm) or [])
+        existing_caps = existing_caps.union(get_vm_caps(vm) or [])
 
     return caps.issubset(existing_caps)
 
