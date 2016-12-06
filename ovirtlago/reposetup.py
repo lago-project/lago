@@ -20,6 +20,7 @@
 
 import functools
 import re
+import itertools
 import shutil
 import logging
 import os
@@ -72,33 +73,55 @@ def with_repo_server(func):
 def _fix_reposync_issues(reposync_out, repo_path):
     """
     Fix for the issue described at::
-        https://bugzilla.redhat.com/show_bug.cgi?id=1332441
+        https://bugzilla.redhat.com//show_bug.cgi?id=1399235
+        https://bugzilla.redhat.com//show_bug.cgi?id=1332441
+
     """
-    LOGGER.warn(
-        'Due to bug https://bugzilla.redhat.com/show_bug.cgi?id=1332441 '
-        'sometimes reposync fails to update some packages that have older '
-        'versions already downloaded, will remove those if any and retry'
+    if len(repo_path) == 0 or len(reposync_out) == 0:
+        LOGGER.warning(
+            (
+                'unable to run _fix_reposync_issues, no reposync output '
+                'or empty repo path.'
+            )
+        )
+        return
+    rpm_regex = r'[a-z]{1}[a-zA-Z0-9._\\-]+'
+    wrong_version = re.compile(
+        r'(?P<package_name>' + rpm_regex + r'): \[Errno 256\]'
     )
-    package_regex = re.compile(r'(?P<package_name>[^:\r\s]+): \[Errno 256\]')
-    for match in package_regex.findall(reposync_out):
-        find_command = [
-            'find',
-            repo_path,
-            '-name',
-            match + '*',
-        ]
-        ret, out, _ = run_command(find_command)
+    wrong_release = re.compile(r'(?P<package_name>' + rpm_regex + r') FAILED')
+    packages = set(
+        itertools.chain(
+            wrong_version.findall(reposync_out),
+            wrong_release.findall(reposync_out)
+        )
+    )
+    count = 0
+    LOGGER.debug(
+        'detected package errors in reposync output in repo_path:%s: %s',
+        repo_path, ','.join(packages)
+    )
 
-        if ret:
-            raise RuntimeError('Failed to execute %s' % find_command)
+    for dirpath, _, filenames in os.walk(repo_path):
+        rpms = (
+            file for file in filenames
+            if file.endswith('.rpm') and dirpath.startswith(repo_path)
+        )
+        for rpm in rpms:
+            if any(map(rpm.startswith, packages)):
+                bad_package = os.path.join(dirpath, rpm)
+                LOGGER.info('removing conflicting RPM: %s', bad_package)
+                os.unlink(bad_package)
+                count = count + 1
 
-        for to_remove in out.splitlines():
-            if not to_remove.startswith(repo_path):
-                LOGGER.warn('Skipping out-of-repo file %s', to_remove)
-                continue
-
-            LOGGER.info('Removing: %s', to_remove)
-            os.unlink(to_remove)
+    if count > 0:
+        LOGGER.debug(
+            (
+                'removed %s conflicting packages, see '
+                'https://bugzilla.redhat.com//show_bug.cgi?id=1399235 '
+                'for more details.'
+            ), count
+        )
 
 
 def sync_rpm_repository(repo_path, yum_config, repos):
@@ -107,42 +130,48 @@ def sync_rpm_repository(repo_path, yum_config, repos):
     if not os.path.exists(repo_path):
         os.makedirs(repo_path)
 
-    reposync_command = [
-        'reposync',
-        '--config=%s' % yum_config,
-        '--download_path=%s' % repo_path,
-        '--newest-only',
-        '--delete',
-        '--cachedir=%s/cache' % repo_path,
-    ] + ['--repoid=%s' % repo for repo in repos]
+    reposync_base_cmd = [
+        'reposync', '--config=%s' % yum_config,
+        '--download_path=%s' % repo_path, '--newest-only', '--delete',
+        '--cachedir=%s/cache' % repo_path
+    ]
+    with LogTask('Running reposync'):
+        for repo in repos:
+            with LockFile(lock_path, timeout=180):
+                reposync_cmd = reposync_base_cmd + ['--repoid=%s' % repo]
+                ret, out, _ = run_command(reposync_cmd)
+                if not ret:
+                    LOGGER.debug('reposync on repo %s: success.' % repo)
+                    return
 
-    with LockFile(lock_path, timeout=180):
-        with LogTask('Running reposync'):
-            ret, out, _ = run_command(reposync_command)
-        if not ret:
-            return
+                LOGGER.info('repo: %s: failed, re-running.', repo)
+                _fix_reposync_issues(
+                    reposync_out=out, repo_path=os.path.join(repo_path, repo)
+                )
+                ret, _, _ = run_command(reposync_cmd)
+                if not ret:
+                    return
 
-        _fix_reposync_issues(reposync_out=out, repo_path=repo_path)
-        with LogTask('Rerunning reposync'):
-            ret, _, _ = run_command(reposync_command)
-        if not ret:
-            return
+                LOGGER.info(
+                    'repo: %s: failed. clearing cache and re-running.', repo
+                )
+                shutil.rmtree('%s/cache' % repo_path)
 
-        LOGGER.warn(
-            'Failed to run reposync again, that usually means that '
-            'some of the local rpms might be corrupted or the metadata '
-            'invalid, cleaning caches and retrying a second time'
-        )
-        shutil.rmtree('%s/cache' % repo_path)
-        with LogTask('Rerunning reposync a last time'):
-            ret, out, err = run_command(reposync_command)
-        if ret:
-            LOGGER.error(
-                'reposync command failed with following output: %s\n'
-                'and following error: %s', out, err
-            )
-            raise RuntimeError(
-                'Failed to run reposync a second time, aborting'
-            )
+                ret, out, err = run_command(reposync_cmd)
+                if ret:
+                    LOGGER.error(
+                        'reposync command failed for repoid: %s', repo
+                    )
+                    LOGGER.error(
+                        'reposync stdout for repoid: %s: \n%s', repo, out
+                    )
+                    LOGGER.error(
+                        'reposync stderr for repoid: %s: \n%s', repo, err
+                    )
 
-        return
+                    raise RuntimeError(
+                        (
+                            'Failed to run reposync 3 times '
+                            'for repoid: %s, aborting.'
+                        ) % repo
+                    )
