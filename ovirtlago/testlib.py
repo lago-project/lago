@@ -22,7 +22,7 @@ import functools
 import logging
 import os
 import time
-
+import unittest.case
 import nose.plugins
 from nose.plugins.skip import SkipTest
 
@@ -177,8 +177,13 @@ class LogCollectorPlugin(nose.plugins.Plugin):
 class TaskLogNosePlugin(nose.plugins.Plugin):
     name = "tasklog-plugin"
 
+    # the score parameter is a workaround to catch skipped tests
+    # see: https://github.com/nose-devs/nose/issues/45
+    score = 10000
+
     def __init__(self, *args, **kwargs):
         self.logger = logging.getLogger('nose')
+        self.skipped = {}
         super(TaskLogNosePlugin, self).__init__(*args, **kwargs)
 
     def options(self, parser, env):
@@ -195,9 +200,21 @@ class TaskLogNosePlugin(nose.plugins.Plugin):
         )
 
     def stopTest(self, test):
-        log_utils.end_log_task(
-            test.shortDescription() or str(test), logger=self.logger
-        )
+        desc = test.shortDescription() or str(test)
+        if desc in self.skipped:
+            exp_msg = ''
+            try:
+                exp_msg = self.skipped[desc][1]
+            except KeyError:
+                pass
+            self.logger.info('SKIPPED: %s', exp_msg)
+
+        log_utils.end_log_task(desc, logger=self.logger)
+
+    def addError(self, test, err):
+        desc = test.shortDescription() or str(test)
+        if issubclass(err[0], unittest.case.SkipTest):
+            self.skipped[desc] = err
 
 
 def _instance_of_any(obj, cls_list):
