@@ -142,7 +142,7 @@ def sync_rpm_repository(repo_path, yum_config, repos):
                 ret, out, _ = run_command(reposync_cmd)
                 if not ret:
                     LOGGER.debug('reposync on repo %s: success.' % repo)
-                    return
+                    continue
 
                 LOGGER.info('repo: %s: failed, re-running.', repo)
                 _fix_reposync_issues(
@@ -150,7 +150,7 @@ def sync_rpm_repository(repo_path, yum_config, repos):
                 )
                 ret, _, _ = run_command(reposync_cmd)
                 if not ret:
-                    return
+                    continue
 
                 LOGGER.info(
                     'repo: %s: failed. clearing cache and re-running.', repo
