@@ -117,6 +117,14 @@ def config_net_interface_dhcp(iface, hwaddr):
     )
 
 
+def edit(filename, expression):
+    editstr = '%s:""%s""' % (filename, expression)
+    return (
+        '--edit',
+        editstr,
+    )
+
+
 def sysprep(disk, mods, backend='direct'):
     cmd = ['virt-sysprep', '-a', disk, '--selinux-relabel']
     env = dict(os.environ.copy(), LIBGUESTFS_BACKEND=backend)
