@@ -94,7 +94,11 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
         super(LocalLibvirtVMProvider, self).start()
         if not self.defined():
             with LogTask('Starting VM %s' % self.vm.name()):
-                self.libvirt_con.createXML(self._libvirt_xml())
+                dom = self.libvirt_con.createXML(self._libvirt_xml())
+                if not dom:
+                    raise RuntimeError(
+                        'Failed to create Domain: %s' % self._libvirt_xml()
+                    )
 
     def stop(self):
         super(LocalLibvirtVMProvider, self).stop()
@@ -123,6 +127,13 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
                         ),
                         sysprep.set_iscsi_initiator_name(self.vm.iscsi_name()),
                         sysprep.set_selinux_mode('enforcing'),
+                        sysprep.edit(
+                            "/boot/grub2/grub.cfg",
+                            "s/set timeout=5/set timeout=0/g"
+                        ) if (
+                            self.vm.distro() == 'el7' or self.vm.distro() ==
+                            'fc24'
+                        ) else '',
                     ] + [
                         sysprep.config_net_interface_dhcp(
                             'eth%d' % index,
