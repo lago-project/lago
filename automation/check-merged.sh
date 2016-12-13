@@ -35,6 +35,7 @@ echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 echo '~*          Running functional tests                   ~'
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 if [[ "$res" == "0" ]]; then
+    ! [[ -c "/dev/kvm" ]] && mknod /dev/kvm c 10 232
     run_full_functional_tests \
     || res=$?
 else

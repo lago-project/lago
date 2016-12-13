@@ -3,6 +3,7 @@ EXPORTED_DIR="$PWD/exported-artifacts"
 OUT_DOCS_DIR="$EXPORTED_DIR/docs"
 
 
+
 source "${0%/*}/common.sh"
 
 
@@ -43,6 +44,7 @@ echo '~*          Running basic functional tests             ~'
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 
 if code_changed && [[ "$res" == "0" ]]; then
+    ! [[ -c "/dev/kvm" ]] && mknod /dev/kvm c 10 232
     run_basic_functional_tests \
     || res=$?
 elif [[ "$res" == "0" ]]; then
