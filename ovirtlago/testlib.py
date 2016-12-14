@@ -209,12 +209,13 @@ def _instance_of_any(obj, cls_list):
     return any(True for cls in cls_list if isinstance(obj, cls))
 
 
-def assert_true_within(func, timeout, allowed_exceptions=None):
+def assert_equals_within(func, value, timeout, allowed_exceptions=None):
     allowed_exceptions = allowed_exceptions or []
     with utils.EggTimer(timeout) as timer:
         while not timer.elapsed():
             try:
-                if func():
+                res = func()
+                if res == value:
                     return
             except Exception as exc:
                 if _instance_of_any(exc, allowed_exceptions):
@@ -224,23 +225,40 @@ def assert_true_within(func, timeout, allowed_exceptions=None):
                 raise
 
             time.sleep(3)
+    try:
+        raise AssertionError(
+            '%s != %s after %s seconds' % (res, value, timeout)
+        )
+    # if func repeatedly raises any of the allowed exceptions, res remains
+    # unbound throughout the function, resulting in an UnboundLocalError.
+    except UnboundLocalError:
+        raise AssertionError(
+            '%s failed to evaluate after %s seconds' %
+            (func.__name__, timeout)
+        )
 
-    raise AssertionError('Timed out after %s seconds' % timeout)
+
+def assert_equals_within_short(func, value, allowed_exceptions=None):
+    allowed_exceptions = allowed_exceptions or []
+    assert_equals_within(
+        func, value, SHORT_TIMEOUT, allowed_exceptions=allowed_exceptions
+    )
+
+
+def assert_equals_within_long(func, value, allowed_exceptions=None):
+    allowed_exceptions = allowed_exceptions or []
+    assert_equals_within(
+        func, value, LONG_TIMEOUT, allowed_exceptions=allowed_exceptions
+    )
+
+
+def assert_true_within(func, timeout, allowed_exceptions=None):
+    assert_equals_within(func, True, timeout, allowed_exceptions)
 
 
 def assert_true_within_short(func, allowed_exceptions=None):
-    allowed_exceptions = allowed_exceptions or []
-    assert_true_within(
-        func,
-        SHORT_TIMEOUT,
-        allowed_exceptions=allowed_exceptions,
-    )
+    assert_equals_within_short(func, True, allowed_exceptions)
 
 
 def assert_true_within_long(func, allowed_exceptions=None):
-    allowed_exceptions = allowed_exceptions or []
-    assert_true_within(
-        func,
-        LONG_TIMEOUT,
-        allowed_exceptions=allowed_exceptions,
-    )
+    assert_equals_within_long(func, True, allowed_exceptions)
