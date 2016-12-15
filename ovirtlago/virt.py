@@ -118,9 +118,6 @@ class NodeVM(lago.vm.DefaultVM):
     def _artifact_paths(self):
         return []
 
-    def collect_artifacts(self, host_path):
-        return
-
     def wait_for_ssh(self):
         return
 
