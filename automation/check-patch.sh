@@ -43,6 +43,7 @@ echo '~*          Running basic functional tests             ~'
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 
 if code_changed && [[ "$res" == "0" ]]; then
+    set_guestfs_params
     run_basic_functional_tests \
     || res=$?
 elif [[ "$res" == "0" ]]; then

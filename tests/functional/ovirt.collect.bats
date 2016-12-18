@@ -14,7 +14,6 @@ WORKDIR="$FIXTURES"/.lago
 
     rm -rf "$WORKDIR"
     pushd "$FIXTURES"
-    export LIBGUESTFS_DEBUG=1 LIBGUESTFS_TRACE=1
     helpers.run_ok "$LAGOCLI" \
         init \
         "$suite"

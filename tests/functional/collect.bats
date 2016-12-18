@@ -20,7 +20,6 @@ REPO_NAME="local_tests_repo"
 
     pushd "$FIXTURES"
     export BATS_TMPDIR BATS_TEST_DIRNAME
-    export LIBGUESTFS_DEBUG=1 LIBGUESTFS_TRACE=1
     helpers.run_ok "$LAGOCLI" \
         init \
         --template-repo-path "$REPO_CONF" \

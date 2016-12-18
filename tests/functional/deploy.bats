@@ -15,7 +15,6 @@ REPO_NAME='local_tests_repo'
 
     rm -rf "$WORKDIR"
     pushd "$FIXTURES"
-    export LIBGUESTFS_DEBUG=1 LIBGUESTFS_TRACE=1
     export BATS_TMPDIR BATS_TEST_DIRNAME
     rm -rf "$REPO_STORE" "$WORKDIR" "$STORE"
     cp -a "$FIXTURES/store_skel" "$REPO_STORE"
