@@ -18,6 +18,7 @@
 # Refer to the README and COPYING files for full details of the license
 #
 import os
+import time
 import warnings
 
 import lago
@@ -185,7 +186,16 @@ class EngineVM(lago.vm.DefaultVM):
         if api_ver == 3:
             return api_v3.pop()
         else:
-            return api_v4.pop()
+            testapi = api_v4.pop()
+            counter = 1
+            while not testapi.test():
+                if counter == 20:
+                    raise RuntimeError('test api call failed')
+                else:
+                    time.sleep(3)
+                    counter += 1
+
+            return testapi
 
     def get_api(self, api_ver=3):
         if api_ver == 3:
