@@ -62,6 +62,7 @@ BuildRequires: python-lxml
 BuildRequires: libvirt-python
 BuildRequires: python-enum
 BuildRequires: python-scp
+BuildRequires: python2-rpm-macros
 %if 0%{?fedora} >= 24
 BuildRequires: python2-configparser
 %else
