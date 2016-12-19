@@ -76,6 +76,19 @@ class VirtEnv(object):
     * libvirt_con
     '''
 
+    _CPU_FAMILIES = {
+        'Westmere': 'Intel Westmere Family',
+        'Nehalem': 'Intel Nehalem Family',
+        'Penryn': 'Intel Penryn Family',
+        'Conroe': 'Intel Conroe Family',
+        'Opteron_G5': 'AMD Opteron G5',
+        'Opteron_G4': 'AMD Opteron G4',
+        'Opteron_G3': 'AMD Opteron G3',
+        'Opteron_G2': 'AMD Opteron G2',
+        'Opteron_G1': 'AMD Opteron G1',
+    }
+    _compatible_cpu_and_family = None
+
     def __init__(self, prefix, vm_specs, net_specs):
         self.vm_types = plugins.load_plugins(
             plugins.PLUGIN_ENTRY_POINTS['vm'],
@@ -104,6 +117,18 @@ class VirtEnv(object):
         cap_tree = lxml.etree.fromstring(self.libvirt_con.getCapabilities())
         cpu_model = cap_tree.xpath('/capabilities/host/cpu/model')[0].text
         return cpu_model
+
+    def get_compatible_cpu_and_family(self):
+        if self._compatible_cpu_and_family is None:
+            for cpu in (
+                self.get_cpu_model(),
+                'Westmere',
+            ):
+                family = self._CPU_FAMILIES.get(cpu)
+                if family is not None:
+                    break
+            self._compatible_cpu_and_family = cpu, family
+        return self._compatible_cpu_and_family
 
     def _create_net(self, net_spec):
         if net_spec['type'] == 'nat':

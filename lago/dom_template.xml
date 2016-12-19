@@ -3,7 +3,10 @@
     <memory unit='MiB'>@MEM_SIZE@</memory>
     <vcpu>@VCPU@</vcpu>
     <iothreads>1</iothreads>
-    <cpu mode='host-passthrough'>
+    <cpu match="exact">
+      <model>@CPUMODEL@</model>
+      <feature policy='optional' name='vmx'/>
+      <feature policy='optional' name='svm'/>
       <topology sockets='@CPU@' cores='1' threads='1'/>
     </cpu>
     <os>

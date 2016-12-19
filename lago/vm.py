@@ -286,6 +286,7 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
             '@NAME@': self._libvirt_name(),
             '@VCPU@': self.vm._spec.get('vcpu', 2),
             '@CPU@': self.vm._spec.get('cpu', 2),
+            '@CPUMODEL@': self.vm.virt_env.get_compatible_cpu_and_family()[0],
             '@MEM_SIZE@': self.vm._spec.get('memory', 16 * 1024),
             '@QEMU_KVM@': qemu_kvm_path,
         }
