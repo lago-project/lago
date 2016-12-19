@@ -76,7 +76,6 @@ REPO_NAME="local_tests_repo"
     # and that is not seamlesly reachable from out of the chroot by
     # libvirt/kvm
     export BATS_TMPDIR BATS_TEST_DIRNAME
-    export LIBGUESTFS_DEBUG=1 LIBGUESTFS_TRACE=1
     helpers.run_ok "$LAGOCLI" \
         init \
         --template-repo-path "$REPO_CONF" \
@@ -97,7 +96,6 @@ REPO_NAME="local_tests_repo"
     # and that is not seamlesly reachable from out of the chroot by
     # libvirt/kvm
     export BATS_TMPDIR BATS_TEST_DIRNAME
-    export LIBGUESTFS_DEBUG=1 LIBGUESTFS_TRACE=1
     cd "$FIXTURES"
     for prefix_name in "${PREFIX_NAMES[@]:0:${#PREFIX_NAMES[@]}-1}"; do
         echo "Creating prefix $prefix_name in $WORKDIR"
@@ -123,7 +121,6 @@ REPO_NAME="local_tests_repo"
     # and that is not seamlesly reachable from out of the chroot by
     # libvirt/kvm
     export BATS_TMPDIR BATS_TEST_DIRNAME
-    export LIBGUESTFS_DEBUG=1 LIBGUESTFS_TRACE=1
     cd "$FIXTURES"
     prefix_name="${PREFIX_NAMES[@]: -1}"
     echo "Creating prefix $prefix_name in $WORKDIR"
@@ -297,7 +294,6 @@ EOS
     # This is needed to be able to run inside mock, as it uses some temp files
     # and that is not seamlesly reachable from out of the chroot by
     # libvirt/kvm
-    export LIBGUESTFS_DEBUG=1 LIBGUESTFS_TRACE=1
     helpers.run_ok "$LAGOCLI" \
         --prefix-name "$PREFIX_NAME" \
         init \

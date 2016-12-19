@@ -3,6 +3,21 @@
 # Common functions for the scripts
 #
 
+
+set_guestfs_params() {
+    # see: https://bugzilla.redhat.com/show_bug.cgi?id=1404287
+    export LIBGUESTFS_APPEND="edd=off"
+    # make libguestfs use /dev/shm as tmpdir
+    export LIBGUESTFS_CACHEDIR="/dev/shm"
+    export LIBGUESTFS_TMPDIR="/dev/shm"
+
+    # ensure KVM is enabled under mock
+    ! [[ -c "/dev/kvm" ]] && mknod /dev/kvm c 10 232
+
+    # un-comment this to debug LIBGUESTFS
+    # export LIBGUESTFS_DEBUG=1 LIBGUESTFS_TRACE=1
+}
+
 code_changed() {
     if ! [[ -d .git ]]; then
         echo "Not in a git dir, will run all the tests"
