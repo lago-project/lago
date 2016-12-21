@@ -345,6 +345,9 @@ class Network(object):
     def resolve(self, name):
         return self._spec['mapping'][name]
 
+    def mapping(self):
+        return self._spec['mapping']
+
     def _libvirt_name(self):
         return self._env.prefixed_name(self.name(), max_length=15)
 

@@ -338,6 +338,17 @@ class VMPlugin(plugins.Plugin):
     def ip(self):
         return str(self.virt_env.get_net().resolve(self.name()))
 
+    def all_ips(self):
+        nets = {}
+        ips = []
+        nets = self.virt_env.get_nets()
+        for net in nets.values():
+            mapping = net.mapping()
+            for hostname, ip in mapping.items():
+                if hostname.startswith(self.name()):
+                    ips.append(str(ip))
+        return ips
+
     def ssh(
         self,
         command,
