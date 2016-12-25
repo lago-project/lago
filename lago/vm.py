@@ -28,6 +28,7 @@ import pwd
 from . import (log_utils, utils, sysprep, libvirt_utils)
 from .config import config
 from .plugins import vm
+from .plugins.vm import ExtractPathError, ExtractPathNoPathError
 
 LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
@@ -197,16 +198,42 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
             if was_defined:
                 self.start()
 
-    def extract_paths(self, paths):
-        if (
-            self.vm.alive() and self.vm.ssh_reachable()
-            and self.vm.has_guest_agent()
-        ):
-            self._extract_paths_live(paths=paths)
-        elif not self.vm.alive():
-            self._extract_paths_dead(paths=paths)
-        else:
-            super(LocalLibvirtVMProvider, self).extract_paths(paths=paths)
+    def extract_paths(self, paths, ignore_nopath):
+        """
+        Extract the given paths from the domain
+
+        Attempt to extract all files defined in ``paths`` with the method
+        defined in :func:`~lago.plugins.vm.VMProviderPlugin.extract_paths`,
+        if it fails, will try extracting the files with libguestfs.
+
+        Args:
+            paths(list of str): paths to extract
+            ignore_nopath(boolean): if True will ignore none existing paths.
+
+        Returns:
+            None
+
+        Raises:
+            :exc:`~lago.plugins.vm.ExtractPathNoPathError`: if a none existing
+                path was found on the VM, and `ignore_nopath` is True.
+            :exc:`~lago.plugins.vm.ExtractPathError`: on all other failures.
+        """
+
+        try:
+
+            super(LocalLibvirtVMProvider, self).extract_paths(
+                paths=paths,
+                ignore_nopath=ignore_nopath,
+            )
+        except ExtractPathError as err:
+            LOGGER.debug(
+                '%s: failed extracting files: %s', self.vm.name(), err.message
+            )
+            LOGGER.debug(
+                '%s: attempting to extract files with libguestfs',
+                self.vm.name()
+            )
+            self._extract_paths_gfs(paths=paths, ignore_nopath=ignore_nopath)
 
     @_check_defined
     def vnc_port(self):
@@ -432,57 +459,48 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
             self._reclaim_disks()
             self.vm._spec['snapshots'][name] = snap_info
 
-    def _extract_paths_live(self, paths, freeze=False):
-        if freeze:
-            dom = self.libvirt_con.lookupByName(self._libvirt_name())
-            self.vm.guest_agent().start()
-            dom.fsFreeze()
-        try:
-            self._extract_paths_dead(paths=paths)
-        finally:
-            if freeze:
-                dom.fsThaw()
-
-    def _extract_paths_dead(self, paths):
-        disk_path = os.path.expandvars(self.vm._spec['disks'][0]['path'])
-        disk_root_part = self.vm._spec['disks'][0]['metadata'].get(
-            'root-partition',
-            'root',
-        )
-
+    def _extract_paths_gfs(self, paths, ignore_nopath):
         gfs_cli = guestfs.GuestFS(python_return_dict=True)
-        gfs_cli.add_drive_opts(disk_path, format='qcow2', readonly=1)
-        gfs_cli.set_backend('direct')
-        gfs_cli.launch()
-        rootfs = [
-            filesystem for filesystem in gfs_cli.list_filesystems()
-            if disk_root_part in filesystem
-        ]
-        if not rootfs:
-            raise RuntimeError(
-                'No root fs (%s) could be found for %s form list %s' %
-                (disk_root_part, disk_path, str(gfs_cli.list_filesystems()))
+        try:
+            disk_path = os.path.expandvars(self.vm._spec['disks'][0]['path'])
+            disk_root_part = self.vm._spec['disks'][0]['metadata'].get(
+                'root-partition',
+                'root',
             )
-        else:
-            rootfs = rootfs[0]
-        gfs_cli.mount_ro(rootfs, '/')
-        for (guest_path, host_path) in paths:
-            LOGGER.debug(
-                'Extracting guestfs://%s:%s to %s',
-                self.vm.name(),
-                host_path,
-                guest_path,
-            )
-            try:
-                _guestfs_copy_path(gfs_cli, guest_path, host_path)
-            except Exception:
-                LOGGER.exception(
-                    'Failed to copy %s from %s',
-                    guest_path,
-                    self.vm.name(),
+            gfs_cli.add_drive_opts(disk_path, format='qcow2', readonly=1)
+            gfs_cli.set_backend(os.environ.get('LIBGUESTFS_BACKEND', 'direct'))
+            gfs_cli.launch()
+            rootfs = [
+                filesystem for filesystem in gfs_cli.list_filesystems()
+                if disk_root_part in filesystem
+            ]
+            if not rootfs:
+                raise RuntimeError(
+                    'No root fs (%s) could be found for %s from list %s' % (
+                        disk_root_part, disk_path,
+                        str(gfs_cli.list_filesystems())
+                    )
                 )
-        gfs_cli.shutdown()
-        gfs_cli.close()
+            else:
+                rootfs = rootfs[0]
+            gfs_cli.mount_ro(rootfs, '/')
+            for (guest_path, host_path) in paths:
+                msg = ('Extracting guestfs://{0}:{1} to {2}').format(
+                    self.vm.name(), host_path, guest_path
+                )
+
+                LOGGER.debug(msg)
+                try:
+                    _guestfs_copy_path(gfs_cli, guest_path, host_path)
+                except ExtractPathNoPathError as err:
+                    if ignore_nopath:
+                        LOGGER.debug('%s: ignoring', err)
+                    else:
+                        raise
+
+        finally:
+            gfs_cli.shutdown()
+            gfs_cli.close()
 
     def _reclaim_disk(self, path):
         if pwd.getpwuid(os.stat(path).st_uid).pw_name == 'qemu':
@@ -511,3 +529,8 @@ def _guestfs_copy_path(guestfs_conn, guest_path, host_path):
                 ),
                 os.path.join(host_path, os.path.basename(path)),
             )
+    else:
+        raise ExtractPathNoPathError(
+            ('unable to extract {0}: path does not '
+             'exist.').format(guest_path)
+        )
