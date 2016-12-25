@@ -124,10 +124,8 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
                         sysprep.set_root_password(self.vm.root_password()),
                         sysprep.add_ssh_key(
                             self.vm.virt_env.prefix.paths.ssh_id_rsa_pub(),
-                            with_restorecon_fix=(self.vm.distro() == 'fc23'),
                         ),
                         sysprep.set_iscsi_initiator_name(self.vm.iscsi_name()),
-                        sysprep.set_selinux_mode('enforcing'),
                         sysprep.edit(
                             "/boot/grub2/grub.cfg",
                             "s/set timeout=5/set timeout=0/g"
