@@ -376,10 +376,12 @@ class NATNetwork(Network):
         with open(_path_to_xml('net_nat_template.xml')) as f:
             net_raw_xml = f.read()
 
+        subnet = self.gw().split('.')[2]
         replacements = {
             '@NAME@': self._libvirt_name(),
             '@BR_NAME@': ('%s-nic' % self._libvirt_name())[:12],
             '@GW_ADDR@': self.gw(),
+            '@SUBNET@': subnet,
         }
         for k, v in replacements.items():
             net_raw_xml = net_raw_xml.replace(k, v, 1)
@@ -394,7 +396,7 @@ class NATNetwork(Network):
             )
             net_xml.append(domain_xml)
         if 'dhcp' in self._spec:
-            IPV6_PREFIX = 'fd8f:1391:3a82:5e0d::'
+            IPV6_PREFIX = 'fd8f:1391:3a82:' + subnet + '::'
             ipv4 = net_xml.xpath('/network/ip')[0]
             ipv6 = net_xml.xpath('/network/ip')[1]
             dns = net_xml.xpath('/network/dns')[0]
