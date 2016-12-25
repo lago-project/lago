@@ -26,7 +26,7 @@ import unittest.case
 import nose.plugins
 from nose.plugins.skip import SkipTest
 
-from lago import (utils as utils, log_utils as log_utils)
+from lago import (utils, log_utils, cmd as lago_cmd)
 
 import ovirtlago
 
@@ -171,7 +171,11 @@ class LogCollectorPlugin(nose.plugins.Plugin):
     def _addFault(self, test, err):
         suffix = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         test_name = '%s-%s' % (test.id(), suffix)
-        self._prefix.collect_artifacts(self._prefix.paths.test_logs(test_name))
+        lago_cmd.do_collect(
+            prefix=self._prefix,
+            output=self._prefix.paths.test_logs(test_name),
+            no_skip=False
+        )
 
 
 class TaskLogNosePlugin(nose.plugins.Plugin):

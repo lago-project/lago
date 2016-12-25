@@ -217,17 +217,34 @@ def do_ovirt_engine_setup(prefix, config, **kwargs):
     prefix.virt_env.engine_vm().engine_setup(config)
 
 
-@cli_plugin(help='Collect logs from running VMs')
+@cli_plugin(
+    help=(
+        'Collect logs from VMs, list of collected logs '
+        'can be specified in the init file, under '
+        'artifacts parameter '
+    )
+)
 @cli_plugin_add_argument(
     '--output',
     help='Path to place all the extracted at',
     required=True,
     type=os.path.abspath,
 )
+@cli_plugin_add_argument(
+    '--no-skip',
+    help='do not skip missing paths',
+    action='store_true',
+)
 @in_ovirt_prefix
 @with_logging
-def do_ovirt_collect(prefix, output, **kwargs):
-    prefix.collect_artifacts(output)
+def do_ovirt_collect(prefix, output, no_skip, **kwargs):
+    warnings.warn(
+        (
+            '\'lago ovirt collect\' is deprecated, redirecting '
+            'to \'lago collect\''
+        )
+    )
+    lago.cmd.do_collect(prefix=prefix, output=output, no_skip=no_skip)
 
 
 @cli_plugin(help='Start the repo server and do nothing')

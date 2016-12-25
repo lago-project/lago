@@ -325,7 +325,7 @@ def get_ssh_client(
     ):
         ssh_timeout = int(config.get('ssh_timeout'))
         if ssh_tries is None:
-            ssh_tries = int(config.get('ssh_tries'))
+            ssh_tries = int(config.get('ssh_tries', 10))
 
         start_time = time.time()
         while ssh_tries > 0:
@@ -364,7 +364,6 @@ def get_ssh_client(
                     host_name,
                     err,
                 )
-
             ssh_tries -= 1
             time.sleep(1)
         else:
