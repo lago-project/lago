@@ -26,7 +26,7 @@ import unittest.case
 import nose.plugins
 from nose.plugins.skip import SkipTest
 
-from lago import (utils as utils, log_utils as log_utils)
+from lago import (utils, log_utils, cmd as lago_cmd)
 
 import ovirtlago
 
@@ -81,11 +81,6 @@ def with_ovirt_api4(func):
     return wrapper
 
 
-def continue_on_failure(func):
-    func.continue_on_failure = True
-    return func
-
-
 def _vms_capable(vms, caps):
     caps = set(caps)
 
@@ -128,24 +123,13 @@ def host_capability(caps):
 
 
 def test_sequence_gen(test_list):
-    failure_occured = [False]
     for test in test_list:
 
         def wrapped_test():
-            if failure_occured[0]:
-                raise SkipTest()
-            try:
-                return test()
-            except SkipTest:
-                raise
-            except:
-                if not getattr(test, 'continue_on_failure', False):
-                    failure_occured[0] = True
-                raise
+            test()
 
-        if test is not None:
-            wrapped_test.description = test.__name__
-            yield wrapped_test
+        setattr(wrapped_test, 'description', test.__name__)
+        yield wrapped_test
 
 
 class LogCollectorPlugin(nose.plugins.Plugin):
@@ -171,7 +155,11 @@ class LogCollectorPlugin(nose.plugins.Plugin):
     def _addFault(self, test, err):
         suffix = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         test_name = '%s-%s' % (test.id(), suffix)
-        self._prefix.collect_artifacts(self._prefix.paths.test_logs(test_name))
+        lago_cmd.do_collect(
+            prefix=self._prefix,
+            output=self._prefix.paths.test_logs(test_name),
+            no_skip=False
+        )
 
 
 class TaskLogNosePlugin(nose.plugins.Plugin):

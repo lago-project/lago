@@ -1095,7 +1095,7 @@ class Prefix(object):
         return os.path.isfile(lagofile)
 
     @log_task('Collect artifacts')
-    def collect_artifacts(self, output_dir):
+    def collect_artifacts(self, output_dir, ignore_nopath):
         if os.path.exists(output_dir):
             utils.rotate_dir(output_dir)
 
@@ -1105,7 +1105,7 @@ class Prefix(object):
             with LogTask('%s' % vm.name()):
                 path = os.path.join(output_dir, vm.name())
                 os.makedirs(path)
-                vm.collect_artifacts(path)
+                vm.collect_artifacts(path, ignore_nopath)
 
         utils.invoke_in_parallel(
             _collect_artifacts,
