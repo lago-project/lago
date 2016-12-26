@@ -35,15 +35,6 @@ in_ovirt_prefix = in_prefix(
     workdir_class=ovirtlago.OvirtWorkdir,
 )
 # TODO: Remove this, and properly complain on unset config values
-CONF_DEFAULTS = {
-    'reposync_dir':
-        '/var/lib/lago/reposync',
-    'reposync_config':
-        (
-            '/usr/share/ovirtlago/config/repos/'
-            'ovirt-master-snapshot-external.repo'
-        ),
-}
 DISTS = ['el6', 'el7', 'fc20']
 
 
@@ -120,6 +111,7 @@ def do_ovirt_runtest(prefix, test_file, **kwargs):
     '--reposync-yum-config',
     help=('Path to configuration to use when updating local rpm repository'),
     type=os.path.abspath,
+    default=None,
 )
 @cli_plugin_add_argument(
     '--skip-sync',
@@ -159,22 +151,12 @@ def do_ovirt_reposetup(
         warnings.warn('Deprecated option --vdsm-dir ignored')
     if kwargs['ioprocess_dir']:
         warnings.warn('Deprecated option --ioprocess-dir ignored')
-
-    rpm_repo = (
-        rpm_repo
-        or lago_config.get('reposync_dir', CONF_DEFAULTS['reposync_dir'])
-    )
-
-    reposync_config = (
-        reposync_yum_config or lago_config.get(
-            'reposync_config',
-            CONF_DEFAULTS['reposync_config'],
-        )
-    )
+    if rpm_repo is None:
+        rpm_repo = lago_config['reposync_dir']
 
     prefix.prepare_repo(
         rpm_repo=rpm_repo,
-        reposync_yum_config=reposync_config,
+        reposync_yum_config=reposync_yum_config,
         skip_sync=skip_sync,
         custom_sources=custom_sources,
     )
