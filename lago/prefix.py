@@ -930,6 +930,7 @@ class Prefix(object):
                 vm_specs=conf['domains'],
                 net_specs=conf['nets'],
             )
+            self._virt_env.check_memory_requirements(conf)
             if do_bootstrap:
                 self.virt_env.bootstrap()
 
