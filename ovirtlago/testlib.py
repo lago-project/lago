@@ -81,11 +81,6 @@ def with_ovirt_api4(func):
     return wrapper
 
 
-def continue_on_failure(func):
-    func.continue_on_failure = True
-    return func
-
-
 def _vms_capable(vms, caps):
     caps = set(caps)
 
@@ -128,24 +123,13 @@ def host_capability(caps):
 
 
 def test_sequence_gen(test_list):
-    failure_occured = [False]
     for test in test_list:
 
         def wrapped_test():
-            if failure_occured[0]:
-                raise SkipTest()
-            try:
-                return test()
-            except SkipTest:
-                raise
-            except:
-                if not getattr(test, 'continue_on_failure', False):
-                    failure_occured[0] = True
-                raise
+            test()
 
-        if test is not None:
-            wrapped_test.description = test.__name__
-            yield wrapped_test
+        setattr(wrapped_test, 'description', test.__name__)
+        yield wrapped_test
 
 
 class LogCollectorPlugin(nose.plugins.Plugin):
