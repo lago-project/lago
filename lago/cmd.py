@@ -566,17 +566,28 @@ def do_copy_to_vm(prefix, host, remote_path, local_path, **kwargs):
     host.copy_to(local_path, remote_path)
 
 
-@lago.plugins.cli.cli_plugin(help='Collect logs from VMs')
+@lago.plugins.cli.cli_plugin(
+    help=(
+        'Collect logs from VMs, list of collected logs '
+        'can be specified in the init file, under '
+        'artifacts parameter '
+    )
+)
 @lago.plugins.cli.cli_plugin_add_argument(
     '--output',
     help='Path to place all the extracted at',
     required=True,
     type=os.path.abspath,
 )
+@lago.plugins.cli.cli_plugin_add_argument(
+    '--no-skip',
+    help='do not skip missing paths',
+    action='store_true',
+)
 @in_lago_prefix
 @with_logging
-def do_collect(prefix, output, **kwargs):
-    prefix.collect_artifacts(output)
+def do_collect(prefix, output, no_skip, **kwargs):
+    prefix.collect_artifacts(output, ignore_nopath=not no_skip)
 
 
 @lago.plugins.cli.cli_plugin(
@@ -620,18 +631,6 @@ def create_parser(cli_plugins, out_plugins):
     parser.add_argument(
         '--logdepth', default=3, type=int, help='How many task levels to show'
     )
-
-    try:
-        # Checks that all the deps are installed
-        pkg_resources.require("lago")[0]
-    except pkg_resources.VersionConflict as e:
-        # Hack that allows to run stevedore without checking
-        # for it's dep. it is required for systems running stevedore 1.1.0
-        # and pbr > 1.
-        LOGGER.debug(e.message)
-        pkgs = e[2]
-        if len(pkgs) > 1 or 'stevedore' not in pkgs:
-            raise e
 
     parser.add_argument(
         '--version',
@@ -773,6 +772,20 @@ def check_group_membership():
         warnings.warn('current session does not belong to lago group.')
 
 
+def check_deps():
+    try:
+        # Checks that all the deps are installed
+        pkg_resources.require("lago")
+    except pkg_resources.ContextualVersionConflict as e:
+        # Hack that allows to run stevedore without checking
+        # for it's dep. it is required for systems running stevedore 1.1.0
+        # and pbr > 1.
+        LOGGER.debug(e, exc_info=True)
+        pkgs = e[2]
+        if set(['stevedore']) != pkgs:
+            raise e
+
+
 def main():
     cli_plugins = lago.plugins.load_plugins(
         lago.plugins.PLUGIN_ENTRY_POINTS['cli']
@@ -805,6 +818,7 @@ def main():
     else:
         warnings.formatwarning = lambda message, *args, **kwargs: message
 
+    check_deps()
     check_group_membership()
 
     args.out_format = out_plugins[args.out_format]

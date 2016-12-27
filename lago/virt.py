@@ -24,7 +24,7 @@ import json
 import logging
 import os
 import uuid
-
+import time
 import lxml.etree
 
 from . import (
@@ -350,17 +350,56 @@ class Network(object):
     def resolve(self, name):
         return self._spec['mapping'][name]
 
+    def mapping(self):
+        return self._spec['mapping']
+
     def _libvirt_name(self):
         return self._env.prefixed_name(self.name(), max_length=15)
+
+    def _libvirt_xml(self):
+        raise NotImplementedError(
+            'should be implemented by the specific network class'
+        )
 
     def alive(self):
         net_names = [net.name() for net in self.libvirt_con.listAllNetworks()]
         return self._libvirt_name() in net_names
 
-    def start(self):
+    def start(self, attempts=5, timeout=2):
+        """
+        Start the network, will check if the network is active ``attempts``
+        times, waiting ``timeout`` between each attempt.
+
+        Args:
+            attempts (int): number of attempts to check the network is active
+            timeout  (int): timeout for each attempt
+
+        Returns:
+            None
+
+        Raises:
+            RuntimeError: if network creation failed, or failed to verify it is
+            active.
+        """
+
         if not self.alive():
             with LogTask('Create network %s' % self.name()):
-                self.libvirt_con.networkCreateXML(self._libvirt_xml())
+                net = self.libvirt_con.networkCreateXML(self._libvirt_xml())
+                if net is None:
+                    raise RuntimeError(
+                        'failed to create network, XML: %s' %
+                        (self._libvirt_xml())
+                    )
+                for _ in range(attempts):
+                    if net.isActive():
+                        return
+                    LOGGER.debug(
+                        'waiting for network %s to become active', net.name()
+                    )
+                    time.sleep(timeout)
+                raise RuntimeError(
+                    'failed to verify network %s is active' % net.name()
+                )
 
     def stop(self):
         if self.alive():
@@ -378,10 +417,12 @@ class NATNetwork(Network):
         with open(_path_to_xml('net_nat_template.xml')) as f:
             net_raw_xml = f.read()
 
+        subnet = self.gw().split('.')[2]
         replacements = {
             '@NAME@': self._libvirt_name(),
             '@BR_NAME@': ('%s-nic' % self._libvirt_name())[:12],
             '@GW_ADDR@': self.gw(),
+            '@SUBNET@': subnet,
         }
         for k, v in replacements.items():
             net_raw_xml = net_raw_xml.replace(k, v, 1)
@@ -396,7 +437,7 @@ class NATNetwork(Network):
             )
             net_xml.append(domain_xml)
         if 'dhcp' in self._spec:
-            IPV6_PREFIX = 'fd8f:1391:3a82:5e0d::'
+            IPV6_PREFIX = 'fd8f:1391:3a82:' + subnet + '::'
             ipv4 = net_xml.xpath('/network/ip')[0]
             ipv6 = net_xml.xpath('/network/ip')[1]
             dns = net_xml.xpath('/network/dns')[0]

@@ -34,7 +34,7 @@ import os
 import warnings
 from abc import (ABCMeta, abstractmethod)
 
-from scp import SCPClient
+from scp import SCPClient, SCPException
 
 from .. import (
     utils,
@@ -48,11 +48,15 @@ LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
 
 
-class VMErrror(Exception):
+class VMError(Exception):
     pass
 
 
-class ExtractPathError(VMErrror):
+class ExtractPathError(VMError):
+    pass
+
+
+class ExtractPathNoPathError(VMError):
     pass
 
 
@@ -179,27 +183,33 @@ class VMProviderPlugin(plugins.Plugin):
         """
         return self.vm.interactive_ssh()
 
-    def extract_paths(self, paths):
+    def extract_paths(self, paths, ignore_nopath):
         """
         Extract the given paths from the domain
 
         Args:
             paths(list of str): paths to extract
+            ignore_nopath(boolean): if True will ignore none existing paths.
+
+        Returns:
+            None
+
+        Raises:
+            :exc:`~lago.plugins.vm.ExtractPathNoPathError`: if a none existing
+                path was found on the VM, and ``ignore_nopath`` is True.
+            :exc:`~lago.plugins.vm.ExtractPathError`: on all other failures.
         """
-        if self.vm.alive() and self.vm.ssh_reachable():
-            self._extract_paths_scp(paths=paths)
-        elif self.vm.alive():
-            raise ExtractPathError(
-                'Unable to extract logs from alive but unreachable host %s. '
-                'Try stopping it first' % self.vm.name()
-            )
+        if self.vm.alive() and self.vm.ssh_reachable(
+            tries=1, propagate_fail=False
+        ):
+            self._extract_paths_scp(paths=paths, ignore_nopath=ignore_nopath)
         else:
             raise ExtractPathError(
-                'Unable to extract logs from alive but unreachable host %s. '
-                'Try stopping it first' % self.vm.name()
+                'Unable to extract paths from {0}: unreachable with SSH'.
+                format(self.vm.name())
             )
 
-    def _extract_paths_scp(self, paths):
+    def _extract_paths_scp(self, paths, ignore_nopath):
         for host_path, guest_path in paths:
             LOGGER.debug(
                 'Extracting scp://%s:%s to %s',
@@ -207,7 +217,18 @@ class VMProviderPlugin(plugins.Plugin):
                 host_path,
                 guest_path,
             )
-            self.vm.copy_from(local_path=guest_path, remote_path=host_path)
+            try:
+                self.vm.copy_from(
+                    local_path=guest_path,
+                    remote_path=host_path,
+                    propagate_fail=False
+                )
+            except SCPException as err:
+                err_sfx = ': No such file or directory'
+                if ignore_nopath and str.endswith(str(err.message), err_sfx):
+                    LOGGER.debug('%s: ignoring', err.message)
+                else:
+                    raise ExtractPathNoPathError(err.message)
 
 
 class VMPlugin(plugins.Plugin):
@@ -317,8 +338,10 @@ class VMPlugin(plugins.Plugin):
                     recursive=recursive,
                 )
 
-    def copy_from(self, remote_path, local_path, recursive=True):
-        with self._scp() as scp:
+    def copy_from(
+        self, remote_path, local_path, recursive=True, propagate_fail=True
+    ):
+        with self._scp(propagate_fail=propagate_fail) as scp:
             scp.get(
                 recursive=recursive,
                 remote_path=remote_path,
@@ -337,6 +360,17 @@ class VMPlugin(plugins.Plugin):
 
     def ip(self):
         return str(self.virt_env.get_net().resolve(self.name()))
+
+    def all_ips(self):
+        nets = {}
+        ips = []
+        nets = self.virt_env.get_nets()
+        for net in nets.values():
+            mapping = net.mapping()
+            for hostname, ip in mapping.items():
+                if hostname.startswith(self.name()):
+                    ips.append(str(ip))
+        return ips
 
     def ssh(
         self,
@@ -386,11 +420,27 @@ class VMPlugin(plugins.Plugin):
     def alive(self):
         return self.state() == 'running'
 
-    def ssh_reachable(self):
+    @_check_alive
+    def ssh_reachable(self, tries=None, propagate_fail=True):
+        """
+        Check if the VM is reachable with ssh
+
+        Args:
+            tries(int): Number of tries to try connecting to the host
+            propagate_fail(bool): If set to true, this event will appear
+            in the log and fail the outter stage. Otherwise, it will be
+            discarded.
+
+        Returns:
+            bool: True if the VM is reachable.
+        """
+
         try:
             ssh.get_ssh_client(
                 ip_addr=self.ip(),
                 host_name=self.name(),
+                ssh_tries=tries,
+                propagate_fail=propagate_fail,
                 ssh_key=self.virt_env.prefix.paths.ssh_id_rsa(),
                 username=self._spec.get('ssh-user'),
                 password=self._spec.get('ssh-password'),
@@ -452,14 +502,15 @@ class VMPlugin(plugins.Plugin):
 
         return root_password
 
-    def collect_artifacts(self, host_path):
+    def collect_artifacts(self, host_path, ignore_nopath):
         self.extract_paths(
             [
                 (
                     guest_path,
                     os.path.join(host_path, guest_path.replace('/', '_')),
                 ) for guest_path in self._artifact_paths()
-            ]
+            ],
+            ignore_nopath=ignore_nopath
         )
 
     def guest_agent(self):
@@ -512,8 +563,9 @@ class VMPlugin(plugins.Plugin):
         return spec
 
     @contextlib.contextmanager
-    def _scp(self):
+    def _scp(self, propagate_fail=True):
         client = ssh.get_ssh_client(
+            propagate_fail=propagate_fail,
             ip_addr=self.ip(),
             host_name=self.name(),
             ssh_key=self.virt_env.prefix.paths.ssh_id_rsa(),

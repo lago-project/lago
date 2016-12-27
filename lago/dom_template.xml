@@ -8,7 +8,7 @@
     </cpu>
     <os>
       <type arch='x86_64' machine='pc'>hvm</type>
-      <bootmenu enable='yes'/>
+      <bootmenu enable='no'/>
     </os>
     <features>
       <acpi/>
@@ -19,9 +19,6 @@
       <emulator>@QEMU_KVM@</emulator>
       <memballoon model='none'/>
       <controller type='usb' model='none'>
-      </controller>
-      <controller type='scsi' index='0' model='virtio-scsi'>
-        <driver iothread='1'/>
       </controller>
       <disk type='file' device='disk'>
         <driver name='qemu' type='qcow2'/>

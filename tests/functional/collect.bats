@@ -20,7 +20,6 @@ REPO_NAME="local_tests_repo"
 
     pushd "$FIXTURES"
     export BATS_TMPDIR BATS_TEST_DIRNAME
-    export LIBGUESTFS_DEBUG=1 LIBGUESTFS_TRACE=1
     helpers.run_ok "$LAGOCLI" \
         init \
         --template-repo-path "$REPO_CONF" \
@@ -33,12 +32,20 @@ REPO_NAME="local_tests_repo"
     helpers.run_ok "$LAGOCLI" start
 }
 
-@test "collect: fails if files to collect don't exist" {
+@test "collect: does not fail if files to collect don't exist" {
     common.is_initialized "$WORKDIR" || skip "Workdir not initiated"
     pushd "$FIXTURES"
     outdir="$FIXTURES/output"
     rm -rf "$outdir"
-    helpers.run_nook "$LAGOCLI" collect --output "$outdir"
+    helpers.run_ok "$LAGOCLI" collect --output "$outdir"
+}
+
+@test "collect: fails if files to collect don't exist and no-skip is set" {
+    common.is_initialized "$WORKDIR" || skip "Workdir not initiated"
+    pushd "$FIXTURES"
+    outdir="$FIXTURES/output"
+    rm -rf "$outdir"
+    helpers.run_nook "$LAGOCLI" collect --no-skip --output "$outdir"
 }
 
 

@@ -22,7 +22,6 @@ REPO_NAME="local_tests_repo"
     # and that is not seamlesly reachable from out of the chroot by
     # libvirt/kvm
     export BATS_TMPDIR BATS_TEST_DIRNAME
-    export LIBGUESTFS_DEBUG=1 LIBGUESTFS_TRACE=1
     cd "$FIXTURES"
     helpers.run_ok "$LAGOCLI" \
         init \
