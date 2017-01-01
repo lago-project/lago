@@ -38,6 +38,7 @@ import subnet_lease
 import utils
 import virt
 import log_utils
+import hooks
 
 LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
@@ -998,6 +999,10 @@ class Prefix(object):
             conf['domains'] = self._copy_deploy_scripts_for_hosts(
                 domains=conf['domains']
             )
+
+            if 'hooks' in conf:
+                hooks.copy_hooks_to_prefix(conf['hooks'], self.paths.hooks())
+
             self._virt_env = self.VIRT_ENV_CLASS(
                 prefix=self,
                 vm_specs=conf['domains'],

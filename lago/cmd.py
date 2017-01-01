@@ -42,6 +42,7 @@ from lago import (
     utils,
 )
 from lago.utils import (in_prefix, with_logging)
+from hooks import with_hooks
 
 LOGGER = logging.getLogger('cli')
 in_lago_prefix = in_prefix(
@@ -258,6 +259,7 @@ def do_destroy(
 )
 @in_lago_prefix
 @with_logging
+@with_hooks
 def do_start(prefix, vm_names=None, **kwargs):
     prefix.start(vm_names=vm_names)
 
@@ -271,6 +273,7 @@ def do_start(prefix, vm_names=None, **kwargs):
 )
 @in_lago_prefix
 @with_logging
+@with_hooks
 def do_stop(prefix, vm_names, **kwargs):
     prefix.stop(vm_names=vm_names)
 
@@ -831,6 +834,11 @@ def create_parser(cli_plugins, out_plugins):
         action='store',
         default='/var/lib/lago/reposync',
         help='Reposync dir if used',
+    )
+    parser.add_argument(
+        '--without-hooks',
+        action='store_true',
+        help='If specified, run Lago command without hooks',
     )
 
     parser.add_argument('--ignore-warnings', action='store_true')
