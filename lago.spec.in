@@ -101,8 +101,13 @@ Requires: python2-configparser
 %else
 Requires: python-configparser
 %endif
+%if 0%{?rhel}
+Requires: qemu-img-rhev >= 2.1.2
+Requires: qemu-kvm-rhev >= 2.1.2
+%else
 Requires: qemu-img >= 2.1.2
 Requires: qemu-kvm >= 2.1.2
+%endif
 Requires: git
 Requires: sudo
 %{?python_provide:%python_provide python2-lago}

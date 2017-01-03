@@ -1,0 +1,2 @@
+ovirt-ci-tools,http://resources.ovirt.org/repos/ci-tools/$distro
+centos-qemu-ev,http://mirror.centos.org/centos/7/virt/x86_64/kvm-common/
