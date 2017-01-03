@@ -19,7 +19,8 @@ For Fedora::
   enabled=1
   gpgcheck=0
 
-For EL distros (such as CentOS, RHEL, etc.), make sure you have EPEL and::
+For EL distros (such as CentOS, RHEL, etc.), make sure you have epel-release
+and centos-release-qemu-ev repositories installed and enabled, and::
 
   [lago]
   baseurl=http://resources.ovirt.org/repos/lago/stable/0.0/rpm/el$releasever
