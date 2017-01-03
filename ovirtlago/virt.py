@@ -251,6 +251,8 @@ class HostVM(lago.vm.DefaultVM):
             inherited_artifacts + [
                 '/var/log/vdsm',
                 '/var/log/sanlock.log',
+                '/var/log/ovirt-hosted-engine-setup',
+                '/var/log/ovirt-hosted-engine-ha',
             ]
         )
 
