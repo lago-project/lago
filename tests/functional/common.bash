@@ -19,6 +19,7 @@ VERBS=(
     generate-config
 )
 FIXTURES="$BATS_TEST_DIRNAME/fixtures"
+export LAGO__START__WAIT_SUSPEND="1.0"
 
 
 common.is_initialized() {
