@@ -17,6 +17,7 @@
 #
 # Refer to the README and COPYING files for full details of the license
 #
+import copy
 import Queue
 import collections
 import datetime
@@ -420,6 +421,10 @@ def deepcopy(original_obj):
     """
     if isinstance(original_obj, list):
         return list(deepcopy(item) for item in original_obj)
+    elif isinstance(original_obj, collections.OrderedDict):
+        return collections.OrderedDict(
+            (key, deepcopy(val)) for key, val in original_obj.items()
+        )
     elif isinstance(original_obj, dict):
         return dict((key, deepcopy(val)) for key, val in original_obj.items())
     else:
@@ -438,12 +443,14 @@ def load_virt_stream(virt_fd):
         dict: Loaded virt config
     """
     try:
-        virt_conf = json.load(virt_fd)
+        virt_conf = json.load(
+            virt_fd, object_pairs_hook=collections.OrderedDict
+        )
     except ValueError:
         virt_fd.seek(0)
         virt_conf = yaml.load(virt_fd)
 
-    return deepcopy(virt_conf)
+    return copy.deepcopy(virt_conf)
 
 
 def in_prefix(prefix_class, workdir_class):
