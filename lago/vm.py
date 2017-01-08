@@ -18,6 +18,7 @@
 # Refer to the README and COPYING files for full details of the license
 #
 import functools
+import time
 import guestfs
 import libvirt
 import logging
@@ -94,12 +95,37 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
     def start(self):
         super(LocalLibvirtVMProvider, self).start()
         if not self.defined():
+            # the wait_suspend method is a work around for:
+            # https://bugzilla.redhat.com/show_bug.cgi?id=1411025
+            # 'LAGO__START_WAIT__SUSPEND' should be set to a float or integer
+            # indicating how much time to sleep between the time the domain
+            # is created in paused mode, until it is resumed.
+            wait_suspend = os.environ.get('LAGO__START__WAIT_SUSPEND')
             with LogTask('Starting VM %s' % self.vm.name()):
-                dom = self.libvirt_con.createXML(self._libvirt_xml())
-                if not dom:
-                    raise RuntimeError(
-                        'Failed to create Domain: %s' % self._libvirt_xml()
+                if wait_suspend is None:
+                    dom = self.libvirt_con.createXML(self._libvirt_xml())
+                    if not dom:
+                        raise RuntimeError(
+                            'Failed to create Domain: %s' % self._libvirt_xml()
+                        )
+                else:
+                    LOGGER.debug('starting domain in paused mode')
+                    try:
+                        wait_suspend = float(wait_suspend)
+                    except:
+                        raise ValueError(
+                            'LAGO__START__WAIT_SUSPEND value is not a number'
+                        )
+                    dom = self.libvirt_con.createXML(
+                        self._libvirt_xml(),
+                        flags=libvirt.VIR_DOMAIN_START_PAUSED
                     )
+                    time.sleep(wait_suspend)
+                    dom.resume()
+                    if not dom.isActive():
+                        raise RuntimeError(
+                            'failed to resume %s domain' % dom.name()
+                        )
 
     def stop(self):
         super(LocalLibvirtVMProvider, self).stop()
