@@ -112,7 +112,7 @@ class EngineVM(lago.vm.DefaultVM):
 
     def _artifact_paths(self):
         inherited_artifacts = super(EngineVM, self)._artifact_paths()
-        return set(inherited_artifacts + ['/var/log/ovirt-engine', ])
+        return set(inherited_artifacts + ['/var/log'])
 
     def _create_api(self, api_ver):
         url = 'https://%s/ovirt-engine/api' % self.ip()
@@ -222,23 +222,10 @@ class EngineVM(lago.vm.DefaultVM):
 class HostVM(lago.vm.DefaultVM):
     def _artifact_paths(self):
         inherited_artifacts = super(HostVM, self)._artifact_paths()
-        if self.distro() not in ['fc22', 'fc23']:
-            inherited_artifacts.append('/var/log/messages')
-
-        return set(
-            inherited_artifacts + [
-                '/var/log/vdsm',
-                '/var/log/sanlock.log',
-            ]
-        )
+        return set(inherited_artifacts + ['/var/log', ])
 
 
 class HEHostVM(HostVM):
     def _artifact_paths(self):
         inherited_artifacts = super(HEHostVM, self)._artifact_paths()
-        return set(
-            inherited_artifacts + [
-                '/var/log/ovirt-hosted-engine-setup',
-                '/var/log/ovirt-hosted-engine-ha',
-            ]
-        )
+        return set(inherited_artifacts)
