@@ -103,7 +103,6 @@ class OvirtPrefix(Prefix):
         skip_sync=False,
         custom_sources=None
     ):
-        custom_sources = custom_sources or []
         # Detect distros from template metadata
         engine_dists = [self.virt_env.engine_vm().distro()] \
             if self.virt_env.engine_vm() else []
@@ -114,7 +113,7 @@ class OvirtPrefix(Prefix):
 
         repos = []
 
-        if rpm_repo and reposync_yum_config:
+        if rpm_repo is not None and reposync_yum_config is not None:
             parser = SafeConfigParser()
             with open(reposync_yum_config) as repo_conf_fd:
                 parser.readfp(repo_conf_fd)
@@ -124,21 +123,41 @@ class OvirtPrefix(Prefix):
                 if repo.split('-')[-1] in all_dists
             ]
 
-            if not skip_sync and len(repos) > 0:
-                with LogTask(
-                    'Syncing remote repos locally (this might take some time)'
-                ):
-                    reposetup.sync_rpm_repository(
-                        rpm_repo,
-                        reposync_yum_config,
-                        repos,
+            if not skip_sync:
+                if len(repos) > 0:
+                    with LogTask(
+                        (
+                            'Syncing remote repos locally '
+                            '(this might take some time)'
+                        )
+                    ):
+                        reposetup.sync_rpm_repository(
+                            rpm_repo,
+                            reposync_yum_config,
+                            repos,
+                        )
+                else:
+                    LOGGER.info(
+                        'no matching repositories found in %s',
+                        reposync_yum_config
                     )
+        elif custom_sources is not None:
+            LOGGER.debug(
+                'No reposync configuration file, using custom-source only'
+            )
+        else:
+            raise RuntimeError(
+                (
+                    'No reposync configuration file found or custom sources '
+                    'specified.'
+                )
+            )
 
         self._create_rpm_repository(
             dists=all_dists,
             repos_path=rpm_repo,
             repo_names=repos,
-            custom_sources=custom_sources,
+            custom_sources=custom_sources or [],
         )
         self.save()
 

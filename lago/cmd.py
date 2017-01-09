@@ -744,12 +744,6 @@ def create_parser(cli_plugins, out_plugins):
         default='/var/lib/lago/reposync',
         help='Reposync dir if used',
     )
-    parser.add_argument(
-        '--reposync-config',
-        help='Reposync config',
-        default='config.repo',
-        action='store',
-    )
 
     parser.add_argument('--ignore-warnings', action='store_true')
     parser.set_defaults(**config.get_section('lago', {}))
