@@ -78,7 +78,9 @@ def merge(output_dir, sources, repoman_config=None):
     if repoman_config is None:
         repoman_params = [
             '--option=main.on_empty_source=warn',
-            '--option=store.RPMStore.on_wrong_distro=copy_to_all'
+            '--option=store.RPMStore.on_wrong_distro=copy_to_all',
+            '--option=store.RPMStore.with_srcrpms=false',
+            '--option=store.RPMStore.with_sources=false',
         ]
         cmd = ['repoman'] + repoman_params + cmd_suffix
     else:
