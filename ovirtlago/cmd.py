@@ -119,18 +119,6 @@ def do_ovirt_runtest(prefix, test_file, **kwargs):
     action='store_true',
 )
 @cli_plugin_add_argument(
-    '--engine-dir',
-    help=('Deprecated, left here for backwards compatibility'),
-)
-@cli_plugin_add_argument(
-    '--vdsm-dir',
-    help=('Deprecated, left here for backwards compatibility'),
-)
-@cli_plugin_add_argument(
-    '--ioprocess-dir',
-    help=('Deprecated, left here for backwards compatibility'),
-)
-@cli_plugin_add_argument(
     '--custom-source',
     help=(
         'Add an extra rpm source to the repo (will have priority over the '
@@ -156,12 +144,6 @@ def do_ovirt_reposetup(
     custom_sources, **kwargs
 ):
 
-    if kwargs['engine_dir']:
-        warnings.warn('Deprecated option --engine-dir ignored')
-    if kwargs['vdsm_dir']:
-        warnings.warn('Deprecated option --vdsm-dir ignored')
-    if kwargs['ioprocess_dir']:
-        warnings.warn('Deprecated option --ioprocess-dir ignored')
     if rpm_repo is None:
         rpm_repo = lago_config['reposync_dir']
 
