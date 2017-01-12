@@ -61,14 +61,16 @@ class OvirtPrefix(Prefix):
         repos_path,
         repo_names,
         repoman_config,
+        repoman_filter,
         custom_sources=None,
         projects_list=None,
     ):
 
         if not projects_list:
             projects_list = PROJECTS_LIST
-
-        custom_sources = custom_sources or []
+        custom_sources = [
+            '{0}{1}'.format(src, repoman_filter) for src in custom_sources
+        ]
 
         rpm_dirs = []
         for dist in dists:
@@ -79,14 +81,14 @@ class OvirtPrefix(Prefix):
 
             rpm_dirs.extend(
                 [
-                    os.path.join(folder, dist) + ':only-missing'
+                    os.path.join(folder, dist) + repoman_filter
                     for folder in project_roots if os.path.exists(folder)
                 ]
             )
 
             rpm_dirs.extend(
                 [
-                    os.path.join(repos_path, name) + ':only-missing'
+                    os.path.join(repos_path, name) + repoman_filter
                     for name in repo_names if name.endswith(dist)
                 ],
             )
@@ -100,6 +102,7 @@ class OvirtPrefix(Prefix):
     @log_task('Create prefix internal repo')
     def prepare_repo(
         self,
+        repoman_filter,
         rpm_repo=None,
         reposync_yum_config=None,
         repoman_config=None,
@@ -161,6 +164,7 @@ class OvirtPrefix(Prefix):
             repos_path=rpm_repo,
             repo_names=repos,
             repoman_config=repoman_config,
+            repoman_filter=repoman_filter,
             custom_sources=custom_sources or [],
         )
         self.save()
