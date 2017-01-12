@@ -139,10 +139,21 @@ def do_ovirt_runtest(prefix, test_file, **kwargs):
     dest='custom_sources',
     action='append',
 )
+@cli_plugin_add_argument(
+    '--repoman-config',
+    help=(
+        'Custom repoman configuration file. If not passed defaults will be '
+        'used. Note that \'store.RPMStore.rpm_dir\' is not configurable.'
+    ),
+    dest='repoman_config',
+    action='store',
+    default=None,
+)
 @in_ovirt_prefix
 @with_logging
 def do_ovirt_reposetup(
-    prefix, rpm_repo, reposync_yum_config, skip_sync, custom_sources, **kwargs
+    prefix, rpm_repo, reposync_yum_config, repoman_config, skip_sync,
+    custom_sources, **kwargs
 ):
 
     if kwargs['engine_dir']:
@@ -159,6 +170,7 @@ def do_ovirt_reposetup(
         reposync_yum_config=reposync_yum_config,
         skip_sync=skip_sync,
         custom_sources=custom_sources,
+        repoman_config=repoman_config,
     )
 
 

@@ -46,18 +46,59 @@ class RepositoryMergeError(RepositoryError):
     pass
 
 
-def merge(output_dir, sources):
+def merge(output_dir, sources, repoman_config=None):
+    """
+    Run repoman on ``sources``, creating a new RPM repository in
+    ``output_dir``
+
+    Args:
+        output_dir(str): Path to create new repository
+        sources(list of str): repoman sources
+        repoman_config(str): repoman configuration file, if not passed it will
+            use default repoman configurations, equivalent to:
+        |
+        |
+        |    [main]
+        |    on_empty_source=warn
+        |
+        |    [store.RPMStore]
+        |    on_wrong_distro=copy_to_all
+
+    Raises:
+        :exc:`RepositoryMergeError`: If repoman command failed.
+        :exc:`IOError`: If ``repoman_config`` is passed but does not exists.
+
+    Returns:
+        None
+    """
+    cmd = []
+    cmd_suffix = [
+        '--option=store.RPMStore.rpm_dir=', output_dir, 'add'
+    ] + sources
+    if repoman_config is None:
+        repoman_params = [
+            '--option=main.on_empty_source=warn',
+            '--option=store.RPMStore.on_wrong_distro=copy_to_all'
+        ]
+        cmd = ['repoman'] + repoman_params + cmd_suffix
+    else:
+        if os.path.isfile(repoman_config):
+            cmd = ['repoman', '--config={0}'.format(repoman_config)
+                   ] + cmd_suffix
+        else:
+            raise IOError(
+                ('error running repoman, {0} not '
+                 'found').format(repoman_config)
+            )
+
     with LogTask('Running repoman'):
-        res = run_command(
-            [
-                'repoman', '--option=main.on_empty_source=warn',
-                '--option=store.RPMStore.on_wrong_distro=copy_to_all',
-                '--option=store.RPMStore.rpm_dir=', output_dir, 'add'
-            ] + sources
-        )
+        res = run_command(cmd)
         if res.code:
             raise RepositoryMergeError(
-                'Failed to merge repos %s into %s' % (sources, output_dir)
+                (
+                    'Failed merging repoman sources: {0} into directory: {1}, '
+                    'check lago.log for repoman output '
+                ).format(sources, output_dir)
             )
 
 

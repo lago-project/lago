@@ -60,6 +60,7 @@ class OvirtPrefix(Prefix):
         dists,
         repos_path,
         repo_names,
+        repoman_config,
         custom_sources=None,
         projects_list=None,
     ):
@@ -93,6 +94,7 @@ class OvirtPrefix(Prefix):
         reposetup.merge(
             output_dir=self.paths.internal_repo(),
             sources=custom_sources + rpm_dirs,
+            repoman_config=repoman_config,
         )
 
     @log_task('Create prefix internal repo')
@@ -100,6 +102,7 @@ class OvirtPrefix(Prefix):
         self,
         rpm_repo=None,
         reposync_yum_config=None,
+        repoman_config=None,
         skip_sync=False,
         custom_sources=None
     ):
@@ -157,6 +160,7 @@ class OvirtPrefix(Prefix):
             dists=all_dists,
             repos_path=rpm_repo,
             repo_names=repos,
+            repoman_config=repoman_config,
             custom_sources=custom_sources or [],
         )
         self.save()
