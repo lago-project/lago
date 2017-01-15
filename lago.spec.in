@@ -39,10 +39,6 @@ install -d -m 755 %{buildroot}%{_sysconfdir}/sudoers.d
 install -p -D -m 644 etc/polkit/*.pkla %{buildroot}%{_sysconfdir}/polkit-1/localauthority/50-local.d/
 install -p -D -m 644 etc/sudo/* %{buildroot}%{_sysconfdir}/sudoers.d/
 
-# this is for python-lago-ovirt
-install -d %{buildroot}/var/lib/lago/reposync
-install -d -m 755 %{buildroot}%{_sysconfdir}/firewalld/services
-install -p -D -m 644 etc/firewalld/services/* %{buildroot}%{_sysconfdir}/firewalld/services/
 
 %files
 
@@ -110,6 +106,7 @@ Requires: sudo
 %description -n python-%{name}
 
 %files -n python-%{name}
+%exclude %{python2_sitelib}/ovirtlago/*
 %doc AUTHORS COPYING README.rst
 %{python2_sitelib}/%{name}/*.py*
 %{python2_sitelib}/%{name}/plugins/*.py*
@@ -137,57 +134,6 @@ fi
 %postun -n python-%{name}
 if [[ "$1" -eq 0 ]]; then
     groupdel lago
-fi
-
-
-###################### lago-ovirt package
-%package -n %{name}-ovirt
-Summary: oVirt extension for lagocli
-BuildArch: noarch
-BuildRequires: python2-devel
-Requires: %{name} = %{version}
-Requires: python-%{name}-ovirt = %{version}
-
-%files -n %{name}-ovirt
-
-%description -n %{name}-ovirt
-
-###################### python-lago-ovirt package
-%package -n python-%{name}-ovirt
-Summary: Library for ovirt specific facitilies
-BuildArch: noarch
-BuildRequires: python2-devel
-Requires: python
-Requires: python-%{name} = %{version}
-Requires: python-magic
-Requires: python-nose
-Requires: ovirt-engine-sdk-python
-Requires: createrepo
-Requires: repoman >= 2.0.12
-Requires: yum-utils
-Requires: rpm-build
-Requires: xz
-%{?python_provide:%python_provide python2-lago-ovirt}
-
-%description -n python-%{name}-ovirt
-
-%files -n python-%{name}-ovirt
-%{python2_sitelib}/ovirt%{name}/*.py*
-%config(noreplace) %{_sysconfdir}/firewalld/services/*
-%dir %attr(2775, root, lago) /var/lib/lago/reposync/
-
-%post -n python-%{name}-ovirt
-if which firewall-cmd &>/dev/null; then
-    firewall-cmd --reload
-    firewall-cmd --permanent --zone=public --add-service=ovirtlago
-    firewall-cmd --reload
-fi
-
-
-%preun  -n python-%{name}-ovirt
-if which firewall-cmd &>/dev/null; then
-    firewall-cmd --permanent --zone=public --remove-service=ovirtlago
-    firewall-cmd --reload
 fi
 
 %changelog
