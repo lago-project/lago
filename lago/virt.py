@@ -100,6 +100,11 @@ class VirtEnv(object):
         with open(self.prefix.paths.uuid(), 'r') as uuid_fd:
             self.uuid = uuid_fd.read().strip()
 
+        libvirt_url = config.get('libvirt_url')
+        self.libvirt_con = libvirt_utils.get_libvirt_connection(
+            name=self.uuid + libvirt_url,
+            libvirt_url=libvirt_url,
+        )
         self._nets = {}
         for name, spec in net_specs.items():
             self._nets[name] = self._create_net(spec)
@@ -107,12 +112,6 @@ class VirtEnv(object):
         self._vms = {}
         for name, spec in vm_specs.items():
             self._vms[name] = self._create_vm(spec)
-
-        libvirt_url = config.get('libvirt_url')
-        self.libvirt_con = libvirt_utils.get_libvirt_connection(
-            name=self.uuid + libvirt_url,
-            libvirt_url=libvirt_url,
-        )
 
     def get_cpu_model(self):
         cap_tree = lxml.etree.fromstring(self.libvirt_con.getCapabilities())
