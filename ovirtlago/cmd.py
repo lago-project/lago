@@ -119,18 +119,6 @@ def do_ovirt_runtest(prefix, test_file, **kwargs):
     action='store_true',
 )
 @cli_plugin_add_argument(
-    '--engine-dir',
-    help=('Deprecated, left here for backwards compatibility'),
-)
-@cli_plugin_add_argument(
-    '--vdsm-dir',
-    help=('Deprecated, left here for backwards compatibility'),
-)
-@cli_plugin_add_argument(
-    '--ioprocess-dir',
-    help=('Deprecated, left here for backwards compatibility'),
-)
-@cli_plugin_add_argument(
     '--custom-source',
     help=(
         'Add an extra rpm source to the repo (will have priority over the '
@@ -139,26 +127,45 @@ def do_ovirt_runtest(prefix, test_file, **kwargs):
     dest='custom_sources',
     action='append',
 )
+@cli_plugin_add_argument(
+    '--repoman-config',
+    help=(
+        'Custom repoman configuration file. If not passed defaults will be '
+        'used. Note that \'store.RPMStore.rpm_dir\' is not configurable.'
+    ),
+    dest='repoman_config',
+    action='store',
+    default=None,
+)
+@cli_plugin_add_argument(
+    '--repoman-filter',
+    help=(
+        'repoman filter to use on every epository configured in '
+        'reposync-yum-config file or passed in --custom-source.'
+        'For valid filters see: '
+        'http://repoman.rtfd.io/en/latest/repoman.common.filters.html'
+    ),
+    dest='repoman_filter',
+    action='store',
+    default=':only-missing',
+)
 @in_ovirt_prefix
 @with_logging
 def do_ovirt_reposetup(
-    prefix, rpm_repo, reposync_yum_config, skip_sync, custom_sources, **kwargs
+    prefix, rpm_repo, reposync_yum_config, repoman_config, repoman_filter,
+    skip_sync, custom_sources, **kwargs
 ):
 
-    if kwargs['engine_dir']:
-        warnings.warn('Deprecated option --engine-dir ignored')
-    if kwargs['vdsm_dir']:
-        warnings.warn('Deprecated option --vdsm-dir ignored')
-    if kwargs['ioprocess_dir']:
-        warnings.warn('Deprecated option --ioprocess-dir ignored')
     if rpm_repo is None:
         rpm_repo = lago_config['reposync_dir']
 
     prefix.prepare_repo(
         rpm_repo=rpm_repo,
         reposync_yum_config=reposync_yum_config,
+        repoman_filter=repoman_filter,
         skip_sync=skip_sync,
         custom_sources=custom_sources,
+        repoman_config=repoman_config,
     )
 
 
