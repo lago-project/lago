@@ -84,6 +84,7 @@ run_installation_tests() {
     local yum
     local package
     local res=0
+    local package="python-lago"
     automation/build-artifacts.sh \
     || return $?
     echo "Installing..."
@@ -94,34 +95,21 @@ run_installation_tests() {
     fi
     # fail if a glob turns out empty
     shopt -s failglob
-    for package in {python-,}lago {python-,}lago-ovirt; do
-        echo "    $package: installing"
-        ## Install one by one to make sure the deps are ok
-        $yum install -y exported-artifacts/"$package"-[[:digit:]]*.noarch.rpm \
-        && echo "    $package: OK" \
-        || {
-            echo "    $package: FAILED"
-            return 1
-        }
-        if [[ "$package" == "lago" ]]; then
-            echo "    Checking that lago imports are not missing"
-            lago -h > /dev/null \
-            && echo "    OK" \
-            || {
-                echo "    FAILED"
-                return 1
-            }
 
-        elif [[ "$package" == "lago-ovirt" ]]; then
-            echo "    Checking that lago ovirt imports are not missing"
-            lago ovirt -h > /dev/null \
-            && echo "    OK" \
-            || {
-                echo "    FAILED"
-                return 1
-            }
-        fi
-    done
+    echo "    $package: installing"
+    ($yum install -y exported-artifacts/"$package"-[[:digit:]]*.noarch.rpm \
+        && echo "    $package: OK") \
+    || {
+        echo "    $package: FAILED"
+        return 1
+    }
+    echo "    Checking that lago imports are not missing"
+    (lago -h > /dev/null \
+        && echo "    OK") \
+    || {
+        echo "    FAILED"
+        return 1
+    }
     return $res
 }
 
