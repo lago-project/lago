@@ -91,6 +91,9 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
             name=self.vm.virt_env.uuid + libvirt_url,
             libvirt_url=libvirt_url,
         )
+        self._cpu_model = self.vm._spec.get(
+            'cpu_model', self.vm.virt_env.get_compatible_cpu_and_family()[0]
+        )
 
     def start(self):
         super(LocalLibvirtVMProvider, self).start()
@@ -284,6 +287,16 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
         ]
         return utils.run_interactive_command(command=virsh_command, )
 
+    @property
+    def cpu_model(self):
+        """
+        Return the VM CPU model for domain XML generation
+
+        Returns:
+            str: cpu model
+        """
+        return self._cpu_model
+
     def _libvirt_name(self):
         return self.vm.virt_env.prefixed_name(self.vm.name())
 
@@ -312,7 +325,7 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
             '@NAME@': self._libvirt_name(),
             '@VCPU@': self.vm._spec.get('vcpu', 2),
             '@CPU@': self.vm._spec.get('cpu', 2),
-            '@CPUMODEL@': self.vm.virt_env.get_compatible_cpu_and_family()[0],
+            '@CPUMODEL@': self.cpu_model,
             '@MEM_SIZE@': self.vm._spec.get('memory', 16 * 1024),
             '@QEMU_KVM@': qemu_kvm_path,
         }
