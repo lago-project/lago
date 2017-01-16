@@ -18,6 +18,7 @@
 #
 # Refer to the README and COPYING files for full details of the license
 #
+from __future__ import print_function
 
 import argparse
 import grp
@@ -295,7 +296,7 @@ def do_stop(prefix, vm_names, **kwargs):
 def do_snapshot(prefix, list_only, snapshot_name, out_format, **kwargs):
     if list_only:
         snapshots = prefix.get_snapshots()
-        print out_format.format(snapshots)
+        print(out_format.format(snapshots))
     elif snapshot_name:
         prefix.create_snapshots(snapshot_name)
     else:
@@ -501,7 +502,7 @@ def do_status(prefix, out_format, **kwargs):
             },
     }
 
-    print out_format.format(info_dict)
+    print(out_format.format(info_dict))
 
 
 @lago.plugins.cli.cli_plugin(
@@ -529,7 +530,7 @@ def do_list(
             workdir.load()
             resources = workdir.prefixes.keys()
 
-    print out_format.format(resources)
+    print(out_format.format(resources))
 
 
 @lago.plugins.cli.cli_plugin(
@@ -659,7 +660,7 @@ def do_deploy(prefix, **kwargs):
     default=False,
 )
 def do_generate(defaults_only, verbose, **kwargs):
-    print config.get_ini(defaults_only=defaults_only, incl_unset=verbose)
+    print(config.get_ini(defaults_only=defaults_only, incl_unset=verbose))
 
 
 def create_parser(cli_plugins, out_plugins):
