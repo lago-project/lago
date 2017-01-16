@@ -17,6 +17,7 @@
 #
 # Refer to the README and COPYING files for full details of the license
 #
+import collections
 import functools
 import hashlib
 import json
@@ -100,11 +101,11 @@ class VirtEnv(object):
         with open(self.prefix.paths.uuid(), 'r') as uuid_fd:
             self.uuid = uuid_fd.read().strip()
 
-        self._nets = {}
+        self._nets = collections.OrderedDict()
         for name, spec in net_specs.items():
             self._nets[name] = self._create_net(spec)
 
-        self._vms = {}
+        self._vms = collections.OrderedDict()
         for name, spec in vm_specs.items():
             self._vms[name] = self._create_vm(spec)
 
@@ -270,17 +271,21 @@ class VirtEnv(object):
         virt_path = functools.partial(prefix.paths.prefixed, 'virt')
 
         with open(virt_path('env'), 'r') as f:
-            env_dom = json.load(f)
+            env_dom = json.load(f, object_pairs_hook=collections.OrderedDict)
 
-        net_specs = {}
+        net_specs = collections.OrderedDict()
         for name in env_dom['nets']:
             with open(virt_path('net-%s' % name), 'r') as f:
-                net_specs[name] = json.load(f)
+                net_specs[name] = json.load(
+                    f, object_pairs_hook=collections.OrderedDict
+                )
 
-        vm_specs = {}
+        vm_specs = collections.OrderedDict()
         for name in env_dom['vms']:
             with open(virt_path('vm-%s' % name), 'r') as f:
-                vm_specs[name] = json.load(f)
+                vm_specs[name] = json.load(
+                    f, object_pairs_hook=collections.OrderedDict
+                )
 
         return cls(prefix, vm_specs, net_specs)
 
