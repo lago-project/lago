@@ -77,6 +77,7 @@ class VirtEnv(object):
     '''
 
     _CPU_FAMILIES = {
+        'SandyBridge': 'Intel SandyBridge Family',
         'Westmere': 'Intel Westmere Family',
         'Nehalem': 'Intel Nehalem Family',
         'Penryn': 'Intel Penryn Family',
