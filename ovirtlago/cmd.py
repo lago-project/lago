@@ -137,23 +137,11 @@ def do_ovirt_runtest(prefix, test_file, **kwargs):
     action='store',
     default=None,
 )
-@cli_plugin_add_argument(
-    '--repoman-filter',
-    help=(
-        'repoman filter to use on every epository configured in '
-        'reposync-yum-config file or passed in --custom-source.'
-        'For valid filters see: '
-        'http://repoman.rtfd.io/en/latest/repoman.common.filters.html'
-    ),
-    dest='repoman_filter',
-    action='store',
-    default=':only-missing',
-)
 @in_ovirt_prefix
 @with_logging
 def do_ovirt_reposetup(
-    prefix, rpm_repo, reposync_yum_config, repoman_config, repoman_filter,
-    skip_sync, custom_sources, **kwargs
+    prefix, rpm_repo, reposync_yum_config, repoman_config, skip_sync,
+    custom_sources, **kwargs
 ):
 
     if rpm_repo is None:
@@ -162,7 +150,6 @@ def do_ovirt_reposetup(
     prefix.prepare_repo(
         rpm_repo=rpm_repo,
         reposync_yum_config=reposync_yum_config,
-        repoman_filter=repoman_filter,
         skip_sync=skip_sync,
         custom_sources=custom_sources,
         repoman_config=repoman_config,
