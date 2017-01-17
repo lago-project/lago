@@ -717,8 +717,10 @@ class Prefix(object):
             template_store.get_stored_metadata(template_version, ),
         )
         base = template_store.get_path(template_version)
-        qemu_cmd = ['qemu-img', 'create', '-f', 'qcow2', '-b', base, disk_path]
-
+        qemu_cmd = [
+            'qemu-img', 'create', '-f', 'qcow2', '-o', 'lazy_refcounts=on',
+            '-b', base, disk_path
+        ]
         return qemu_cmd, disk_metadata, base
 
     def _ova_to_spec(self, filename):

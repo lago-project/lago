@@ -365,7 +365,7 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
 
             # we have to make some adjustments
             # we use iso to indicate cdrom
-            # but the ilbvirt wants it named raw
+            # but libvirt wants it named raw
             # and we need to use cdrom device
             disk_device = 'disk'
             bus = 'virtio'
@@ -387,7 +387,7 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
                     )
                     driver = lxml.etree.Element(
                         'driver',
-                        iothread='1',
+                        queues='{}'.format(self.vm._spec.get('vcpu', 2)),
                     )
                     controller.append(driver)
                     devices.append(controller)
