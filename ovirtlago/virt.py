@@ -43,6 +43,7 @@ class OvirtVirtEnv(lago.virt.VirtEnv):
     def __init__(self, prefix, vm_specs, net_spec):
         self._engine_vm = None
         self._host_vms = []
+        self._ovirt_cpu_family = None
         super(OvirtVirtEnv, self).__init__(prefix, vm_specs, net_spec)
 
     def _create_vm(self, vm_spec):
@@ -85,6 +86,9 @@ class OvirtVirtEnv(lago.virt.VirtEnv):
 
     def host_vms(self):
         return self._host_vms[:]
+
+    def get_ovirt_cpu_family(self):
+        return super(OvirtVirtEnv, self).get_compatible_cpu_and_family()[1]
 
 
 # TODO : solve the problem of ssh to the Node
