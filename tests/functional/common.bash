@@ -1,6 +1,7 @@
 #!/bin/bash
 LAGOCLI=lago
 VERBS=(
+    ansible_hosts
     cleanup
     collect
     copy-from-vm
