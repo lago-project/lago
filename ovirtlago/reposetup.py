@@ -56,13 +56,13 @@ def merge(output_dir, sources, repoman_config=None):
         sources(list of str): repoman sources
         repoman_config(str): repoman configuration file, if not passed it will
             use default repoman configurations, equivalent to:
-        |
-        |
-        |    [main]
-        |    on_empty_source=warn
-        |
-        |    [store.RPMStore]
-        |    on_wrong_distro=copy_to_all
+
+            |  [main]
+            |  on_empty_source=warn
+            |  [store.RPMStore]
+            |  on_wrong_distro=copy_to_all
+            |  with_srcrpms=false
+            |  with_sources=false
 
     Raises:
         :exc:`RepositoryMergeError`: If repoman command failed.
