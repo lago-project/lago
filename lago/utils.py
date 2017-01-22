@@ -37,6 +37,7 @@ from io import StringIO
 import lockfile
 import argparse
 import configparser
+import uuid as uuid_m
 from . import constants
 from .log_utils import (LogTask, setup_prefix_logging)
 
@@ -114,6 +115,7 @@ def _run_command(
     out_pipe=subprocess.PIPE,
     err_pipe=subprocess.PIPE,
     env=None,
+    uuid=None,
     **kwargs
 ):
     """
@@ -132,13 +134,19 @@ def _run_command(
             :ref:subprocess.Popen to use as stderr
         env(dict of str:str): If set, will use the given dict as env for the
             subprocess
+        uuid(uuid): If set the command will be logged with the given uuid
+            converted to string, otherwise, a uuid v4 will be generated.
         **kwargs: Any other keyword args passed will be passed to the
             :ref:subprocess.Popen call
 
     Returns:
         lago.utils.CommandStatus: result of the interactive execution
     """
+
     # add libexec to PATH if needed
+    if uuid is None:
+        uuid = uuid_m.uuid4()
+
     if constants.LIBEXEC_DIR not in os.environ['PATH'].split(':'):
         os.environ['PATH'] = '%s:%s' % (
             constants.LIBEXEC_DIR, os.environ['PATH']
@@ -170,11 +178,13 @@ def _run_command(
         **kwargs
     )
     out, err = popen.communicate(input_data)
-    LOGGER.debug('command exit with %d', popen.returncode)
+    LOGGER.debug(
+        '%s: command exit with return code: %d', str(uuid), popen.returncode
+    )
     if out:
-        LOGGER.debug('command stdout: %s', out)
+        LOGGER.debug('%s: command stdout: %s', str(uuid), out)
     if err:
-        LOGGER.debug('command stderr: %s', err)
+        LOGGER.debug('%s: command stderr: %s', str(uuid), err)
     return CommandStatus(popen.returncode, out, err)
 
 
@@ -213,13 +223,14 @@ def run_command(
         'Run command: %s' % ' '.join('"%s"' % arg for arg in command),
         logger=LOGGER,
         level='debug',
-    ):
+    ) as task:
         command_result = _run_command(
             command=command,
             input_data=input_data,
             out_pipe=out_pipe,
             err_pipe=err_pipe,
             env=env,
+            uuid=task.uuid,
             **kwargs
         )
         return command_result
