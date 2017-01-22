@@ -222,12 +222,6 @@ def run_command(
             env=env,
             **kwargs
         )
-
-        LOGGER.debug('command exit with %d', command_result.code)
-        if command_result.out:
-            LOGGER.debug('command stdout: %s', command_result.out)
-        if command_result.err:
-            LOGGER.debug('command stderr: %s', command_result.err)
         return command_result
 
 
