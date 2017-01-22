@@ -189,16 +189,25 @@ Requires: xz
 
 %post -n python-%{name}-ovirt
 if which firewall-cmd &>/dev/null; then
-    firewall-cmd --reload
-    firewall-cmd --permanent --zone=public --add-service=ovirtlago
-    firewall-cmd --reload
+    # don't touch if ovirtlago service is already enabled
+    if ! firewall-cmd --query-service=ovirtlago --zone=public &>/dev/null; then
+        firewall-cmd --reload &> /dev/null
+        firewall-cmd --permanent --zone=public --add-service=ovirtlago &> /dev/null
+        firewall-cmd --reload &> /dev/null
+    fi
 fi
 
 
 %preun  -n python-%{name}-ovirt
-if which firewall-cmd &>/dev/null; then
-    firewall-cmd --permanent --zone=public --remove-service=ovirtlago
-    firewall-cmd --reload
+if [[ "$1" == "0" ]]; then
+    # "0" indicates uninstallation
+    # "1" indicates upgrade - and then we do nothing
+    if which firewall-cmd &>/dev/null; then
+        if firewall-cmd --query-service=ovirtlago --zone=public &>/dev/null; then
+            firewall-cmd --permanent --zone=public --remove-service=ovirtlago &> /dev/null
+            firewall-cmd --reload &> /dev/null
+        fi
+    fi
 fi
 
 %changelog
