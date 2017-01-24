@@ -12,7 +12,6 @@
                 [eth0]:
                     ip: @@IP@@
                     network: lago_functional_tests
-            VNC port: @@VNC_PORT@@
             distro: fc23
             root password: 123456
             snapshots: snapshot_number_1

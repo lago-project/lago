@@ -163,17 +163,6 @@ class VMProviderPlugin(plugins.Plugin):
         """
         pass
 
-    @abstractmethod
-    def vnc_port(self, *args, **kwargs):
-        """
-        Retrieve the vnc port that was configured for the domain
-
-        Returns:
-            str: string representing the vnc port number (or a helpful message,
-                like 'no-vnc')
-        """
-        pass
-
     def interactive_console(self):
         """
         Run an interactive console
@@ -314,12 +303,6 @@ class VMPlugin(plugins.Plugin):
         Thin method that just uses the provider
         """
         return self.provider.interactive_console(*args, **kwargs)
-
-    def vnc_port(self, *args, **kwargs):
-        """
-        Thin method that just uses the provider
-        """
-        return self.provider.vnc_port(*args, **kwargs)
 
     def extract_paths(self, paths, *args, **kwargs):
         """

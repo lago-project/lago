@@ -67,16 +67,6 @@ common.realize_lago_template() {
     fi
     common.realize_template "$template_file" "$dst_file"
     if [[ -e "$BATS_TMPDIR/stdout" ]]; then
-        # replace each vnc port for each vm
-        local vnc_ports=($(\
-            grep -Po '(?<=VNC port: )\d+' "$BATS_TMPDIR/stdout"\
-        )) || :
-        local vnc_port
-        for vnc_port in "${vnc_ports[@]}"; do
-            sed -i \
-                -e "0,/@@VNC_PORT@@/{s/@@VNC_PORT@@/${vnc_port:=no port found}/}" \
-                "$dst_file"
-        done
         # Replace the ips
         local ips=($(\
             grep -Po '(?<=ip: )\d+\.\d+\.\d+\.\d+' "$BATS_TMPDIR/stdout"\

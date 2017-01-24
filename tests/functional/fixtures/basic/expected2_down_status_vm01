@@ -20,7 +20,6 @@
                 [eth0]:
                     ip: @@IP@@
                     network: lago_functional_tests
-            VNC port: @@VNC_PORT@@
             distro: cirros
             root password: 123456
             status: running

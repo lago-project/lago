@@ -28,7 +28,6 @@
         <source file='DISK_PATH'/>
         <target dev='DISK_DEV' bus='virtio'/>
       </disk>
-      <graphics type='vnc' port='-1' autoport='yes' listen='0.0.0.0' keymap='en-us'/>
       <channel type='unix'>
         <source mode='bind'/>
         <target type='virtio' name='org.qemu.guest_agent.0'/>
