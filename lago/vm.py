@@ -79,9 +79,6 @@ class SSHVMProvider(vm.VMProviderPlugin):
     def revert_snapshot(self, name, *args, **kwargs):
         pass
 
-    def vnc_port(self, *args, **kwargs):
-        return 'no-vnc'
-
 
 class LocalLibvirtVMProvider(vm.VMProviderPlugin):
     def __init__(self, vm):
@@ -263,12 +260,6 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
                 self.vm.name()
             )
             self._extract_paths_gfs(paths=paths, ignore_nopath=ignore_nopath)
-
-    @_check_defined
-    def vnc_port(self):
-        dom = self.libvirt_con.lookupByName(self._libvirt_name())
-        dom_xml = lxml.etree.fromstring(dom.XMLDesc())
-        return dom_xml.xpath('devices/graphics').pop().attrib['port']
 
     @_check_defined
     def interactive_console(self):

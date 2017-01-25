@@ -483,8 +483,6 @@ def do_status(prefix, out_format, **kwargs):
                                     vm.state(),
                                 'snapshots':
                                     ', '.join(vm._spec['snapshots'].keys()),
-                                'VNC port':
-                                    vm.vnc_port() if vm.alive() else None,
                                 'metadata':
                                     vm.metadata,
                                 'NICs':
