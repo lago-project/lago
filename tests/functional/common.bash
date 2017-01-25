@@ -9,7 +9,6 @@ VERBS=(
     deploy
     destroy
     init
-    ovirt
     shell
     snapshot
     start
