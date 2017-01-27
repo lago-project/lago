@@ -286,8 +286,14 @@ class VirtEnv(object):
             except IndexError:
                 return self.get_nets().values().pop()
 
-    def get_vms(self):
+    def get_vms(self, ):
         return self._vms.copy()
+
+    def get_vms_value(self, names=None):
+        if not names:
+            return self._vms.values()
+
+        return [self.get_vm(name) for name in names]
 
     def get_vm(self, name):
         return self._vms[name]

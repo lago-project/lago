@@ -99,6 +99,12 @@ def invoke_in_parallel(func, *args_sequences):
     vt.join_all()
 
 
+def invoke_multiple_functions(funcs):
+    vt = VectorThread(funcs)
+    vt.start_all()
+    vt.join_all()
+
+
 _CommandStatus = collections.namedtuple(
     'CommandStatus', ('code', 'out', 'err')
 )

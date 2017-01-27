@@ -500,6 +500,17 @@ class VMPlugin(plugins.Plugin):
     def nets(self):
         return [nic['net'] for nic in self._spec['nics']]
 
+    def mgmt_nets(self):
+        """
+        Return a list of management networks of self
+
+        Returns:
+            list of virt.Network
+
+        """
+        net_objects = [self.virt_env.get_net(net) for net in self.nets()]
+        return filter(lambda x: x.is_management(), net_objects)
+
     def distro(self):
         distro = self._spec.get('distro', None)
         if distro is None:
