@@ -50,6 +50,15 @@ install -p -D -m 644 etc/firewalld/services/* %{buildroot}%{_sysconfdir}/firewal
 %package -n python-%{name}
 Summary: Library to perform lago operations
 BuildArch: noarch
+
+# workaround for BZ: 1419312, 1418084
+%if 0%{?fedora} == 24
+BuildRequires: python2-crypto = 2.6.1-10.fc24
+%endif
+%if 0%{?rhel}
+BuildRequires: python2-crypto = 2.6.1-10.el7
+%endif
+
 BuildRequires: python2-devel
 BuildRequires: python-stevedore
 BuildRequires: python-setuptools
@@ -79,6 +88,15 @@ BuildRequires: python-dulwich
 BuildRequires: python-flake8
 BuildRequires: python-nose
 BuildRequires: git
+
+
+# workaround for BZ: 1419312, 1418084
+%if 0%{?fedora} == 24
+Requires: python2-crypto = 2.6.1-10.fc24
+%endif
+%if 0%{?rhel}
+Requires: python2-crypto = 2.6.1-10.el7
+%endif
 Requires: python
 Requires: libguestfs-tools
 Requires: libvirt >= 1.2.8
