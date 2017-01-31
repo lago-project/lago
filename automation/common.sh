@@ -3,7 +3,6 @@
 # Common functions for the scripts
 #
 
-
 set_guestfs_params() {
     # see: https://bugzilla.redhat.com/show_bug.cgi?id=1404287
     export LIBGUESTFS_APPEND="edd=off"
@@ -128,6 +127,7 @@ run_installation_tests() {
 
 run_basic_functional_tests() {
     local res
+    export LAGO_LOGLEVEL=debug
     # Avoid any heavy tests (for example, any that download templates)
     bats \
         tests/functional/*basic.bats \
@@ -137,19 +137,22 @@ run_basic_functional_tests() {
         tests/functional/deploy.bats \
     | tee exported-artifacts/functional_tests.tap
     res=${PIPESTATUS[0]}
+    unset LAGO_LOGLEVEL
     return $res
 }
 
 
 run_full_functional_tests() {
     local res
+    export LAGO_LOGLEVEL=debug
     # Allow notty sudo, for the tests on jenkinslike environment
     [[ -e /etc/sudoers ]] \
     && sed -i -e 's/^Defaults\s*requiretty/Defaults !requiretty/' /etc/sudoers
 
-    bats tests/functional/*.bats \
+    bats tests/functional/ovirt*.bats \
     | tee exported-artifacts/functional_tests.tap
     res=${PIPESTATUS[0]}
+    unset LAGO_LOGLEVEL
     return $res
 }
 

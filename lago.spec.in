@@ -50,6 +50,11 @@ install -p -D -m 644 etc/firewalld/services/* %{buildroot}%{_sysconfdir}/firewal
 %package -n python-%{name}
 Summary: Library to perform lago operations
 BuildArch: noarch
+%if 0%{?fedora} == 24
+Requires: python2-crypto = 2.6.1-10.fc24
+BuildRequires: python2-crypto = 2.6.1-10.fc24
+%endif
+
 BuildRequires: python2-devel
 BuildRequires: python-stevedore
 BuildRequires: python-setuptools
