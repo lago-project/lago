@@ -3,6 +3,7 @@ load common
 load ovirt_common
 load helpers
 
+unset LAGO__START__WAIT_SUSPEND
 
 @test "ovirt.basic: command shows help" {
     helpers.run_ok \
