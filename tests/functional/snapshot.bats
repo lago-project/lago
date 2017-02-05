@@ -6,6 +6,7 @@ load env_setup
 FIXTURES="$FIXTURES/snapshot"
 WORKDIR="$FIXTURES"/.lago
 
+unset LAGO__START__WAIT_SUSPEND
 
 @test "snapshot.1host_1disk: setup" {
     # As there's no way to know the last test result, we will handle it here

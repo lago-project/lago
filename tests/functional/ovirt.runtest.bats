@@ -8,6 +8,7 @@ FIXTURES="$FIXTURES/ovirt.runtest"
 WORKDIR="$FIXTURES"/.lago
 PREFIX="$WORKDIR/default"
 
+unset LAGO__START__WAIT_SUSPEND
 
 @test "ovirt.runtest: setup" {
     # As there's no way to know the last test result, we will handle it here
