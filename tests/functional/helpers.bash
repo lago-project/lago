@@ -109,10 +109,7 @@ helpers.diff_output() {
     local expected_replaced_file="$expected_file.tmp"
     base_file="$BATS_TMPDIR/stdout"
     echo "DIFF OUTPUT: Checking if \$output matches $expected_file"
-    # get rid of the dummy group warning
-    echo "$output" \
-    | tail -n+2 \
-    > "$base_file"
+    echo "$output" > "$base_file"
     helpers.diff "$expected_file" "$base_file"
     return $?
 }

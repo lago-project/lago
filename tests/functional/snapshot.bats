@@ -55,7 +55,7 @@ EOC
         'lago_functional_tests_vm01' \
         '/root/nicefile' \
         "$WORKDIR"/nicefile
-    helpers.run_ok echo -e "\ncontent after tests"
+    helpers.run_ok echo -e "content after tests"
     helpers.diff_output "$WORKDIR"/nicefile
     rm -f "$WORKDIR"/nicefile
 }
@@ -70,7 +70,7 @@ EOC
         'lago_functional_tests_vm01' \
         '/root/nicefile' \
         "$WORKDIR"/nicefile
-    helpers.run_ok echo -e "\ncontent before tests"
+    helpers.run_ok echo -e "content before tests"
     helpers.diff_output "$WORKDIR"/nicefile
 }
 

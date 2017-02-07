@@ -116,7 +116,7 @@ EOC
         for logfile in "${!logfiles[@]}"; do
             local_logfile="$logdir/_var_log_$logfile"
             helpers.is_file "$local_logfile"
-            run echo -e "\n${logfiles[$logfile]}"
+            run echo -e "${logfiles[$logfile]}"
             helpers.diff_output "$local_logfile"
         done
     done
