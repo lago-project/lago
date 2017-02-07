@@ -51,14 +51,6 @@ install -p -D -m 644 etc/firewalld/services/* %{buildroot}%{_sysconfdir}/firewal
 Summary: Library to perform lago operations
 BuildArch: noarch
 
-# workaround for BZ: 1419312, 1418084
-%if 0%{?fedora} == 24
-BuildRequires: python2-crypto = 2.6.1-10.fc24
-%endif
-%if 0%{?rhel}
-BuildRequires: python2-crypto = 2.6.1-10.el7
-%endif
-
 BuildRequires: python2-devel
 BuildRequires: python-stevedore
 BuildRequires: python-setuptools
@@ -74,8 +66,10 @@ BuildRequires: python-scp
 BuildRequires: python2-rpm-macros
 %if 0%{?fedora} >= 24
 BuildRequires: python2-configparser
+BuildRequires: python2-paramiko >= 2.1.1
 %else
 BuildRequires: python-configparser
+BuildRequires: python2-paramiko
 %endif
 
 %if 0%{?fedora} >= 23
@@ -90,13 +84,6 @@ BuildRequires: python-nose
 BuildRequires: git
 
 
-# workaround for BZ: 1419312, 1418084
-%if 0%{?fedora} == 24
-Requires: python2-crypto = 2.6.1-10.fc24
-%endif
-%if 0%{?rhel}
-Requires: python2-crypto = 2.6.1-10.el7
-%endif
 Requires: python
 Requires: libguestfs-tools
 Requires: libvirt >= 1.2.8
@@ -105,7 +92,6 @@ Requires: python-libguestfs
 Requires: python-lxml
 Requires: python-lockfile
 Requires: python-magic
-Requires: python-paramiko
 Requires: python-pbr
 Requires: python-xmltodict
 Requires: python-scp
@@ -116,8 +102,10 @@ Requires: python-enum
 Requires: pyxdg
 %if 0%{?fedora} >= 24
 Requires: python2-configparser
+Requires: python2-paramiko >= 2.1.1
 %else
 Requires: python-configparser
+Requires: python2-paramiko
 %endif
 %if 0%{?rhel}
 Requires: qemu-img-rhev >= 2.1.2
