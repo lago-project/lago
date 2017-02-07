@@ -27,6 +27,7 @@ import re
 import sys
 import datetime
 import threading
+import uuid as uuid_m
 from collections import (
     OrderedDict,
     deque,
@@ -36,16 +37,16 @@ from functools import wraps
 #: Message to be shown when a task is started
 START_TASK_MSG = ''
 #: Message template that will trigger a task
-START_TASK_TRIGGER_MSG = 'start task %s'
+START_TASK_TRIGGER_MSG = 'start task%s'
 #: Regexp that will match the above template
-START_TASK_REG = re.compile('start task (?P<task_name>.*)')
+START_TASK_REG = re.compile('start task(?P<task_name>.*)')
 #: Message to be shown when a task is ended
 END_TASK_MSG = 'Success'
 END_TASK_ON_ERROR_MSG = 'ERROR'
 #: Message template that will trigger a task end
-END_TASK_TRIGGER_MSG = 'end task %s'
+END_TASK_TRIGGER_MSG = 'end task%s'
 #: Regexp that will match the above template
-END_TASK_REG = re.compile('end task (?P<task_name>.*)')
+END_TASK_REG = re.compile('end task(?P<task_name>.*)')
 #: Message template that will always shoud the messago
 ALWAYS_SHOW_TRIGGER_MSG = 'force-show:%s'
 #: Regexp that will match the above template
@@ -582,24 +583,34 @@ class LogTask(object):
         logger=logging,
         level='info',
         propagate_fail=True,
+        uuid=None,
     ):
         self.task = task
         self.logger = logger
         self.level = level
         self.propagate = propagate_fail
+        if uuid is None:
+            self.uuid = uuid_m.uuid4()
+        self.header = self.task
+        if self.level != 'info':
+            self.header = ':{0}:{1}:'.format(str(self.uuid), self.task)
 
     def __enter__(self):
-        getattr(self.logger, self.level)(START_TASK_TRIGGER_MSG % self.task)
+        getattr(self.logger, self.level)(START_TASK_TRIGGER_MSG % self.header)
+        return self
 
     def __exit__(self, *args, **kwargs):
         exc_type, _, _ = sys.exc_info()
         if exc_type and self.propagate:
-            end_log_task(self.task, level='error')
+            end_log_task(self.header, level='error')
         else:
-            getattr(self.logger, self.level)(END_TASK_TRIGGER_MSG % self.task)
+            getattr(self.logger,
+                    self.level)(END_TASK_TRIGGER_MSG % self.header)
 
 
-def log_task(task, logger=logging, level='info', propagate_fail=True):
+def log_task(
+    task, logger=logging, level='info', propagate_fail=True, uuid=None
+):
     """
     Parameterized decorator to wrap a function in a log task
 
@@ -617,6 +628,7 @@ def log_task(task, logger=logging, level='info', propagate_fail=True):
                 logger=logger,
                 level=level,
                 propagate_fail=propagate_fail,
+                uuid=uuid
             ):
                 return func(*args, **kwargs)
 
