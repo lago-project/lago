@@ -534,10 +534,15 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
             gfs_cli.close()
 
     def _reclaim_disk(self, path):
-        if pwd.getpwuid(os.stat(path).st_uid).pw_name == 'qemu':
+        qemu_uid = None
+        try:
+            qemu_uid = pwd.getpwnam('qemu').pw_uid
+        except KeyError:
+            pass
+        if qemu_uid is not None and os.stat(path).st_uid == qemu_uid:
             utils.run_command(['sudo', '-u', 'qemu', 'chmod', 'a+rw', path])
         else:
-            os.chmod(path, 0666)
+            os.chmod(path, 0o0666)
 
     def _reclaim_disks(self):
         for disk in self.vm._spec['disks']:
