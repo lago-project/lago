@@ -129,12 +129,13 @@ run_installation_tests() {
 run_basic_functional_tests() {
     local res
     # Avoid any heavy tests (for example, any that download templates)
-    bats \
+
+    sg lago -c "bats \
         tests/functional/*basic.bats \
         tests/functional/status.bats \
         tests/functional/start.bats \
         tests/functional/collect.bats \
-        tests/functional/deploy.bats \
+        tests/functional/deploy.bats" \
     | tee exported-artifacts/functional_tests.tap
     res=${PIPESTATUS[0]}
     return $res
@@ -147,7 +148,7 @@ run_full_functional_tests() {
     [[ -e /etc/sudoers ]] \
     && sed -i -e 's/^Defaults\s*requiretty/Defaults !requiretty/' /etc/sudoers
 
-    bats tests/functional/*.bats \
+    sg lago -c 'bats tests/functional/*.bats' \
     | tee exported-artifacts/functional_tests.tap
     res=${PIPESTATUS[0]}
     return $res
