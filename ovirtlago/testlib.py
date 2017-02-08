@@ -21,7 +21,9 @@ import datetime
 import functools
 import logging
 import os
+import sys
 import time
+import traceback
 import unittest.case
 import nose.plugins
 from nose.plugins.skip import SkipTest
@@ -209,56 +211,64 @@ def _instance_of_any(obj, cls_list):
     return any(True for cls in cls_list if isinstance(obj, cls))
 
 
-def assert_equals_within(func, value, timeout, allowed_exceptions=None):
+def assert_equals_within(obj_1, obj_2, timeout, allowed_exceptions=None):
     allowed_exceptions = allowed_exceptions or []
+    results = object()
+    res_1 = 'res_1'
+    res_2 = 'res_2'
+
     with utils.EggTimer(timeout) as timer:
         while not timer.elapsed():
             try:
-                res = func()
-                if res == value:
+                setattr(results, res_1, obj_1() if callable(obj_1) else obj_1)
+                setattr(results, res_2, obj_2() if callable(obj_2) else obj_2)
+                if getattr(results, res_1) == getattr(results, res_2):
                     return
             except Exception as exc:
                 if _instance_of_any(exc, allowed_exceptions):
                     continue
 
+                tb = sys.exc_info()[-1]
+                func = traceback.extract_tb(tb, 2)[1][2]
                 LOGGER.exception("Unhandled exception in %s", func)
                 raise
 
             time.sleep(3)
     try:
         raise AssertionError(
-            '%s != %s after %s seconds' % (res, value, timeout)
+            '%s != %s after %s seconds' %
+            (getattr(results, res_1), getattr(results, res_2), timeout)
         )
-    # if func repeatedly raises any of the allowed exceptions, res remains
-    # unbound throughout the function, resulting in an UnboundLocalError.
-    except UnboundLocalError:
+    # objects failed to evaluate
+    except AttributeError:
+        failed_func = obj_2 if hasattr(results, res_1) else obj_1
         raise AssertionError(
             '%s failed to evaluate after %s seconds' %
-            (func.__name__, timeout)
+            (failed_func.__name__, timeout)
         )
 
 
-def assert_equals_within_short(func, value, allowed_exceptions=None):
+def assert_equals_within_short(obj_1, obj_2, allowed_exceptions=None):
     allowed_exceptions = allowed_exceptions or []
     assert_equals_within(
-        func, value, SHORT_TIMEOUT, allowed_exceptions=allowed_exceptions
+        obj_1, obj_2, SHORT_TIMEOUT, allowed_exceptions=allowed_exceptions
     )
 
 
-def assert_equals_within_long(func, value, allowed_exceptions=None):
+def assert_equals_within_long(obj_1, obj_2, allowed_exceptions=None):
     allowed_exceptions = allowed_exceptions or []
     assert_equals_within(
-        func, value, LONG_TIMEOUT, allowed_exceptions=allowed_exceptions
+        obj_1, obj_2, LONG_TIMEOUT, allowed_exceptions=allowed_exceptions
     )
 
 
-def assert_true_within(func, timeout, allowed_exceptions=None):
-    assert_equals_within(func, True, timeout, allowed_exceptions)
+def assert_true_within(obj, timeout, allowed_exceptions=None):
+    assert_equals_within(obj, True, timeout, allowed_exceptions)
 
 
-def assert_true_within_short(func, allowed_exceptions=None):
-    assert_equals_within_short(func, True, allowed_exceptions)
+def assert_true_within_short(obj, allowed_exceptions=None):
+    assert_equals_within_short(obj, True, allowed_exceptions)
 
 
-def assert_true_within_long(func, allowed_exceptions=None):
-    assert_equals_within_long(func, True, allowed_exceptions)
+def assert_true_within_long(obj, allowed_exceptions=None):
+    assert_equals_within_long(obj, True, allowed_exceptions)
