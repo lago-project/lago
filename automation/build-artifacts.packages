@@ -1,6 +1,9 @@
+dnf
+dnf-command(builddep)
 git
-python
-python-dulwich
-python-setuptools
-yum
-yum-utils
+make
+python2
+python2-dulwich
+python2-setuptools
+rpm-build
+tar

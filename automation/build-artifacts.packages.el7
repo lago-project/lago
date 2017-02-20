@@ -1,9 +1,6 @@
-make
 git
 python
 python-dulwich
 python-setuptools
-tar
-rpm-build
 yum
-dnf-command(builddep)
+yum-utils
