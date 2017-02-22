@@ -20,7 +20,6 @@ definitions:
 """
 import errno
 import functools
-import hashlib
 import json
 import logging
 import magic
@@ -622,7 +621,9 @@ class TemplateStore:
             RuntimeError: if the template is not in the store
         """
         if temp_ver not in self:
-            raise RuntimeError('Template not present')
+            raise RuntimeError(
+                'Template: {} not present'.format(temp_ver.name)
+            )
         return self._prefixed(temp_ver.name)
 
     def download(self, temp_ver, store_metadata=True):
@@ -650,14 +651,8 @@ class TemplateStore:
                 with open('%s.metadata' % dest, 'w') as f:
                     utils.json_dump(temp_ver.get_metadata(), f)
 
-            sha1 = hashlib.sha1()
-            with open(temp_dest) as f:
-                while True:
-                    chunk = f.read(65536)
-                    if not chunk:
-                        break
-                    sha1.update(chunk)
-            if temp_ver.get_hash() != sha1.hexdigest():
+            sha1 = utils.get_hash(temp_dest)
+            if temp_ver.get_hash() != sha1:
                 raise RuntimeError(
                     'Image %s does not match the expected hash %s' % (
                         temp_ver.name,
@@ -666,10 +661,10 @@ class TemplateStore:
                 )
 
             with open('%s.hash' % dest, 'w') as f:
-                f.write(sha1.hexdigest())
+                f.write(sha1)
 
             with log_utils.LogTask('Convert image', logger=LOGGER):
-                utils.run_command(
+                result = utils.run_command(
                     [
                         'qemu-img',
                         'convert',
@@ -680,7 +675,9 @@ class TemplateStore:
                     ],
                 )
 
-            os.unlink(temp_dest)
+                os.unlink(temp_dest)
+                if result:
+                    raise RuntimeError(result.err)
 
             self._init_users(temp_ver)
 

@@ -39,6 +39,7 @@ from lago.config import config
 from lago import (
     log_utils,
     workdir as lago_workdir,
+    utils,
 )
 from lago.utils import (in_prefix, with_logging)
 
@@ -272,6 +273,48 @@ def do_start(prefix, vm_names=None, **kwargs):
 @with_logging
 def do_stop(prefix, vm_names, **kwargs):
     prefix.stop(vm_names=vm_names)
+
+
+@lago.plugins.cli.cli_plugin(
+    help='Export virtual machine disks',
+    description='This command will export the disks of the given vms. '
+    'The disks of the vms will be exported to the '
+    'current directory or to the path that was specified with "-d". '
+    'If "-s" was specified, the disks will be exported as '
+    '"standalone disk", which means that they will be merged with their '
+    'base images. This command does not modifying the source disk. '
+    'The env should be in "down" state when running this command.'
+)
+@lago.plugins.cli.cli_plugin_add_argument(
+    '--vm-names',
+    '-n',
+    help='Name of the vms to export. If no name is specified, export all '
+    'the vms in this prefix.',
+    metavar='VM_NAME',
+    nargs='*',
+)
+@lago.plugins.cli.cli_plugin_add_argument(
+    '--standalone',
+    '-s',
+    help='If not specified, export a layered image',
+    action='store_true',
+)
+@lago.plugins.cli.cli_plugin_add_argument(
+    '--compress',
+    '-c',
+    help='If specified, compress the exported images with xz',
+    action='store_true',
+)
+@lago.plugins.cli.cli_plugin_add_argument(
+    '--dst-dir',
+    '-d',
+    default='.',
+    help='Dir to place the exported images in',
+)
+@in_lago_prefix
+@with_logging
+def do_export(prefix, vm_names, standalone, dst_dir, compress, **kwargs):
+    prefix.export_vms(vm_names, standalone, dst_dir, compress)
 
 
 @lago.plugins.cli.cli_plugin(
@@ -870,6 +913,10 @@ def main():
 
     try:
         cli_plugins[args.verb].do_run(args)
+    except utils.LagoUserException as e:
+        LOGGER.info(e.message)
+        LOGGER.debug(e)
+        sys.exit(2)
     except Exception:
         LOGGER.exception('Error occured, aborting')
         sys.exit(1)

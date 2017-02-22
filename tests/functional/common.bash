@@ -18,9 +18,25 @@ VERBS=(
     template-repo
     console
     generate-config
+    'export'
 )
 FIXTURES="$BATS_TEST_DIRNAME/fixtures"
 export LAGO__START__WAIT_SUSPEND="1.0"
+
+common.is_stopped() {
+    local workdir="${1?}"
+    local status=$(
+      "$LAGOCLI" \
+          --out-format flat \
+          status
+    )
+    echo "$status" | grep -q "status: up"
+    if [[ $? -ne 0 ]]; then
+        return 0
+    else
+        return 1
+    fi
+}
 
 common.is_initialized() {
     local workdir="${1?}"
