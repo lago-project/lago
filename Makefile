@@ -46,7 +46,7 @@ ${SPECFILE}: ${SPECFILE}.in changelog
 	cat ChangeLog >> $@
 
 build:
-	LAGO_VERSION=${VERSION} python setup.py build
+	LAGO_VERSION=${VERSION} python2 setup.py build
 
 check: check-local
 
@@ -59,19 +59,19 @@ check-local:
 	@echo "-------------------------------------------------------------"
 	@echo "-~      Running static checks                              --"
 	@echo "-------------------------------------------------------------"
-	PYTHONPATH=${PWD} python ${FLAKE8} --version
-	PYTHONPATH=${PWD} python ${FLAKE8}
+	PYTHONPATH=${PWD} python2 ${FLAKE8} --version
+	PYTHONPATH=${PWD} python2 ${FLAKE8}
 	@echo "-------------------------------------------------------------"
 	@echo "-~      Running unit tests                                 --"
 	@echo "-------------------------------------------------------------"
-	PYTHONPATH=${PWD} python ${PYTEST} -v tests/unit
+	PYTHONPATH=${PWD} python2 ${PYTEST} -v tests/unit
 	@echo "-------------------------------------------------------------"
 	@echo "-------------------------------------------------------------"
 
 dist: ${TARBALL_DIST_LOCATION}
 
 python-sdist:
-	LAGO_VERSION=${VERSION} python setup.py sdist --dist-dir ${DIST_DIR}
+	LAGO_VERSION=${VERSION} python2 setup.py sdist --dist-dir ${DIST_DIR}
 
 add-extra-files-sdist: changelog fullchangelog
 	gunzip ${TARBALL_DIST_LOCATION}
@@ -97,7 +97,7 @@ rpm: dist ${SPECFILE}
 		${SPECFILE}
 
 clean:
-	python setup.py clean
+	python2 setup.py clean
 	rm -rf ${DIST_DIR}
 	rm -rf ${RPM_DIR}
 	rm -rf build "$(REPO_LOCAL_REL_PATH)"
