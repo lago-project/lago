@@ -121,8 +121,8 @@ def do_ovirt_runtest(prefix, test_file, **kwargs):
 @cli_plugin_add_argument(
     '--custom-source',
     help=(
-        'Add an extra rpm source to the repo (will have priority over the '
-        'repos), allows any source string allowed by repoman'
+        'Add an extra rpm source to the repo '
+        '(allows any source string allowed by repoman)'
     ),
     dest='custom_sources',
     action='append',
