@@ -31,6 +31,7 @@ try:
     import ovirtsdk4 as sdk4
     API_V4 = True
 except ImportError:
+    sdk4 = None
     API_V4 = False
 
 from . import (
@@ -53,7 +54,7 @@ class OvirtVirtEnv(lago.virt.VirtEnv):
             warnings.warn(
                 'ovirt-role metadata entry will be soon deprecated, instead '
                 'you should use the vm-provider entry in the domain '
-                'definiton and set it no one of: ovirt-node, ovirt-engine, '
+                'definition and set it no one of: ovirt-node, ovirt-engine, '
                 'ovirt-host'
             )
             provider_name = 'ovirt-' + role
@@ -217,6 +218,107 @@ class EngineVM(lago.vm.DefaultVM):
         )
         if result.code != 0:
             raise RuntimeError('Failed to setup the engine')
+
+    def stop_all_vms(self):
+        api = self.get_api_v4()
+        if api is None:
+            raise RuntimeError('Could not connect to engine')
+
+        vms_service = api.system_service().vms_service()
+        vms = vms_service.list(search='status=up')
+        if vms:
+            for v in vms:
+                vm_service = vms_service.vm_service(v.id)
+                vm_service.stop()
+            time.sleep(10)
+
+            def _vm_is_down():
+                vm_srv = vms_service.vm_service(v.id)
+                vm_obj = vm_srv.get()
+                if vm_obj.status == sdk4.types.VmStatus.DOWN:
+                    return True
+
+            for v in vms:
+                testlib.assert_true_within(_vm_is_down, timeout=5 * 60)
+
+    def stop_all_hosts(self):
+        api = self.get_api_v4()
+        if api is None:
+            raise RuntimeError('Could not connect to engine')
+
+        hosts_service = api.system_service().hosts_service()
+        hosts = hosts_service.list(search='status=up')
+        if hosts:
+            self.stop_all_vms()
+            for h in hosts:
+                host_service = hosts_service.host_service(h.id)
+                host_service.deactivate()
+            time.sleep(10)
+
+            def _host_is_maint():
+                h_service = hosts_service.host_service(h.id)
+                host_obj = h_service.get()
+                if host_obj.status == sdk4.types.HostStatus.MAINTENANCE:
+                    return True
+
+                if host_obj.status == sdk4.types.HostStatus.NON_OPERATIONAL:
+                    raise RuntimeError(
+                        'Host %s is in non operational state' % h.name
+                    )
+                elif host_obj.status == sdk4.types.HostStatus.INSTALL_FAILED:
+                    raise RuntimeError('Host %s installation failed' % h.name)
+                elif host_obj.status == sdk4.types.HostStatus.NON_RESPONSIVE:
+                    raise RuntimeError(
+                        'Host %s is in non responsive state' % h.name
+                    )
+
+            for h in hosts:
+                testlib.assert_true_within(_host_is_maint, timeout=5 * 60)
+
+    def start_all_hosts(self):
+        api = self.get_api_v4()
+        if api is None:
+            raise RuntimeError('Could not connect to engine')
+
+        hosts_service = api.system_service().hosts_service()
+        hosts = hosts_service.list(search='status=maintenance')
+        if hosts:
+            for h in hosts:
+                host_service = hosts_service.host_service(h.id)
+                host_service.activate()
+            time.sleep(10)
+
+            def _host_is_up():
+                h_service = hosts_service.host_service(h.id)
+                host_obj = h_service.get()
+                if host_obj.status == sdk4.types.HostStatus.UP:
+                    return True
+
+                if host_obj.status == sdk4.types.HostStatus.NON_OPERATIONAL:
+                    raise RuntimeError(
+                        'Host %s is in non operational state' % h.name
+                    )
+                elif host_obj.status == sdk4.types.HostStatus.INSTALL_FAILED:
+                    raise RuntimeError('Host %s installation failed' % h.name)
+                elif host_obj.status == sdk4.types.HostStatus.NON_RESPONSIVE:
+                    raise RuntimeError(
+                        'Host %s is in non responsive state' % h.name
+                    )
+
+            for h in hosts:
+                testlib.assert_true_within(_host_is_up, timeout=5 * 60)
+
+    def status(self):
+        api = self.get_api_v4()
+        if api is None:
+            raise RuntimeError('Could not connect to engine')
+
+        sys_service = api.system_service().get()
+        print("Version: %s" % sys_service.product_info.version.full_version)
+        print("Hosts: %d" % sys_service.summary.hosts.total)
+        print("SDs: %d" % sys_service.summary.storage_domains.total)
+        print("Users: %d" % sys_service.summary.users.total)
+        print("Vms: %d" % sys_service.summary.vms.total)
 
 
 class HostVM(lago.vm.DefaultVM):

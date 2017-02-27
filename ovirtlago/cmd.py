@@ -163,24 +163,6 @@ def do_deploy(prefix, **kwargs):
     prefix.deploy()
 
 
-@cli_plugin(
-    help='Start all resources and activate all storage domains and hosts.'
-)
-@in_ovirt_prefix
-@with_logging
-def do_ovirt_start(prefix, **kwargs):
-    prefix.start()
-
-
-@cli_plugin(
-    help='Maintenance all storage domains and hosts, and stop all resources',
-)
-@in_ovirt_prefix
-@with_logging
-def do_ovirt_stop(prefix, **kwargs):
-    prefix.stop()
-
-
 @cli_plugin(help='Run engine-setup command on the engine machine')
 @cli_plugin_add_argument(
     '--config',
@@ -191,6 +173,34 @@ def do_ovirt_stop(prefix, **kwargs):
 @with_logging
 def do_ovirt_engine_setup(prefix, config, **kwargs):
     prefix.virt_env.engine_vm().engine_setup(config)
+
+
+@cli_plugin(help='Start all hosts that are in maintenance')
+@in_ovirt_prefix
+@with_logging
+def do_ovirt_start_hosts(prefix, **kwargs):
+    prefix.virt_env.engine_vm().start_all_hosts()
+
+
+@cli_plugin(help='Stop all hosts that are up')
+@in_ovirt_prefix
+@with_logging
+def do_ovirt_stop_hosts(prefix, **kwargs):
+    prefix.virt_env.engine_vm().stop_all_hosts()
+
+
+@cli_plugin(help='Stop all VMs that are up')
+@in_ovirt_prefix
+@with_logging
+def do_ovirt_stop_vms(prefix, **kwargs):
+    prefix.virt_env.engine_vm().stop_all_vms()
+
+
+@cli_plugin(help='Print oVirt setup status')
+@in_ovirt_prefix
+@with_logging
+def do_ovirt_status(prefix, **kwargs):
+    prefix.virt_env.engine_vm().status()
 
 
 @cli_plugin(
