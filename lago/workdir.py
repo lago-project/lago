@@ -1,5 +1,5 @@
 #
-# Copyright 2016 Red Hat, Inc.
+# Copyright 2016-2017 Red Hat, Inc.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -396,6 +396,37 @@ class Workdir(object):
             return False
 
         return True
+
+    def cleanup(self):
+        """
+        Attempt to set a new current symlink if it is broken. If no other
+        prefixes exist and the workdir is empty, try to delete the entire
+        workdir.
+
+        Raises:
+            :exc:`~MalformedWorkdir`: if no prefixes were found, but the
+                workdir is not empty.
+        """
+
+        current = self.join('current')
+        if not os.path.exists(current):
+            LOGGER.debug('found broken current symlink, removing: %s', current)
+            os.unlink(self.join('current'))
+            self.current = None
+            try:
+                self._update_current()
+            except PrefixNotFound:
+                if not os.listdir(self.path):
+                    LOGGER.debug('workdir is empty, removing %s', self.path)
+                    os.rmdir(self.path)
+                else:
+                    raise MalformedWorkdir(
+                        (
+                            'Unable to find any prefixes in {0}, '
+                            'but the directory looks malformed. '
+                            'Try deleting it manually.'
+                        ).format(self.path)
+                    )
 
 
 @cli.cli_plugin(
