@@ -1,5 +1,5 @@
 #
-# Copyright 2014 Red Hat, Inc.
+# Copyright 2014-2017 Red Hat, Inc.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@
 Utilities to help deal with the libvirt python bindings
 """
 import libvirt
-
+import pkg_resources
 from lago.config import config
 
 #: Mapping of domain statuses values to human readable strings
@@ -81,3 +81,9 @@ def get_libvirt_connection(name, libvirt_url='qemu://system'):
         LIBVIRT_CONNECTIONS[name] = libvirt.openAuth(libvirt_url, auth)
 
     return LIBVIRT_CONNECTIONS[name]
+
+
+def get_template(basename):
+    return pkg_resources.resource_string(
+        __name__, '/'.join(['providers', 'libvirt', 'templates', basename])
+    )
