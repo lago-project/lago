@@ -125,7 +125,9 @@ Requires: sudo
 %{python2_sitelib}/%{name}/*.py*
 %{python2_sitelib}/%{name}/plugins/*.py*
 %{python2_sitelib}/%{name}_template_repo/*.py*
-%{python2_sitelib}/%{name}/*.xml
+%{python2_sitelib}/%{name}/providers/*.py*
+%{python2_sitelib}/%{name}/providers/libvirt/*.py*
+%{python2_sitelib}/%{name}/providers/libvirt/templates/*.xml
 %{python2_sitelib}/%{name}-%{version}-py*.egg-info
 %{_bindir}/lagocli
 %{_bindir}/lago

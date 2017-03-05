@@ -61,7 +61,17 @@ class ExtractPathNoPathError(VMError):
     pass
 
 
-def _check_alive(func):
+def check_defined(func):
+    @functools.wraps(func)
+    def wrapper(self, *args, **kwargs):
+        if not self.defined():
+            raise RuntimeError('VM %s is not defined' % self.vm.name())
+        return func(self, *args, **kwargs)
+
+    return wrapper
+
+
+def check_alive(func):
     @functools.wraps(func)
     def wrapper(self, *args, **kwargs):
         if not self.alive():
@@ -469,7 +479,7 @@ class VMPlugin(plugins.Plugin):
     def alive(self):
         return self.state() == 'running'
 
-    @_check_alive
+    @check_alive
     def ssh_reachable(self, tries=None, propagate_fail=True):
         """
         Check if the VM is reachable with ssh
@@ -510,14 +520,14 @@ class VMPlugin(plugins.Plugin):
         with open(path, 'w') as f:
             utils.json_dump(self._spec, f)
 
-    @_check_alive
+    @check_alive
     def service(self, name):
         if self._service_class is None:
             self._detect_service_provider()
 
         return self._service_class(self, name)
 
-    @_check_alive
+    @check_alive
     def interactive_ssh(self, command=None):
         if command is None:
             command = ['bash']

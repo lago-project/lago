@@ -1,5 +1,5 @@
 #
-# Copyright 2016 Red Hat, Inc.
+# Copyright 2016-2017 Red Hat, Inc.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
 #
 # Refer to the README and COPYING files for full details of the license
 #
+
 import functools
 import time
 import guestfs
@@ -26,61 +27,18 @@ import lxml
 import os
 import pwd
 
-from . import (log_utils, utils, sysprep, libvirt_utils, export)
-from .config import config
-from .plugins import vm
-from .plugins.vm import ExtractPathError, ExtractPathNoPathError
+from lago import (log_utils, utils, sysprep, export)
+from lago.providers.libvirt import utils as libvirt_utils
+from lago.config import config
+from lago.plugins import vm as vm_plugin
+from lago.plugins.vm import ExtractPathError, ExtractPathNoPathError
 
 LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
 log_task = functools.partial(log_utils.log_task, logger=LOGGER)
 
 
-def _path_to_xml(basename):
-    return os.path.join(
-        os.path.dirname(__file__),
-        basename,
-    )
-
-
-def _check_defined(func):
-    @functools.wraps(func)
-    def wrapper(self, *args, **kwargs):
-        if not self.defined():
-            raise RuntimeError('VM %s is not defined' % self.vm.name())
-        return func(self, *args, **kwargs)
-
-    return wrapper
-
-
-class DefaultVM(vm.VMPlugin):
-    pass
-
-
-class SSHVMProvider(vm.VMProviderPlugin):
-    def start(self, *args, **kwargs):
-        pass
-
-    def stop(self, *args, **kwargs):
-        pass
-
-    def defined(self, *args, **kwargs):
-        return True
-
-    def bootstrap(self, *args, **kwargs):
-        pass
-
-    def state(self, *args, **kwargs):
-        return 'running'
-
-    def create_snapshot(self, name, *args, **kwargs):
-        pass
-
-    def revert_snapshot(self, name, *args, **kwargs):
-        pass
-
-
-class LocalLibvirtVMProvider(vm.VMProviderPlugin):
+class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
     def __init__(self, vm):
         super(LocalLibvirtVMProvider, self).__init__(vm)
         libvirt_url = config.get('libvirt_url')
@@ -357,7 +315,7 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
         for manager in export_managers:
             manager.export()
 
-    @_check_defined
+    @vm_plugin.check_defined
     def interactive_console(self):
         """
         Opens an interactive console
@@ -388,8 +346,7 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
         return self.vm.virt_env.prefixed_name(self.vm.name())
 
     def _libvirt_xml(self):
-        with open(_path_to_xml('dom_template.xml')) as xml_fd:
-            dom_raw_xml = xml_fd.read()
+        dom_raw_xml = libvirt_utils.get_template('dom_template.xml')
 
         capabilities_raw_xml = self.libvirt_con.getCapabilities()
         capabilities_xml = lxml.etree.fromstring(capabilities_raw_xml)
@@ -545,8 +502,9 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
             dom_xml = lxml.etree.fromstring(dom.XMLDesc())
             disks = dom_xml.xpath('devices/disk')
 
-            with open(_path_to_xml('snapshot_template.xml')) as xml_fd:
-                snapshot_xml = lxml.etree.fromstring(xml_fd.read())
+            snapshot_xml = lxml.etree.fromstring(
+                libvirt_utils.get_template('snapshot_template.xml')
+            )
             snapshot_disks = snapshot_xml.xpath('disks')[0]
 
             for disk in disks:

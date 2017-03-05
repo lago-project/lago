@@ -19,17 +19,16 @@
 #
 import pytest
 
-import lago.libvirt_utils
+import lago.providers.libvirt.utils as libvirt_utils
 
 
 class TestDomain(object):
     @pytest.mark.parametrize(
         'state,expected', [
             ([state_int, 9], state_desc)
-            for state_int, state_desc in
-            lago.libvirt_utils.DOMAIN_STATES.items()
+            for state_int, state_desc in libvirt_utils.DOMAIN_STATES.items()
         ] + [(['imnotastate', None], 'unknown')],
-        ids=lago.libvirt_utils.DOMAIN_STATES.values() + ['unknown']
+        ids=libvirt_utils.DOMAIN_STATES.values() + ['unknown']
     )
     def test_resolve_status(self, monkeypatch, expected, state):
-        assert expected == lago.libvirt_utils.Domain.resolve_state(state)
+        assert expected == libvirt_utils.Domain.resolve_state(state)
