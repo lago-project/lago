@@ -1,6 +1,6 @@
 #!/usr/bin/env python2
 #
-# Copyright 2014 Red Hat, Inc.
+# Copyright 2014-2017 Red Hat, Inc.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,7 +25,6 @@ import grp
 import logging
 import os
 import pkg_resources
-import shutil
 import sys
 import warnings
 
@@ -41,7 +40,7 @@ from lago import (
     workdir as lago_workdir,
     utils,
 )
-from lago.utils import (in_prefix, with_logging)
+from lago.utils import (in_prefix, with_logging, LagoUserException)
 
 LOGGER = logging.getLogger('cli')
 in_lago_prefix = in_prefix(
@@ -113,7 +112,6 @@ in_lago_prefix = in_prefix(
         'root pass for example'
     ),
 )
-@log_utils.log_task('Initialize and populate prefix', LOGGER)
 def do_init(
     workdir,
     virt_config,
@@ -136,6 +134,10 @@ def do_init(
 
     if virt_config is None:
         virt_config = os.path.abspath('LagoInitFile')
+    if not os.path.isfile(virt_config):
+        raise LagoUserException(
+            'Unable to find init file: {0}'.format(virt_config)
+        )
 
     os.environ['LAGO_INITFILE_PATH'
                ] = os.path.dirname(os.path.abspath(virt_config))
@@ -143,32 +145,32 @@ def do_init(
     if prefix_name == 'current':
         prefix_name = 'default'
 
-    LOGGER.debug('Using workdir %s', workdir)
-    workdir = lago_workdir.Workdir(workdir)
-    if not os.path.exists(workdir.path):
-        LOGGER.debug(
-            'Initializing workdir %s with prefix %s',
-            workdir.path,
-            prefix_name,
-        )
-        prefix = workdir.initialize(prefix_name)
-    else:
-        LOGGER.debug(
-            'Adding prefix %s to workdir %s',
-            prefix_name,
-            workdir.path,
-        )
-        prefix = workdir.add_prefix(prefix_name)
-
-    log_utils.setup_prefix_logging(prefix.paths.logs())
-
-    try:
-        if template_repo_path:
-            repo = lago.templates.TemplateRepository.from_url(
-                template_repo_path
+    with log_utils.LogTask('Initialize and populate prefix', LOGGER):
+        LOGGER.debug('Using workdir %s', workdir)
+        workdir = lago_workdir.Workdir(workdir)
+        if not os.path.exists(workdir.path):
+            LOGGER.debug(
+                'Initializing workdir %s with prefix %s',
+                workdir.path,
+                prefix_name,
             )
+            prefix = workdir.initialize(prefix_name)
         else:
-            if template_repo_name:
+            LOGGER.debug(
+                'Adding prefix %s to workdir %s',
+                prefix_name,
+                workdir.path,
+            )
+            prefix = workdir.add_prefix(prefix_name)
+
+        log_utils.setup_prefix_logging(prefix.paths.logs())
+
+        try:
+            if template_repo_path:
+                repo = lago.templates.TemplateRepository.from_url(
+                    template_repo_path
+                )
+            elif template_repo_name:
                 repo = lago.templates.find_repo_by_name(
                     name=template_repo_name
                 )
@@ -178,22 +180,22 @@ def do_init(
                     'No template repo was configured or specified'
                 )
 
-        store = lago.templates.TemplateStore(template_store)
+            store = lago.templates.TemplateStore(template_store)
 
-        with open(virt_config, 'r') as virt_fd:
-            prefix.virt_conf_from_stream(
-                virt_fd,
-                repo,
-                store,
-                do_bootstrap=not skip_bootstrap,
-            )
+            with open(virt_config, 'r') as virt_fd:
+                prefix.virt_conf_from_stream(
+                    virt_fd,
+                    repo,
+                    store,
+                    do_bootstrap=not skip_bootstrap,
+                )
 
-        if set_current:
-            workdir.set_current(new_current=prefix_name)
+            if set_current:
+                workdir.set_current(new_current=prefix_name)
 
-    except:
-        shutil.rmtree(prefix.paths.prefixed(''), ignore_errors=True)
-        raise
+        except:
+            workdir.cleanup()
+            raise
 
 
 @lago.plugins.cli.cli_plugin(help='Clean up deployed resources')
