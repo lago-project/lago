@@ -41,8 +41,19 @@ import uuid as uuid_m
 from . import constants
 from .log_utils import (LogTask, setup_prefix_logging)
 import hashlib
+from lockfile import mkdirlockfile
 
 LOGGER = logging.getLogger(__name__)
+
+
+class DirLockWithTimeout(mkdirlockfile.MkdirLockFile):
+    def __init__(self, path, threaded=True, timeout=0):
+        super(DirLockWithTimeout, self).__init__(path, threaded)
+        self.timeout = timeout
+
+    def __enter__(self):
+        self.acquire(self.timeout)
+        return self
 
 
 class TimerException(Exception):

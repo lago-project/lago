@@ -54,3 +54,6 @@ class Paths(object):
 
     def scripts(self, *args):
         return self.prefixed('scripts', *args)
+
+    def hooks(self, *args):
+        return self.prefixed('hooks', *args)
