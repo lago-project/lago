@@ -125,7 +125,7 @@ export LIBGUESTFS_BACKEND=direct
         "$suite"
 }
 
-@test "export.test_exported_env: testing standalone export" {
+@test "export.test_sa_exported_env: testing standalone exported env" {
     cd $FIXTURES
     local dummy_file_content=$(cat dummy_file)
     cd "$STAND_ALONE_EXPORT_DIR"
@@ -135,7 +135,7 @@ export LIBGUESTFS_BACKEND=direct
     helpers.contains "$dummy_file_inside_content" "$dummy_file_content"
 }
 
-@test "export.stop_exported_env: destroying standalone export env" {
+@test "export.destroy_sa_exported_env: destroying standalone exported env" {
     cd "$STAND_ALONE_EXPORT_DIR"
     helpers.run_ok "$LAGOCLI" destroy --yes
 }
@@ -155,7 +155,7 @@ export LIBGUESTFS_BACKEND=direct
         "$suite"
 }
 
-@test "export.test_exported_env: testing layered export" {
+@test "export.test_exported_layered_env: testing layered exported env" {
     cd $FIXTURES
     local dummy_file_content=$(cat dummy_file)
     cd "$LAYERED_EXPORT_DIR"
@@ -163,4 +163,9 @@ export LIBGUESTFS_BACKEND=direct
     helpers.run_ok "$LAGOCLI" start
     dummy_file_inside_content=$("$LAGOCLI" shell "$VM_NAME" "cat /root/dummy_file_inside")
     helpers.contains "$dummy_file_inside_content" "$dummy_file_content"
+}
+
+@test "export.destroy_layered_exported_env: destroying layered exported env" {
+    cd "$LAYERED_EXPORT_DIR"
+    helpers.run_ok "$LAGOCLI" destroy --yes
 }
