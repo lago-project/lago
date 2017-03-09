@@ -348,12 +348,17 @@ class TemplateRepository:
             with open(path) as fd:
                 data = fd.read()
         else:
-            response = urllib.urlopen(path)
-            if response.code >= 300:
-                raise RuntimeError('Unable to load repo from %s' % path)
+            try:
+                response = urllib.urlopen(path)
+                if response.code >= 300:
+                    raise RuntimeError('Unable to load repo from %s' % path)
 
-            data = response.read()
-            response.close()
+                data = response.read()
+                response.close()
+            except IOError:
+                raise RuntimeError(
+                    'Unable to load repo from %s (IO error)' % path
+                )
 
         return cls(json.loads(data))
 
