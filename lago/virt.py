@@ -192,6 +192,34 @@ class VirtEnv(object):
     def bootstrap(self):
         utils.invoke_in_parallel(lambda vm: vm.bootstrap(), self._vms.values())
 
+    def export_vms(self, vms_names, standalone, dst_dir, compress):
+        if not vms_names:
+            vms_names = self._vms.keys()
+
+        running_vms = []
+        vms = []
+        for name in vms_names:
+            try:
+                vm = self._vms[name]
+                vms.append(vm)
+                if vm.defined():
+                    running_vms.append(vm)
+            except KeyError:
+                raise utils.LagoUserException(
+                    'Entity {} does not exist'.format(name)
+                )
+
+        if running_vms:
+            raise utils.LagoUserException(
+                'The following vms must be off:\n{}'.
+                format('\n'.join([_vm.name() for _vm in running_vms]))
+            )
+        # TODO: run the export task in parallel
+
+        with LogTask('Exporting disks to: {}'.format(dst_dir)):
+            for _vm in vms:
+                _vm.export_disks(standalone, dst_dir, compress)
+
     def start(self, vm_names=None):
         if not vm_names:
             log_msg = 'Start Prefix'
