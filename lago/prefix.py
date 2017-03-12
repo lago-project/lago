@@ -961,7 +961,8 @@ class Prefix(object):
                     'dev': disk['dev'],
                     'format': disk['format'],
                     'metadata': metadata,
-                    'type': disk['type']
+                    'type': disk['type'],
+                    'name': disk['name']
                 },
             )
 
@@ -1009,9 +1010,14 @@ class Prefix(object):
             self.save()
             rollback.clear()
 
-    def export_vms(self, vms_names, standalone, export_dir, compress):
-
-        self.virt_env.export_vms(vms_names, standalone, export_dir, compress)
+    def export_vms(
+        self, vms_names, standalone, export_dir, compress, init_file_name,
+        out_format
+    ):
+        self.virt_env.export_vms(
+            vms_names, standalone, export_dir, compress, init_file_name,
+            out_format
+        )
 
     def start(self, vm_names=None):
         """

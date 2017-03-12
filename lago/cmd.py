@@ -313,10 +313,20 @@ def do_stop(prefix, vm_names, **kwargs):
     default='.',
     help='Dir to place the exported images in',
 )
+@lago.plugins.cli.cli_plugin_add_argument(
+    '--init-file-name',
+    default='LagoInitFile',
+    help='The name of the exported init file',
+)
 @in_lago_prefix
 @with_logging
-def do_export(prefix, vm_names, standalone, dst_dir, compress, **kwargs):
-    prefix.export_vms(vm_names, standalone, dst_dir, compress)
+def do_export(
+    prefix, vm_names, standalone, dst_dir, compress, init_file_name,
+    out_format, **kwargs
+):
+    prefix.export_vms(
+        vm_names, standalone, dst_dir, compress, init_file_name, out_format
+    )
 
 
 @lago.plugins.cli.cli_plugin(

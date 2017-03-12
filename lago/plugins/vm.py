@@ -27,6 +27,7 @@ The other plugin extension point, the [VM Provider Plugin], that allows you to
 create an alternative implementation of the provisioning details for the VM,
 for example, using a remote libvirt instance or similar.
 """
+from copy import deepcopy
 import contextlib
 import functools
 import logging
@@ -363,6 +364,10 @@ class VMPlugin(plugins.Plugin):
     @property
     def disks(self):
         return self._spec['disks'][:]
+
+    @property
+    def spec(self):
+        return deepcopy(self._spec)
 
     def name(self):
         return str(self._spec['name'])
