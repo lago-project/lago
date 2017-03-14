@@ -33,6 +33,7 @@ from functools import partial, wraps
 
 from . import (prefix, utils)
 from .plugins import cli
+from .utils import LagoUserException
 
 LOGGER = logging.getLogger(__name__)
 
@@ -348,7 +349,7 @@ class Workdir(object):
             str: path to the found prefix
 
         Raises:
-            RuntimeError: if no prefix was found
+            LagoUserException: if no prefix was found
         """
         if start_path == 'auto':
             start_path = os.curdir
@@ -369,15 +370,64 @@ class Workdir(object):
             cur_path = os.path.normpath(
                 os.path.join(cur_path, '..', '..', '.lago')
             )
+            LOGGER.debug('Checking %s for a workdir', cur_path)
             if os.path.realpath(os.path.join(cur_path, '..')) == '/':
-                raise RuntimeError(
-                    'Unable to find workdir for %s' %
+                # no workdir found - look workdirs up the current path + 1,
+                # print informative message and exit.
+                candidates = []
+                for path in os.listdir(os.curdir):
+                    if os.path.isdir(path):
+                        dirs = os.listdir(path)
+                        if 'current' in dirs:
+                            candidates.append(
+                                os.path.abspath(os.path.join(os.curdir, path))
+                            )
+                        elif '.lago' in dirs:
+                            candidates.append(
+                                os.path.abspath(
+                                    os.path.join(os.curdir, path, '.lago')
+                                )
+                            )
+                candidates = filter(Workdir.is_possible_workdir, candidates)
+                for idx in range(len(candidates)):
+                    if os.path.split(candidates[idx])[1] == '.lago':
+                        candidates[idx] = os.path.dirname(candidates[idx])
+
+                msg = 'Unable to find workdir in {0}'.format(
                     os.path.abspath(start_path)
                 )
-
-            LOGGER.debug('Checking %s for a workdir', cur_path)
+                if candidates:
+                    msg += '\nFound possible workdirs in: {0}'.format(
+                        ', '.join(candidates)
+                    )
+                raise LagoUserException(msg)
 
         return os.path.abspath(cur_path)
+
+    @staticmethod
+    def is_possible_workdir(path):
+        """
+        A quick method to suggest if the path is a possible workdir.
+        This does not guarantee that the workdir is not malformed, only that by
+        simple heuristics it might be one.
+        For a full check use :func:`is_workdir`.
+
+        Args:
+            path(str): Path
+
+        Returns:
+            bool: True if ``path`` might be a work dir.
+        """
+        res = False
+        trails = ['initialized', 'uuid']
+        try:
+            res = all(
+                os.path.isfile(os.path.join(path, 'current', trail))
+                for trail in trails
+            )
+        except:
+            pass
+        return res
 
     @classmethod
     def is_workdir(cls, path):

@@ -27,6 +27,7 @@ import mock
 
 import lago.workdir
 import lago.prefix
+from lago.utils import LagoUserException
 
 
 @pytest.fixture()
@@ -772,7 +773,7 @@ class TestWorkdir(object):
         )
 
         if not should_be_found:
-            with pytest.raises(RuntimeError):
+            with pytest.raises(LagoUserException):
                 mock_workdir_cls.resolve_workdir_path(**params)
             return
 
@@ -830,7 +831,7 @@ class TestWorkdir(object):
         )
 
         if not should_be_found:
-            with pytest.raises(RuntimeError):
+            with pytest.raises(LagoUserException):
                 mock_workdir_cls.resolve_workdir_path(**params)
             return
 
