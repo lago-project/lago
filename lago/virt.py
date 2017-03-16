@@ -17,6 +17,7 @@
 #
 # Refer to the README and COPYING files for full details of the license
 #
+from copy import deepcopy
 import functools
 import hashlib
 import json
@@ -25,6 +26,7 @@ import os
 import uuid
 import time
 import lxml.etree
+import yaml
 
 from . import (
     brctl,
@@ -192,7 +194,10 @@ class VirtEnv(object):
     def bootstrap(self):
         utils.invoke_in_parallel(lambda vm: vm.bootstrap(), self._vms.values())
 
-    def export_vms(self, vms_names, standalone, dst_dir, compress):
+    def export_vms(
+        self, vms_names, standalone, dst_dir, compress, init_file_name,
+        out_format
+    ):
         if not vms_names:
             vms_names = self._vms.keys()
 
@@ -219,6 +224,88 @@ class VirtEnv(object):
         with LogTask('Exporting disks to: {}'.format(dst_dir)):
             for _vm in vms:
                 _vm.export_disks(standalone, dst_dir, compress)
+
+        self.generate_init(os.path.join(dst_dir, init_file_name), out_format)
+
+    def generate_init(self, dst, out_format, filters=None):
+        """
+        Generate an init file which represents this env and can
+        be used with the images created by self.export_vms
+
+        Args:
+            dst (str): path and name of the new init file
+            out_format (plugins.output.OutFormatPlugin):
+                formatter for the output (the default is yaml)
+            filters (list): list of paths to keys that should be removed from
+                the init file
+        Returns:
+            None
+        """
+        with LogTask('Exporting init file to: {}'.format(dst)):
+            # Set the default formatter to yaml. The default formatter
+            # doesn't generate a valid init file, so it's not reasonable
+            # to use it
+            if isinstance(out_format, plugins.output.DefaultOutFormatPlugin):
+                out_format = plugins.output.YAMLOutFormatPlugin()
+
+            if not filters:
+                filters = [
+                    'domains/*/disks/*/metadata',
+                    'domains/*/metadata/deploy-scripts', 'domains/*/snapshots',
+                    'domains/*/name', 'nets/*/mapping'
+                ]
+            spec = self.get_env_spec(filters)
+
+            for _, domain in spec['domains'].viewitems():
+                for disk in domain['disks']:
+                    if disk['type'] == 'template':
+                        disk['template_type'] = 'qcow2'
+                    elif disk['type'] == 'empty':
+                        disk['type'] = 'file'
+                        disk['make_a_copy'] = 'True'
+
+                    # Insert the relative path to the exported images
+                    disk['path'] = os.path.join(
+                        '$LAGO_INITFILE_PATH', os.path.basename(disk['path'])
+                    )
+
+            with open(dst, 'wt') as f:
+                if isinstance(out_format, plugins.output.YAMLOutFormatPlugin):
+                    # Dump the yaml file without type tags
+                    # TODO: Allow passing parameters to output plugins
+                    f.write(yaml.safe_dump(spec))
+                else:
+                    f.write(out_format.format(spec))
+
+    def get_env_spec(self, filters=None):
+        """
+        Get the spec of the current env.
+        The spec will hold the info about all the domains and
+        networks associated with this env.
+
+        Args:
+            filters (list): list of paths to keys that should be removed from
+                the init file
+        Returns:
+            dict: the spec of the current env
+        """
+        spec = {
+            'domains':
+                {
+                    vm_name: vm_object.spec
+                    for vm_name, vm_object in self._vms.viewitems()
+                },
+            'nets':
+                {
+                    net_name: net_object.spec
+                    for net_name, net_object in self._nets.viewitems()
+                }
+        }
+
+        if filters:
+            utils.filter_spec(spec, filters)
+
+        return spec
 
     def start(self, vm_names=None):
         if not vm_names:
@@ -459,6 +546,10 @@ class Network(object):
     def save(self):
         with open(self._env.virt_path('net-%s' % self.name()), 'w') as f:
             utils.json_dump(self._spec, f)
+
+    @property
+    def spec(self):
+        return deepcopy(self._spec)
 
 
 class NATNetwork(Network):
