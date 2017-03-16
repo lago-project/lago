@@ -712,7 +712,6 @@ class Prefix(object):
             )
             template_store.download(template_version)
 
-        template_store.mark_used(template_version, self.paths.uuid())
         disk_metadata.update(
             template_store.get_stored_metadata(template_version, ),
         )
