@@ -125,6 +125,13 @@ def edit(filename, expression):
     )
 
 
+def update():
+    return (
+        '--update',
+        '--network',
+    )
+
+
 def sysprep(disk, mods, backend='direct'):
     cmd = ['virt-sysprep', '-a', disk, '--selinux-relabel']
     env = os.environ.copy()

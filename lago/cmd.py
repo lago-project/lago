@@ -313,10 +313,20 @@ def do_stop(prefix, vm_names, **kwargs):
     default='.',
     help='Dir to place the exported images in',
 )
+@lago.plugins.cli.cli_plugin_add_argument(
+    '--init-file-name',
+    default='LagoInitFile',
+    help='The name of the exported init file',
+)
 @in_lago_prefix
 @with_logging
-def do_export(prefix, vm_names, standalone, dst_dir, compress, **kwargs):
-    prefix.export_vms(vm_names, standalone, dst_dir, compress)
+def do_export(
+    prefix, vm_names, standalone, dst_dir, compress, init_file_name,
+    out_format, **kwargs
+):
+    prefix.export_vms(
+        vm_names, standalone, dst_dir, compress, init_file_name, out_format
+    )
 
 
 @lago.plugins.cli.cli_plugin(
@@ -856,20 +866,6 @@ def check_group_membership():
         warnings.warn('current session does not belong to lago group.')
 
 
-def check_deps():
-    try:
-        # Checks that all the deps are installed
-        pkg_resources.require("lago")
-    except pkg_resources.ContextualVersionConflict as e:
-        # Hack that allows to run stevedore without checking
-        # for it's dep. it is required for systems running stevedore 1.1.0
-        # and pbr > 1.
-        LOGGER.debug(e, exc_info=True)
-        pkgs = e[2]
-        if set(['stevedore']) != pkgs:
-            raise e
-
-
 def main():
     cli_plugins = lago.plugins.load_plugins(
         lago.plugins.PLUGIN_ENTRY_POINTS['cli']
@@ -902,7 +898,6 @@ def main():
     else:
         warnings.formatwarning = lambda message, *args, **kwargs: message
 
-    check_deps()
     check_group_membership()
 
     args.out_format = out_plugins[args.out_format]
