@@ -690,6 +690,83 @@ def get_hash(file_path, checksum='sha1'):
     return sha.hexdigest()
 
 
+def filter_spec(spec, paths, wildcard='*', separator='/'):
+    """
+    Remove keys from a spec file.
+    For example, with the following path: domains/*/disks/*/metadata
+    all the metadata dicts from all domains disks will be removed.
+
+    Args:
+        spec (dict): spec to remove keys from
+        paths (list): list of paths to the keys that should be removed
+        wildcard (str): wildcard character
+        separator (str): path separator
+
+    Returns:
+        None
+
+    Raises:
+        utils.LagoUserException: If a malformed path was detected
+    """
+
+    def remove_key(path, spec):
+        if len(path) == 0:
+            return
+        elif len(path) == 1:
+            key = path.pop()
+            if not isinstance(spec, collections.Mapping):
+                raise LagoUserException(
+                    'You have tried to remove the following key - "{key}".\n'
+                    'Keys can not be removed from type {spec_type}\n'
+                    'Please verify that path - "{{path}}" is valid'.format(
+                        key=key, spec_type=type(spec)
+                    )
+                )
+            if key == wildcard:
+                spec.clear()
+            else:
+                spec.pop(key, None)
+        else:
+            current = path[0]
+            if current == wildcard:
+                if isinstance(spec, list):
+                    iterator = iter(spec)
+                elif isinstance(spec, collections.Mapping):
+                    iterator = spec.itervalues()
+                else:
+                    raise LagoUserException(
+                        'Glob char {char} should refer only to dict or list, '
+                        'not to {spec_type}\n'
+                        'Please fix path - "{{path}}"'.format(
+                            char=wildcard, spec_type=type(spec)
+                        )
+                    )
+
+                for i in iterator:
+                    remove_key(path[1:], i)
+            else:
+                try:
+                    remove_key(path[1:], spec[current])
+                except KeyError:
+                    raise LagoUserException(
+                        'Malformed path "{{path}}", key "{key}" '
+                        'does not exist'.format(key=current)
+                    )
+                except TypeError:
+                    raise LagoUserException(
+                        'Malformed path "{{path}}", can not get '
+                        'by key from type {spec_type}'.
+                        format(spec_type=type(spec))
+                    )
+
+    for path in paths:
+        try:
+            remove_key(path.split(separator), spec)
+        except LagoUserException as e:
+            e.message = e.message.format(path=path)
+            raise
+
+
 class LagoException(Exception):
     pass
 

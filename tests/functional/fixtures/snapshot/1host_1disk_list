@@ -19,6 +19,7 @@
                     "size": 1780088832,
                     "version": "v1"
                 },
+                "name": "root", 
                 "path": "@@PREFIX_PATH@@/images/lago_functional_tests_vm01_root.qcow2",
                 "type": "template"
             }
