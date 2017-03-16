@@ -23,9 +23,10 @@ import json
 import logging
 import os
 import uuid
+from copy import deepcopy
 
-import lxml.etree
 import yaml
+from lxml import etree as ET
 
 from lago import log_utils, plugins, utils
 from lago.config import config
@@ -112,7 +113,7 @@ class VirtEnv(object):
             self._vms[name] = self._create_vm(spec)
 
     def get_cpu_model(self):
-        cap_tree = lxml.etree.fromstring(self.libvirt_con.getCapabilities())
+        cap_tree = ET.fromstring(self.libvirt_con.getCapabilities())
         cpu_model = cap_tree.xpath('/capabilities/host/cpu/model')[0].text
         return cpu_model
 

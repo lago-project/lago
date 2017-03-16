@@ -18,12 +18,12 @@
 # Refer to the README and COPYING files for full details of the license
 #
 
-from copy import deepcopy
 import functools
 import logging
 import time
+from copy import deepcopy
 
-import lxml.etree
+from lxml import etree as ET
 
 import lago.providers.libvirt.utils as libvirt_utils
 from lago import brctl, log_utils, utils
@@ -150,10 +150,10 @@ class NATNetwork(Network):
         for k, v in replacements.items():
             net_raw_xml = net_raw_xml.replace(k, v, 1)
 
-        net_xml = lxml.etree.fromstring(net_raw_xml)
+        net_xml = ET.fromstring(net_raw_xml)
         dns_domain_name = self._spec.get('dns_domain_name', None)
         if dns_domain_name is not None:
-            domain_xml = lxml.etree.Element(
+            domain_xml = ET.Element(
                 'domain',
                 name=dns_domain_name,
                 localOnly='yes',
@@ -168,20 +168,20 @@ class NATNetwork(Network):
             def make_ipv4(last):
                 return '.'.join(self.gw().split('.')[:-1] + [str(last)])
 
-            dhcp = lxml.etree.Element('dhcp')
-            dhcpv6 = lxml.etree.Element('dhcp')
+            dhcp = ET.Element('dhcp')
+            dhcpv6 = ET.Element('dhcp')
             ipv4.append(dhcp)
             ipv6.append(dhcpv6)
 
             dhcp.append(
-                lxml.etree.Element(
+                ET.Element(
                     'range',
                     start=make_ipv4(self._spec['dhcp']['start']),
                     end=make_ipv4(self._spec['dhcp']['end']),
                 )
             )
             dhcpv6.append(
-                lxml.etree.Element(
+                ET.Element(
                     'range',
                     start=IPV6_PREFIX + make_ipv4(self._spec['dhcp']['start']),
                     end=IPV6_PREFIX + make_ipv4(self._spec['dhcp']['end']),
@@ -191,7 +191,7 @@ class NATNetwork(Network):
             if self.is_management():
                 for hostname, ip4 in self._spec['mapping'].items():
                     dhcp.append(
-                        lxml.etree.Element(
+                        ET.Element(
                             'host',
                             mac=utils.ipv4_to_mac(ip4),
                             ip=ip4,
@@ -199,25 +199,25 @@ class NATNetwork(Network):
                         )
                     )
                     dhcpv6.append(
-                        lxml.etree.Element(
+                        ET.Element(
                             'host',
                             id='0:3:0:1:' + utils.ipv4_to_mac(ip4),
                             ip=IPV6_PREFIX + ip4,
                             name=hostname
                         )
                     )
-                    dns_host = lxml.etree.SubElement(dns, 'host', ip=ip4)
-                    dns_name = lxml.etree.SubElement(dns_host, 'hostname')
+                    dns_host = ET.SubElement(dns, 'host', ip=ip4)
+                    dns_name = ET.SubElement(dns_host, 'hostname')
                     dns_name.text = hostname
-                    dns6_host = lxml.etree.SubElement(
+                    dns6_host = ET.SubElement(
                         dns, 'host', ip=IPV6_PREFIX + ip4
                     )
-                    dns6_name = lxml.etree.SubElement(dns6_host, 'hostname')
+                    dns6_name = ET.SubElement(dns6_host, 'hostname')
                     dns6_name.text = hostname
                     dns.append(dns_host)
                     dns.append(dns6_host)
 
-        return lxml.etree.tostring(net_xml)
+        return ET.tostring(net_xml)
 
 
 class BridgeNetwork(Network):

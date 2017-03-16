@@ -19,19 +19,20 @@
 #
 
 import functools
-import time
-import guestfs
-import libvirt
 import logging
-import lxml
 import os
 import pwd
+import time
 
-from lago import (log_utils, utils, sysprep, export)
-from lago.providers.libvirt import utils as libvirt_utils
+import guestfs
+import libvirt
+from lxml import etree as ET
+
+from lago import export, log_utils, sysprep, utils
 from lago.config import config
 from lago.plugins import vm as vm_plugin
 from lago.plugins.vm import ExtractPathError, ExtractPathNoPathError
+from lago.providers.libvirt import utils as libvirt_utils
 
 LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
@@ -349,7 +350,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
         dom_raw_xml = libvirt_utils.get_template('dom_template.xml')
 
         capabilities_raw_xml = self.libvirt_con.getCapabilities()
-        capabilities_xml = lxml.etree.fromstring(capabilities_raw_xml)
+        capabilities_xml = ET.fromstring(capabilities_raw_xml)
         qemu_kvm_path = capabilities_xml.findtext(
             "guest[os_type='hvm']/arch[@name='x86_64']/domain[@type='kvm']"
             "/emulator"
@@ -377,7 +378,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
         for key, val in replacements.items():
             dom_raw_xml = dom_raw_xml.replace(key, str(val), 1)
 
-        dom_xml = lxml.etree.fromstring(dom_raw_xml)
+        dom_xml = ET.fromstring(dom_raw_xml)
         devices = dom_xml.xpath('/domain/devices')[0]
 
         disk = devices.xpath('disk')[0]
@@ -402,13 +403,13 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
             if dev_spec['dev'].startswith('sd'):
                 bus = 'scsi'
                 if not scsi_con_exists:
-                    controller = lxml.etree.Element(
+                    controller = ET.Element(
                         'controller',
                         type='scsi',
                         index='0',
                         model='virtio-scsi',
                     )
-                    driver = lxml.etree.Element(
+                    driver = ET.Element(
                         'driver',
                         queues='{}'.format(self.vm._spec.get('vcpu', 2)),
                     )
@@ -416,14 +417,14 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
                     devices.append(controller)
                     scsi_con_exists = True
 
-            disk = lxml.etree.Element(
+            disk = ET.Element(
                 'disk',
                 type='file',
                 device=disk_device,
             )
 
             disk.append(
-                lxml.etree.Element(
+                ET.Element(
                     'driver',
                     name='qemu',
                     type=dev_spec['format'],
@@ -431,24 +432,24 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
                 ),
             )
 
-            serial = lxml.etree.SubElement(disk, 'serial')
+            serial = ET.SubElement(disk, 'serial')
             serial.text = "{}".format(disk_order + 1)
             disk.append(serial)
 
             disk.append(
-                lxml.etree.Element(
+                ET.Element(
                     'boot', order="{}".format(disk_order + 1)
                 ),
             )
 
             disk.append(
-                lxml.etree.Element(
+                ET.Element(
                     'source',
                     file=os.path.expandvars(dev_spec['path']),
                 ),
             )
             disk.append(
-                lxml.etree.Element(
+                ET.Element(
                     'target',
                     dev=dev_spec['dev'],
                     bus=bus,
@@ -457,12 +458,12 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
             devices.append(disk)
 
         for dev_spec in self.vm._spec['nics']:
-            interface = lxml.etree.Element(
+            interface = ET.Element(
                 'interface',
                 type='network',
             )
             interface.append(
-                lxml.etree.Element(
+                ET.Element(
                     'source',
                     network=self.vm.virt_env.prefixed_name(
                         dev_spec['net'], max_length=15
@@ -470,20 +471,20 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
                 ),
             )
             interface.append(
-                lxml.etree.Element(
+                ET.Element(
                     'model',
                     type='virtio',
                 ),
             )
             if 'ip' in dev_spec:
                 interface.append(
-                    lxml.etree.Element(
+                    ET.Element(
                         'mac', address=utils.ipv4_to_mac(dev_spec['ip'])
                     ),
                 )
             devices.append(interface)
 
-        return lxml.etree.tostring(dom_xml)
+        return ET.tostring(dom_xml)
 
     def _create_dead_snapshot(self, name):
         raise RuntimeError('Dead snapshots are not implemented yet')
@@ -499,25 +500,21 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
             self.vm.ssh('sync'.split(' '))
 
             dom = self.libvirt_con.lookupByName(self._libvirt_name())
-            dom_xml = lxml.etree.fromstring(dom.XMLDesc())
+            dom_xml = ET.fromstring(dom.XMLDesc())
             disks = dom_xml.xpath('devices/disk')
 
-            snapshot_xml = lxml.etree.fromstring(
+            snapshot_xml = ET.fromstring(
                 libvirt_utils.get_template('snapshot_template.xml')
             )
             snapshot_disks = snapshot_xml.xpath('disks')[0]
 
             for disk in disks:
                 target_dev = disk.xpath('target')[0].attrib['dev']
-                snapshot_disks.append(
-                    lxml.etree.Element(
-                        'disk', name=target_dev
-                    )
-                )
+                snapshot_disks.append(ET.Element('disk', name=target_dev))
 
             try:
                 dom.snapshotCreateXML(
-                    lxml.etree.tostring(snapshot_xml),
+                    ET.tostring(snapshot_xml),
                     libvirt.VIR_DOMAIN_SNAPSHOT_CREATE_DISK_ONLY |
                     libvirt.VIR_DOMAIN_SNAPSHOT_CREATE_QUIESCE,
                 )
@@ -530,8 +527,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
                 raise
 
             snap_info = []
-            new_disks = lxml.etree.fromstring(dom.XMLDesc()
-                                              ).xpath('devices/disk')
+            new_disks = ET.fromstring(dom.XMLDesc()).xpath('devices/disk')
             for disk, xml_node in zip(self.vm._spec['disks'], new_disks):
                 disk['path'] = xml_node.xpath('source')[0].attrib['file']
                 disk['format'] = 'qcow2'
