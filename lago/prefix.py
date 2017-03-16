@@ -1331,3 +1331,15 @@ class Prefix(object):
         utils.invoke_in_parallel(
             self._deploy_host, self.virt_env.get_vms().values()
         )
+
+    def get_vms(self, names=None):
+        return self.virt_env.get_vms_value(names)
+
+
+def get_vms(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        kwargs['vms'] = kwargs['prefix'].get_vms(kwargs['vm_names'])
+        return func(*args, **kwargs)
+
+    return wrapper
