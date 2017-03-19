@@ -1,0 +1,45 @@
+common: &common
+  max_attempts: 20
+  delay: 10
+
+waiters:
+  - waiter_name: 'host_up'
+    <<: *common
+    service: hosts_service
+    target:
+      name: 'host_service'
+      path: 'get'
+    acceptors:
+      - name: 'HostStatus'
+        type: status
+        paths: ['UP']
+    rejectors:
+      - name: 'HostStatus'
+        type: status
+        paths: ["NON_OPERATIONAL", "INSTALL_FAILED", "NON_RESPONSIVE"]
+
+  - waiter_name: 'vm_up' 
+    <<: *common
+    service: vms_service
+    target:
+      name: 'vm_service'
+      path: 'get'
+    acceptors:
+      - name: 'VmStatus'
+        type: status
+        paths: ["UP"]
+    rejectors:
+      - name: 'VmStatus'
+        type: status
+        paths: ["NOT_RESPONDING", "SUSPENDED"]
+
+  - waiter_name: 'vm_down'
+    <<: *common
+    service: vms_service
+    target:
+      name: 'vm_service'
+      path: 'get'
+    acceptors:
+      - name: 'VmStatus'
+        type: status
+        paths: ["DOWN"]
