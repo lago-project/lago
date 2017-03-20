@@ -26,7 +26,8 @@ import lxml
 import os
 import pwd
 
-from . import (log_utils, utils, sysprep, libvirt_utils, export)
+from . import (log_utils, utils, sysprep, export)
+from .providers.libvirt import utils as libvirt_utils
 from .config import config
 from .plugins import vm
 from .plugins.vm import ExtractPathError, ExtractPathNoPathError
@@ -388,8 +389,7 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
         return self.vm.virt_env.prefixed_name(self.vm.name())
 
     def _libvirt_xml(self):
-        with open(_path_to_xml('dom_template.xml')) as xml_fd:
-            dom_raw_xml = xml_fd.read()
+        dom_raw_xml = libvirt_utils.get_template('dom_template.xml')
 
         capabilities_raw_xml = self.libvirt_con.getCapabilities()
         capabilities_xml = lxml.etree.fromstring(capabilities_raw_xml)
