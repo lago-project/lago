@@ -134,6 +134,72 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
             with LogTask('Destroying VM %s' % self.vm.name()):
                 self.libvirt_con.lookupByName(self._libvirt_name(), ).destroy()
 
+    def shutdown(self, *args, **kwargs):
+        super(LocalLibvirtVMProvider, self).shutdown(*args, **kwargs)
+
+        self._shutdown(
+            libvirt_cmd=libvirt.virDomain.shutdown,
+            ssh_cmd=['poweroff'],
+            msg='Shutdown'
+        )
+
+        try:
+            with utils.ExceptionTimer(timeout=15):
+                while self.defined():
+                    time.sleep(0.1)
+        except utils.TimerException:
+            raise utils.LagoUserException(
+                'Failed to shutdown vm: {}'.format(self.vm.name())
+            )
+
+    def reboot(self, *args, **kwargs):
+        super(LocalLibvirtVMProvider, self).reboot(*args, **kwargs)
+
+        self._shutdown(
+            libvirt_cmd=libvirt.virDomain.reboot,
+            ssh_cmd=['reboot'],
+            msg='Reboot'
+        )
+
+    def _shutdown(self, libvirt_cmd, ssh_cmd, msg):
+        """
+        Choose the invoking method (using libvirt or ssh)
+        to shutdown / poweroff the domain.
+
+        If acpi is defined in the domain use libvirt, otherwise use ssh.
+
+        Args:
+            libvirt_cmd (function): Libvirt function the invoke
+            ssh_cmd (list of str): Shell command to invoke on the domain
+            msg (str): Name of the command that should be inserted to the log
+                message.
+
+        Returns
+            None
+
+        Raises:
+            RuntimeError: If acpi is not configured an ssh isn't available
+        """
+        if not self.defined():
+            return
+
+        with LogTask('{} VM {}'.format(msg, self.vm.name())):
+            dom = self.libvirt_con.lookupByName(self._libvirt_name())
+            dom_xml = dom.XMLDesc()
+
+            idx = dom_xml.find('<acpi/>')
+            if idx == -1:
+                LOGGER.debug(
+                    'acpi is not enabled on the host, '
+                    '{} using ssh'.format(msg)
+                )
+                # TODO: change the ssh timeout exception from runtime exception
+                # TODO: to custom exception and catch it.
+                self.vm.ssh(ssh_cmd)
+            else:
+                LOGGER.debug('{} using libvirt'.format(msg))
+                libvirt_cmd(dom)
+
     def defined(self):
         dom_names = [dom.name() for dom in self.libvirt_con.listAllDomains()]
         return self._libvirt_name() in dom_names
