@@ -387,6 +387,27 @@ class EngineVM(lago.vm.DefaultVM):
                 testlib.assert_true_within(_host_is_up, timeout=5 * 60)
 
     @require_sdk(version='4')
+    def check_sds_status(self, status=None):
+        # the default status cannot be used in the function header, because
+        # the v4 sdk might not be available.
+        if status is None:
+            status = otypes.StorageDomainStatus.ACTIVE
+        api = self.get_api_v4(check=True)
+        dcs_service = api.system_service().data_centers_service()
+        for dc in dcs_service.list():
+
+            def _sds_state(dc_id):
+                dc_service = dcs_service.data_center_service(dc_id)
+                sds = dc_service.storage_domains_service()
+                return all(sd.status == status for sd in sds.list())
+
+            testlib.assert_true_within(
+                functools.partial(
+                    _sds_state, dc_id=dc.id
+                ), timeout=5 * 60
+            )
+
+    @require_sdk(version='4')
     def status(self):
         api = self.get_api_v4(check=True)
 

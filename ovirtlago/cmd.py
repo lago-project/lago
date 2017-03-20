@@ -211,14 +211,30 @@ def do_ovirt_status(prefix, **kwargs):
     prefix.virt_env.engine_vm().status()
 
 
-@cli_plugin(help=('Start the environment, put all hosts in activate mode'))
+@cli_plugin(
+    help=(
+        'Start oVirt environment: Start Engine and Host VMs, then '
+        'put Hosts in activate mode.'
+    )
+)
+@cli_plugin_add_argument(
+    '--with-vms',
+    help=('Also Start VMs connected to to the Engine.'),
+    dest='with_vms',
+    action='store_true',
+)
 @in_ovirt_prefix
 @with_logging
-def do_ovirt_start(prefix, **kwargs):
+def do_ovirt_start(prefix, with_vms, **kwargs):
     with LogTask('Starting oVirt environment'):
         prefix.start()
         with LogTask('Activating Engine Hosts'):
             prefix.virt_env.engine_vm().start_all_hosts()
+        if with_vms:
+            with LogTask('Waiting for Storage domains to be in active mode'):
+                prefix.virt_env.engine_vm().check_sds_status()
+            with LogTask('Starting Engine VMs'):
+                prefix.virt_env.engine_vm().start_all_vms()
 
 
 @cli_plugin(
