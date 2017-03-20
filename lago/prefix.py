@@ -1045,6 +1045,19 @@ class Prefix(object):
         """
         self.virt_env.stop(vm_names=vm_names)
 
+    def shutdown(self, vm_names=None, reboot=False):
+        """
+        Shutdown this prefix
+
+        Args:
+            vm_names(list of str): List of the vms to shutdown
+            reboot(bool): If true, reboot the requested vms
+
+        Returns:
+            None
+        """
+        self.virt_env.shutdown(vm_names, reboot)
+
     def create_snapshots(self, name):
         """
         Creates one snapshot on all the domains with the given name
