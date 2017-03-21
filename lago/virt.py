@@ -650,10 +650,15 @@ class NATNetwork(Network):
 
         subnet = self.gw().split('.')[2]
         replacements = {
-            '@NAME@': self._libvirt_name(),
+            '@NAME@':
+                self._libvirt_name(),
             '@BR_NAME@': ('%s-nic' % self._libvirt_name())[:12],
-            '@GW_ADDR@': self.gw(),
-            '@SUBNET@': subnet,
+            '@GW_ADDR@':
+                self.gw(),
+            '@SUBNET@':
+                subnet,
+            '@ENABLE_DNS@':
+                'yes' if self._spec.get('enable_dns', True) else 'no',
         }
         for k, v in replacements.items():
             net_raw_xml = net_raw_xml.replace(k, v, 1)
