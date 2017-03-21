@@ -144,9 +144,9 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
         )
 
         try:
-            with utils.ExceptionTimer(timeout=15):
+            with utils.ExceptionTimer(timeout=60 * 5):
                 while self.defined():
-                    time.sleep(0.1)
+                    time.sleep(1)
         except utils.TimerException:
             raise utils.LagoUserException(
                 'Failed to shutdown vm: {}'.format(self.vm.name())
