@@ -189,24 +189,24 @@ class NATNetwork(Network):
                 )
             )
 
-            if self.is_management():
-                for hostname, ip4 in self._spec['mapping'].items():
-                    dhcp.append(
-                        ET.Element(
-                            'host',
-                            mac=utils.ipv4_to_mac(ip4),
-                            ip=ip4,
-                            name=hostname
-                        )
+            for hostname, ip4 in self._spec['mapping'].items():
+                dhcp.append(
+                    ET.Element(
+                        'host',
+                        mac=utils.ipv4_to_mac(ip4),
+                        ip=ip4,
+                        name=hostname
                     )
-                    dhcpv6.append(
-                        ET.Element(
-                            'host',
-                            id='0:3:0:1:' + utils.ipv4_to_mac(ip4),
-                            ip=IPV6_PREFIX + ip4,
-                            name=hostname
-                        )
+                )
+                dhcpv6.append(
+                    ET.Element(
+                        'host',
+                        id='0:3:0:1:' + utils.ipv4_to_mac(ip4),
+                        ip=IPV6_PREFIX + ip4,
+                        name=hostname
                     )
+                )
+                if self.is_management():
                     dns_host = ET.SubElement(dns, 'host', ip=ip4)
                     dns_name = ET.SubElement(dns_host, 'hostname')
                     dns_name.text = hostname
