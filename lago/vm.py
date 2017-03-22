@@ -388,8 +388,13 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
         return self.vm.virt_env.prefixed_name(self.vm.name())
 
     def _libvirt_xml(self):
-        with open(_path_to_xml('dom_template.xml')) as xml_fd:
-            dom_raw_xml = xml_fd.read()
+        metadata = self.vm.metadata
+        if metadata and 'custom-xml' in metadata:
+            with open(metadata['custom-xml']) as xml_fd:
+                dom_raw_xml = xml_fd.read()
+        else:
+            with open(_path_to_xml('dom_template.xml')) as xml_fd:
+                dom_raw_xml = xml_fd.read()
 
         capabilities_raw_xml = self.libvirt_con.getCapabilities()
         capabilities_xml = lxml.etree.fromstring(capabilities_raw_xml)
@@ -421,8 +426,15 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
             dom_raw_xml = dom_raw_xml.replace(key, str(val), 1)
 
         dom_xml = lxml.etree.fromstring(dom_raw_xml)
-        devices = dom_xml.xpath('/domain/devices')[0]
+        self._compat_libvirt_devices(dom_xml.xpath('/domain/devices')[0])
 
+        return lxml.etree.tostring(dom_xml)
+
+    def _compat_libvirt_devices(self, devices):
+        self._compat_libvirt_disks(devices)
+        self._compat_libvirt_nics(devices)
+
+    def _compat_libvirt_disks(self, devices):
         disk = devices.xpath('disk')[0]
         devices.remove(disk)
 
@@ -499,6 +511,9 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
             )
             devices.append(disk)
 
+        return devices
+
+    def _compat_libvirt_nics(self, devices):
         for dev_spec in self.vm._spec['nics']:
             interface = lxml.etree.Element(
                 'interface',
@@ -526,7 +541,7 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
                 )
             devices.append(interface)
 
-        return lxml.etree.tostring(dom_xml)
+        return devices
 
     def _create_dead_snapshot(self, name):
         raise RuntimeError('Dead snapshots are not implemented yet')
