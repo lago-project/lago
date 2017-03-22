@@ -21,7 +21,7 @@
 About OutFormatPlugins
 
 An OutFormatPlugin is used to format the output of the commands that extract
-information from the perfixes, like status.
+information from the prefixes, like status.
 """
 
 import collections
