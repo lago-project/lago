@@ -174,7 +174,7 @@ class OvirtPrefix(Prefix):
             results_path = os.path.abspath(
                 os.path.join(
                     self.paths.prefix,
-                    'nosetests-%s.xml' % os.path.basename(path),
+                    '%s.junit.xml' % os.path.basename(path),
                 )
             )
             extra_args = [
