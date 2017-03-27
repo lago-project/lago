@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python2
 #
 # Copyright 2014 Red Hat, Inc.
 #
@@ -27,6 +27,7 @@ import lago
 import ovirtlago
 from lago.plugins.cli import (CLIPlugin, cli_plugin, cli_plugin_add_argument)
 from lago.utils import (in_prefix, with_logging)
+from lago.log_utils import LogTask
 from lago.config import config as lago_config
 
 LOGGER = logging.getLogger('ovirt-cli')
@@ -163,24 +164,6 @@ def do_deploy(prefix, **kwargs):
     prefix.deploy()
 
 
-@cli_plugin(
-    help='Start all resources and activate all storage domains and hosts.'
-)
-@in_ovirt_prefix
-@with_logging
-def do_ovirt_start(prefix, **kwargs):
-    prefix.start()
-
-
-@cli_plugin(
-    help='Maintenance all storage domains and hosts, and stop all resources',
-)
-@in_ovirt_prefix
-@with_logging
-def do_ovirt_stop(prefix, **kwargs):
-    prefix.stop()
-
-
 @cli_plugin(help='Run engine-setup command on the engine machine')
 @cli_plugin_add_argument(
     '--config',
@@ -191,6 +174,69 @@ def do_ovirt_stop(prefix, **kwargs):
 @with_logging
 def do_ovirt_engine_setup(prefix, config, **kwargs):
     prefix.virt_env.engine_vm().engine_setup(config)
+
+
+@cli_plugin(help='Start all hosts that are in maintenance')
+@in_ovirt_prefix
+@with_logging
+def do_ovirt_start_hosts(prefix, **kwargs):
+    prefix.virt_env.engine_vm().start_all_hosts()
+
+
+@cli_plugin(help='Stop all hosts that are up')
+@in_ovirt_prefix
+@with_logging
+def do_ovirt_stop_hosts(prefix, **kwargs):
+    prefix.virt_env.engine_vm().stop_all_hosts()
+
+
+@cli_plugin(help='Stop all VMs that are up')
+@in_ovirt_prefix
+@with_logging
+def do_ovirt_stop_vms(prefix, **kwargs):
+    prefix.virt_env.engine_vm().stop_all_vms()
+
+
+@cli_plugin(help='Start all VMs that are down')
+@in_ovirt_prefix
+@with_logging
+def do_ovirt_start_vms(prefix, **kwargs):
+    prefix.virt_env.engine_vm().start_all_vms()
+
+
+@cli_plugin(help='Print oVirt setup status')
+@in_ovirt_prefix
+@with_logging
+def do_ovirt_status(prefix, **kwargs):
+    prefix.virt_env.engine_vm().status()
+
+
+@cli_plugin(help=('Start the environment, put all hosts in activate mode'))
+@in_ovirt_prefix
+@with_logging
+def do_ovirt_start(prefix, **kwargs):
+    with LogTask('Starting oVirt environment'):
+        prefix.start()
+        with LogTask('Activating Engine Hosts'):
+            prefix.virt_env.engine_vm().start_all_hosts()
+
+
+@cli_plugin(
+    help=(
+        'Stop all Engine VMs, put all hosts in maintenance and turn off '
+        ' Lago VMs.'
+    )
+)
+@in_ovirt_prefix
+@with_logging
+def do_ovirt_stop(prefix, **kwargs):
+    with LogTask('Stopping oVirt environment'):
+        with LogTask('Stopping Engine VMs'):
+            prefix.virt_env.engine_vm().stop_all_vms()
+        with LogTask('Putting hosts in maintenance mode'):
+            prefix.virt_env.engine_vm().stop_all_hosts()
+        with LogTask('Shutdown Lago VMs'):
+            prefix.shutdown()
 
 
 @cli_plugin(

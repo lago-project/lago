@@ -493,7 +493,17 @@ class Prefix(object):
         if url:
             disk_spec['path'] = self._retrieve_disk_url(url, disk_path)
         else:
-            disk_spec['path'] = disk_path
+            # Create a copy of the file or use the original
+            if disk_spec.get('make_a_copy'):
+                LOGGER.info("Making a copy")
+                dest_path = self._generate_disk_path(
+                    os.path.basename(disk_spec['path'])
+                )
+                # Use cp in order to keep the file sparse
+                utils.cp(disk_spec['path'], dest_path)
+                disk_spec['path'] = dest_path
+            else:
+                disk_spec['path'] = disk_path
 
         # If we're using raw file, return its path
         disk_path = disk_spec['path']
@@ -579,7 +589,7 @@ class Prefix(object):
         )
         disk_path = self._generate_disk_path(disk_name=disk_filename)
         if template_type == 'lago':
-            qemu_cmd, disk_metadata = self._handle_lago_template(
+            qemu_cmd, disk_metadata, _ = self._handle_lago_template(
                 disk_path=disk_path,
                 template_spec=template_spec,
                 template_store=template_store,
@@ -589,6 +599,8 @@ class Prefix(object):
             qemu_cmd, disk_metadata = self._handle_qcow_template(
                 disk_path=disk_path,
                 template_spec=template_spec,
+                template_store=template_store,
+                template_repo=template_repo
             )
         else:
             raise RuntimeError(
@@ -611,16 +623,76 @@ class Prefix(object):
         )
         return disk_rel_path, disk_metadata
 
-    def _handle_qcow_template(self, disk_path, template_spec):
+    def _handle_qcow_template(
+        self,
+        disk_path,
+        template_spec,
+        template_store=None,
+        template_repo=None
+    ):
         base_path = template_spec.get('path', '')
         if not base_path:
             raise RuntimeError('Partial drive spec %s' % str(template_spec))
+
+        self.resolve_parent(base_path, template_store, template_repo)
 
         qemu_cmd = [
             'qemu-img', 'create', '-f', 'qcow2', '-b', base_path, disk_path
         ]
         disk_metadata = template_spec.get('metadata', {})
         return qemu_cmd, disk_metadata
+
+    def resolve_parent(self, disk_path, template_store, template_repo):
+        """
+        Given a virtual disk, checks if it has a backing file, if so check
+        if the backing file is in the store, if not download it
+        from the provided template_repo.
+
+        After verifying that the backing-file is in the store,
+        create a symlink to that file and locate it near the layered image.
+
+        Args:
+            disk_path (str): path to the layered disk
+            template_repo (TemplateRepository or None): template repo instance
+                to use
+            template_store (TemplateStore or None): template store instance to
+                use
+        """
+        qemu_info = utils.get_qemu_info(disk_path)
+        parent = qemu_info.get('backing-filename')
+
+        if parent:
+            LOGGER.info('Resolving Parent')
+            name, version = os.path.basename(parent).split(':', 1)
+            if not (name and version):
+                raise RuntimeError(
+                    'Unsupported backing-filename: {}'
+                    'backing-filename should be in the format'
+                    'name:version'.format(parent)
+                )
+            _, _, base = self._handle_lago_template(
+                '', {'template_name': name,
+                     'template_version': version}, template_store,
+                template_repo
+            )
+
+            # The child has the right pointer to his parent
+            base = os.path.expandvars(base)
+            if base == parent:
+                return
+
+            # The child doesn't have the right pointer to his
+            # parent, We will fix it with a symlink
+            link_name = os.path.join(
+                os.path.dirname(disk_path), '{}:{}'.format(name, version)
+            )
+            link_name = os.path.expandvars(link_name)
+
+            self._create_link_to_parent(base, link_name)
+
+    def _create_link_to_parent(self, base, link_name):
+        if not os.path.islink(link_name):
+            os.symlink(base, link_name)
 
     def _handle_lago_template(
         self, disk_path, template_spec, template_store, template_repo
@@ -640,13 +712,15 @@ class Prefix(object):
             )
             template_store.download(template_version)
 
-        template_store.mark_used(template_version, self.paths.uuid())
         disk_metadata.update(
             template_store.get_stored_metadata(template_version, ),
         )
         base = template_store.get_path(template_version)
-        qemu_cmd = ['qemu-img', 'create', '-f', 'qcow2', '-b', base, disk_path]
-        return qemu_cmd, disk_metadata
+        qemu_cmd = [
+            'qemu-img', 'create', '-f', 'qcow2', '-o', 'lazy_refcounts=on',
+            '-b', base, disk_path
+        ]
+        return qemu_cmd, disk_metadata, base
 
     def _ova_to_spec(self, filename):
         """
@@ -888,7 +962,8 @@ class Prefix(object):
                     'dev': disk['dev'],
                     'format': disk['format'],
                     'metadata': metadata,
-                    'type': disk['type']
+                    'type': disk['type'],
+                    'name': disk['name']
                 },
             )
 
@@ -936,6 +1011,15 @@ class Prefix(object):
             self.save()
             rollback.clear()
 
+    def export_vms(
+        self, vms_names, standalone, export_dir, compress, init_file_name,
+        out_format
+    ):
+        self.virt_env.export_vms(
+            vms_names, standalone, export_dir, compress, init_file_name,
+            out_format
+        )
+
     def start(self, vm_names=None):
         """
         Start this prefix
@@ -959,6 +1043,19 @@ class Prefix(object):
             None
         """
         self.virt_env.stop(vm_names=vm_names)
+
+    def shutdown(self, vm_names=None, reboot=False):
+        """
+        Shutdown this prefix
+
+        Args:
+            vm_names(list of str): List of the vms to shutdown
+            reboot(bool): If true, reboot the requested vms
+
+        Returns:
+            None
+        """
+        self.virt_env.shutdown(vm_names, reboot)
 
     def create_snapshots(self, name):
         """

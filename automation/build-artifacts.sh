@@ -3,18 +3,27 @@ BUILDS=$PWD/automation-build
 EXPORTS=$PWD/exported-artifacts
 
 if hash dnf &>/dev/null; then
-    YUM='dnf builddep'
+    YUM="dnf"
+    BUILDDEP="dnf builddep"
 else
-    YUM='yum-builddep'
+    YUM="yum"
+    BUILDDEP="yum-builddep"
 fi
+echo "cleaning $YUM metadata"
+$YUM clean metadata
 
+echo "cleaning $BUILDS, $EXPORTS"
 rm -rf "$BUILDS" "$EXPORTS"/*{.rpm,.tar.gz}
 mkdir -p "$BUILDS"
 mkdir -p "$EXPORTS"
 
 make clean
 make lago.spec
-$YUM -y lago.spec
+
+echo "installing RPM build dependencies"
+$BUILDDEP -y lago.spec
+
+echo "creating RPM"
 make rpm OUTPUT_DIR="$BUILDS"
 
 find "$BUILDS" \

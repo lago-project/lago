@@ -37,8 +37,10 @@ from io import StringIO
 import lockfile
 import argparse
 import configparser
+import uuid as uuid_m
 from . import constants
 from .log_utils import (LogTask, setup_prefix_logging)
+import hashlib
 
 LOGGER = logging.getLogger(__name__)
 
@@ -114,6 +116,7 @@ def _run_command(
     out_pipe=subprocess.PIPE,
     err_pipe=subprocess.PIPE,
     env=None,
+    uuid=None,
     **kwargs
 ):
     """
@@ -132,13 +135,19 @@ def _run_command(
             :ref:subprocess.Popen to use as stderr
         env(dict of str:str): If set, will use the given dict as env for the
             subprocess
+        uuid(uuid): If set the command will be logged with the given uuid
+            converted to string, otherwise, a uuid v4 will be generated.
         **kwargs: Any other keyword args passed will be passed to the
             :ref:subprocess.Popen call
 
     Returns:
         lago.utils.CommandStatus: result of the interactive execution
     """
+
     # add libexec to PATH if needed
+    if uuid is None:
+        uuid = uuid_m.uuid4()
+
     if constants.LIBEXEC_DIR not in os.environ['PATH'].split(':'):
         os.environ['PATH'] = '%s:%s' % (
             constants.LIBEXEC_DIR, os.environ['PATH']
@@ -170,11 +179,13 @@ def _run_command(
         **kwargs
     )
     out, err = popen.communicate(input_data)
-    LOGGER.debug('command exit with %d', popen.returncode)
+    LOGGER.debug(
+        '%s: command exit with return code: %d', str(uuid), popen.returncode
+    )
     if out:
-        LOGGER.debug('command stdout: %s', out)
+        LOGGER.debug('%s: command stdout: %s', str(uuid), out)
     if err:
-        LOGGER.debug('command stderr: %s', err)
+        LOGGER.debug('%s: command stderr: %s', str(uuid), err)
     return CommandStatus(popen.returncode, out, err)
 
 
@@ -213,21 +224,16 @@ def run_command(
         'Run command: %s' % ' '.join('"%s"' % arg for arg in command),
         logger=LOGGER,
         level='debug',
-    ):
+    ) as task:
         command_result = _run_command(
             command=command,
             input_data=input_data,
             out_pipe=out_pipe,
             err_pipe=err_pipe,
             env=env,
+            uuid=task.uuid,
             **kwargs
         )
-
-        LOGGER.debug('command exit with %d', command_result.code)
-        if command_result.out:
-            LOGGER.debug('command stdout: %s', command_result.out)
-        if command_result.err:
-            LOGGER.debug('command stderr: %s', command_result.err)
         return command_result
 
 
@@ -561,3 +567,209 @@ def _add_subparser_to_cp(cp, section, actions, incl_unset):
         cp.set(section, var, str(action.default))
     if len(cp.items(section)) == 0:
         cp.remove_section(section)
+
+
+def run_command_with_validation(
+    cmd, fail_on_error=True, msg='An error has occurred'
+):
+    result = run_command(cmd)
+    if result and fail_on_error:
+        raise RuntimeError('{}\n{}'.format(msg, result.err))
+
+    return result
+
+
+def get_qemu_info(path, backing_chain=False, fail_on_error=True):
+    """
+    Get info on a given qemu disk
+
+    Args:
+        path(str): Path to the required disk
+        backing_chain(boo): if true, include also info about
+        the image predecessors.
+    Return:
+        object: if backing_chain == True then a list of dicts else a dict
+    """
+
+    cmd = ['qemu-img', 'info', '--output=json', path]
+
+    if backing_chain:
+        cmd.insert(-1, '--backing-chain')
+
+    result = run_command_with_validation(
+        cmd, fail_on_error, msg='Failed to get info for {}'.format(path)
+    )
+
+    return json.loads(result.out)
+
+
+def qemu_rebase(target, backing_file, safe=True, fail_on_error=True):
+    """
+    changes the backing file of 'source' to 'backing_file'
+    If backing_file is specified as "" (the empty string),
+    then the image is rebased onto no backing file
+    (i.e. it will exist independently of any backing file).
+    (Taken from qemu-img man page)
+
+    Args:
+        target(str): Path to the source disk
+        backing_file(str): path to the base disk
+        safe(bool): if false, allow unsafe rebase
+         (check qemu-img docs for more info)
+    """
+    cmd = ['qemu-img', 'rebase', '-b', backing_file, target]
+    if not safe:
+        cmd.insert(2, '-u')
+
+    return run_command_with_validation(
+        cmd,
+        fail_on_error,
+        msg='Failed to rebase {target} onto {backing_file}'.format(
+            target=target, backing_file=backing_file
+        )
+    )
+
+
+def compress(input_file, block_size, fail_on_error=True):
+    cmd = [
+        'xz', '--compress', '--keep', '--threads=0', '--best', '--force',
+        '--verbose', '--block-size={}'.format(block_size), input_file
+    ]
+    return run_command_with_validation(
+        cmd, fail_on_error, msg='Failed to compress {}'.format(input_file)
+    )
+
+
+def cp(input_file, output_file, fail_on_error=True):
+    if not os.path.basename(output_file):
+        output_file = os.path.join(output_file, os.path.basename(input_file))
+
+    cmd = ['cp', input_file, output_file]
+    return run_command_with_validation(
+        cmd,
+        fail_on_error,
+        msg='Failed to copy {} to {}'.format(input_file, output_file)
+    )
+
+
+def sparse(input_file, input_format, fail_on_error=True):
+    cmd = [
+        'virt-sparsify',
+        '-q',
+        '-v',
+        '--format',
+        input_format,
+        '--in-place',
+        input_file,
+    ]
+    return run_command_with_validation(
+        cmd, fail_on_error, msg='Failed to sparse {}'.format(input_file)
+    )
+
+
+def get_hash(file_path, checksum='sha1'):
+    """
+    Generate a hash for the given file
+
+    Args:
+        file_path (str): Path to the file to generate the hash for
+        checksum (str): hash to apply, one of the supported by hashlib, for
+            example sha1 or sha512
+
+    Returns:
+        str: hash for that file
+    """
+
+    sha = getattr(hashlib, checksum)()
+    with open(file_path) as file_descriptor:
+        while True:
+            chunk = file_descriptor.read(65536)
+            if not chunk:
+                break
+            sha.update(chunk)
+    return sha.hexdigest()
+
+
+def filter_spec(spec, paths, wildcard='*', separator='/'):
+    """
+    Remove keys from a spec file.
+    For example, with the following path: domains/*/disks/*/metadata
+    all the metadata dicts from all domains disks will be removed.
+
+    Args:
+        spec (dict): spec to remove keys from
+        paths (list): list of paths to the keys that should be removed
+        wildcard (str): wildcard character
+        separator (str): path separator
+
+    Returns:
+        None
+
+    Raises:
+        utils.LagoUserException: If a malformed path was detected
+    """
+
+    def remove_key(path, spec):
+        if len(path) == 0:
+            return
+        elif len(path) == 1:
+            key = path.pop()
+            if not isinstance(spec, collections.Mapping):
+                raise LagoUserException(
+                    'You have tried to remove the following key - "{key}".\n'
+                    'Keys can not be removed from type {spec_type}\n'
+                    'Please verify that path - "{{path}}" is valid'.format(
+                        key=key, spec_type=type(spec)
+                    )
+                )
+            if key == wildcard:
+                spec.clear()
+            else:
+                spec.pop(key, None)
+        else:
+            current = path[0]
+            if current == wildcard:
+                if isinstance(spec, list):
+                    iterator = iter(spec)
+                elif isinstance(spec, collections.Mapping):
+                    iterator = spec.itervalues()
+                else:
+                    raise LagoUserException(
+                        'Glob char {char} should refer only to dict or list, '
+                        'not to {spec_type}\n'
+                        'Please fix path - "{{path}}"'.format(
+                            char=wildcard, spec_type=type(spec)
+                        )
+                    )
+
+                for i in iterator:
+                    remove_key(path[1:], i)
+            else:
+                try:
+                    remove_key(path[1:], spec[current])
+                except KeyError:
+                    raise LagoUserException(
+                        'Malformed path "{{path}}", key "{key}" '
+                        'does not exist'.format(key=current)
+                    )
+                except TypeError:
+                    raise LagoUserException(
+                        'Malformed path "{{path}}", can not get '
+                        'by key from type {spec_type}'.
+                        format(spec_type=type(spec))
+                    )
+
+    for path in paths:
+        try:
+            remove_key(path.split(separator), spec)
+        except LagoUserException as e:
+            e.message = e.message.format(path=path)
+            raise
+
+
+class LagoException(Exception):
+    pass
+
+
+class LagoUserException(LagoException):
+    pass

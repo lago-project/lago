@@ -6,6 +6,7 @@ load env_setup
 FIXTURES="$FIXTURES/snapshot"
 WORKDIR="$FIXTURES"/.lago
 
+unset LAGO__START__WAIT_SUSPEND
 
 @test "snapshot.1host_1disk: setup" {
     # As there's no way to know the last test result, we will handle it here
@@ -54,7 +55,7 @@ EOC
         'lago_functional_tests_vm01' \
         '/root/nicefile' \
         "$WORKDIR"/nicefile
-    helpers.run_ok echo -e "\ncontent after tests"
+    helpers.run_ok echo -e "content after tests"
     helpers.diff_output "$WORKDIR"/nicefile
     rm -f "$WORKDIR"/nicefile
 }
@@ -69,7 +70,7 @@ EOC
         'lago_functional_tests_vm01' \
         '/root/nicefile' \
         "$WORKDIR"/nicefile
-    helpers.run_ok echo -e "\ncontent before tests"
+    helpers.run_ok echo -e "content before tests"
     helpers.diff_output "$WORKDIR"/nicefile
 }
 

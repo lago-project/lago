@@ -2,18 +2,25 @@
     "lago_functional_tests_vm01": {
         "snapshot_number_1": [
             {
-                "dev": "vda", 
-                "format": "qcow2", 
+                "dev": "vda",
+                "format": "qcow2",
                 "metadata": {
-                    "arch": "x86_64", 
-                    "base": "fedora-23", 
-                    "distro": "fc23", 
-                    "expand": "/dev/sda3", 
-                    "name": "lago Fedora\u00ae 23", 
-                    "osinfo": "fedora23", 
-                    "root-partition": "/dev/sda3"
-                }, 
-                "path": "@@PREFIX_PATH@@/images/lago_functional_tests_vm01_root.qcow2", 
+                    "arch": "x86_64",
+                    "base": "libguestfs:centos-7.3",
+                    "distro": "el7",
+                    "expand": "/dev/sda2",
+                    "id": "el7.3-base",
+                    "lvexpand": "/dev/cl/root",
+                    "name": "el7.3-base",
+                    "osinfo": "centos7.3",
+                    "root-partition": "/dev/cl/root",
+                    "sha1": "652abb087078934a6acb4d102606f1d1866dc7b9",
+                    "sha512": "da516e7f552767f0d28942f5cdc63809b83238dc6ec08f5b096d0b6e7dea1a0e09563785eea5ebb1c014ca8d5f44a3fdb0c26e8f8674427da5f821e67b07826f",
+                    "size": 1780088832,
+                    "version": "v1"
+                },
+                "name": "root", 
+                "path": "@@PREFIX_PATH@@/images/lago_functional_tests_vm01_root.qcow2",
                 "type": "template"
             }
         ]

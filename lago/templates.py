@@ -20,14 +20,12 @@ definitions:
 """
 import errno
 import functools
-import hashlib
 import json
 import logging
 import magic
 import os
 import posixpath
 import shutil
-import time
 import urllib
 import sys
 
@@ -349,12 +347,17 @@ class TemplateRepository:
             with open(path) as fd:
                 data = fd.read()
         else:
-            response = urllib.urlopen(path)
-            if response.code >= 300:
-                raise RuntimeError('Unable to load repo from %s' % path)
+            try:
+                response = urllib.urlopen(path)
+                if response.code >= 300:
+                    raise RuntimeError('Unable to load repo from %s' % path)
 
-            data = response.read()
-            response.close()
+                data = response.read()
+                response.close()
+            except IOError:
+                raise RuntimeError(
+                    'Unable to load repo from %s (IO error)' % path
+                )
 
         return cls(json.loads(data))
 
@@ -622,7 +625,9 @@ class TemplateStore:
             RuntimeError: if the template is not in the store
         """
         if temp_ver not in self:
-            raise RuntimeError('Template not present')
+            raise RuntimeError(
+                'Template: {} not present'.format(temp_ver.name)
+            )
         return self._prefixed(temp_ver.name)
 
     def download(self, temp_ver, store_metadata=True):
@@ -650,14 +655,8 @@ class TemplateStore:
                 with open('%s.metadata' % dest, 'w') as f:
                     utils.json_dump(temp_ver.get_metadata(), f)
 
-            sha1 = hashlib.sha1()
-            with open(temp_dest) as f:
-                while True:
-                    chunk = f.read(65536)
-                    if not chunk:
-                        break
-                    sha1.update(chunk)
-            if temp_ver.get_hash() != sha1.hexdigest():
+            sha1 = utils.get_hash(temp_dest)
+            if temp_ver.get_hash() != sha1:
                 raise RuntimeError(
                     'Image %s does not match the expected hash %s' % (
                         temp_ver.name,
@@ -666,10 +665,10 @@ class TemplateStore:
                 )
 
             with open('%s.hash' % dest, 'w') as f:
-                f.write(sha1.hexdigest())
+                f.write(sha1)
 
             with log_utils.LogTask('Convert image', logger=LOGGER):
-                utils.run_command(
+                result = utils.run_command(
                     [
                         'qemu-img',
                         'convert',
@@ -680,29 +679,9 @@ class TemplateStore:
                     ],
                 )
 
-            os.unlink(temp_dest)
-
-            self._init_users(temp_ver)
-
-    def _init_users(self, temp_ver):
-        """
-        Initializes the user access registry
-
-        Args:
-            temp_ver (TemplateVersion): template version to update registry
-                for
-
-        Returns:
-            None
-        """
-        with open('%s.users' % self.get_path(temp_ver), 'w') as f:
-            utils.json_dump(
-                {
-                    'users': {},
-                    'last_access': int(time.time()),
-                },
-                f,
-            )
+                os.unlink(temp_dest)
+                if result:
+                    raise RuntimeError(result.err)
 
     def get_stored_metadata(self, temp_ver):
         """
@@ -731,36 +710,3 @@ class TemplateStore:
         """
         with open(self._prefixed('%s.hash' % temp_ver.name)) as f:
             return f.read().strip()
-
-    def mark_used(self, temp_ver, key_path):
-        """
-        Adds or updates the user entry in the user access log for the given
-        template version
-
-        Args:
-            temp_ver (TemplateVersion): template version to add the entry for
-            key_path (str): Path to the prefix uuid file to set the mark for
-        """
-        dest = self.get_path(temp_ver)
-
-        with lockfile.LockFile(dest):
-            with open('%s.users' % dest) as f:
-                users = json.load(f)
-
-            updated_users = {}
-            for path, key in users['users'].items():
-                try:
-                    with open(path) as f:
-                        if key == f.read():
-                            updated_users[path] = key
-                except OSError:
-                    pass
-                except IOError:
-                    pass
-
-            with open(key_path) as f:
-                updated_users[key_path] = f.read()
-            users['users'] = updated_users
-            users['last_access'] = int(time.time())
-            with open('%s.users' % dest, 'w') as f:
-                utils.json_dump(users, f)

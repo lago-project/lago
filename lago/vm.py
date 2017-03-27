@@ -26,7 +26,7 @@ import lxml
 import os
 import pwd
 
-from . import (log_utils, utils, sysprep, libvirt_utils)
+from . import (log_utils, utils, sysprep, libvirt_utils, export)
 from .config import config
 from .plugins import vm
 from .plugins.vm import ExtractPathError, ExtractPathNoPathError
@@ -78,9 +78,6 @@ class SSHVMProvider(vm.VMProviderPlugin):
 
     def revert_snapshot(self, name, *args, **kwargs):
         pass
-
-    def vnc_port(self, *args, **kwargs):
-        return 'no-vnc'
 
 
 class LocalLibvirtVMProvider(vm.VMProviderPlugin):
@@ -136,6 +133,72 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
             self.vm._ssh_client = None
             with LogTask('Destroying VM %s' % self.vm.name()):
                 self.libvirt_con.lookupByName(self._libvirt_name(), ).destroy()
+
+    def shutdown(self, *args, **kwargs):
+        super(LocalLibvirtVMProvider, self).shutdown(*args, **kwargs)
+
+        self._shutdown(
+            libvirt_cmd=libvirt.virDomain.shutdown,
+            ssh_cmd=['poweroff'],
+            msg='Shutdown'
+        )
+
+        try:
+            with utils.ExceptionTimer(timeout=60 * 5):
+                while self.defined():
+                    time.sleep(1)
+        except utils.TimerException:
+            raise utils.LagoUserException(
+                'Failed to shutdown vm: {}'.format(self.vm.name())
+            )
+
+    def reboot(self, *args, **kwargs):
+        super(LocalLibvirtVMProvider, self).reboot(*args, **kwargs)
+
+        self._shutdown(
+            libvirt_cmd=libvirt.virDomain.reboot,
+            ssh_cmd=['reboot'],
+            msg='Reboot'
+        )
+
+    def _shutdown(self, libvirt_cmd, ssh_cmd, msg):
+        """
+        Choose the invoking method (using libvirt or ssh)
+        to shutdown / poweroff the domain.
+
+        If acpi is defined in the domain use libvirt, otherwise use ssh.
+
+        Args:
+            libvirt_cmd (function): Libvirt function the invoke
+            ssh_cmd (list of str): Shell command to invoke on the domain
+            msg (str): Name of the command that should be inserted to the log
+                message.
+
+        Returns
+            None
+
+        Raises:
+            RuntimeError: If acpi is not configured an ssh isn't available
+        """
+        if not self.defined():
+            return
+
+        with LogTask('{} VM {}'.format(msg, self.vm.name())):
+            dom = self.libvirt_con.lookupByName(self._libvirt_name())
+            dom_xml = dom.XMLDesc()
+
+            idx = dom_xml.find('<acpi/>')
+            if idx == -1:
+                LOGGER.debug(
+                    'acpi is not enabled on the host, '
+                    '{} using ssh'.format(msg)
+                )
+                # TODO: change the ssh timeout exception from runtime exception
+                # TODO: to custom exception and catch it.
+                self.vm.ssh(ssh_cmd)
+            else:
+                LOGGER.debug('{} using libvirt'.format(msg))
+                libvirt_cmd(dom)
 
     def defined(self):
         dom_names = [dom.name() for dom in self.libvirt_con.listAllDomains()]
@@ -264,11 +327,35 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
             )
             self._extract_paths_gfs(paths=paths, ignore_nopath=ignore_nopath)
 
-    @_check_defined
-    def vnc_port(self):
-        dom = self.libvirt_con.lookupByName(self._libvirt_name())
-        dom_xml = lxml.etree.fromstring(dom.XMLDesc())
-        return dom_xml.xpath('devices/graphics').pop().attrib['port']
+    def export_disks(self, standalone, dst_dir, compress, *args, **kwargs):
+        """
+        Exports all the disks of self.
+        For each disk type, handler function should be added.
+
+        Args:
+            standalone (bool): if true, merge the base images and the layered
+             image into a new file (Supported only in qcow2 format)
+            dst_dir (str): dir to place the exported disks
+            compress(bool): if true, compress each disk.
+
+        """
+        if not os.path.isdir(dst_dir):
+            os.mkdir(dst_dir)
+
+        export_managers = [
+            export.DiskExportManager.get_instance_by_type(
+                dst=dst_dir,
+                disk=disk,
+                do_compress=compress,
+                standalone=standalone,
+                *args,
+                **kwargs
+            ) for disk in self.vm.disks
+        ]
+
+        # TODO: make this step parallel
+        for manager in export_managers:
+            manager.export()
 
     @_check_defined
     def interactive_console(self):
@@ -344,7 +431,7 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
 
             # we have to make some adjustments
             # we use iso to indicate cdrom
-            # but the ilbvirt wants it named raw
+            # but libvirt wants it named raw
             # and we need to use cdrom device
             disk_device = 'disk'
             bus = 'virtio'
@@ -366,7 +453,7 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
                     )
                     driver = lxml.etree.Element(
                         'driver',
-                        iothread='1',
+                        queues='{}'.format(self.vm._spec.get('vcpu', 2)),
                     )
                     controller.append(driver)
                     devices.append(controller)
@@ -543,10 +630,15 @@ class LocalLibvirtVMProvider(vm.VMProviderPlugin):
             gfs_cli.close()
 
     def _reclaim_disk(self, path):
-        if pwd.getpwuid(os.stat(path).st_uid).pw_name == 'qemu':
+        qemu_uid = None
+        try:
+            qemu_uid = pwd.getpwnam('qemu').pw_uid
+        except KeyError:
+            pass
+        if qemu_uid is not None and os.stat(path).st_uid == qemu_uid:
             utils.run_command(['sudo', '-u', 'qemu', 'chmod', 'a+rw', path])
         else:
-            os.chmod(path, 0666)
+            os.chmod(path, 0o0666)
 
     def _reclaim_disks(self):
         for disk in self.vm._spec['disks']:

@@ -6,7 +6,7 @@
     </nat>
   </forward>
   <bridge name='@BR_NAME@' stp='on' delay='0' />
-  <dns forwardPlainNames='yes' >
+  <dns enable='@ENABLE_DNS@' forwardPlainNames='yes'>
   </dns>
   <ip address='@GW_ADDR@' netmask='255.255.255.0' />
   <ip family='ipv6' address='fd8f:1391:3a82:@SUBNET@::1' prefix='64' />

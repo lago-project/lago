@@ -27,6 +27,7 @@ The other plugin extension point, the [VM Provider Plugin], that allows you to
 create an alternative implementation of the provisioning details for the VM,
 for example, using a remote libvirt instance or similar.
 """
+from copy import deepcopy
 import contextlib
 import functools
 import logging
@@ -105,6 +106,26 @@ class VMProviderPlugin(plugins.Plugin):
         pass
 
     @abstractmethod
+    def shutdown(self, *args, **kwargs):
+        """
+        Shutdown a domain
+
+        Returns:
+            None
+        """
+        pass
+
+    @abstractmethod
+    def reboot(self, *args, **kwargs):
+        """
+        Reboot a domain
+
+        Returns:
+            None
+        """
+        pass
+
+    @abstractmethod
     def defined(self, *args, **kwargs):
         """
         Return if the domain is defined (libvirt concept), currently used only
@@ -163,14 +184,18 @@ class VMProviderPlugin(plugins.Plugin):
         """
         pass
 
-    @abstractmethod
-    def vnc_port(self, *args, **kwargs):
+    def export_disks(self, standalone, dst_dir, compress, *args, **kwargs):
         """
-        Retrieve the vnc port that was configured for the domain
+        Export 'disks' as a standalone image or a layered image.
 
-        Returns:
-            str: string representing the vnc port number (or a helpful message,
-                like 'no-vnc')
+        Args:
+            disks(list): The names of the disks to export
+              (None means all the disks)
+            standalone(bool): If true create a copy of the layered image
+              else create a new disk which is a combination of the current
+              layer and the base disk.
+            dst_dir (str): dir to place the exported images
+            compress (bool): if true, compress the exported image.
         """
         pass
 
@@ -279,6 +304,18 @@ class VMPlugin(plugins.Plugin):
         """
         return self.provider.stop(*args, **kwargs)
 
+    def shutdown(self, *args, **kwargs):
+        """
+        Thin method that just uses the provider
+        """
+        return self.provider.shutdown(*args, **kwargs)
+
+    def reboot(self, *args, **kwargs):
+        """
+        Thin method that just uses the provider
+        """
+        return self.provider.reboot(*args, **kwargs)
+
     def defined(self, *args, **kwargs):
         """
         Thin method that just uses the provider
@@ -315,17 +352,21 @@ class VMPlugin(plugins.Plugin):
         """
         return self.provider.interactive_console(*args, **kwargs)
 
-    def vnc_port(self, *args, **kwargs):
-        """
-        Thin method that just uses the provider
-        """
-        return self.provider.vnc_port(*args, **kwargs)
-
     def extract_paths(self, paths, *args, **kwargs):
         """
         Thin method that just uses the provider
         """
         return self.provider.extract_paths(paths, *args, **kwargs)
+
+    def export_disks(
+        self, standalone=True, dst_dir=None, compress=False, *args, **kwargs
+    ):
+        """
+        Thin method that just uses the provider
+        """
+        return self.provider.export_disks(
+            standalone, dst_dir, compress, *args, **kwargs
+        )
 
     def copy_to(self, local_path, remote_path, recursive=True):
         with LogTask(
@@ -351,6 +392,14 @@ class VMPlugin(plugins.Plugin):
     @property
     def metadata(self):
         return self._spec['metadata'].copy()
+
+    @property
+    def disks(self):
+        return self._spec['disks'][:]
+
+    @property
+    def spec(self):
+        return deepcopy(self._spec)
 
     def name(self):
         return str(self._spec['name'])

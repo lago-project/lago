@@ -199,7 +199,7 @@ class OvirtPrefix(Prefix):
                 env=env,
                 plugins=nose.core.DefaultPluginManager(),
                 stream=DummyStream(),
-                stopOnError=False,
+                stopOnError=True,
             )
             addplugins = [
                 testlib.TaskLogNosePlugin(),

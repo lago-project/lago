@@ -17,6 +17,7 @@
 #
 # Refer to the README and COPYING files for full details of the license
 #
+from copy import deepcopy
 import functools
 import hashlib
 import json
@@ -25,6 +26,7 @@ import os
 import uuid
 import time
 import lxml.etree
+import yaml
 
 from . import (
     brctl,
@@ -191,6 +193,119 @@ class VirtEnv(object):
     def bootstrap(self):
         utils.invoke_in_parallel(lambda vm: vm.bootstrap(), self._vms.values())
 
+    def export_vms(
+        self, vms_names, standalone, dst_dir, compress, init_file_name,
+        out_format
+    ):
+        if not vms_names:
+            vms_names = self._vms.keys()
+
+        running_vms = []
+        vms = []
+        for name in vms_names:
+            try:
+                vm = self._vms[name]
+                vms.append(vm)
+                if vm.defined():
+                    running_vms.append(vm)
+            except KeyError:
+                raise utils.LagoUserException(
+                    'Entity {} does not exist'.format(name)
+                )
+
+        if running_vms:
+            raise utils.LagoUserException(
+                'The following vms must be off:\n{}'.
+                format('\n'.join([_vm.name() for _vm in running_vms]))
+            )
+        # TODO: run the export task in parallel
+
+        with LogTask('Exporting disks to: {}'.format(dst_dir)):
+            for _vm in vms:
+                _vm.export_disks(standalone, dst_dir, compress)
+
+        self.generate_init(os.path.join(dst_dir, init_file_name), out_format)
+
+    def generate_init(self, dst, out_format, filters=None):
+        """
+        Generate an init file which represents this env and can
+        be used with the images created by self.export_vms
+
+        Args:
+            dst (str): path and name of the new init file
+            out_format (plugins.output.OutFormatPlugin):
+                formatter for the output (the default is yaml)
+            filters (list): list of paths to keys that should be removed from
+                the init file
+        Returns:
+            None
+        """
+        with LogTask('Exporting init file to: {}'.format(dst)):
+            # Set the default formatter to yaml. The default formatter
+            # doesn't generate a valid init file, so it's not reasonable
+            # to use it
+            if isinstance(out_format, plugins.output.DefaultOutFormatPlugin):
+                out_format = plugins.output.YAMLOutFormatPlugin()
+
+            if not filters:
+                filters = [
+                    'domains/*/disks/*/metadata',
+                    'domains/*/metadata/deploy-scripts', 'domains/*/snapshots',
+                    'domains/*/name', 'nets/*/mapping'
+                ]
+            spec = self.get_env_spec(filters)
+
+            for _, domain in spec['domains'].viewitems():
+                for disk in domain['disks']:
+                    if disk['type'] == 'template':
+                        disk['template_type'] = 'qcow2'
+                    elif disk['type'] == 'empty':
+                        disk['type'] = 'file'
+                        disk['make_a_copy'] = 'True'
+
+                    # Insert the relative path to the exported images
+                    disk['path'] = os.path.join(
+                        '$LAGO_INITFILE_PATH', os.path.basename(disk['path'])
+                    )
+
+            with open(dst, 'wt') as f:
+                if isinstance(out_format, plugins.output.YAMLOutFormatPlugin):
+                    # Dump the yaml file without type tags
+                    # TODO: Allow passing parameters to output plugins
+                    f.write(yaml.safe_dump(spec))
+                else:
+                    f.write(out_format.format(spec))
+
+    def get_env_spec(self, filters=None):
+        """
+        Get the spec of the current env.
+        The spec will hold the info about all the domains and
+        networks associated with this env.
+
+        Args:
+            filters (list): list of paths to keys that should be removed from
+                the init file
+        Returns:
+            dict: the spec of the current env
+        """
+        spec = {
+            'domains':
+                {
+                    vm_name: vm_object.spec
+                    for vm_name, vm_object in self._vms.viewitems()
+                },
+            'nets':
+                {
+                    net_name: net_object.spec
+                    for net_name, net_object in self._nets.viewitems()
+                }
+        }
+
+        if filters:
+            utils.filter_spec(spec, filters)
+
+        return spec
+
     def start(self, vm_names=None):
         if not vm_names:
             log_msg = 'Start Prefix'
@@ -217,31 +332,92 @@ class VirtEnv(object):
                     rollback.prependDefer(vm.stop)
                 rollback.clear()
 
-    def stop(self, vm_names=None):
+    def _get_stop_shutdown_common_args(self, vm_names):
+        """
+        Get the common arguments for stop and shutdown commands
+
+        Args:
+            vm_names (list of str): The names of the requested vms
+
+        Returns
+            list of plugins.vm.VMProviderPlugin:
+                vms objects that should be stopped
+            list of virt.Network: net objects that should be stopped
+            str: log message
+
+        Raises:
+            utils.LagoUserException: If a vm name doesn't exist
+        """
+
+        vms_to_stop = self.get_vms(vm_names).values()
+
         if not vm_names:
-            log_msg = 'Stop prefix'
-            vms = self._vms.values()
+            log_msg = '{} prefix'
             nets = self._nets.values()
         else:
-            log_msg = 'Stop specified VMs'
-            vms = [self._vms[vm_name] for vm_name in vm_names]
-            stoppable_nets = set()
-            for vm in vms:
-                stoppable_nets = stoppable_nets.union(vm.nets())
-            for vm in self._vms.values():
-                if not vm.defined() or vm.name() in vm_names:
-                    continue
-                for net in vm.nets():
-                    stoppable_nets.discard(net)
-            nets = [self._nets[net] for net in stoppable_nets]
+            log_msg = '{} specified VMs'
+            nets = self._get_unused_nets(vms_to_stop)
 
-        with LogTask(log_msg):
+        return vms_to_stop, nets, log_msg
+
+    def _get_unused_nets(self, vms_to_stop):
+        """
+        Return a list of nets that used only by the vms in vms_to_stop
+
+        Args:
+            vms_to_stop (list of str): The names of the requested vms
+
+        Returns
+            list of virt.Network: net objects that used only by
+                vms in vms_to_stop
+
+        Raises:
+            utils.LagoUserException: If a vm name doesn't exist
+        """
+
+        vm_names = [vm.name() for vm in vms_to_stop]
+        unused_nets = set()
+
+        for vm in vms_to_stop:
+            unused_nets = unused_nets.union(vm.nets())
+        for vm in self._vms.values():
+            if not vm.defined() or vm.name() in vm_names:
+                continue
+            for net in vm.nets():
+                unused_nets.discard(net)
+        nets = [self._nets[net] for net in unused_nets]
+
+        return nets
+
+    def stop(self, vm_names=None):
+
+        vms, nets, log_msg = self._get_stop_shutdown_common_args(vm_names)
+
+        with LogTask(log_msg.format('Stop')):
             with LogTask('Stop vms'):
                 for vm in vms:
                     vm.stop()
             with LogTask('Stop nets'):
                 for net in nets:
                     net.stop()
+
+    def shutdown(self, vm_names, reboot=False):
+
+        vms, nets, log_msg = self._get_stop_shutdown_common_args(vm_names)
+
+        if reboot:
+            with LogTask(log_msg.format('Reboot')):
+                with LogTask('Reboot vms'):
+                    for vm in vms:
+                        vm.reboot()
+        else:
+            with LogTask(log_msg.format('Shutdown')):
+                with LogTask('Shutdown vms'):
+                    for vm in vms:
+                        vm.shutdown()
+                with LogTask('Stop nets'):
+                    for net in nets:
+                        net.stop()
 
     def get_nets(self):
         return self._nets.copy()
@@ -258,8 +434,39 @@ class VirtEnv(object):
             except IndexError:
                 return self.get_nets().values().pop()
 
-    def get_vms(self):
-        return self._vms.copy()
+    def get_vms(self, vm_names=None):
+        """
+        Returns the vm objects associated with vm_names
+        if vm_names is None, return all the vms in the prefix
+
+        Args:
+            vm_names (list of str): The names of the requested vms
+
+        Returns
+            dict: Which contains the requested vm objects indexed by name
+
+        Raises:
+            utils.LagoUserException: If a vm name doesn't exist
+        """
+        if not vm_names:
+            return self._vms.copy()
+
+        missing_vms = []
+        vms = {}
+        for name in vm_names:
+            try:
+                vms[name] = self._vms[name]
+            except KeyError:
+                # TODO: add resolver by suffix
+                missing_vms.append(name)
+
+        if missing_vms:
+            raise utils.LagoUserException(
+                'The following vms do not exist: \n{}'.
+                format('\n'.join(missing_vms))
+            )
+
+        return vms
 
     def get_vm(self, name):
         return self._vms[name]
@@ -431,6 +638,10 @@ class Network(object):
         with open(self._env.virt_path('net-%s' % self.name()), 'w') as f:
             utils.json_dump(self._spec, f)
 
+    @property
+    def spec(self):
+        return deepcopy(self._spec)
+
 
 class NATNetwork(Network):
     def _libvirt_xml(self):
@@ -439,10 +650,15 @@ class NATNetwork(Network):
 
         subnet = self.gw().split('.')[2]
         replacements = {
-            '@NAME@': self._libvirt_name(),
+            '@NAME@':
+                self._libvirt_name(),
             '@BR_NAME@': ('%s-nic' % self._libvirt_name())[:12],
-            '@GW_ADDR@': self.gw(),
-            '@SUBNET@': subnet,
+            '@GW_ADDR@':
+                self.gw(),
+            '@SUBNET@':
+                subnet,
+            '@ENABLE_DNS@':
+                'yes' if self._spec.get('enable_dns', True) else 'no',
         }
         for k, v in replacements.items():
             net_raw_xml = net_raw_xml.replace(k, v, 1)

@@ -50,6 +50,7 @@ install -p -D -m 644 etc/firewalld/services/* %{buildroot}%{_sysconfdir}/firewal
 %package -n python-%{name}
 Summary: Library to perform lago operations
 BuildArch: noarch
+
 BuildRequires: python2-devel
 BuildRequires: python-stevedore
 BuildRequires: python-setuptools
@@ -65,8 +66,10 @@ BuildRequires: python-scp
 BuildRequires: python2-rpm-macros
 %if 0%{?fedora} >= 24
 BuildRequires: python2-configparser
+BuildRequires: python2-paramiko >= 2.1.1
 %else
 BuildRequires: python-configparser
+BuildRequires: python2-paramiko
 %endif
 
 %if 0%{?fedora} >= 23
@@ -79,6 +82,8 @@ BuildRequires: python-dulwich
 BuildRequires: python-flake8
 BuildRequires: python-nose
 BuildRequires: git
+
+
 Requires: python
 Requires: libguestfs-tools
 Requires: libvirt >= 1.2.8
@@ -87,7 +92,6 @@ Requires: python-libguestfs
 Requires: python-lxml
 Requires: python-lockfile
 Requires: python-magic
-Requires: python-paramiko
 Requires: python-pbr
 Requires: python-xmltodict
 Requires: python-scp
@@ -98,8 +102,10 @@ Requires: python-enum
 Requires: pyxdg
 %if 0%{?fedora} >= 24
 Requires: python2-configparser
+Requires: python2-paramiko >= 2.1.1
 %else
 Requires: python-configparser
+Requires: python2-paramiko
 %endif
 %if 0%{?rhel}
 Requires: qemu-img-rhev >= 2.1.2
@@ -183,16 +189,25 @@ Requires: xz
 
 %post -n python-%{name}-ovirt
 if which firewall-cmd &>/dev/null; then
-    firewall-cmd --reload
-    firewall-cmd --permanent --zone=public --add-service=ovirtlago
-    firewall-cmd --reload
+    # don't touch if ovirtlago service is already enabled
+    if ! firewall-cmd --query-service=ovirtlago --zone=public &>/dev/null; then
+        firewall-cmd --reload &> /dev/null
+        firewall-cmd --permanent --zone=public --add-service=ovirtlago &> /dev/null
+        firewall-cmd --reload &> /dev/null
+    fi
 fi
 
 
 %preun  -n python-%{name}-ovirt
-if which firewall-cmd &>/dev/null; then
-    firewall-cmd --permanent --zone=public --remove-service=ovirtlago
-    firewall-cmd --reload
+if [[ "$1" == "0" ]]; then
+    # "0" indicates uninstallation
+    # "1" indicates upgrade - and then we do nothing
+    if which firewall-cmd &>/dev/null; then
+        if firewall-cmd --query-service=ovirtlago --zone=public &>/dev/null; then
+            firewall-cmd --permanent --zone=public --remove-service=ovirtlago &> /dev/null
+            firewall-cmd --reload &> /dev/null
+        fi
+    fi
 fi
 
 %changelog
