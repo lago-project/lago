@@ -34,9 +34,9 @@ unset LAGO__START__WAIT_SUSPEND
     for testfile in "${testfiles[@]}"; do
         helpers.run_ok "$LAGOCLI" ovirt runtest "$FIXTURES/$testfile"
         helpers.contains "$output" "${testfile%.*}.test_pass"
-        helpers.is_file "$PREFIX/nosetests-$testfile.xml"
+        helpers.is_file "$PREFIX/$testfile.junit.xml"
         helpers.contains \
-            "$(cat $PREFIX/nosetests-$testfile.xml)" \
+            "$(cat $PREFIX/$testfile.junit.xml)" \
             'errors="0"'
     done
 }
@@ -52,9 +52,9 @@ unset LAGO__START__WAIT_SUSPEND
     for testfile in "${testfiles[@]}"; do
         helpers.run_nook "$LAGOCLI" ovirt runtest "$FIXTURES/$testfile"
         helpers.contains "$output" "${testfile%.*}.test_fail"
-        helpers.is_file "$PREFIX/nosetests-$testfile.xml"
+        helpers.is_file "$PREFIX/$testfile.junit.xml"
         helpers.contains \
-            "$(cat $PREFIX/nosetests-$testfile.xml)" \
+            "$(cat $PREFIX/$testfile.junit.xml)" \
             'failures="1"'
     done
 }
@@ -70,9 +70,9 @@ unset LAGO__START__WAIT_SUSPEND
     for testfile in "${testfiles[@]}"; do
         helpers.run_nook "$LAGOCLI" ovirt runtest "$FIXTURES/$testfile"
         helpers.contains "$output" "${testfile%.*}.test_error"
-        helpers.is_file "$PREFIX/nosetests-$testfile.xml"
+        helpers.is_file "$PREFIX/$testfile.junit.xml"
         helpers.contains \
-            "$(cat $PREFIX/nosetests-$testfile.xml)" \
+            "$(cat $PREFIX/$testfile.junit.xml)" \
             'errors="1"'
     done
 }
