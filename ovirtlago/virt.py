@@ -20,9 +20,11 @@
 import os
 import time
 import warnings
-
 import lago
 import lago.vm
+import functools
+import logging
+
 from lago.config import config as lago_config
 
 import ovirtsdk.api
@@ -38,6 +40,8 @@ from . import (
     constants,
     testlib,
 )
+
+LOGGER = logging.getLogger(__name__)
 
 
 class OvirtVirtEnv(lago.virt.VirtEnv):
@@ -184,9 +188,11 @@ class EngineVM(lago.vm.DefaultVM):
             self._api_v3 = self._get_api(api_ver=3)
         return self._api_v3
 
-    def get_api_v4(self):
+    def get_api_v4(self, check=False):
         if self._api_v4 is None or not self._api_v4.test():
             self._api_v4 = self._get_api(api_ver=4)
+            if check and self._api_v4 is None:
+                raise RuntimeError('Could not connect to engine')
         return self._api_v4
 
     def add_iso(self, path):
@@ -219,33 +225,52 @@ class EngineVM(lago.vm.DefaultVM):
         if result.code != 0:
             raise RuntimeError('Failed to setup the engine')
 
-    def stop_all_vms(self):
-        api = self.get_api_v4()
-        if api is None:
-            raise RuntimeError('Could not connect to engine')
-
+    def _search_vms(self, api, query):
         vms_service = api.system_service().vms_service()
-        vms = vms_service.list(search='status=up')
-        if vms:
-            for v in vms:
-                vm_service = vms_service.vm_service(v.id)
-                vm_service.stop()
-            time.sleep(10)
+        return [vm.id for vm in vms_service.list(search=query)]
 
-            def _vm_is_down():
-                vm_srv = vms_service.vm_service(v.id)
-                vm_obj = vm_srv.get()
-                if vm_obj.status == sdk4.types.VmStatus.DOWN:
-                    return True
+    def start_all_vms(self):
+        api = self.get_api_v4(check=True)
+        vms_service = api.system_service().vms_service()
+        ids = self._search_vms(api, query='status=down')
+        [vms_service.vm_service(id).start() for id in ids]
 
-            for v in vms:
-                testlib.assert_true_within(_vm_is_down, timeout=5 * 60)
+        def _vm_is_up(id):
+            vm_srv = vms_service.vm_service(id)
+            vm = vm_srv.get()
+            if vm.status == sdk4.types.VmStatus.UP:
+                LOGGER.debug('Engine VM ID %s, is UP', id)
+                return True
+
+        for id in ids:
+            testlib.assert_true_within(
+                functools.partial(
+                    _vm_is_up, id=id
+                ), timeout=5 * 60
+            )
+
+    def stop_all_vms(self):
+        api = self.get_api_v4(check=True)
+        vms_service = api.system_service().vms_service()
+        ids = self._search_vms(api, query='status=up')
+        [vms_service.vm_service(id).stop() for id in ids]
+
+        def _vm_is_down(id):
+            vm_srv = vms_service.vm_service(id)
+            vm = vm_srv.get()
+            if vm.status == sdk4.types.VmStatus.DOWN:
+                LOGGER.debug('Engine VM ID %s, is down', id)
+                return True
+
+        for id in ids:
+            testlib.assert_true_within(
+                functools.partial(
+                    _vm_is_down, id=id
+                ), timeout=5 * 60
+            )
 
     def stop_all_hosts(self):
-        api = self.get_api_v4()
-        if api is None:
-            raise RuntimeError('Could not connect to engine')
-
+        api = self.get_api_v4(check=True)
         hosts_service = api.system_service().hosts_service()
         hosts = hosts_service.list(search='status=up')
         if hosts:
@@ -260,7 +285,6 @@ class EngineVM(lago.vm.DefaultVM):
                 host_obj = h_service.get()
                 if host_obj.status == sdk4.types.HostStatus.MAINTENANCE:
                     return True
-
                 if host_obj.status == sdk4.types.HostStatus.NON_OPERATIONAL:
                     raise RuntimeError(
                         'Host %s is in non operational state' % h.name
@@ -276,10 +300,7 @@ class EngineVM(lago.vm.DefaultVM):
                 testlib.assert_true_within(_host_is_maint, timeout=5 * 60)
 
     def start_all_hosts(self):
-        api = self.get_api_v4()
-        if api is None:
-            raise RuntimeError('Could not connect to engine')
-
+        api = self.get_api_v4(check=True)
         hosts_service = api.system_service().hosts_service()
         hosts = hosts_service.list(search='status=maintenance')
         if hosts:
@@ -300,18 +321,12 @@ class EngineVM(lago.vm.DefaultVM):
                     )
                 elif host_obj.status == sdk4.types.HostStatus.INSTALL_FAILED:
                     raise RuntimeError('Host %s installation failed' % h.name)
-                elif host_obj.status == sdk4.types.HostStatus.NON_RESPONSIVE:
-                    raise RuntimeError(
-                        'Host %s is in non responsive state' % h.name
-                    )
 
             for h in hosts:
                 testlib.assert_true_within(_host_is_up, timeout=5 * 60)
 
     def status(self):
-        api = self.get_api_v4()
-        if api is None:
-            raise RuntimeError('Could not connect to engine')
+        api = self.get_api_v4(check=True)
 
         sys_service = api.system_service().get()
         print("Version: %s" % sys_service.product_info.version.full_version)

@@ -106,6 +106,26 @@ class VMProviderPlugin(plugins.Plugin):
         pass
 
     @abstractmethod
+    def shutdown(self, *args, **kwargs):
+        """
+        Shutdown a domain
+
+        Returns:
+            None
+        """
+        pass
+
+    @abstractmethod
+    def reboot(self, *args, **kwargs):
+        """
+        Reboot a domain
+
+        Returns:
+            None
+        """
+        pass
+
+    @abstractmethod
     def defined(self, *args, **kwargs):
         """
         Return if the domain is defined (libvirt concept), currently used only
@@ -283,6 +303,18 @@ class VMPlugin(plugins.Plugin):
         Thin method that just uses the provider
         """
         return self.provider.stop(*args, **kwargs)
+
+    def shutdown(self, *args, **kwargs):
+        """
+        Thin method that just uses the provider
+        """
+        return self.provider.shutdown(*args, **kwargs)
+
+    def reboot(self, *args, **kwargs):
+        """
+        Thin method that just uses the provider
+        """
+        return self.provider.reboot(*args, **kwargs)
 
     def defined(self, *args, **kwargs):
         """

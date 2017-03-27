@@ -712,13 +712,14 @@ class Prefix(object):
             )
             template_store.download(template_version)
 
-        template_store.mark_used(template_version, self.paths.uuid())
         disk_metadata.update(
             template_store.get_stored_metadata(template_version, ),
         )
         base = template_store.get_path(template_version)
-        qemu_cmd = ['qemu-img', 'create', '-f', 'qcow2', '-b', base, disk_path]
-
+        qemu_cmd = [
+            'qemu-img', 'create', '-f', 'qcow2', '-o', 'lazy_refcounts=on',
+            '-b', base, disk_path
+        ]
         return qemu_cmd, disk_metadata, base
 
     def _ova_to_spec(self, filename):
@@ -1042,6 +1043,19 @@ class Prefix(object):
             None
         """
         self.virt_env.stop(vm_names=vm_names)
+
+    def shutdown(self, vm_names=None, reboot=False):
+        """
+        Shutdown this prefix
+
+        Args:
+            vm_names(list of str): List of the vms to shutdown
+            reboot(bool): If true, reboot the requested vms
+
+        Returns:
+            None
+        """
+        self.virt_env.shutdown(vm_names, reboot)
 
     def create_snapshots(self, name):
         """

@@ -278,6 +278,30 @@ def do_stop(prefix, vm_names, **kwargs):
 
 
 @lago.plugins.cli.cli_plugin(
+    help='Shutdown and destroy, or reboot vms',
+    description='This command will shutdown or reboot the given vms. '
+    'Networks that will not have running vms connected to them after '
+    'running this command will be stopped as well.'
+)
+@lago.plugins.cli.cli_plugin_add_argument(
+    '-r',
+    '--reboot',
+    help='If specified, reboot the requested vms',
+    action='store_true',
+)
+@lago.plugins.cli.cli_plugin_add_argument(
+    'vm_names',
+    help='Name of the vms to shutdown',
+    metavar='VM_NAME',
+    nargs='*',
+)
+@in_lago_prefix
+@with_logging
+def do_shutdown(prefix, vm_names, reboot, **kwargs):
+    prefix.shutdown(vm_names, reboot)
+
+
+@lago.plugins.cli.cli_plugin(
     help='Export virtual machine disks',
     description='This command will export the disks of the given vms. '
     'The disks of the vms will be exported to the '

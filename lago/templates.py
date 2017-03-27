@@ -26,7 +26,6 @@ import magic
 import os
 import posixpath
 import shutil
-import time
 import urllib
 import sys
 
@@ -348,12 +347,17 @@ class TemplateRepository:
             with open(path) as fd:
                 data = fd.read()
         else:
-            response = urllib.urlopen(path)
-            if response.code >= 300:
-                raise RuntimeError('Unable to load repo from %s' % path)
+            try:
+                response = urllib.urlopen(path)
+                if response.code >= 300:
+                    raise RuntimeError('Unable to load repo from %s' % path)
 
-            data = response.read()
-            response.close()
+                data = response.read()
+                response.close()
+            except IOError:
+                raise RuntimeError(
+                    'Unable to load repo from %s (IO error)' % path
+                )
 
         return cls(json.loads(data))
 
@@ -679,28 +683,6 @@ class TemplateStore:
                 if result:
                     raise RuntimeError(result.err)
 
-            self._init_users(temp_ver)
-
-    def _init_users(self, temp_ver):
-        """
-        Initializes the user access registry
-
-        Args:
-            temp_ver (TemplateVersion): template version to update registry
-                for
-
-        Returns:
-            None
-        """
-        with open('%s.users' % self.get_path(temp_ver), 'w') as f:
-            utils.json_dump(
-                {
-                    'users': {},
-                    'last_access': int(time.time()),
-                },
-                f,
-            )
-
     def get_stored_metadata(self, temp_ver):
         """
         Retrieves the metadata for the given template version from the store
@@ -728,36 +710,3 @@ class TemplateStore:
         """
         with open(self._prefixed('%s.hash' % temp_ver.name)) as f:
             return f.read().strip()
-
-    def mark_used(self, temp_ver, key_path):
-        """
-        Adds or updates the user entry in the user access log for the given
-        template version
-
-        Args:
-            temp_ver (TemplateVersion): template version to add the entry for
-            key_path (str): Path to the prefix uuid file to set the mark for
-        """
-        dest = self.get_path(temp_ver)
-
-        with lockfile.LockFile(dest):
-            with open('%s.users' % dest) as f:
-                users = json.load(f)
-
-            updated_users = {}
-            for path, key in users['users'].items():
-                try:
-                    with open(path) as f:
-                        if key == f.read():
-                            updated_users[path] = key
-                except OSError:
-                    pass
-                except IOError:
-                    pass
-
-            with open(key_path) as f:
-                updated_users[key_path] = f.read()
-            users['users'] = updated_users
-            users['last_access'] = int(time.time())
-            with open('%s.users' % dest, 'w') as f:
-                utils.json_dump(users, f)
