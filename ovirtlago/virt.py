@@ -32,6 +32,7 @@ import ovirtsdk.api
 from ovirtsdk.infrastructure.errors import (RequestError, ConnectionError)
 try:
     import ovirtsdk4 as sdk4
+    import ovirtsdk4.types as otypes
     API_V4 = True
 except ImportError:
     sdk4 = None
@@ -294,7 +295,7 @@ class EngineVM(lago.vm.DefaultVM):
         def _vm_is_up(id):
             vm_srv = vms_service.vm_service(id)
             vm = vm_srv.get()
-            if vm.status == sdk4.types.VmStatus.UP:
+            if vm.status == otypes.VmStatus.UP:
                 LOGGER.debug('Engine VM ID %s, is UP', id)
                 return True
 
@@ -314,7 +315,7 @@ class EngineVM(lago.vm.DefaultVM):
         def _vm_is_down(id):
             vm_srv = vms_service.vm_service(id)
             vm = vm_srv.get()
-            if vm.status == sdk4.types.VmStatus.DOWN:
+            if vm.status == otypes.VmStatus.DOWN:
                 LOGGER.debug('Engine VM ID %s, is down', id)
                 return True
 
@@ -339,15 +340,15 @@ class EngineVM(lago.vm.DefaultVM):
             def _host_is_maint():
                 h_service = hosts_service.host_service(h.id)
                 host_obj = h_service.get()
-                if host_obj.status == sdk4.types.HostStatus.MAINTENANCE:
+                if host_obj.status == otypes.HostStatus.MAINTENANCE:
                     return True
-                if host_obj.status == sdk4.types.HostStatus.NON_OPERATIONAL:
+                if host_obj.status == otypes.HostStatus.NON_OPERATIONAL:
                     raise RuntimeError(
                         'Host %s is in non operational state' % h.name
                     )
-                elif host_obj.status == sdk4.types.HostStatus.INSTALL_FAILED:
+                elif host_obj.status == otypes.HostStatus.INSTALL_FAILED:
                     raise RuntimeError('Host %s installation failed' % h.name)
-                elif host_obj.status == sdk4.types.HostStatus.NON_RESPONSIVE:
+                elif host_obj.status == otypes.HostStatus.NON_RESPONSIVE:
                     raise RuntimeError(
                         'Host %s is in non responsive state' % h.name
                     )
@@ -368,14 +369,14 @@ class EngineVM(lago.vm.DefaultVM):
             def _host_is_up():
                 h_service = hosts_service.host_service(h.id)
                 host_obj = h_service.get()
-                if host_obj.status == sdk4.types.HostStatus.UP:
+                if host_obj.status == otypes.HostStatus.UP:
                     return True
 
-                if host_obj.status == sdk4.types.HostStatus.NON_OPERATIONAL:
+                if host_obj.status == otypes.HostStatus.NON_OPERATIONAL:
                     raise RuntimeError(
                         'Host %s is in non operational state' % h.name
                     )
-                elif host_obj.status == sdk4.types.HostStatus.INSTALL_FAILED:
+                elif host_obj.status == otypes.HostStatus.INSTALL_FAILED:
                     raise RuntimeError('Host %s installation failed' % h.name)
 
             for h in hosts:
