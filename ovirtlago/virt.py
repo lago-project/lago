@@ -30,20 +30,20 @@ from ovirtlago import utils
 
 import ovirtsdk.api
 from ovirtsdk.infrastructure.errors import (RequestError, ConnectionError)
-try:
-    import ovirtsdk4 as sdk4
-    import ovirtsdk4.types as otypes
-    API_V4 = True
-except ImportError:
-    sdk4 = None
-    API_V4 = False
 
 from . import (
     constants,
     testlib,
 )
+from .utils import available_sdks
 
 LOGGER = logging.getLogger(__name__)
+
+try:
+    import ovirtsdk4 as sdk4
+    import ovirtsdk4.types as otypes
+except ImportError:
+    pass
 
 
 class OvirtVirtEnv(lago.virt.VirtEnv):
@@ -179,6 +179,8 @@ class EngineVM(lago.vm.DefaultVM):
     def _create_api(self, api_ver):
         url = 'https://%s/ovirt-engine/api' % self.ip()
         if api_ver == 3:
+            if '3' not in available_sdks():
+                raise RuntimeError('oVirt Python SDK v3 not found.')
             return ovirtsdk.api.API(
                 url=url,
                 username=constants.ENGINE_USER,
@@ -187,7 +189,7 @@ class EngineVM(lago.vm.DefaultVM):
                 insecure=True,
             )
         if api_ver == 4:
-            if not API_V4:
+            if '4' not in available_sdks():
                 raise RuntimeError('oVirt Python SDK v4 not found.')
             return sdk4.Connection(
                 url=url,

@@ -1,5 +1,5 @@
 #
-# Copyright 2014 Red Hat, Inc.
+# Copyright 2014-2017 Red Hat, Inc.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@ import contextlib
 import os
 import threading
 import pkg_resources
+import sys
 from SimpleHTTPServer import SimpleHTTPRequestHandler
 
 from . import constants
@@ -116,3 +117,12 @@ def get_data_file(basename):
     return pkg_resources.resource_string(
         __name__, '/'.join(['data', basename])
     )
+
+
+def available_sdks(modules=sys.modules):
+    res = []
+    if 'ovirtsdk' in modules:
+        res.append('3')
+    if 'ovirtsdk4' in modules:
+        res.append('4')
+    return res
