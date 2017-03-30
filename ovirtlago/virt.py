@@ -1,5 +1,5 @@
 #
-# Copyright 2015 Red Hat, Inc.
+# Copyright 2015-2017 Red Hat, Inc.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@ from . import (
     constants,
     testlib,
 )
-from .utils import available_sdks
+from .utils import available_sdks, require_sdk
 
 LOGGER = logging.getLogger(__name__)
 
@@ -328,6 +328,7 @@ class EngineVM(lago.vm.DefaultVM):
                 ), timeout=5 * 60
             )
 
+    @require_sdk(version='4')
     def stop_all_hosts(self):
         api = self.get_api_v4(check=True)
         hosts_service = api.system_service().hosts_service()
@@ -358,6 +359,7 @@ class EngineVM(lago.vm.DefaultVM):
             for h in hosts:
                 testlib.assert_true_within(_host_is_maint, timeout=5 * 60)
 
+    @require_sdk(version='4')
     def start_all_hosts(self):
         api = self.get_api_v4(check=True)
         hosts_service = api.system_service().hosts_service()
@@ -384,6 +386,7 @@ class EngineVM(lago.vm.DefaultVM):
             for h in hosts:
                 testlib.assert_true_within(_host_is_up, timeout=5 * 60)
 
+    @require_sdk(version='4')
     def status(self):
         api = self.get_api_v4(check=True)
 

@@ -19,6 +19,7 @@
 #
 import BaseHTTPServer
 import contextlib
+import functools
 import os
 import threading
 import pkg_resources
@@ -126,3 +127,23 @@ def available_sdks(modules=sys.modules):
     if 'ovirtsdk4' in modules:
         res.append('4')
     return res
+
+
+def require_sdk(version, modules=sys.modules):
+    def wrap(func):
+        @functools.wraps(func)
+        def wrapped_func(*args, **kwargs):
+            sdks = available_sdks(modules)
+            if version not in sdks:
+                raise RuntimeError(
+                    (
+                        '{0} requires oVirt Python SDK v{1}, '
+                        'available SDKs: {2}'
+                    ).format(func.__name__, version, ','.join(sdks))
+                )
+            else:
+                return func(*args, **kwargs)
+
+        return wrapped_func
+
+    return wrap
