@@ -85,7 +85,7 @@ def repo_server_context(prefix):
     the first network defined in the previx virt config
 
     Args:
-        prefix(ovirtlago.OvirtPrefix): prefix to start the server for
+        prefix(ovirtlago.prefix.OvirtPrefix): prefix to start the server for
 
     Returns:
         None

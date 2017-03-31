@@ -24,16 +24,16 @@ import sys
 import warnings
 
 import lago
-import ovirtlago
-from lago.plugins.cli import (CLIPlugin, cli_plugin, cli_plugin_add_argument)
-from lago.utils import (in_prefix, with_logging)
-from lago.log_utils import LogTask
 from lago.config import config as lago_config
+from lago.log_utils import LogTask
+from lago.plugins.cli import CLIPlugin, cli_plugin, cli_plugin_add_argument
+from lago.utils import in_prefix, with_logging
+from ovirtlago.prefix import OvirtPrefix, OvirtWorkdir
 
 LOGGER = logging.getLogger('ovirt-cli')
 in_ovirt_prefix = in_prefix(
-    prefix_class=ovirtlago.OvirtPrefix,
-    workdir_class=ovirtlago.OvirtWorkdir,
+    prefix_class=OvirtPrefix,
+    workdir_class=OvirtWorkdir,
 )
 # TODO: Remove this, and properly complain on unset config values
 DISTS = ['el6', 'el7', 'fc20']
