@@ -1,5 +1,6 @@
 # For the docs
-sphinx>1.0
+# see: https://github.com/sphinx-doc/sphinx/issues/3597
+sphinx==1.5.3
 nose
 dulwich
 configparser
