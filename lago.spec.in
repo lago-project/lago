@@ -186,6 +186,7 @@ Requires: xz
 
 %files -n python-%{name}-ovirt
 %{python2_sitelib}/ovirt%{name}/*.py*
+%{python2_sitelib}/ovirt%{name}/data/*.yaml
 %config(noreplace) %{_sysconfdir}/firewalld/services/*
 %dir %attr(2775, root, lago) /var/lib/lago/reposync/
 

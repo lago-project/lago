@@ -24,8 +24,9 @@ import lago
 import lago.vm
 import functools
 import logging
-
+import yaml
 from lago.config import config as lago_config
+from ovirtlago import utils
 
 import ovirtsdk.api
 from ovirtsdk.infrastructure.errors import (RequestError, ConnectionError)
@@ -48,7 +49,6 @@ class OvirtVirtEnv(lago.virt.VirtEnv):
     def __init__(self, prefix, vm_specs, net_spec):
         self._engine_vm = None
         self._host_vms = []
-        self._ovirt_cpu_family = None
         super(OvirtVirtEnv, self).__init__(prefix, vm_specs, net_spec)
 
     def _create_vm(self, vm_spec):
@@ -92,8 +92,64 @@ class OvirtVirtEnv(lago.virt.VirtEnv):
     def host_vms(self):
         return self._host_vms[:]
 
-    def get_ovirt_cpu_family(self):
-        return super(OvirtVirtEnv, self).get_compatible_cpu_and_family()[1]
+    def get_ovirt_cpu_family(self, host=None):
+        """
+        Get a suitable string for oVirt Cluster CPU. If ``host`` is None, it
+        will use a random host, if no hosts are available it will use the
+        Engine VM for detection. The detection is done by getting the VM host
+        CPU model and vendor, from Lago, which in its turn is based on what was
+        configured in the LagoInitFile. The detected model and vendor are
+        then compared against the definitions in `data/ovirt-cpu-map.yaml` or
+        against a custom file, if ``ovirt-cpu-map`` parameter was defined in
+        the host's metadata section.
+
+        Args:
+            host(lago.vm.DefaultVM): VM CPU/vendor to use for detection
+
+        Returns:
+            str: oVirt CPU Cluster string
+
+        Raises:
+            RuntimeError: If unsupported cpu vendor or model is detected
+        """
+
+        if host is None:
+            try:
+                host = self.host_vms()[-1]
+            except IndexError:
+                pass
+        if not host:
+            host = self.engine_vm()
+        if host is None:
+            raise RuntimeError('No Engine or Host VMs found')
+
+        if host.metadata.get('ovirt-cpu-map'):
+            cpu_map_fname = os.path.expanduser(
+                os.path.expandvars(host.metadata['ovirt-cpu-map'])
+            )
+            with open(cpu_map_fname, 'r') as cpu_map_file:
+                cpu_map = yaml.load(cpu_map_file)
+                LOGGER.debug(
+                    'Loaded custom ovirt-cpu-map from %s: %s', cpu_map_fname,
+                    cpu_map
+                )
+        else:
+            cpu_map = yaml.load(utils.get_data_file('ovirt_cpu_map.yaml'))
+
+        if not cpu_map.get(host.cpu_vendor):
+            raise RuntimeError(
+                ('Unsupported CPU vendor: {0}. '
+                 'Supported vendors: '
+                 '{1}').format(host.cpu_vendor, ','.join(cpu_map.iterkeys()))
+            )
+        if not cpu_map[host.cpu_vendor].get(host.cpu_model):
+            raise RuntimeError(
+                ('Unsupported CPU model: {0}. Supported models: {1}').format(
+                    host.cpu_model,
+                    ','.join(cpu_map[host.cpu_vendor].iterkeys())
+                )
+            )
+        return cpu_map[host.cpu_vendor][host.cpu_model]
 
 
 # TODO : solve the problem of ssh to the Node

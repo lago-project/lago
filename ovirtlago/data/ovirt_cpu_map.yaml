@@ -1,0 +1,19 @@
+AMD:
+  Opteron_G1: AMD Opteron G1
+  Opteron_G2: AMD Opteron G2
+  Opteron_G3: AMD Opteron G3
+  Opteron_G4: AMD Opteron G4
+  Opteron_G5: AMD Opteron G5
+Intel:
+  Conroe: Intel Conroe Family
+  Penryn: Intel Penryn Family
+  Nehalem: Intel Nehalem Family
+  Westmere: Intel Westmere Family
+  SandyBridge: Intel SandyBridge Family
+  IvyBridge: Intel SandyBridge Family
+  Haswell-noTSX: Intel Haswell-noTSX Family
+  Haswell: Intel Haswell Family
+  Broadwell-noTSX: Intel Broadwell-noTSX Family
+  Broadwell: Intel Broadwell-noTSX Family
+  Skylake: Intel Skylake Family
+  Skylake-Client: Intel Skylake Family
