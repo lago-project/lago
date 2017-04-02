@@ -23,10 +23,8 @@ import json
 import logging
 import os
 import uuid
-from copy import deepcopy
 
 import yaml
-from lxml import etree as ET
 
 from lago import log_utils, plugins, utils
 from lago.config import config
@@ -75,20 +73,6 @@ class VirtEnv(object):
     * libvirt_con
     '''
 
-    _CPU_FAMILIES = {
-        'SandyBridge': 'Intel SandyBridge Family',
-        'Westmere': 'Intel Westmere Family',
-        'Nehalem': 'Intel Nehalem Family',
-        'Penryn': 'Intel Penryn Family',
-        'Conroe': 'Intel Conroe Family',
-        'Opteron_G5': 'AMD Opteron G5',
-        'Opteron_G4': 'AMD Opteron G4',
-        'Opteron_G3': 'AMD Opteron G3',
-        'Opteron_G2': 'AMD Opteron G2',
-        'Opteron_G1': 'AMD Opteron G1',
-    }
-    _compatible_cpu_and_family = None
-
     def __init__(self, prefix, vm_specs, net_specs):
         self.vm_types = plugins.load_plugins(
             plugins.PLUGIN_ENTRY_POINTS['vm'],
@@ -111,23 +95,6 @@ class VirtEnv(object):
         self._vms = {}
         for name, spec in vm_specs.items():
             self._vms[name] = self._create_vm(spec)
-
-    def get_cpu_model(self):
-        cap_tree = ET.fromstring(self.libvirt_con.getCapabilities())
-        cpu_model = cap_tree.xpath('/capabilities/host/cpu/model')[0].text
-        return cpu_model
-
-    def get_compatible_cpu_and_family(self):
-        if self._compatible_cpu_and_family is None:
-            for cpu in (
-                self.get_cpu_model(),
-                'Westmere',
-            ):
-                family = self._CPU_FAMILIES.get(cpu)
-                if family is not None:
-                    break
-            self._compatible_cpu_and_family = cpu, family
-        return self._compatible_cpu_and_family
 
     def _create_net(self, net_spec):
         if net_spec['type'] == 'nat':

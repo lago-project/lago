@@ -33,6 +33,7 @@ from lago.config import config
 from lago.plugins import vm as vm_plugin
 from lago.plugins.vm import ExtractPathError, ExtractPathNoPathError
 from lago.providers.libvirt import utils as libvirt_utils
+from lago.providers.libvirt import cpu
 
 LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
@@ -47,9 +48,16 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
             name=self.vm.virt_env.uuid + libvirt_url,
             libvirt_url=libvirt_url,
         )
-        self._cpu_model = self.vm._spec.get(
-            'cpu_model', self.vm.virt_env.get_compatible_cpu_and_family()[0]
-        )
+
+        caps_raw_xml = self.libvirt_con.getCapabilities()
+        self._caps = ET.fromstring(caps_raw_xml)
+
+        host_cpu = self._caps.xpath('host/cpu')[0]
+        self._cpu = cpu.CPU(spec=self.vm._spec, host_cpu=host_cpu)
+
+        # TO-DO: found a nicer way to expose these attributes to the VM
+        self.vm.cpu_model = self.cpu_model
+        self.vm.cpu_vendor = self.cpu_vendor
 
     def start(self):
         super(LocalLibvirtVMProvider, self).start()
@@ -60,13 +68,16 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
             # indicating how much time to sleep between the time the domain
             # is created in paused mode, until it is resumed.
             wait_suspend = os.environ.get('LAGO__START__WAIT_SUSPEND')
+            dom_xml = self._libvirt_xml()
+            LOGGER.debug('libvirt XML: %s\n', dom_xml)
             with LogTask('Starting VM %s' % self.vm.name()):
                 if wait_suspend is None:
-                    dom = self.libvirt_con.createXML(self._libvirt_xml())
+                    dom = self.libvirt_con.createXML(dom_xml)
                     if not dom:
                         raise RuntimeError(
-                            'Failed to create Domain: %s' % self._libvirt_xml()
+                            'Failed to create Domain: %s' % dom_xml
                         )
+
                 else:
                     LOGGER.debug('starting domain in paused mode')
                     try:
@@ -76,8 +87,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
                             'LAGO__START__WAIT_SUSPEND value is not a number'
                         )
                     dom = self.libvirt_con.createXML(
-                        self._libvirt_xml(),
-                        flags=libvirt.VIR_DOMAIN_START_PAUSED
+                        dom_xml, flags=libvirt.VIR_DOMAIN_START_PAUSED
                     )
                     time.sleep(wait_suspend)
                     dom.resume()
@@ -336,12 +346,23 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
     @property
     def cpu_model(self):
         """
-        Return the VM CPU model for domain XML generation
+        VM CPU model
 
         Returns:
-            str: cpu model
+            str: CPU model
+
         """
-        return self._cpu_model
+        return self._cpu.model
+
+    @property
+    def cpu_vendor(self):
+        """
+        VM CPU Vendor
+
+        Returns:
+            str: CPU vendor
+        """
+        return self._cpu.vendor
 
     def _libvirt_name(self):
         return self.vm.virt_env.prefixed_name(self.vm.name())
@@ -349,16 +370,14 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
     def _libvirt_xml(self):
         dom_raw_xml = libvirt_utils.get_template('dom_template.xml')
 
-        capabilities_raw_xml = self.libvirt_con.getCapabilities()
-        capabilities_xml = ET.fromstring(capabilities_raw_xml)
-        qemu_kvm_path = capabilities_xml.findtext(
+        qemu_kvm_path = self._caps.findtext(
             "guest[os_type='hvm']/arch[@name='x86_64']/domain[@type='kvm']"
             "/emulator"
         )
 
         if not qemu_kvm_path:
             LOGGER.warning("hardware acceleration not available")
-            qemu_kvm_path = capabilities_xml.findtext(
+            qemu_kvm_path = self._caps.findtext(
                 "guest[os_type='hvm']/arch[@name='x86_64']"
                 "/domain[@type='qemu']/../emulator"
             )
@@ -368,9 +387,6 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
 
         replacements = {
             '@NAME@': self._libvirt_name(),
-            '@VCPU@': self.vm._spec.get('vcpu', 2),
-            '@CPU@': self.vm._spec.get('cpu', 2),
-            '@CPUMODEL@': self.cpu_model,
             '@MEM_SIZE@': self.vm._spec.get('memory', 16 * 1024),
             '@QEMU_KVM@': qemu_kvm_path,
         }
@@ -379,6 +395,10 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
             dom_raw_xml = dom_raw_xml.replace(key, str(val), 1)
 
         dom_xml = ET.fromstring(dom_raw_xml)
+
+        for child in self._cpu:
+            dom_xml.append(child)
+
         devices = dom_xml.xpath('/domain/devices')[0]
 
         disk = devices.xpath('disk')[0]
@@ -484,7 +504,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
                 )
             devices.append(interface)
 
-        return ET.tostring(dom_xml)
+        return ET.tostring(dom_xml, pretty_print=True)
 
     def _create_dead_snapshot(self, name):
         raise RuntimeError('Dead snapshots are not implemented yet')

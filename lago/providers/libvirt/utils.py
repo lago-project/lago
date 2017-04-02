@@ -22,6 +22,8 @@ Utilities to help deal with the libvirt python bindings
 """
 import libvirt
 import pkg_resources
+import xmltodict
+import lxml.etree
 from lago.config import config
 
 #: Mapping of domain statuses values to human readable strings
@@ -96,3 +98,19 @@ def get_template(basename):
     return pkg_resources.resource_string(
         __name__, '/'.join(['templates', basename])
     )
+
+
+def dict_to_xml(spec, full_document=False):
+    """
+    Convert dict to XML
+
+    Args:
+        spec(dict): dict to convert
+        full_document(bool): whether to add XML headers
+
+    Returns:
+        lxml.etree.Element: XML tree
+    """
+
+    middle = xmltodict.unparse(spec, full_document=full_document, pretty=True)
+    return lxml.etree.fromstring(middle)
