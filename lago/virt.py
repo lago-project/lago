@@ -79,6 +79,7 @@ class VirtEnv(object):
     '''
 
     _CPU_FAMILIES = {
+        'Skylake-Client': 'Intel Skylake Family',
         'SandyBridge': 'Intel SandyBridge Family',
         'Westmere': 'Intel Westmere Family',
         'Nehalem': 'Intel Nehalem Family',
