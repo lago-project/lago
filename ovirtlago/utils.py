@@ -21,6 +21,7 @@ import BaseHTTPServer
 import contextlib
 import os
 import threading
+import pkg_resources
 from SimpleHTTPServer import SimpleHTTPRequestHandler
 
 from . import constants
@@ -100,3 +101,18 @@ def repo_server_context(prefix):
         yield
     finally:
         server.shutdown()
+
+
+def get_data_file(basename):
+    """
+    Load a data as a string from the data directory
+
+    Args:
+        basename(str): filename
+
+    Returns:
+        str: string representation of the file
+    """
+    return pkg_resources.resource_string(
+        __name__, '/'.join(['data', basename])
+    )

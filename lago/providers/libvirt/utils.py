@@ -1,5 +1,5 @@
 #
-# Copyright 2014 Red Hat, Inc.
+# Copyright 2014-2017 Red Hat, Inc.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,7 +21,9 @@
 Utilities to help deal with the libvirt python bindings
 """
 import libvirt
-
+import pkg_resources
+import xmltodict
+import lxml.etree
 from lago.config import config
 
 #: Mapping of domain statuses values to human readable strings
@@ -81,3 +83,34 @@ def get_libvirt_connection(name, libvirt_url='qemu://system'):
         LIBVIRT_CONNECTIONS[name] = libvirt.openAuth(libvirt_url, auth)
 
     return LIBVIRT_CONNECTIONS[name]
+
+
+def get_template(basename):
+    """
+    Load a file as a string from the templates directory
+
+    Args:
+        basename(str): filename
+
+    Returns:
+        str: string representation of the file
+    """
+    return pkg_resources.resource_string(
+        __name__, '/'.join(['templates', basename])
+    )
+
+
+def dict_to_xml(spec, full_document=False):
+    """
+    Convert dict to XML
+
+    Args:
+        spec(dict): dict to convert
+        full_document(bool): whether to add XML headers
+
+    Returns:
+        lxml.etree.Element: XML tree
+    """
+
+    middle = xmltodict.unparse(spec, full_document=full_document, pretty=True)
+    return lxml.etree.fromstring(middle)

@@ -771,5 +771,9 @@ class LagoException(Exception):
     pass
 
 
+class LagoInitException(LagoException):
+    pass
+
+
 class LagoUserException(LagoException):
     pass
