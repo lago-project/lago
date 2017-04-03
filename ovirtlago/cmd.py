@@ -24,16 +24,16 @@ import sys
 import warnings
 
 import lago
-import ovirtlago
-from lago.plugins.cli import (CLIPlugin, cli_plugin, cli_plugin_add_argument)
-from lago.utils import (in_prefix, with_logging)
-from lago.log_utils import LogTask
 from lago.config import config as lago_config
+from lago.log_utils import LogTask
+from lago.plugins.cli import CLIPlugin, cli_plugin, cli_plugin_add_argument
+from lago.utils import in_prefix, with_logging
+from ovirtlago.prefix import OvirtPrefix, OvirtWorkdir
 
 LOGGER = logging.getLogger('ovirt-cli')
 in_ovirt_prefix = in_prefix(
-    prefix_class=ovirtlago.OvirtPrefix,
-    workdir_class=ovirtlago.OvirtWorkdir,
+    prefix_class=OvirtPrefix,
+    workdir_class=OvirtWorkdir,
 )
 # TODO: Remove this, and properly complain on unset config values
 DISTS = ['el6', 'el7', 'fc20']
@@ -211,14 +211,30 @@ def do_ovirt_status(prefix, **kwargs):
     prefix.virt_env.engine_vm().status()
 
 
-@cli_plugin(help=('Start the environment, put all hosts in activate mode'))
+@cli_plugin(
+    help=(
+        'Start oVirt environment: Start Engine and Host VMs, then '
+        'put Hosts in activate mode.'
+    )
+)
+@cli_plugin_add_argument(
+    '--with-vms',
+    help=('Also Start VMs connected to to the Engine.'),
+    dest='with_vms',
+    action='store_true',
+)
 @in_ovirt_prefix
 @with_logging
-def do_ovirt_start(prefix, **kwargs):
+def do_ovirt_start(prefix, with_vms, **kwargs):
     with LogTask('Starting oVirt environment'):
         prefix.start()
         with LogTask('Activating Engine Hosts'):
             prefix.virt_env.engine_vm().start_all_hosts()
+        if with_vms:
+            with LogTask('Waiting for Storage domains to be in active mode'):
+                prefix.virt_env.engine_vm().check_sds_status()
+            with LogTask('Starting Engine VMs'):
+                prefix.virt_env.engine_vm().start_all_vms()
 
 
 @cli_plugin(

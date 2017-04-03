@@ -1,5 +1,5 @@
 #
-# Copyright 2014 Red Hat, Inc.
+# Copyright 2014-2017 Red Hat, Inc.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,9 +19,11 @@
 #
 import BaseHTTPServer
 import contextlib
+import functools
 import os
 import threading
 import pkg_resources
+import sys
 from SimpleHTTPServer import SimpleHTTPRequestHandler
 
 from . import constants
@@ -85,7 +87,7 @@ def repo_server_context(prefix):
     the first network defined in the previx virt config
 
     Args:
-        prefix(ovirtlago.OvirtPrefix): prefix to start the server for
+        prefix(ovirtlago.prefix.OvirtPrefix): prefix to start the server for
 
     Returns:
         None
@@ -116,3 +118,32 @@ def get_data_file(basename):
     return pkg_resources.resource_string(
         __name__, '/'.join(['data', basename])
     )
+
+
+def available_sdks(modules=sys.modules):
+    res = []
+    if 'ovirtsdk' in modules:
+        res.append('3')
+    if 'ovirtsdk4' in modules:
+        res.append('4')
+    return res
+
+
+def require_sdk(version, modules=sys.modules):
+    def wrap(func):
+        @functools.wraps(func)
+        def wrapped_func(*args, **kwargs):
+            sdks = available_sdks(modules)
+            if version not in sdks:
+                raise RuntimeError(
+                    (
+                        '{0} requires oVirt Python SDK v{1}, '
+                        'available SDKs: {2}'
+                    ).format(func.__name__, version, ','.join(sdks))
+                )
+            else:
+                return func(*args, **kwargs)
+
+        return wrapped_func
+
+    return wrap

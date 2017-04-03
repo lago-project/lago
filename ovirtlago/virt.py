@@ -1,5 +1,5 @@
 #
-# Copyright 2015 Red Hat, Inc.
+# Copyright 2015-2017 Red Hat, Inc.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -30,19 +30,20 @@ from ovirtlago import utils
 
 import ovirtsdk.api
 from ovirtsdk.infrastructure.errors import (RequestError, ConnectionError)
-try:
-    import ovirtsdk4 as sdk4
-    API_V4 = True
-except ImportError:
-    sdk4 = None
-    API_V4 = False
 
 from . import (
     constants,
     testlib,
 )
+from .utils import available_sdks, require_sdk
 
 LOGGER = logging.getLogger(__name__)
+
+try:
+    import ovirtsdk4 as sdk4
+    import ovirtsdk4.types as otypes
+except ImportError:
+    pass
 
 
 class OvirtVirtEnv(lago.virt.VirtEnv):
@@ -178,6 +179,8 @@ class EngineVM(lago.vm.DefaultVM):
     def _create_api(self, api_ver):
         url = 'https://%s/ovirt-engine/api' % self.ip()
         if api_ver == 3:
+            if '3' not in available_sdks():
+                raise RuntimeError('oVirt Python SDK v3 not found.')
             return ovirtsdk.api.API(
                 url=url,
                 username=constants.ENGINE_USER,
@@ -186,7 +189,7 @@ class EngineVM(lago.vm.DefaultVM):
                 insecure=True,
             )
         if api_ver == 4:
-            if not API_V4:
+            if '4' not in available_sdks():
                 raise RuntimeError('oVirt Python SDK v4 not found.')
             return sdk4.Connection(
                 url=url,
@@ -294,7 +297,7 @@ class EngineVM(lago.vm.DefaultVM):
         def _vm_is_up(id):
             vm_srv = vms_service.vm_service(id)
             vm = vm_srv.get()
-            if vm.status == sdk4.types.VmStatus.UP:
+            if vm.status == otypes.VmStatus.UP:
                 LOGGER.debug('Engine VM ID %s, is UP', id)
                 return True
 
@@ -314,7 +317,7 @@ class EngineVM(lago.vm.DefaultVM):
         def _vm_is_down(id):
             vm_srv = vms_service.vm_service(id)
             vm = vm_srv.get()
-            if vm.status == sdk4.types.VmStatus.DOWN:
+            if vm.status == otypes.VmStatus.DOWN:
                 LOGGER.debug('Engine VM ID %s, is down', id)
                 return True
 
@@ -325,6 +328,7 @@ class EngineVM(lago.vm.DefaultVM):
                 ), timeout=5 * 60
             )
 
+    @require_sdk(version='4')
     def stop_all_hosts(self):
         api = self.get_api_v4(check=True)
         hosts_service = api.system_service().hosts_service()
@@ -339,15 +343,15 @@ class EngineVM(lago.vm.DefaultVM):
             def _host_is_maint():
                 h_service = hosts_service.host_service(h.id)
                 host_obj = h_service.get()
-                if host_obj.status == sdk4.types.HostStatus.MAINTENANCE:
+                if host_obj.status == otypes.HostStatus.MAINTENANCE:
                     return True
-                if host_obj.status == sdk4.types.HostStatus.NON_OPERATIONAL:
+                if host_obj.status == otypes.HostStatus.NON_OPERATIONAL:
                     raise RuntimeError(
                         'Host %s is in non operational state' % h.name
                     )
-                elif host_obj.status == sdk4.types.HostStatus.INSTALL_FAILED:
+                elif host_obj.status == otypes.HostStatus.INSTALL_FAILED:
                     raise RuntimeError('Host %s installation failed' % h.name)
-                elif host_obj.status == sdk4.types.HostStatus.NON_RESPONSIVE:
+                elif host_obj.status == otypes.HostStatus.NON_RESPONSIVE:
                     raise RuntimeError(
                         'Host %s is in non responsive state' % h.name
                     )
@@ -355,6 +359,7 @@ class EngineVM(lago.vm.DefaultVM):
             for h in hosts:
                 testlib.assert_true_within(_host_is_maint, timeout=5 * 60)
 
+    @require_sdk(version='4')
     def start_all_hosts(self):
         api = self.get_api_v4(check=True)
         hosts_service = api.system_service().hosts_service()
@@ -368,19 +373,41 @@ class EngineVM(lago.vm.DefaultVM):
             def _host_is_up():
                 h_service = hosts_service.host_service(h.id)
                 host_obj = h_service.get()
-                if host_obj.status == sdk4.types.HostStatus.UP:
+                if host_obj.status == otypes.HostStatus.UP:
                     return True
 
-                if host_obj.status == sdk4.types.HostStatus.NON_OPERATIONAL:
+                if host_obj.status == otypes.HostStatus.NON_OPERATIONAL:
                     raise RuntimeError(
                         'Host %s is in non operational state' % h.name
                     )
-                elif host_obj.status == sdk4.types.HostStatus.INSTALL_FAILED:
+                elif host_obj.status == otypes.HostStatus.INSTALL_FAILED:
                     raise RuntimeError('Host %s installation failed' % h.name)
 
             for h in hosts:
                 testlib.assert_true_within(_host_is_up, timeout=5 * 60)
 
+    @require_sdk(version='4')
+    def check_sds_status(self, status=None):
+        # the default status cannot be used in the function header, because
+        # the v4 sdk might not be available.
+        if status is None:
+            status = otypes.StorageDomainStatus.ACTIVE
+        api = self.get_api_v4(check=True)
+        dcs_service = api.system_service().data_centers_service()
+        for dc in dcs_service.list():
+
+            def _sds_state(dc_id):
+                dc_service = dcs_service.data_center_service(dc_id)
+                sds = dc_service.storage_domains_service()
+                return all(sd.status == status for sd in sds.list())
+
+            testlib.assert_true_within(
+                functools.partial(
+                    _sds_state, dc_id=dc.id
+                ), timeout=5 * 60
+            )
+
+    @require_sdk(version='4')
     def status(self):
         api = self.get_api_v4(check=True)
 
