@@ -78,6 +78,42 @@ unset LAGO__START__WAIT_SUSPEND
 }
 
 
+@test "ovirt.runtest: test testlib" {
+    common.is_initialized "$WORKDIR" || skip "Workdir not initiated"
+    cd "$FIXTURES"
+
+    testfiles=(
+        "002_testlib.py"
+    )
+
+    for testfile in "${testfiles[@]}"; do
+        helpers.run_ok "$LAGOCLI" ovirt runtest "$FIXTURES/$testfile"
+        helpers.is_file "$PREFIX/$testfile.junit.xml"
+        helpers.contains \
+            "$(cat $PREFIX/$testfile.junit.xml)" \
+            'errors="0"'
+    done
+}
+
+@test "ovirt.runtest: compare host cpu directly from /proc/cpuinfo" {
+    common.is_initialized "$WORKDIR" || skip "Workdir not initiated"
+    cd "$FIXTURES"
+    helpers.run_ok "$LAGOCLI" \
+        shell \
+        "lago_functional_tests_host" \
+        -c \
+        "cat /proc/cpuinfo > /tmp/cpuinfo"
+    helpers.run_ok "$LAGOCLI" \
+        copy-from-vm \
+        "lago_functional_tests_host" \
+        /tmp/cpuinfo \
+        test_cpu_info
+    output=$(gawk 'match($0, /^model name\s+:\s+(.*)$/, a) {print a[1];exit}' test_cpu_info)
+    echo "Extracted CPU String: $output"
+    helpers.contains "$output" "Westmere"
+}
+
+
 @test "ovirt.runtest: teardown" {
     if common.is_initialized "$WORKDIR"; then
         pushd "$FIXTURES"
