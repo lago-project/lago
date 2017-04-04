@@ -2,7 +2,7 @@
     Base directory: @@PREFIX_PATH@@
     [Networks]:
         [lft_net1]:
-            management: False
+            management: True
             status: up
     UUID: @@UUID@@
     [VMs]:

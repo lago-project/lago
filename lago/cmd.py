@@ -936,7 +936,7 @@ def main():
 
     try:
         cli_plugins[args.verb].do_run(args)
-    except utils.LagoUserException as e:
+    except utils.LagoException as e:
         LOGGER.info(e.message)
         LOGGER.debug(e)
         sys.exit(2)

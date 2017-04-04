@@ -398,7 +398,8 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
         for key, val in replacements.items():
             dom_raw_xml = dom_raw_xml.replace(key, str(val), 1)
 
-        dom_xml = ET.fromstring(dom_raw_xml)
+        parser = ET.XMLParser(remove_blank_text=True)
+        dom_xml = ET.fromstring(dom_raw_xml, parser)
 
         for child in self._cpu:
             dom_xml.append(child)
