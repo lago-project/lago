@@ -39,6 +39,7 @@ import utils
 from utils import LagoInitException
 import virt
 import log_utils
+import build
 
 LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
@@ -1056,6 +1057,7 @@ class Prefix(object):
         template_repo=None,
         template_store=None,
         do_bootstrap=True,
+        do_build=True,
     ):
         """
         Initializes all the virt infrastructure of the prefix, creating the
@@ -1077,6 +1079,7 @@ class Prefix(object):
             template_repo=template_repo,
             template_store=template_store,
             do_bootstrap=do_bootstrap,
+            do_build=do_build
         )
 
     def _prepare_domains_images(self, conf, template_repo, template_store):
@@ -1148,21 +1151,20 @@ class Prefix(object):
                 template_repo=template_repo,
                 template_store=template_store,
             )
-            new_disks.append(
-                {
-                    'path': path,
-                    'dev': disk['dev'],
-                    'format': disk['format'],
-                    'metadata': metadata,
-                    'type': disk['type'],
-                    'name': disk['name']
-                },
-            )
+            new_disk = copy.deepcopy(disk)
+            new_disk['path'] = path
+            new_disk['metadata'] = metadata
+            new_disks.append(new_disk)
 
         return new_disks
 
     def virt_conf(
-        self, conf, template_repo=None, template_store=None, do_bootstrap=True
+        self,
+        conf,
+        template_repo=None,
+        template_store=None,
+        do_bootstrap=True,
+        do_build=True
     ):
         """
         Initializes all the virt infrastructure of the prefix, creating the
@@ -1173,6 +1175,9 @@ class Prefix(object):
             conf (dict): Configuration spec
             template_repo (TemplateRepository): template repository intance
             template_store (TemplateStore): template store instance
+            do_bootstrap(bool): If true run virt-sysprep on the images
+            do_build(bool): If true run build commands on the images,
+                see lago.build.py for more info.
 
         Returns:
             None
@@ -1197,11 +1202,34 @@ class Prefix(object):
                 vm_specs=conf['domains'],
                 net_specs=conf['nets'],
             )
+
             if do_bootstrap:
                 self.virt_env.bootstrap()
 
+            if do_build:
+                self.build(conf['domains'])
+
             self.save()
             rollback.clear()
+
+    def build(self, conf):
+        builders = []
+        for vm_name, spec in conf.viewitems():
+            disks = spec.get('disks')
+            if disks:
+                for disk in disks:
+                    build_spec = disk.get('build')
+                    if build_spec:
+                        builders.append(
+                            build.Build.get_instance_from_build_spec(
+                                name=vm_name,
+                                disk_path=disk['path'],
+                                build_spec=build_spec,
+                                paths=self.paths
+                            )
+                        )
+
+        utils.invoke_in_parallel(build.Build.build, builders)
 
     def export_vms(
         self, vms_names, standalone, export_dir, compress, init_file_name,
