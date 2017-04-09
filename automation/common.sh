@@ -14,8 +14,7 @@ set_guestfs_params() {
     # ensure KVM is enabled under mock
     ! [[ -c "/dev/kvm" ]] && mknod /dev/kvm c 10 232
 
-    # un-comment this to debug LIBGUESTFS
-    # export LIBGUESTFS_DEBUG=1 LIBGUESTFS_TRACE=1
+    export LIBGUESTFS_DEBUG=1 LIBGUESTFS_TRACE=1
 }
 
 code_changed() {
