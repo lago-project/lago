@@ -18,4 +18,4 @@ configparser
 pyxdg
 futures
 xmlunittest
-yapf==0.14.0
+yapf
