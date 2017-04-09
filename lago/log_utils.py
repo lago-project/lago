@@ -24,7 +24,7 @@ import logging
 import logging.config
 import os
 import re
-import sys
+import traceback
 import datetime
 import threading
 import uuid as uuid_m
@@ -599,10 +599,12 @@ class LogTask(object):
         getattr(self.logger, self.level)(START_TASK_TRIGGER_MSG % self.header)
         return self
 
-    def __exit__(self, *args, **kwargs):
-        exc_type, _, _ = sys.exc_info()
+    def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_type and self.propagate:
             end_log_task(self.header, level='error')
+            str_tb = ''.join(traceback.format_tb(exc_tb))
+            self.logger.debug(str_tb)
+            return False
         else:
             getattr(self.logger,
                     self.level)(END_TASK_TRIGGER_MSG % self.header)
