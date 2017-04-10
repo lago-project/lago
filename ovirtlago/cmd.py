@@ -307,7 +307,9 @@ def _populate_parser(cli_plugins, parser):
 
 
 class OvirtCLI(CLIPlugin):
-    init_args = {'help': 'oVirt related actions', }
+    init_args = {
+        'help': 'oVirt related actions',
+    }
 
     def populate_parser(self, parser):
         self.cli_plugins = lago.plugins.load_plugins('lago.plugins.ovirt.cli')

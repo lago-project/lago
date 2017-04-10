@@ -152,9 +152,8 @@ class TemplateExportManager(DiskExportManager):
     """
 
     def __init__(self, dst, disk_type, disk, do_compress, *args, **kwargs):
-        super(TemplateExportManager, self).__init__(
-            dst, disk_type, disk, do_compress
-        )
+        super(TemplateExportManager,
+              self).__init__(dst, disk_type, disk, do_compress)
         self.standalone = kwargs['standalone']
         self.src_qemu_info = utils.get_qemu_info(self.src, backing_chain=True)
 
@@ -231,9 +230,8 @@ class FileExportManager(DiskExportManager):
     """
 
     def __init__(self, dst, disk_type, disk, do_compress, *args, **kwargs):
-        super(FileExportManager, self).__init__(
-            dst, disk_type, disk, do_compress
-        )
+        super(FileExportManager,
+              self).__init__(dst, disk_type, disk, do_compress)
 
     def export(self):
         """

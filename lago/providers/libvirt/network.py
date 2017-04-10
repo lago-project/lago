@@ -119,8 +119,9 @@ class Network(object):
     def stop(self):
         if self.alive():
             with LogTask('Destroy network %s' % self.name()):
-                self.libvirt_con.networkLookupByName(self._libvirt_name(),
-                                                     ).destroy()
+                self.libvirt_con.networkLookupByName(
+                    self._libvirt_name(),
+                ).destroy()
 
     def save(self):
         with open(self._env.virt_path('net-%s' % self.name()), 'w') as f:

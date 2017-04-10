@@ -101,7 +101,9 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
         if self.defined():
             self.vm._ssh_client = None
             with LogTask('Destroying VM %s' % self.vm.name()):
-                self.libvirt_con.lookupByName(self._libvirt_name(), ).destroy()
+                self.libvirt_con.lookupByName(
+                    self._libvirt_name(),
+                ).destroy()
 
     def shutdown(self, *args, **kwargs):
         super(LocalLibvirtVMProvider, self).shutdown(*args, **kwargs)
@@ -191,8 +193,8 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
                             "/boot/grub2/grub.cfg",
                             "s/set timeout=5/set timeout=0/g"
                         ) if (
-                            self.vm.distro() == 'el7' or self.vm.distro() ==
-                            'fc24'
+                            self.vm.distro() == 'el7'
+                            or self.vm.distro() == 'fc24'
                         ) else '',
                     ] + [
                         sysprep.config_net_interface_dhcp(
@@ -341,7 +343,9 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
             "console",
             self._libvirt_name(),
         ]
-        return utils.run_interactive_command(command=virsh_command, )
+        return utils.run_interactive_command(
+            command=virsh_command,
+        )
 
     @property
     def cpu_model(self):
@@ -457,9 +461,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
             disk.append(serial)
 
             disk.append(
-                ET.Element(
-                    'boot', order="{}".format(disk_order + 1)
-                ),
+                ET.Element('boot', order="{}".format(disk_order + 1)),
             )
 
             disk.append(
@@ -535,8 +537,8 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
             try:
                 dom.snapshotCreateXML(
                     ET.tostring(snapshot_xml),
-                    libvirt.VIR_DOMAIN_SNAPSHOT_CREATE_DISK_ONLY |
-                    libvirt.VIR_DOMAIN_SNAPSHOT_CREATE_QUIESCE,
+                    libvirt.VIR_DOMAIN_SNAPSHOT_CREATE_DISK_ONLY
+                    | libvirt.VIR_DOMAIN_SNAPSHOT_CREATE_QUIESCE,
                 )
             except libvirt.libvirtError:
                 LOGGER.exception(
@@ -552,7 +554,9 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
                 disk['path'] = xml_node.xpath('source')[0].attrib['file']
                 disk['format'] = 'qcow2'
                 snap_disk = disk.copy()
-                snap_disk['path'] = xml_node.xpath('backingStore', )[0].xpath(
+                snap_disk['path'] = xml_node.xpath(
+                    'backingStore',
+                )[0].xpath(
                     'source',
                 )[0].attrib['file']
                 snap_info.append(snap_disk)

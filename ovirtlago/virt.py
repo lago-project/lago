@@ -278,8 +278,9 @@ class EngineVM(lago.vm.DefaultVM):
             self.copy_to(config, 'engine-answer-file')
 
         result = self.interactive_ssh(
-            ['engine-setup', ] +
-            (config and ['--config-append=engine-answer-file'] or []),
+            [
+                'engine-setup',
+            ] + (config and ['--config-append=engine-answer-file'] or []),
         )
         if result.code != 0:
             raise RuntimeError('Failed to setup the engine')
@@ -303,9 +304,7 @@ class EngineVM(lago.vm.DefaultVM):
 
         for id in ids:
             testlib.assert_true_within(
-                functools.partial(
-                    _vm_is_up, id=id
-                ), timeout=5 * 60
+                functools.partial(_vm_is_up, id=id), timeout=5 * 60
             )
 
     def stop_all_vms(self):
@@ -323,9 +322,7 @@ class EngineVM(lago.vm.DefaultVM):
 
         for id in ids:
             testlib.assert_true_within(
-                functools.partial(
-                    _vm_is_down, id=id
-                ), timeout=5 * 60
+                functools.partial(_vm_is_down, id=id), timeout=5 * 60
             )
 
     @require_sdk(version='4')
@@ -402,9 +399,7 @@ class EngineVM(lago.vm.DefaultVM):
                 return all(sd.status == status for sd in sds.list())
 
             testlib.assert_true_within(
-                functools.partial(
-                    _sds_state, dc_id=dc.id
-                ), timeout=5 * 60
+                functools.partial(_sds_state, dc_id=dc.id), timeout=5 * 60
             )
 
     @require_sdk(version='4')
@@ -422,7 +417,9 @@ class EngineVM(lago.vm.DefaultVM):
 class HostVM(lago.vm.DefaultVM):
     def _artifact_paths(self):
         inherited_artifacts = super(HostVM, self)._artifact_paths()
-        return set(inherited_artifacts + ['/var/log', ])
+        return set(inherited_artifacts + [
+            '/var/log',
+        ])
 
 
 class HEHostVM(HostVM):

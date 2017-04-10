@@ -149,9 +149,8 @@ def _run_command(
         uuid = uuid_m.uuid4()
 
     if constants.LIBEXEC_DIR not in os.environ['PATH'].split(':'):
-        os.environ['PATH'] = '%s:%s' % (
-            constants.LIBEXEC_DIR, os.environ['PATH']
-        )
+        os.environ['PATH'
+                   ] = '%s:%s' % (constants.LIBEXEC_DIR, os.environ['PATH'])
 
     if input_data and not stdin:
         kwargs['stdin'] = subprocess.PIPE
@@ -554,8 +553,8 @@ def _add_subparser_to_cp(cp, section, actions, incl_unset):
     cp.add_section(section)
     print_actions = (
         action for action in actions
-        if (action.default and action.default != '==SUPPRESS=='
-            ) or (action.default is None and incl_unset)
+        if (action.default and action.default != '==SUPPRESS==') or
+        (action.default is None and incl_unset)
     )
     for action in print_actions:
         var = str(action.dest)
@@ -755,8 +754,9 @@ def filter_spec(spec, paths, wildcard='*', separator='/'):
                 except TypeError:
                     raise LagoUserException(
                         'Malformed path "{{path}}", can not get '
-                        'by key from type {spec_type}'.
-                        format(spec_type=type(spec))
+                        'by key from type {spec_type}'.format(
+                            spec_type=type(spec)
+                        )
                     )
 
     for path in paths:

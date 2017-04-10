@@ -353,9 +353,7 @@ class Prefix(object):
                 if not _ip_in_subnet(net['gw'], nic['ip']):
                     raise RuntimeError(
                         "%s:nic%d's IP [%s] is outside the subnet [%s]" % (
-                            dom_name,
-                            dom_spec['nics'].index(nic),
-                            nic['ip'],
+                            dom_name, dom_spec['nics'].index(nic), nic['ip'],
                             net['gw'],
                         ),
                     )
@@ -366,11 +364,8 @@ class Prefix(object):
                         if ip == net['ip']
                     ]
                     raise RuntimeError(
-                        'IP %s was to several domains: %s %s' % (
-                            nic['ip'],
-                            dom_name,
-                            ' '.join(conflict_list),
-                        ),
+                        'IP %s was to several domains: %s %s' %
+                        (nic['ip'], dom_name, ' '.join(conflict_list), ),
                     )
 
                 self._add_nic_to_mapping(net, dom_spec, nic)
@@ -519,11 +514,7 @@ class Prefix(object):
 
     @staticmethod
     def _generate_disk_name(host_name, disk_name, disk_format):
-        return '%s_%s.%s' % (
-            host_name,
-            disk_name,
-            disk_format,
-        )
+        return '%s_%s.%s' % (host_name, disk_name, disk_format, )
 
     def _generate_disk_path(self, disk_name):
         return os.path.expandvars(self.paths.images(disk_name))
@@ -713,7 +704,9 @@ class Prefix(object):
             template_store.download(template_version)
 
         disk_metadata.update(
-            template_store.get_stored_metadata(template_version, ),
+            template_store.get_stored_metadata(
+                template_version,
+            ),
         )
         base = template_store.get_path(template_version)
         qemu_cmd = [
@@ -1333,11 +1326,8 @@ class Prefix(object):
                     LOGGER.debug('STDOUT:\n%s' % out)
                     LOGGER.error('STDERR\n%s' % err)
                     raise RuntimeError(
-                        '%s failed with status %d on %s' % (
-                            script,
-                            ret,
-                            host.name(),
-                        ),
+                        '%s failed with status %d on %s' %
+                        (script, ret, host.name(), ),
                     )
 
     @log_task('Deploy environment')
