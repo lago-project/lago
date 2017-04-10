@@ -45,45 +45,30 @@ def _upload_file(local_path, remote_path):
 
 
 def set_iscsi_initiator_name(name):
-    return (
-        '--mkdir',
-        _ISCSI_DIR,
-        '--chmod',
-        '0755:%s' % _ISCSI_DIR,
-    ) + _write_file(
-        os.path.join(_ISCSI_DIR, 'initiatorname.iscsi'),
-        'InitiatorName=%s' % name,
-    )
+    return ('--mkdir', _ISCSI_DIR, '--chmod',
+            '0755:%s' % _ISCSI_DIR, ) + _write_file(
+                os.path.join(_ISCSI_DIR, 'initiatorname.iscsi'),
+                'InitiatorName=%s' % name,
+            )  # noqa: E126
 
 
 def add_ssh_key(key, with_restorecon_fix=False):
-    extra_options = (
-        '--mkdir',
-        _DOT_SSH,
-        '--chmod',
-        '0700:%s' % _DOT_SSH,
-    ) + _upload_file(_AUTHORIZED_KEYS, key)
+    extra_options = ('--mkdir', _DOT_SSH, '--chmod', '0700:%s' %
+                     _DOT_SSH, ) + _upload_file(_AUTHORIZED_KEYS, key)
     if (not os.stat(key).st_uid == 0 or not os.stat(key).st_gid == 0):
         extra_options += (
-            '--run-command',
-            'chown root.root %s' % _AUTHORIZED_KEYS,
+            '--run-command', 'chown root.root %s' % _AUTHORIZED_KEYS,
         )
     if with_restorecon_fix:
         # Fix for fc23 not relabeling on boot
         # https://bugzilla.redhat.com/1049656
-        extra_options += (
-            '--firstboot-command',
-            'restorecon -R /root/.ssh',
-        )
+        extra_options += ('--firstboot-command', 'restorecon -R /root/.ssh', )
     return extra_options
 
 
 def set_selinux_mode(mode):
     return (
-        '--mkdir',
-        _SELINUX_CONF_DIR,
-        '--chmod',
-        '0755:%s' % _SELINUX_CONF_DIR,
+        '--mkdir', _SELINUX_CONF_DIR, '--chmod', '0755:%s' % _SELINUX_CONF_DIR,
     ) + _write_file(
         _SELINUX_CONF_PATH,
         ('SELINUX=%s\n'
@@ -93,9 +78,7 @@ def set_selinux_mode(mode):
 
 def _config_net_interface(iface, **kwargs):
     return (
-        '--mkdir',
-        '/etc/sysconfig/network-scripts',
-        '--chmod',
+        '--mkdir', '/etc/sysconfig/network-scripts', '--chmod',
         '0755:/etc/sysconfig/network-scripts',
     ) + _write_file(
         os.path.join(
@@ -119,17 +102,11 @@ def config_net_interface_dhcp(iface, hwaddr):
 
 def edit(filename, expression):
     editstr = '%s:""%s""' % (filename, expression)
-    return (
-        '--edit',
-        editstr,
-    )
+    return ('--edit', editstr, )
 
 
 def update():
-    return (
-        '--update',
-        '--network',
-    )
+    return ('--update', '--network', )
 
 
 def sysprep(disk, mods, backend='direct'):
@@ -144,9 +121,7 @@ def sysprep(disk, mods, backend='direct'):
     if ret:
         raise RuntimeError(
             'Failed to bootstrap %s\ncommand:%s\nstdout:%s\nstderr:%s' % (
-                disk,
-                ' '.join('"%s"' % elem for elem in cmd),
-                ret.out,
+                disk, ' '.join('"%s"' % elem for elem in cmd), ret.out,
                 ret.err,
             )
         )

@@ -335,7 +335,9 @@ def get_ssh_client(
                 host_name,
             )
             client = paramiko.SSHClient()
-            client.set_missing_host_key_policy(paramiko.AutoAddPolicy(), )
+            client.set_missing_host_key_policy(
+                paramiko.AutoAddPolicy(),
+            )
             try:
                 if ssh_key:
                     client.connect(

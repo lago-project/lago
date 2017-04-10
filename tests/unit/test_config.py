@@ -149,7 +149,9 @@ def test_update_root_parser(mocked_configs_path):
 @patch('lago.config._get_configs_path', return_value=['file1'])
 def test_file_shadows_cli_default(mocked_configs_path, mocked_open):
     file1 = {'lago': {'arg': 'arg_file'}}
-    mocked_open.side_effect = [_dict_to_handler(file1), ]
+    mocked_open.side_effect = [
+        _dict_to_handler(file1),
+    ]
     parser = _args_to_parser([('--arg', {'default': 'arg_default'})])
     config_load = config.ConfigLoad()
     # although awkard looking - this mimics the round-trip in the code

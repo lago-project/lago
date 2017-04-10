@@ -313,12 +313,10 @@ class TestWorkdir(object):
         mock_workdir,
         monkeypatch,
     ):
-        (
-            mock_workdir,
-            mock_walk,
-            mock_islink,
-            mock_readlink,
-        ) = self._prepare_load_positive_run(tmpdir, mock_workdir, monkeypatch)
+        (mock_workdir, mock_walk, mock_islink,
+         mock_readlink, ) = self._prepare_load_positive_run(
+             tmpdir, mock_workdir, monkeypatch
+         )  # noqa: E121
 
         assert mock_workdir.load() is None
         assert mock_workdir.current == 'another'
@@ -332,12 +330,10 @@ class TestWorkdir(object):
         mock_workdir,
         monkeypatch,
     ):
-        (
-            mock_workdir,
-            mock_walk,
-            mock_islink,
-            mock_readlink,
-        ) = self._prepare_load_positive_run(tmpdir, mock_workdir, monkeypatch)
+        (mock_workdir, mock_walk, mock_islink,
+         mock_readlink) = self._prepare_load_positive_run(
+             tmpdir, mock_workdir, monkeypatch
+         )  # noqa: E121
 
         assert mock_workdir.load() is None
         assert (
@@ -654,18 +650,12 @@ class TestWorkdir(object):
     @pytest.mark.parametrize(
         'to_destroy',
         (
-            None,
-            [],
-            ['ni!'],
-            ['nini!', 'ninini!'],
+            None, [], ['ni!'], ['nini!', 'ninini!'],
             ['ni!', 'nini!', 'ninini!'],
         ),
         ids=(
-            'None as prefixes',
-            'empty list as prefixes',
-            'one prefix',
-            'many prefixes',
-            'all prefixes',
+            'None as prefixes', 'empty list as prefixes', 'one prefix',
+            'many prefixes', 'all prefixes',
         ),
     )
     def test_destroy(
@@ -708,46 +698,21 @@ class TestWorkdir(object):
     @pytest.mark.parametrize(
         'workdir_parent,params,should_be_found',
         (
-            (
-                os.curdir,
-                {
-                    'start_path': 'auto'
-                },
-                True,
-            ),
-            (
-                os.curdir,
-                {},
-                True,
-            ),
-            (
-                '/one/two',
-                {
-                    'start_path': '/one/two/three'
-                },
-                True,
-            ),
-            (
-                '/one',
-                {
-                    'start_path': '/one/two/three'
-                },
-                True,
-            ),
-            (
-                'shrubbery',
-                {
-                    'start_path': '/one/two/three'
-                },
-                False,
-            ),
+            (os.curdir, {
+                'start_path': 'auto'
+            }, True, ), (os.curdir, {}, True, ),
+            ('/one/two', {
+                'start_path': '/one/two/three'
+            }, True, ), ('/one', {
+                'start_path': '/one/two/three'
+            }, True, ),
+            ('shrubbery', {
+                'start_path': '/one/two/three'
+            }, False, ),
         ),
         ids=(
-            'auto uses curdir',
-            'default uses curdir',
-            'recurse one level',
-            'recurse many levels',
-            'not found',
+            'auto uses curdir', 'default uses curdir', 'recurse one level',
+            'recurse many levels', 'not found',
         ),
     )
     def test_resolve_workdir_path_from_outside_of_it(
@@ -784,31 +749,14 @@ class TestWorkdir(object):
     @pytest.mark.parametrize(
         'workdir_path,params,should_be_found',
         (
-            (
-                os.curdir,
-                {
-                    'start_path': 'auto'
-                },
-                True,
-            ),
-            (
-                os.curdir,
-                {},
-                True,
-            ),
-            (
-                'shrubbery',
-                {
-                    'start_path': '/one/two/three'
-                },
-                False,
-            ),
+            (os.curdir, {
+                'start_path': 'auto'
+            }, True, ), (os.curdir, {}, True, ),
+            ('shrubbery', {
+                'start_path': '/one/two/three'
+            }, False, ),
         ),
-        ids=(
-            'auto uses curdir',
-            'default uses curdir',
-            'not found',
-        ),
+        ids=('auto uses curdir', 'default uses curdir', 'not found', ),
     )
     def test_resolve_workdir_path_from_inside_of_it(
         self,

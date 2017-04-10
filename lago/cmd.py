@@ -456,7 +456,9 @@ def do_shell(prefix, host, args=None, **kwargs):
     sys.exit(result.code)
 
 
-@lago.plugins.cli.cli_plugin(help='Open serial console to the domain', )
+@lago.plugins.cli.cli_plugin(
+    help='Open serial console to the domain',
+)
 @lago.plugins.cli.cli_plugin_add_argument(
     'host',
     help='Host to connect to',

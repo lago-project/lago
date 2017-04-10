@@ -77,14 +77,14 @@ ARGUMENTS[Verbs.ADD] = (
 )  # yapf: disable
 
 ARGUMENTS[Verbs.UPDATE] = (
-    'Update the saved repositories (to origin/master).',
-    (),
-    do_update,
+    'Update the saved repositories (to origin/master).', (), do_update,
 )
 
 
 class TemplateRepoCLI(CLIPlugin):
-    init_args = {'help': 'Utility for system testing template management', }
+    init_args = {
+        'help': 'Utility for system testing template management',
+    }
 
     def populate_parser(self, parser):
         verbs = parser.add_subparsers(dest='tplverb', metavar='VERB')

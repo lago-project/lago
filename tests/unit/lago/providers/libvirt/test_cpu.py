@@ -37,9 +37,7 @@ class TestCPU(XmlTestCase):
                                    <model>{model}</model>
                                    <vendor>{vendor}</vendor>
                              </cpu>
-                             """.format(
-                arch=arch, model=model, vendor=vendor
-            )
+                             """.format(arch=arch, model=model, vendor=vendor)
         )
 
     def test_generate_topology(self):
@@ -98,11 +96,9 @@ class TestCPU(XmlTestCase):
         empty_cpu = cpu.CPU(spec={}, host_cpu=None)
         self.assertXmlEquivalentOutputs(
             ET.tostring(
-                empty_cpu.generate_exact(
-                    model=model, vcpu_num=vcpu, host_cpu=host
-                )
-            ),
-            _xml
+                empty_cpu.
+                generate_exact(model=model, vcpu_num=vcpu, host_cpu=host)
+            ), _xml
         )
 
     def test_generate_exact_intel_novmx(self, vcpu=2, model='Penryn'):
@@ -127,11 +123,9 @@ class TestCPU(XmlTestCase):
         empty_cpu = cpu.CPU(spec={}, host_cpu=None)
         self.assertXmlEquivalentOutputs(
             ET.tostring(
-                empty_cpu.generate_exact(
-                    model=model, vcpu_num=vcpu, host_cpu=host
-                )
-            ),
-            _xml
+                empty_cpu.
+                generate_exact(model=model, vcpu_num=vcpu, host_cpu=host)
+            ), _xml
         )
 
     def test_generate_exact_vendor_mismatch(self, vcpu=2, model='Opteron_G2'):
@@ -156,11 +150,9 @@ class TestCPU(XmlTestCase):
         empty_cpu = cpu.CPU(spec={}, host_cpu=None)
         self.assertXmlEquivalentOutputs(
             ET.tostring(
-                empty_cpu.generate_exact(
-                    model=model, vcpu_num=vcpu, host_cpu=host
-                )
-            ),
-            _xml
+                empty_cpu.
+                generate_exact(model=model, vcpu_num=vcpu, host_cpu=host)
+            ), _xml
         )
 
     def test_generate_exact_unknown_vendor(self, vcpu=2, model='Westmere'):
@@ -185,11 +177,9 @@ class TestCPU(XmlTestCase):
         empty_cpu = cpu.CPU(spec={}, host_cpu=None)
         self.assertXmlEquivalentOutputs(
             ET.tostring(
-                empty_cpu.generate_exact(
-                    model=model, vcpu_num=vcpu, host_cpu=host
-                )
-            ),
-            _xml
+                empty_cpu.
+                generate_exact(model=model, vcpu_num=vcpu, host_cpu=host)
+            ), _xml
         )
 
     def test_init_default(self):
