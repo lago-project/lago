@@ -36,6 +36,7 @@ import xmltodict
 import paths
 import subnet_lease
 import utils
+from utils import LagoInitException
 import virt
 import log_utils
 
@@ -302,8 +303,17 @@ class Prefix(object):
 
     def _add_nic_to_mapping(self, net, dom, nic):
         """
-        Populates the given net spec mapping entry with the nicks of the given
-        domain
+        Populates the given net spec mapping entry with the nics of the given
+        domain, by the following rules:
+
+            * If ``net`` is management, 'domain_name': nic_ip
+            * For each interface: 'domain_name-eth#': nic_ip, where # is the
+            index of the nic in the *domain* definition.
+            * For each interface: 'domain_name-net_name-#': nic_ip,
+            where # is a running number of interfaces from that network.
+            * For each interface: 'domain_name-net_name', which has an
+            identical IP to 'domain_name-net_name-0'
+
 
         Args:
             net (dict): Network spec to populate
@@ -316,8 +326,92 @@ class Prefix(object):
         """
         dom_name = dom['name']
         idx = dom['nics'].index(nic)
-        name = idx == 0 and dom_name or '%s-eth%d' % (dom_name, idx)
+        name = '{0}-eth{1}'.format(dom_name, idx)
         net['mapping'][name] = nic['ip']
+        if dom['nics'][idx]['net'] == dom['mgmt_net']:
+            net['mapping'][dom_name] = nic['ip']
+
+        name_by_net = '{0}-{1}'.format(dom_name, nic['net'])
+        named_nets = sorted(
+            [
+                net_name for net_name in net['mapping'].keys()
+                if net_name.startswith(name_by_net) and net_name != name_by_net
+            ]
+        )
+
+        if len(named_nets) == 0:
+            named_idx = 0
+            net['mapping'][name_by_net] = nic['ip']
+        else:
+            named_idx = len(named_nets)
+        named_net = '{0}-{1}'.format(name_by_net, named_idx)
+
+        net['mapping'][named_net] = nic['ip']
+
+    def _select_mgmt_networks(self, conf):
+        """
+        Select management networks. If no management network is found, it will
+        mark the first network found by sorted the network lists. Also adding
+        default DNS domain, if none is set.
+
+        Args:
+            conf(spec): spec
+
+        """
+
+        nets = conf['nets']
+        mgmts = sorted(
+            [
+                name for name, net in nets.iteritems()
+                if net.get('management') is True
+            ]
+        )
+
+        if len(mgmts) == 0:
+            mgmt_name = sorted((nets.keys()))[0]
+            LOGGER.debug(
+                'No management network configured, selecting network %s',
+                mgmt_name
+            )
+            nets[mgmt_name]['management'] = True
+            mgmts.append(mgmt_name)
+
+        for mgmt_name in mgmts:
+            if nets[mgmt_name].get('dns_domain_name', None) is None:
+                nets[mgmt_name]['dns_domain_name'] = 'lago.local'
+
+        return mgmts
+
+    def _add_dns_records(self, conf, mgmts):
+        """
+        Add DNS records dict('dns_records') to ``conf`` for each
+        management network. Add DNS forwarder IP('dns_forward') for each none
+        management network.
+
+
+        Args:
+            conf(spec): spec
+            mgmts(list): management networks names
+
+        Returns:
+            None
+        """
+
+        nets = conf['nets']
+        dns_mgmt = mgmts[-1]
+        LOGGER.debug('Using network %s as main DNS server', dns_mgmt)
+        forward = conf['nets'][dns_mgmt].get('gw')
+        dns_records = {}
+        for name, net in nets.iteritems():
+            dns_records.update(net['mapping'].copy())
+            if name not in mgmts:
+                net['dns_forward'] = forward
+
+        for mgmt in mgmts:
+            if nets[mgmt].get('dns_records'):
+                nets[mgmt]['dns_records'].update(dns_records)
+            else:
+                nets[mgmt]['dns_records'] = dns_records
 
     def _register_preallocated_ips(self, conf):
         """
@@ -385,8 +479,19 @@ class Prefix(object):
             for idx, nic in enumerate(dom_spec.get('nics', [])):
                 if 'ip' in nic:
                     continue
-
-                net = conf['nets'][nic['net']]
+                try:
+                    net = conf['nets'][nic['net']]
+                except KeyError:
+                    raise LagoInitException(
+                        (
+                            'Unrecognized network in {0}: '
+                            '{1}, available: '
+                            '{2}'
+                        ).format(
+                            dom_name, nic['net'],
+                            ','.join(conf.get('nets', {}).keys())
+                        )
+                    )
                 if net['type'] != 'nat':
                     continue
 
@@ -414,16 +519,110 @@ class Prefix(object):
         """
         conf = self._init_net_specs(conf)
         self._check_predefined_subnets(conf)
+        mgmts = self._select_mgmt_networks(conf)
+        self._validate_netconfig(conf)
         allocated_subnets, conf = self._allocate_subnets(conf)
         try:
+            self._add_mgmt_to_domains(conf, mgmts)
             self._register_preallocated_ips(conf)
             self._allocate_ips_to_nics(conf)
+            self._add_dns_records(conf, mgmts)
         except:
             for subnet in allocated_subnets:
                 subnet_lease.release(subnet)
             raise
 
         return conf
+
+    def _add_mgmt_to_domains(self, conf, mgmts):
+        """
+        Add management network key('mgmt_net') to each domain. Note this
+        assumes ``conf`` was validated.
+
+        Args:
+            conf(dict): spec
+            mgmts(list): list of management networks names
+
+        """
+
+        for name, domain in conf['domains'].iteritems():
+            domain_mgmt = [
+                nic['net'] for nic in domain['nics'] if nic['net'] in mgmts
+            ].pop()
+
+            domain['mgmt_net'] = domain_mgmt
+
+    def _validate_netconfig(self, conf):
+        """
+        Validate network configuration
+
+        Args:
+            conf(dict): spec
+
+        Returns:
+            None
+
+
+        Raises:
+            :exc:`~lago.utils.LagoInitException`: If a VM has more than
+            one management network configured, or a network which is not
+            management has DNS attributes, or a VM is configured with a
+            none-existence NIC, or a VM has no management network.
+        """
+
+        nets = conf.get('nets', {})
+        if len(nets) == 0:
+            # TO-DO: add default networking if no network is configured
+            raise LagoInitException('No networks configured.')
+
+        no_mgmt_dns = [
+            name for name, net in nets.iteritems()
+            if net.get('management', None) is None and
+            (net.get('main_dns') or net.get('dns_domain_name'))
+        ]
+        if len(no_mgmt_dns) > 0 and len(nets.keys()) > 1:
+            raise LagoInitException(
+                (
+                    'Networks: {0}, misconfigured, they '
+                    'are not marked as management, but have '
+                    'DNS attributes. DNS is supported '
+                    'only in management networks.'
+                ).format(','.join(no_mgmt_dns))
+            )
+
+        for name, domain_spec in conf['domains'].items():
+            mgmts = []
+            for nic in domain_spec['nics']:
+                net_name = nic['net']
+                try:
+                    net = conf['nets'][net_name]
+                except KeyError:
+                    raise LagoInitException(
+                        (
+                            'Unrecognized NIC: {0}, '
+                            'configured for VM: '
+                            '{1} '
+                        ).format(net_name, name)
+                    )
+                if net.get('management', False) is True:
+                    mgmts.append(net_name)
+            if len(mgmts) == 0:
+                raise LagoInitException(
+                    (
+                        'VM {0} has no management network, '
+                        'please connect it to '
+                        'one.'
+                    ).format(name)
+                )
+
+            if len(mgmts) > 1:
+                raise LagoInitException(
+                    (
+                        'VM {0} has more than one management '
+                        'network: {1}. It should have exactly '
+                        'one.'
+                    ).format(name, ','.join(mgmts))
+                )
 
     def _create_disk(
         self,

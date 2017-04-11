@@ -411,6 +411,14 @@ class VMPlugin(plugins.Plugin):
     def spec(self):
         return deepcopy(self._spec)
 
+    @property
+    def mgmt_name(self):
+        return self._spec.get('mgmt_net', None)
+
+    @property
+    def mgmt_net(self):
+        return self.virt_env.get_net(name=self.mgmt_name)
+
     def name(self):
         return str(self._spec['name'])
 
@@ -418,7 +426,8 @@ class VMPlugin(plugins.Plugin):
         return 'iqn.2014-07.org.lago:%s' % self.name()
 
     def ip(self):
-        return str(self.virt_env.get_net().resolve(self.name()))
+        res = self.mgmt_net.resolve(self.name())
+        return res.encode('ascii', 'ignore')
 
     def all_ips(self):
         nets = {}
