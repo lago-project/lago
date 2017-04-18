@@ -112,6 +112,14 @@ in_lago_prefix = in_prefix(
         'root pass for example'
     ),
 )
+@lago.plugins.cli.cli_plugin_add_argument(
+    '--skip-build',
+    action='store_true',
+    help=(
+        'If passed, will skip the build commands specified in the build'
+        'section of all the disks'
+    ),
+)
 def do_init(
     workdir,
     virt_config,
@@ -122,6 +130,7 @@ def do_init(
     template_repos=None,
     set_current=False,
     skip_bootstrap=False,
+    skip_build=False,
     **kwargs
 ):
 
@@ -188,6 +197,7 @@ def do_init(
                     repo,
                     store,
                     do_bootstrap=not skip_bootstrap,
+                    do_build=not skip_build,
                 )
 
             if set_current:

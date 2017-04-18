@@ -19,8 +19,9 @@
                     "size": 1780088832,
                     "version": "v1"
                 },
-                "name": "root", 
+                "name": "root",
                 "path": "@@PREFIX_PATH@@/images/lago_functional_tests_vm01_root.qcow2",
+                "template_name": "el7.3-base",
                 "type": "template"
             }
         ]
