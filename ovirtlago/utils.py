@@ -147,3 +147,9 @@ def require_sdk(version, modules=sys.modules):
         return wrapped_func
 
     return wrap
+
+
+def partial(func, *args, **kwargs):
+    partial_func = functools.partial(func, *args, **kwargs)
+    functools.update_wrapper(partial_func, func)
+    return partial_func

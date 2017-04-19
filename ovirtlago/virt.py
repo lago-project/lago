@@ -22,11 +22,11 @@ import time
 import warnings
 import lago
 import lago.vm
-import functools
 import logging
 import yaml
 from lago.config import config as lago_config
 from ovirtlago import utils
+from utils import partial
 
 import ovirtsdk.api
 from ovirtsdk.infrastructure.errors import (RequestError, ConnectionError)
@@ -151,6 +151,55 @@ class OvirtVirtEnv(lago.virt.VirtEnv):
                 )
             )
         return cpu_map[host.cpu_vendor][host.cpu_model]
+
+    def assert_vdsm_alive(self, timeout=2 * 60):
+        """
+        Assert service 'vdsmd' reports running on all vdsm hosts
+
+        Args:
+            timeout(int): timeout
+
+        Returns:
+            None
+
+        Raises:
+            AssertionError: if vdsmd is not reported running after the
+                given timeout, or ssh is unreachable.
+        """
+
+        def _vdsm_up(host):
+            status = host.service('vdsmd').alive()
+            LOGGER.debug('vdsm status: %s', status)
+            return status
+
+        for host in self.host_vms():
+            testlib.assert_true_within(
+                partial(_vdsm_up, host), timeout=timeout
+            )
+
+    def assert_engine_alive(self, timeout=2 * 60):
+        """
+        Assert service 'ovirt-engine' reports running on the engine VM
+
+        Args:
+            timeout(int): timeout
+
+        Returns:
+            None
+
+        Raises:
+            AssertionError: if ovirt-engine is not reported running after the
+                given timeout, or ssh is unreachable.
+        """
+
+        def _ovirt_engine_up(host):
+            status = host.service('ovirt-engine').alive()
+            LOGGER.debug('ovirt-engine status: %s', status)
+            return status
+
+        testlib.assert_true_within(
+            partial(_ovirt_engine_up, self.engine_vm()), timeout=timeout
+        )
 
 
 # TODO : solve the problem of ssh to the Node
@@ -285,10 +334,12 @@ class EngineVM(lago.vm.DefaultVM):
         if result.code != 0:
             raise RuntimeError('Failed to setup the engine')
 
+    @require_sdk(version='4')
     def _search_vms(self, api, query):
         vms_service = api.system_service().vms_service()
         return [vm.id for vm in vms_service.list(search=query)]
 
+    @require_sdk(version='4')
     def start_all_vms(self):
         api = self.get_api_v4(check=True)
         vms_service = api.system_service().vms_service()
@@ -304,9 +355,10 @@ class EngineVM(lago.vm.DefaultVM):
 
         for id in ids:
             testlib.assert_true_within(
-                functools.partial(_vm_is_up, id=id), timeout=5 * 60
+                partial(_vm_is_up, id=id), timeout=5 * 60
             )
 
+    @require_sdk(version='4')
     def stop_all_vms(self):
         api = self.get_api_v4(check=True)
         vms_service = api.system_service().vms_service()
@@ -322,7 +374,7 @@ class EngineVM(lago.vm.DefaultVM):
 
         for id in ids:
             testlib.assert_true_within(
-                functools.partial(_vm_is_down, id=id), timeout=5 * 60
+                partial(_vm_is_down, id=id), timeout=5 * 60
             )
 
     @require_sdk(version='4')
@@ -362,26 +414,30 @@ class EngineVM(lago.vm.DefaultVM):
         hosts_service = api.system_service().hosts_service()
         hosts = hosts_service.list(search='status=maintenance')
         if hosts:
-            for h in hosts:
-                host_service = hosts_service.host_service(h.id)
-                host_service.activate()
-            time.sleep(10)
 
-            def _host_is_up():
-                h_service = hosts_service.host_service(h.id)
+            def _host_is_up(host):
+                h_service = hosts_service.host_service(host.id)
                 host_obj = h_service.get()
                 if host_obj.status == otypes.HostStatus.UP:
                     return True
 
                 if host_obj.status == otypes.HostStatus.NON_OPERATIONAL:
                     raise RuntimeError(
-                        'Host %s is in non operational state' % h.name
+                        'Host %s is in non operational state' % host.name
                     )
                 elif host_obj.status == otypes.HostStatus.INSTALL_FAILED:
-                    raise RuntimeError('Host %s installation failed' % h.name)
+                    raise RuntimeError(
+                        'Host %s installation failed' % host.name
+                    )
 
-            for h in hosts:
-                testlib.assert_true_within(_host_is_up, timeout=5 * 60)
+            for host in hosts:
+                host_service = hosts_service.host_service(host.id)
+                host_service.activate()
+
+            for host in hosts:
+                testlib.assert_true_within(
+                    partial(_host_is_up, host), timeout=5 * 60
+                )
 
     @require_sdk(version='4')
     def check_sds_status(self, status=None):
@@ -399,7 +455,7 @@ class EngineVM(lago.vm.DefaultVM):
                 return all(sd.status == status for sd in sds.list())
 
             testlib.assert_true_within(
-                functools.partial(_sds_state, dc_id=dc.id), timeout=5 * 60
+                partial(_sds_state, dc_id=dc.id), timeout=5 * 60
             )
 
     @require_sdk(version='4')

@@ -228,6 +228,10 @@ def do_ovirt_status(prefix, **kwargs):
 def do_ovirt_start(prefix, with_vms, **kwargs):
     with LogTask('Starting oVirt environment'):
         prefix.start()
+        with LogTask('Waiting for ovirt-engine status'):
+            prefix.virt_env.assert_engine_alive()
+        with LogTask('Waiting for vdsmd status'):
+            prefix.virt_env.assert_vdsm_alive()
         with LogTask('Activating Engine Hosts'):
             prefix.virt_env.engine_vm().start_all_hosts()
         if with_vms:
