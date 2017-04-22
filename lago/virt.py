@@ -511,3 +511,10 @@ class VirtEnv(object):
             snapshots[vm_name] = vm._spec['snapshots']
 
         return snapshots
+
+    def get_compat(self):
+        """Get compatibility level for this environment - which is the Lago
+        version used to create this environment """
+        # Prior to version 0.37.0, the version which the environment was
+        # initialized in was not saved, so we default to 0.36.
+        return self.prefix.metadata.get('lago_version', '0.36.0')

@@ -29,6 +29,7 @@ import urlparse
 import urllib
 import uuid
 import warnings
+import pkg_resources
 from os.path import join
 
 import xmltodict
@@ -107,7 +108,8 @@ class Prefix(object):
         self._virt_env = None
         self._metadata = None
 
-    def _get_metadata(self):
+    @property
+    def metadata(self):
         """
         Retrieve the metadata info for this prefix
 
@@ -117,11 +119,7 @@ class Prefix(object):
         if self._metadata is None:
             try:
                 with open(self.paths.metadata()) as metadata_fd:
-                    json_data = metadata_fd.read()
-                    if json_data:
-                        self._metadata = json.load(json_data)
-                    else:
-                        raise IOError()
+                    self._metadata = json.load(metadata_fd)
             except IOError:
                 self._metadata = {}
         return self._metadata
@@ -134,7 +132,7 @@ class Prefix(object):
             None
         """
         with open(self.paths.metadata(), 'w') as metadata_fd:
-            utils.json_dump(self._get_metadata(), metadata_fd)
+            utils.json_dump(self.metadata, metadata_fd)
 
     def save(self):
         """
@@ -1202,6 +1200,10 @@ class Prefix(object):
                 vm_specs=conf['domains'],
                 net_specs=conf['nets'],
             )
+
+            self._metadata = {
+                'lago_version': pkg_resources.get_distribution("lago").version,
+            }
 
             if do_bootstrap:
                 self.virt_env.bootstrap()
