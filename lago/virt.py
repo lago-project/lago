@@ -101,7 +101,7 @@ class VirtEnv(object):
             cls = NATNetwork
         elif net_spec['type'] == 'bridge':
             cls = BridgeNetwork
-        return cls(self, net_spec)
+        return cls(self, net_spec, compat=self.get_compat())
 
     def _create_vm(self, vm_spec):
         default_vm_type = config.get('default_vm_type')
