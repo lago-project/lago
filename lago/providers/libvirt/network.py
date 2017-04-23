@@ -34,7 +34,7 @@ LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
 
 
 class Network(object):
-    def __init__(self, env, spec):
+    def __init__(self, env, spec, compat):
         self._env = env
         libvirt_url = config.get('libvirt_url')
         self.libvirt_con = libvirt_utils.get_libvirt_connection(
@@ -42,6 +42,7 @@ class Network(object):
             libvirt_url=libvirt_url,
         )
         self._spec = spec
+        self.compat = compat
 
     def name(self):
         return self._spec['name']
@@ -142,8 +143,8 @@ class NATNetwork(Network):
         dns = ET.Element('dns', enable='no')
         return dns
 
-    def _generate_main_dns(self, records, domain, subnet):
-        dns = ET.Element('dns', forwardPlainNames='no')
+    def _generate_main_dns(self, records, subnet, forward_plain='no'):
+        dns = ET.Element('dns', forwardPlainNames=forward_plain)
         reverse_records = defaultdict(list)
         ipv6_prefix = self._ipv6_prefix(subnet=subnet)
         for hostname, ip in records.iteritems():
@@ -227,24 +228,48 @@ class NATNetwork(Network):
                     )
                 )
 
-        if self.is_management():
-            domain_xml = ET.Element(
-                'domain', name=self._spec['dns_domain_name'], localOnly='yes'
-            )
-            net_xml.append(domain_xml)
-            net_xml.append(
-                self._generate_main_dns(
-                    self._spec['dns_records'], self._spec['dns_domain_name'],
-                    subnet
+        if utils.ver_cmp(self.compat, '0.36.11') >= 0:
+            if self.is_management():
+                domain_xml = ET.Element(
+                    'domain',
+                    name=self._spec['dns_domain_name'],
+                    localOnly='yes'
                 )
-            )
-        else:
-            if self.libvirt_con.getLibVersion() < 2002000:
+                net_xml.append(domain_xml)
                 net_xml.append(
-                    self._generate_dns_forward(self._spec['dns_forward'])
+                    self._generate_main_dns(self._spec['dns_records'], subnet)
                 )
             else:
-                net_xml.append(self._generate_dns_disable())
+                if self.libvirt_con.getLibVersion() < 2002000:
+                    net_xml.append(
+                        self._generate_dns_forward(self._spec['dns_forward'])
+                    )
+                else:
+                    net_xml.append(self._generate_dns_disable())
+        else:
+            LOGGER.debug(
+                'Generating network XML with compatibility prior to %s',
+                self.compat
+            )
+            # Prior to v0.37, DNS records were only the  mappings of the
+            # management network.
+            if self.is_management():
+                if 'dns_domain_name' in self._spec:
+                    domain_xml = ET.Element(
+                        'domain',
+                        name=self._spec['dns_domain_name'],
+                        localOnly='yes'
+                    )
+                    net_xml.append(domain_xml)
+
+                net_xml.append(
+                    self._generate_main_dns(
+                        self._spec['mapping'], subnet, forward_plain='yes'
+                    )
+                )
+            else:
+                dns = ET.Element('dns', forwardPlainNames='yes', enable='yes')
+                net_xml.append(dns)
 
         LOGGER.debug(
             'Generated Network XML\n {0}'.

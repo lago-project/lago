@@ -33,6 +33,7 @@ import threading
 import textwrap
 import time
 import yaml
+import pkg_resources
 from io import StringIO
 import lockfile
 import argparse
@@ -771,6 +772,24 @@ def filter_spec(spec, paths, wildcard='*', separator='/'):
         except LagoUserException as e:
             e.message = e.message.format(path=path)
             raise
+
+
+def ver_cmp(ver1, ver2):
+    """
+    Compare lago versions
+
+    Args:
+        ver1(str): version string
+        ver2(str): version string
+
+    Returns:
+        Return negative if ver1<ver2, zero if ver1==ver2, positive if
+        ver1>ver2.
+    """
+
+    return cmp(
+        pkg_resources.parse_version(ver1), pkg_resources.parse_version(ver2)
+    )
 
 
 class LagoException(Exception):
