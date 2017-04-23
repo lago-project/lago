@@ -368,11 +368,18 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
         """
         return self._cpu.vendor
 
+    def _load_domain_xml(self):
+        if self.vm.distro() == 'el6':
+            dom_raw_xml = libvirt_utils.get_template('dom_template-el6.xml')
+        else:
+            dom_raw_xml = libvirt_utils.get_template('dom_template.xml')
+        return dom_raw_xml
+
     def _libvirt_name(self):
         return self.vm.virt_env.prefixed_name(self.vm.name())
 
     def _libvirt_xml(self):
-        dom_raw_xml = libvirt_utils.get_template('dom_template.xml')
+        dom_raw_xml = self._load_domain_xml()
 
         qemu_kvm_path = self._caps.findtext(
             "guest[os_type='hvm']/arch[@name='x86_64']/domain[@type='kvm']"
