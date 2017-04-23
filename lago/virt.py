@@ -155,7 +155,11 @@ class VirtEnv(object):
         return self.prefix.paths.virt(*args)
 
     def bootstrap(self):
-        utils.invoke_in_parallel(lambda vm: vm.bootstrap(), self._vms.values())
+        vms = filter(
+            lambda vm: vm.spec.get('bootstrap', True), self._vms.values()
+        )
+        if vms:
+            utils.invoke_in_parallel(lambda vm: vm.bootstrap(), vms)
 
     def export_vms(
         self, vms_names, standalone, dst_dir, compress, init_file_name,
