@@ -19,3 +19,4 @@ pyxdg
 futures
 xmlunittest
 yapf
+pytest-cov

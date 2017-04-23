@@ -21,6 +21,10 @@ echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 if code_changed; then
     run_unit_tests \
     || res=$?
+    mv "lago.junit.xml" "$EXPORTED_DIR/"
+    mv "coverage.xml" "$EXPORTED_DIR/"
+    mv "htmlcov" "$EXPORTED_DIR/htmlcov"
+
 else
     echo " No code changes, skipping static/unit tests"
 fi

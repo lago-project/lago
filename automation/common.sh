@@ -160,7 +160,6 @@ generate_html_report() {
     cat  >exported-artifacts/index.html <<EOR
     <html>
     <body>
-        <ul>
             <li>
                 <a href="docs/html/index.html">Docs page</a>
             </li>
@@ -168,8 +167,12 @@ EOR
     if code_changed; then
         cat  >>exported-artifacts/index.html <<EOR
             <li>
-                <a href="functional_tests.tap">TAP tests result</a>
+                <a href="htmlcov/index.html">coverage.py unit tests report</a>
             </li>
+            <li>
+                <a href="functional_tests.tap">Functional tests result</a>
+            </li>
+
 EOR
     fi
 
