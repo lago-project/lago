@@ -21,6 +21,7 @@
 import logging
 import os
 import sys
+import textwrap
 import warnings
 
 import lago
@@ -29,6 +30,7 @@ from lago.log_utils import LogTask
 from lago.plugins.cli import CLIPlugin, cli_plugin, cli_plugin_add_argument
 from lago.utils import in_prefix, with_logging
 from ovirtlago.prefix import OvirtPrefix, OvirtWorkdir
+import ovirtlago.constants as constants
 
 LOGGER = logging.getLogger('ovirt-cli')
 in_ovirt_prefix = in_prefix(
@@ -255,6 +257,23 @@ def do_ovirt_start(prefix, with_vms, vms_timeout, **kwargs):
                 prefix.virt_env.engine_vm().check_sds_status(timeout=5 * 60)
             with LogTask('Starting Engine VMs'):
                 prefix.virt_env.engine_vm().start_all_vms(timeout=vms_timeout)
+
+    LOGGER.info(
+        textwrap.dedent(
+            """
+            The environment is ready to be used.
+            You can access the web UI with the following link and credentials:
+            https://{ip}
+            Username: {username}
+            Password: {password}
+            """.format(
+                ip=prefix.virt_env.engine_vm().ip(),
+                username=constants.ENGINE_USER.split('@')[0],
+                password=prefix.virt_env.engine_vm()
+                .metadata['ovirt-engine-password']
+            )
+        )
+    )
 
 
 @cli_plugin(
