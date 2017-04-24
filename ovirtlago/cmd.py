@@ -198,10 +198,18 @@ def do_ovirt_stop_vms(prefix, **kwargs):
 
 
 @cli_plugin(help='Start all VMs that are down')
+@cli_plugin_add_argument(
+    '--vms-timeout',
+    help=('Time to wait until the Engine reports the VMs are up.'),
+    dest='vms_timeout',
+    default=8 * 60,
+    type=int,
+    action='store',
+)
 @in_ovirt_prefix
 @with_logging
-def do_ovirt_start_vms(prefix, **kwargs):
-    prefix.virt_env.engine_vm().start_all_vms()
+def do_ovirt_start_vms(prefix, vms_timeout, **kwargs):
+    prefix.virt_env.engine_vm().start_all_vms(timeout=vms_timeout)
 
 
 @cli_plugin(help='Print oVirt setup status')
@@ -223,22 +231,30 @@ def do_ovirt_status(prefix, **kwargs):
     dest='with_vms',
     action='store_true',
 )
+@cli_plugin_add_argument(
+    '--vms-timeout',
+    help=('Time to wait until the Engine reports the VMs are up.'),
+    dest='vms_timeout',
+    default=8 * 60,
+    type=int,
+    action='store',
+)
 @in_ovirt_prefix
 @with_logging
-def do_ovirt_start(prefix, with_vms, **kwargs):
+def do_ovirt_start(prefix, with_vms, vms_timeout, **kwargs):
     with LogTask('Starting oVirt environment'):
         prefix.start()
         with LogTask('Waiting for ovirt-engine status'):
-            prefix.virt_env.assert_engine_alive()
+            prefix.virt_env.assert_engine_alive(timeout=3 * 60)
         with LogTask('Waiting for vdsmd status'):
-            prefix.virt_env.assert_vdsm_alive()
+            prefix.virt_env.assert_vdsm_alive(timeout=3 * 60)
         with LogTask('Activating Engine Hosts'):
-            prefix.virt_env.engine_vm().start_all_hosts()
+            prefix.virt_env.engine_vm().start_all_hosts(timeout=5 * 60)
         if with_vms:
             with LogTask('Waiting for Storage domains to be in active mode'):
-                prefix.virt_env.engine_vm().check_sds_status()
+                prefix.virt_env.engine_vm().check_sds_status(timeout=5 * 60)
             with LogTask('Starting Engine VMs'):
-                prefix.virt_env.engine_vm().start_all_vms()
+                prefix.virt_env.engine_vm().start_all_vms(timeout=vms_timeout)
 
 
 @cli_plugin(

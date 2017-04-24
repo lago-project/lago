@@ -340,7 +340,7 @@ class EngineVM(lago.vm.DefaultVM):
         return [vm.id for vm in vms_service.list(search=query)]
 
     @require_sdk(version='4')
-    def start_all_vms(self):
+    def start_all_vms(self, timeout=8 * 60):
         api = self.get_api_v4(check=True)
         vms_service = api.system_service().vms_service()
         ids = self._search_vms(api, query='status=down')
@@ -355,11 +355,11 @@ class EngineVM(lago.vm.DefaultVM):
 
         for id in ids:
             testlib.assert_true_within(
-                partial(_vm_is_up, id=id), timeout=5 * 60
+                partial(_vm_is_up, id=id), timeout=timeout
             )
 
     @require_sdk(version='4')
-    def stop_all_vms(self):
+    def stop_all_vms(self, timeout=5 * 60):
         api = self.get_api_v4(check=True)
         vms_service = api.system_service().vms_service()
         ids = self._search_vms(api, query='status=up')
@@ -374,11 +374,11 @@ class EngineVM(lago.vm.DefaultVM):
 
         for id in ids:
             testlib.assert_true_within(
-                partial(_vm_is_down, id=id), timeout=5 * 60
+                partial(_vm_is_down, id=id), timeout=timeout
             )
 
     @require_sdk(version='4')
-    def stop_all_hosts(self):
+    def stop_all_hosts(self, timeout=5 * 60):
         api = self.get_api_v4(check=True)
         hosts_service = api.system_service().hosts_service()
         hosts = hosts_service.list(search='status=up')
@@ -406,10 +406,10 @@ class EngineVM(lago.vm.DefaultVM):
                     )
 
             for h in hosts:
-                testlib.assert_true_within(_host_is_maint, timeout=5 * 60)
+                testlib.assert_true_within(_host_is_maint, timeout=timeout)
 
     @require_sdk(version='4')
-    def start_all_hosts(self):
+    def start_all_hosts(self, timeout=5 * 60):
         api = self.get_api_v4(check=True)
         hosts_service = api.system_service().hosts_service()
         hosts = hosts_service.list(search='status=maintenance')
@@ -436,11 +436,11 @@ class EngineVM(lago.vm.DefaultVM):
 
             for host in hosts:
                 testlib.assert_true_within(
-                    partial(_host_is_up, host), timeout=5 * 60
+                    partial(_host_is_up, host), timeout=timeout
                 )
 
     @require_sdk(version='4')
-    def check_sds_status(self, status=None):
+    def check_sds_status(self, status=None, timeout=5 * 60):
         # the default status cannot be used in the function header, because
         # the v4 sdk might not be available.
         if status is None:
@@ -455,7 +455,7 @@ class EngineVM(lago.vm.DefaultVM):
                 return all(sd.status == status for sd in sds.list())
 
             testlib.assert_true_within(
-                partial(_sds_state, dc_id=dc.id), timeout=5 * 60
+                partial(_sds_state, dc_id=dc.id), timeout=timeout
             )
 
     @require_sdk(version='4')
