@@ -24,6 +24,7 @@ import lago
 import lago.vm
 import logging
 import yaml
+from collections import OrderedDict
 from lago.config import config as lago_config
 from ovirtlago import utils
 from utils import partial
@@ -461,13 +462,28 @@ class EngineVM(lago.vm.DefaultVM):
     @require_sdk(version='4')
     def status(self):
         api = self.get_api_v4(check=True)
-
         sys_service = api.system_service().get()
-        print("Version: %s" % sys_service.product_info.version.full_version)
-        print("Hosts: %d" % sys_service.summary.hosts.total)
-        print("SDs: %d" % sys_service.summary.storage_domains.total)
-        print("Users: %d" % sys_service.summary.users.total)
-        print("Vms: %d" % sys_service.summary.vms.total)
+        info = {'global': {}, 'items': {}}
+
+        info['global']['version'
+                       ] = sys_service.product_info.version.full_version
+        info['global']['web_ui'] = OrderedDict(
+            [
+                ('url', self.ip()), ('username', constants.ENGINE_USER),
+                ('password', self.metadata['ovirt-engine-password'])
+            ]
+        )
+
+        for k, v in vars(sys_service.summary).viewitems():
+            if isinstance(v, otypes.ApiSummaryItem):
+                info['items'][k.lstrip('_')] = OrderedDict(
+                    [
+                        ('total', v.total),
+                        ('active', v.active),
+                    ]
+                )
+
+        return info
 
 
 class HostVM(lago.vm.DefaultVM):

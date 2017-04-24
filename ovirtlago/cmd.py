@@ -217,8 +217,8 @@ def do_ovirt_start_vms(prefix, vms_timeout, **kwargs):
 @cli_plugin(help='Print oVirt setup status')
 @in_ovirt_prefix
 @with_logging
-def do_ovirt_status(prefix, **kwargs):
-    prefix.virt_env.engine_vm().status()
+def do_ovirt_status(prefix, out_format, **kwargs):
+    print(out_format.format(prefix.virt_env.engine_vm().status()))
 
 
 @cli_plugin(
