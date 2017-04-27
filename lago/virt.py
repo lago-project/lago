@@ -219,7 +219,7 @@ class VirtEnv(object):
                 filters = [
                     'domains/*/disks/*/metadata',
                     'domains/*/metadata/deploy-scripts', 'domains/*/snapshots',
-                    'domains/*/name', 'nets/*/mapping'
+                    'domains/*/name', 'nets/*/mapping', 'nets/*/dns_records'
                 ]
             spec = self.get_env_spec(filters)
 
