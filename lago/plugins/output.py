@@ -150,6 +150,6 @@ class FlatOutFormatPlugin(OutFormatPlugin):
                 acc.append(delimiter.join(path))
 
         result = []
-        dfs(info_dict['Prefix'], [], result)
+        dfs(info_dict.get('Prefix') or info_dict, [], result)
 
         return '\n'.join(result)
