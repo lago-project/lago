@@ -64,7 +64,12 @@ check-local:
 	@echo "-------------------------------------------------------------"
 	@echo "-~      Running unit tests                                 --"
 	@echo "-------------------------------------------------------------"
-	PYTHONPATH=${PWD} python2 ${PYTEST} -v tests/unit
+	PYTHONPATH=${PWD} python2 ${PYTEST} --junit-xml=lago.junit.xml \
+	   --cov-report html \
+	   --cov-report term \
+	   --cov-report xml \
+	   --cov=lago \
+	   -vvv tests/unit/
 	@echo "-------------------------------------------------------------"
 	@echo "-------------------------------------------------------------"
 
