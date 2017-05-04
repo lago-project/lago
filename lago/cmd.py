@@ -207,6 +207,8 @@ def do_init(
             workdir.cleanup()
             raise
 
+        return workdir, prefix
+
 
 @lago.plugins.cli.cli_plugin(help='Clean up deployed resources')
 @in_lago_prefix
