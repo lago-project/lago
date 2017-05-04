@@ -20,3 +20,4 @@ futures
 xmlunittest
 yapf
 pytest-cov
+wrapt

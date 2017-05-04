@@ -9,3 +9,4 @@ PyYAML
 enum
 pyxdg
 configparser
+wrapt
