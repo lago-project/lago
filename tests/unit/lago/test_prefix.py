@@ -193,9 +193,9 @@ class TestPrefixNetworkInitalization(object):
                             }
                         }
                 }, (
-                    'Networks: net-2,net-1, misconfigured, they are not '
-                    'marked as management, but have DNS attributes. DNS is '
-                    'supported only in management networks.'
+                    r'Networks: (net-1,net-2|net-2,net-1), misconfigured, '
+                    'they are not marked as management, but have DNS '
+                    'attributes. DNS is supported only in management networks.'
                 )
             ),
             (
