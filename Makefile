@@ -4,8 +4,6 @@ TAR_FILE=${NAME}-${VERSION}.tar
 TARBALL_FILE=${TAR_FILE}.gz
 SPECFILE=${NAME}.spec
 # this is needed to use the libs from venv
-PYTEST=$(shell which py.test)
-FLAKE8=$(shell which flake8)
 
 OUTPUT_DIR=${PWD}
 RPM_DIR=${OUTPUT_DIR}/rpmbuild
@@ -51,27 +49,7 @@ build:
 check: check-local
 
 check-local:
-	@echo "-------------------------------------------------------------"
-	@echo "-------------------------------------------------------------"
-	@echo "-~      Running style checks                               --"
-	@echo "-------------------------------------------------------------"
-	scripts/check_style.sh
-	@echo "-------------------------------------------------------------"
-	@echo "-~      Running static checks                              --"
-	@echo "-------------------------------------------------------------"
-	PYTHONPATH=${PWD} python2 ${FLAKE8} --version
-	PYTHONPATH=${PWD} python2 ${FLAKE8}
-	@echo "-------------------------------------------------------------"
-	@echo "-~      Running unit tests                                 --"
-	@echo "-------------------------------------------------------------"
-	PYTHONPATH=${PWD} python2 ${PYTEST} --junit-xml=lago.junit.xml \
-	   --cov-report html \
-	   --cov-report term \
-	   --cov-report xml \
-	   --cov=lago \
-	   -vvv tests/unit/
-	@echo "-------------------------------------------------------------"
-	@echo "-------------------------------------------------------------"
+	tox -r -e py27
 
 dist: ${TARBALL_DIST_LOCATION}
 
@@ -110,5 +88,4 @@ clean:
 	rm -f AUTHORS
 
 docs:
-	$(MAKE) -C docs clean
-	$(MAKE) -C docs html
+	tox -r -e docs

@@ -11,4 +11,5 @@ python2-devel
 python2-dulwich
 python2-libguestfs
 python2-virtualenv
+python2-tox
 python-pip

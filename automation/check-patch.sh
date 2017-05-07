@@ -1,6 +1,6 @@
-#!/bin/bash -e
-EXPORTED_DIR="$PWD/exported-artifacts"
-OUT_DOCS_DIR="$EXPORTED_DIR/docs"
+#!/bin/bash -xe
+readonly EXPORTED_DIR="$PWD/exported-artifacts"
+readonly OUT_DOCS_DIR="$EXPORTED_DIR/docs"
 
 
 source "${0%/*}/common.sh"
@@ -13,7 +13,7 @@ res=0
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 echo '~*          Building docs                              ~'
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-build_docs "$OUT_DOCS_DIR"
+build_docs && mv -v docs/_build "$OUT_DOCS_DIR"/
 
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 echo '~*          Running static/unit tests                  ~'
@@ -21,9 +21,19 @@ echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 if code_changed; then
     run_unit_tests \
     || res=$?
-    mv "lago.junit.xml" "$EXPORTED_DIR/"
-    mv "coverage.xml" "$EXPORTED_DIR/"
-    mv "htmlcov" "$EXPORTED_DIR/htmlcov"
+    find "$PWD" \
+        \( -iname "lago.junit.xml" \
+        -o \
+        -iname "coverage.xml" \
+        -o \
+         \( -type d -iname "htmlcov" \) \
+        -o \
+        -iname "flake8.txt" \
+        \) \
+        -and ! -iname "*$EXPORTED_DIR*" \
+        -print \
+        -exec mv -v -t "$EXPORTED_DIR"  {} \+
+
 
 else
     echo " No code changes, skipping static/unit tests"
