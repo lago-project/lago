@@ -2,4 +2,4 @@
 
 
 def test_error():
-    this_is_not_defined()
+    this_is_not_defined()  # noqa: F821
