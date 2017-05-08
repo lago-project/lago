@@ -32,50 +32,20 @@ die() {
     exit 1
 }
 
+setup_tox() {
+    pip install --upgrade pip setuptools virtualenv tox || return 1
+}
 
 build_docs() {
-    local docs_dir="${1?}"
-    local res=0
-    rm -rf "$docs_dir"
-    rm -rf tests/docs_venv
-    [[ -d .cache ]] || mkdir .cache
-    chown -R $USER .cache
-    virtualenv -q tests/docs_venv || return 1
-    source tests/docs_venv/bin/activate
-    pip --quiet install --upgrade pip || return 1
-    pip --quiet install --requirement docs/requires.txt || return 1
-    make docs || res=$?
-    deactivate
-    mv docs/_build "$docs_dir"
-    return $res
+    setup_tox
+    make docs
+
 }
 
 
 run_unit_tests() {
-    local res=0
-    # Style and unit tests, using venv to make sure the installation tests
-    # pull in all the dependencies
-    rm -rf tests/venv
-    # the system packages are needed for python-libguestfs
-    [[ -d .cache ]] || mkdir .cache
-    chown -R $USER .cache
-    virtualenv -q tests/venv || return 1
-    source tests/venv/bin/activate
-    pip --quiet install --upgrade pip || return 1
-    pip --quiet install --requirement test-requires.txt || return 1
-    scripts/pull_system_python_libs.sh \
-        "$VIRTUAL_ENV" \
-        python-libguestfs
-    export PYTHONPATH
-    FLAKE8=$(which flake8)
-    PYTEST=$(which py.test)
-    make \
-        "FLAKE8=$FLAKE8" \
-        "PYTEST=$PYTEST" \
-        check-local \
-    || res=$?
-    deactivate
-    return $res
+    setup_tox
+    make check-local
 }
 
 

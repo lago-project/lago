@@ -9,5 +9,6 @@ python-dulwich
 python-libguestfs
 python-pip
 python-virtualenv
+python-tox
 yum
 yum-utils
