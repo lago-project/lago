@@ -15,7 +15,6 @@ VERBS=(
     start
     status
     stop
-    template-repo
     console
     generate-config
     'export'

@@ -41,7 +41,6 @@ Contents
    :maxdepth: 4
 
    lago
-   lago_template_repo
    ovirtlago
 
 
