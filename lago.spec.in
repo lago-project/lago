@@ -124,7 +124,6 @@ Requires: sudo
 %doc AUTHORS COPYING README.rst
 %{python2_sitelib}/%{name}/*.py*
 %{python2_sitelib}/%{name}/plugins/*.py*
-%{python2_sitelib}/%{name}_template_repo/*.py*
 %{python2_sitelib}/%{name}/providers/*.py*
 %{python2_sitelib}/%{name}/providers/libvirt/*.py*
 %{python2_sitelib}/%{name}/providers/libvirt/templates/*.xml

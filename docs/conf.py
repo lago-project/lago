@@ -34,12 +34,6 @@ subprocess.call(
         os.path.dirname(__file__), '../ovirtlago'
     ]
 )
-subprocess.call(
-    [
-        'sphinx-apidoc', '--module-first', '--no-toc', '-f', '-o',
-        os.path.dirname(__file__), '../lago_template_repo'
-    ]
-)
 subprocess.call([
     'make',
     '--directory=..',
