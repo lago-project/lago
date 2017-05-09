@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<service>
-  <short>Lago Testing Framework Local Repository</short>
-  <description>
-    HTTP server serving RPMs to a running deployment of the Lago Testing Framework.
-  </description>
-  <port port="8585" protocol="tcp" />
-  <destination ipv4="192.168.0.0/16" />
-</service>

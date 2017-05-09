@@ -63,7 +63,7 @@ run_installation_tests() {
     fi
     # fail if a glob turns out empty
     shopt -s failglob
-    for package in {python-,}lago {python-,}lago-ovirt; do
+    for package in {python-,}lago ; do
         echo "    $package: installing"
         ## Install one by one to make sure the deps are ok
         $yum install -y exported-artifacts/"$package"-[[:digit:]]*.noarch.rpm \
@@ -75,15 +75,6 @@ run_installation_tests() {
         if [[ "$package" == "lago" ]]; then
             echo "    Checking that lago imports are not missing"
             lago -h > /dev/null \
-            && echo "    OK" \
-            || {
-                echo "    FAILED"
-                return 1
-            }
-
-        elif [[ "$package" == "lago-ovirt" ]]; then
-            echo "    Checking that lago ovirt imports are not missing"
-            lago ovirt -h > /dev/null \
             && echo "    OK" \
             || {
                 echo "    FAILED"
