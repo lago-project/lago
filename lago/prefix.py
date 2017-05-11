@@ -108,6 +108,7 @@ class Prefix(object):
         self.paths = paths.Paths(self._prefix)
         self._virt_env = None
         self._metadata = None
+        self._subnet_store = subnet_lease.SubnetStore()
 
     @property
     @sdk_utils.expose
@@ -251,32 +252,6 @@ class Prefix(object):
 
         return conf
 
-    @staticmethod
-    def _check_predefined_subnets(conf):
-        """
-        Checks if all of the nets defined in the config are inside the allowed
-        range, throws exception if not
-
-        Args:
-            conf (dict): Configuration spec where to get the nets definitions
-                from
-
-        Returns:
-            None
-
-        Raises:
-            RuntimeError: If there are any subnets out of the allowed range
-        """
-        for net_spec in conf.get('nets', {}).itervalues():
-            subnet = net_spec.get('gw')
-            if subnet is None:
-                continue
-
-            if subnet_lease.is_leasable_subnet(subnet):
-                raise RuntimeError(
-                    '%s subnet can only be dynamically allocated' % (subnet)
-                )
-
     def _allocate_subnets(self, conf):
         """
         Allocate all the subnets needed by the given configuration spec
@@ -291,13 +266,24 @@ class Prefix(object):
         allocated_subnets = []
         try:
             for net_spec in conf.get('nets', {}).itervalues():
-                if 'gw' in net_spec or net_spec['type'] != 'nat':
+                if net_spec['type'] != 'nat':
                     continue
-                net_spec['gw'] = subnet_lease.acquire(self.paths.uuid())
-                allocated_subnets.append(net_spec['gw'])
+
+                gateway = net_spec.get('gw')
+                if gateway:
+                    allocated_subnet = self._subnet_store.acquire(
+                        self.paths.uuid(), gateway
+                    )
+                else:
+                    allocated_subnet = self._subnet_store.acquire(
+                        self.paths.uuid()
+                    )
+                    net_spec['gw'] = str(allocated_subnet.iter_hosts().next())
+
+                allocated_subnets.append(allocated_subnet)
         except:
             for subnet in allocated_subnets:
-                subnet_lease.release(subnet)
+                self._subnet_store.release(subnet)
             raise
 
         return allocated_subnets, conf
@@ -439,7 +425,7 @@ class Prefix(object):
                     continue
 
                 net = conf['nets'][nic['net']]
-                if subnet_lease.is_leasable_subnet(net['gw']):
+                if self._subnet_store.is_leasable_subnet(net['gw']):
                     nic['ip'] = _create_ip(
                         net['gw'], int(nic['ip'].split('.')[-1])
                     )
@@ -519,7 +505,6 @@ class Prefix(object):
             None
         """
         conf = self._init_net_specs(conf)
-        self._check_predefined_subnets(conf)
         mgmts = self._select_mgmt_networks(conf)
         self._validate_netconfig(conf)
         allocated_subnets, conf = self._allocate_subnets(conf)
@@ -530,7 +515,7 @@ class Prefix(object):
             self._add_dns_records(conf, mgmts)
         except:
             for subnet in allocated_subnets:
-                subnet_lease.release(subnet)
+                self._subnet_store.release(subnet)
             raise
 
         return conf

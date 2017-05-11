@@ -13,3 +13,4 @@ stevedore
 wrapt
 Jinja2
 xmltodict
+netaddr
