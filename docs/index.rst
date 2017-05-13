@@ -21,7 +21,6 @@ Getting started
     LagoInitFile
     Lago_Examples
     Configuration
-    Debugging_and_Troubleshooting
 
 Developing
 ------------

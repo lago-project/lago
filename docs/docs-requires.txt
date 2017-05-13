@@ -1,6 +1,5 @@
 # For the docs
 sphinx>1.0
-nose
 dulwich
 configparser
 pyxdg

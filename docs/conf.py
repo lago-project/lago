@@ -28,12 +28,6 @@ subprocess.call(
         os.path.dirname(__file__), '../lago'
     ]
 )
-subprocess.call(
-    [
-        'sphinx-apidoc', '--module-first', '--no-toc', '-f', '-o',
-        os.path.dirname(__file__), '../ovirtlago'
-    ]
-)
 subprocess.call([
     'make',
     '--directory=..',
@@ -51,15 +45,7 @@ autodoc_mock_imports = [
     'lxml',
     'lxml.etree',
     'magic',
-    'ovirtsdk',
-    'ovirtsdk.api',
-    'ovirtsdk.infrastructure',
-    'ovirtsdk.infrastructure.errors',
-    'ovirtsdk.infrastructure.errors.RequestError',
     'paramiko',
-    'rpmUtils',
-    'rpmUtils.arch',
-    'rpmUtils.miscutils',
     'scp',
     'stevedore',
     'stevedore.extension',
@@ -359,5 +345,4 @@ texinfo_documents = [
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
     'https://docs.python.org/': None,
-    'https://nose.readthedocs.org/en/latest/': None,
 }
