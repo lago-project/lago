@@ -138,7 +138,7 @@ Requires: sudo
 
 %pre -n python-%{name}
 if [[ "$1" -eq 1 ]]; then
-    groupadd lago
+    groupadd -f lago
 fi
 
 %postun -n python-%{name}
