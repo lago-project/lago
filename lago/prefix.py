@@ -1185,6 +1185,10 @@ class Prefix(object):
             rollback.prependDefer(
                 shutil.rmtree, self.paths.prefix, ignore_errors=True
             )
+            self._metadata = {
+                'lago_version': pkg_resources.get_distribution("lago").version,
+            }
+
             conf = self._prepare_domains_images(
                 conf=conf,
                 template_repo=template_repo,
@@ -1200,10 +1204,6 @@ class Prefix(object):
                 vm_specs=conf['domains'],
                 net_specs=conf['nets'],
             )
-
-            self._metadata = {
-                'lago_version': pkg_resources.get_distribution("lago").version,
-            }
 
             if do_bootstrap:
                 self.virt_env.bootstrap()
