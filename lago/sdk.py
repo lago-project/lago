@@ -1,6 +1,8 @@
 from __future__ import print_function
 from lago import cmd
+from lago.config import config as lago_config
 from sdk_utils import SDKWrapper
+import os
 
 
 def init(config, workdir=None, **kwargs):
@@ -9,7 +11,7 @@ def init(config, workdir=None, **kwargs):
 
     Args:
         config(str): Path to LagoInitFile
-        workdir(str): Path to initalize the workdir
+        workdir(str): Path to initalize the workdir, defaults to "$PWD/.lago"
         **kwargs(dict): Pass arguments to :func:`~lago.cmd.do_init`
 
     Returns:
@@ -19,20 +21,16 @@ def init(config, workdir=None, **kwargs):
        :exc:`~lago.utils.LagoException`: If initialization failed
     """
 
+    # .. to-do:: setup logging
     # .. to-do:: load global configuration from a file
     # .. to-do:: allow loading the env from an existing directory
-    defaults = {
-        'workdir': workdir,
-        'template_repo_path': 'http://templates.ovirt.org/repo/repo.metadata',
-        'template_store': '/var/lib/lago/store',
-        'template_repos': '/var/lib/lago/repos',
-        'set_current': True,
-        'skip_bootstrap': False,
-        'skip_build': False,
-        'prefix_name': 'default',
-    }
-    defaults.update(kwargs)
+
+    defaults = lago_config.get_section('init')
+    if workdir is None:
+        workdir = os.path.abspath('.lago')
+    defaults['workdir'] = workdir
     defaults['virt_config'] = config
+    defaults.update(kwargs)
     workdir, prefix = cmd.do_init(**defaults)
     return SDK(workdir, prefix)
 
