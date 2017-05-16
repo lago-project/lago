@@ -64,7 +64,6 @@ in_lago_prefix = in_prefix(
     metavar='VIRT_CONFIG',
     type=os.path.abspath,
     nargs='?',
-    default=None,
 )
 @lago.plugins.cli.cli_plugin_add_argument(
     'workdir',
@@ -75,12 +74,10 @@ in_lago_prefix = in_prefix(
     metavar='WORKDIR',
     type=os.path.abspath,
     nargs='?',
-    default=None,
 )
 @lago.plugins.cli.cli_plugin_add_argument(
     '--template-repo-path',
     help='Repo file describing the templates',
-    default='http://templates.ovirt.org/repo/repo.metadata',
 )
 @lago.plugins.cli.cli_plugin_add_argument(
     '--template-repo-name',
@@ -89,13 +86,11 @@ in_lago_prefix = in_prefix(
 @lago.plugins.cli.cli_plugin_add_argument(
     '--template-store',
     help='Location to store templates at',
-    default='/var/lib/lago/store',
     type=os.path.abspath,
 )
 @lago.plugins.cli.cli_plugin_add_argument(
     '--template-repos',
     help='Location to store repos',
-    default='/var/lib/lago/repos',
     type=os.path.abspath,
 )
 @lago.plugins.cli.cli_plugin_add_argument(
@@ -739,19 +734,13 @@ def do_deploy(prefix, **kwargs):
 
 @lago.plugins.cli.cli_plugin(help="Dump configuration file")
 @lago.plugins.cli.cli_plugin_add_argument(
-    '--defaults_only',
-    help='Ignore CLI parameters and print loaded configs only.',
-    action='store_true',
-    default=False
-)
-@lago.plugins.cli.cli_plugin_add_argument(
     '--verbose',
     help='Include parameters with no default value.',
     action='store_true',
     default=False,
 )
-def do_generate(defaults_only, verbose, **kwargs):
-    print(config.get_ini(defaults_only=defaults_only, incl_unset=verbose))
+def do_generate(verbose, **kwargs):
+    print(config.get_ini(incl_unset=verbose))
 
 
 def create_parser(cli_plugins, out_plugins):
@@ -762,12 +751,11 @@ def create_parser(cli_plugins, out_plugins):
     parser.add_argument(
         '-l',
         '--loglevel',
-        default='info',
         choices=['info', 'debug', 'error', 'warning'],
         help='Log level to use'
     )
     parser.add_argument(
-        '--logdepth', default=3, type=int, help='How many task levels to show'
+        '--logdepth', type=int, help='How many task levels to show'
     )
 
     parser.add_argument(
@@ -803,40 +791,33 @@ def create_parser(cli_plugins, out_plugins):
         '--prefix-name',
         '-P',
         action='store',
-        default='current',
-        dest='prefix_name',
         help='Name of the prefix to use.',
     )
     parser.add_argument(
         '--ssh-user',
         action='store',
-        default='root',
         help='User for SSH provider.',
     )
     parser.add_argument(
         '--ssh-password',
         action='store',
-        default='123456',
         help='Password for SSH provider.',
     )
     parser.add_argument(
         '--ssh-tries',
         action='store',
-        default=100,
         type=int,
         help='Number of ssh time outs to wait before failing.',
     )
     parser.add_argument(
         '--ssh-timeout',
         action='store',
-        default=10,
         type=int,
         help='Seconds to wait before marking SSH connection as failed.'
     )
     parser.add_argument(
         '--libvirt_url',
         action='store',
-        default='qemu:///system',
         help='libvirt URI, currently only '
         'system'
         ' is supported.'
@@ -854,32 +835,27 @@ def create_parser(cli_plugins, out_plugins):
     parser.add_argument(
         '--default_vm_type',
         action='store',
-        default='default',
         help='Default vm type',
     )
 
     parser.add_argument(
         '--default_vm_provider',
         action='store',
-        default='local-libvirt',
         help='Default vm provider',
     )
     parser.add_argument(
         '--default_root_password',
         action='store',
-        default='123456',
         help='Default root password',
     )
     parser.add_argument(
         '--lease_dir',
         action='store',
-        default='/var/lib/lago/subnets',
         help='Path to store created subnets configurations'
     )
     parser.add_argument(
         '--reposync-dir',
         action='store',
-        default='/var/lib/lago/reposync',
         help='Reposync dir if used',
     )
 
