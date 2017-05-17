@@ -3,6 +3,7 @@
 # Common functions for the scripts
 #
 
+readonly PIP_CACHE_DIR=/var/tmp/lago_pip_cache
 
 set_guestfs_params() {
     # see: https://bugzilla.redhat.com/show_bug.cgi?id=1404287
@@ -33,18 +34,21 @@ die() {
 }
 
 setup_tox() {
-    pip install --upgrade pip setuptools virtualenv tox || return 1
+    # to-do: add support for pip cache in standard-ci
+    mkdir -p "$PIP_CACHE_DIR"
+    chown -R "$USER:" "$PIP_CACHE_DIR"
+    export PIP_CACHE_DIR
+    pip install \
+        --upgrade \
+        pip setuptools virtualenv tox
 }
 
 build_docs() {
-    setup_tox
     make docs
-
 }
 
 
 run_unit_tests() {
-    setup_tox
     make check-local
 }
 
@@ -86,20 +90,32 @@ run_installation_tests() {
 }
 
 
-run_basic_functional_tests() {
-    local res
-    # Avoid any heavy tests (for example, any that download templates)
-
+run_basic_functional_cli_tests() {
+    local res=0
+    pushd tests/functional
     sg lago -c "bats \
-        tests/functional/*basic.bats \
-        tests/functional/status.bats \
-        tests/functional/start.bats \
-        tests/functional/collect.bats \
-        tests/functional/deploy.bats \
-        tests/functional/export.bats" \
-    | tee exported-artifacts/functional_tests.tap
+        *basic.bats \
+        status.bats \
+        start.bats \
+        collect.bats \
+        deploy.bats \
+        export.bats" \
+    | tee functional_tests.tap
     res=${PIPESTATUS[0]}
-    return $res
+    popd
+
+    [[ "$res" -ne 0 ]] && return "$res"
+}
+
+run_basic_functional_sdk_tests() {
+    unset LAGO__START__WAIT_SUSPEND
+    TEST_RESULTS="$PWD/exported-artifacts/test_results/functional-sdk" \
+       tox -v -r -c tox-sdk.ini py27-sdk
+}
+
+run_basic_functional_tests() {
+    run_basic_functional_cli_tests
+    run_basic_functional_sdk_tests
 }
 
 
@@ -112,10 +128,30 @@ run_full_functional_tests() {
     sg lago -c 'bats tests/functional/*.bats' \
     | tee exported-artifacts/functional_tests.tap
     res=${PIPESTATUS[0]}
-    return $res
+    return "$res"
 }
 
 
+collect_test_results() {
+    local dest from
+    from="$1"
+    dest="$2"
+    mkdir -p "$dest"
+    find "$from/" \
+        \( -iname "*.junit.xml" \
+        -o \
+        -iname "coverage.xml" \
+        -o \
+        \( -type d -iname "htmlcov" \) \
+        -o \
+        -iname "flake8.txt" \
+        -o \
+        -iname "*.tap" \
+        \) \
+        -and ! -iname "*$dest*" \
+        -print \
+        -exec mv -v -t "$dest"  {} \+
+}
 
 generate_html_report() {
     cat  >exported-artifacts/index.html <<EOR
@@ -126,12 +162,19 @@ generate_html_report() {
             </li>
 EOR
     if code_changed; then
+
         cat  >>exported-artifacts/index.html <<EOR
             <li>
-                <a href="htmlcov/index.html">coverage.py unit tests report</a>
+                <a href="test_results/unittest/htmlcov/index.html">\
+                    Unittest coverage.py report</a>
             </li>
             <li>
-                <a href="functional_tests.tap">Functional tests result</a>
+                <a href="test_results/functional-cli/functional_tests.tap">\
+                    Functional CLI tests result</a>
+            </li>
+            <li>
+                <a href="test_results/functional-sdk/htmlcov/index.html">\
+                    Functional SDK tests coverage.py report</a>
             </li>
 
 EOR

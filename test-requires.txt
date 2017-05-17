@@ -20,4 +20,5 @@ futures
 xmlunittest
 yapf
 pytest-cov
+pytest-timeout
 wrapt
