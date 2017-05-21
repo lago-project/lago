@@ -147,7 +147,8 @@ def test_last_file_overrides(mocked_configs_path, mocked_open):
     file2 = {'section': {'var1': 'file2'}}
 
     mocked_open.side_effect = [
-        _dict_to_handler(file1), _dict_to_handler(file2)
+        _dict_to_handler(file1),
+        _dict_to_handler(file2)
     ]
     config_load = config.ConfigLoad()
 
@@ -224,7 +225,8 @@ def test_all_sources_root_section(mocked_configs_path, mocked_open):
     )
     args = ['--arg2', 'cli']
     mocked_open.side_effect = [
-        _dict_to_handler(file1), _dict_to_handler(file2)
+        _dict_to_handler(file1),
+        _dict_to_handler(file2)
     ]
     config_load = config.ConfigLoad()
     parser.set_defaults(**config_load.get_section('lago'))
