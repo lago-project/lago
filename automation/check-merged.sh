@@ -35,7 +35,7 @@ echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 echo '~*          Running functional tests                   ~'
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 if [[ "$res" == "0" ]]; then
-    set_guestfs_params
+    set_virt_params
     run_full_functional_tests \
     || res=$?
 else

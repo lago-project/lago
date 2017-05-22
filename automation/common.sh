@@ -5,7 +5,7 @@
 
 readonly PIP_CACHE_DIR=/var/tmp/lago_pip_cache
 
-set_guestfs_params() {
+set_virt_params() {
     # see: https://bugzilla.redhat.com/show_bug.cgi?id=1404287
     export LIBGUESTFS_APPEND="edd=off"
     # make libguestfs use /dev/shm as tmpdir
@@ -16,6 +16,8 @@ set_guestfs_params() {
     ! [[ -c "/dev/kvm" ]] && mknod /dev/kvm c 10 232
 
     export LIBGUESTFS_DEBUG=1 LIBGUESTFS_TRACE=1
+
+    export LIBVIRT_LOG_OUTPUTS="1:file:$PWD/exported-artifacts/libvirtd.log"
 }
 
 code_changed() {
