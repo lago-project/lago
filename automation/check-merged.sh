@@ -13,7 +13,9 @@ res=0
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 echo '~*          Building docs                              ~'
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-build_docs "$OUT_DOCS_DIR"
+
+setup_tox
+build_docs && mv -v docs/_build "$OUT_DOCS_DIR"/
 
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 echo '~*          Running static/unit tests                  ~'
@@ -21,6 +23,8 @@ echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 run_unit_tests \
 || res=$?
 
+collect_test_results "$PWD/" \
+    "$EXPORTED_DIR/test_results/unittest"
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 echo '~*          Running build/installation tests           ~'
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
@@ -38,6 +42,8 @@ if [[ "$res" == "0" ]]; then
     set_virt_params
     run_full_functional_tests \
     || res=$?
+    collect_test_results "$PWD/tests/functional" \
+        "$EXPORTED_DIR/test_results/functional-cli"
 else
     echo " Already failed, skipping"
 fi
