@@ -1,5 +1,5 @@
 #
-# Copyright 2016 Red Hat, Inc.
+# Copyright 2016-2017 Red Hat, Inc.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 #
 import argparse
 from io import StringIO
-
+import pytest
 import configparser
 from mock import call, mock_open, patch
 
@@ -87,6 +87,33 @@ def test_get_env_ignores_illegal():
     assert config.get_env_dict('lago') == {}
 
 
+def test_default_dict_empty():
+    config_load = config.ConfigLoad(root_section='section')
+    assert config_load.get_section('section') is None
+
+
+@pytest.mark.parametrize(
+    'defaults', [
+        {
+            'lago': {
+                'var1': 'val1'
+            },
+            'init': {
+                'var2': 'val2'
+            },
+        }, {
+            'init': {
+                'var1': 'var2'
+            }
+        }
+    ]
+)
+def test_default_dict_loading(defaults):
+    config_load = config.ConfigLoad(defaults=defaults)
+    for key, value in defaults.iteritems():
+        assert config_load.get_section(key) == value
+
+
 @patch('lago.config.open', new_callable=mock_open)
 @patch('lago.config._get_configs_path', return_value=['file1'])
 def test_args_loaded_from_file(mocked_configs_path, mocked_open):
@@ -120,7 +147,8 @@ def test_last_file_overrides(mocked_configs_path, mocked_open):
     file2 = {'section': {'var1': 'file2'}}
 
     mocked_open.side_effect = [
-        _dict_to_handler(file1), _dict_to_handler(file2)
+        _dict_to_handler(file1),
+        _dict_to_handler(file2)
     ]
     config_load = config.ConfigLoad()
 
@@ -197,7 +225,8 @@ def test_all_sources_root_section(mocked_configs_path, mocked_open):
     )
     args = ['--arg2', 'cli']
     mocked_open.side_effect = [
-        _dict_to_handler(file1), _dict_to_handler(file2)
+        _dict_to_handler(file1),
+        _dict_to_handler(file2)
     ]
     config_load = config.ConfigLoad()
     parser.set_defaults(**config_load.get_section('lago'))
@@ -229,3 +258,42 @@ def test_key_only_in_file_exists(mocked_configs_path, mocked_open):
 
     assert mocked_open.call_args_list == [call('file1', 'r')]
     assert config_load.get_section('custom_section') == {'custom': 'custom'}
+
+
+@pytest.mark.parametrize(
+    'defaults', [
+        {}, {
+            'lago': {
+                'var1': 'val1'
+            }
+        }, {
+            'no_root': {
+                'var1': 'val1'
+            },
+            'no_root2': {
+                'var2': 'val2'
+            }
+        }
+    ]
+)
+def test_get_ini(defaults):
+    config_load = config.ConfigLoad(defaults=defaults)
+    expected = _ini_from_dict(defaults)
+    assert config_load.get_ini() == expected
+
+
+def test_get_ini_include_unset():
+    defaults = {'lago': {'var1': 'val1'}}
+
+    config_load = config.ConfigLoad(defaults=defaults)
+    parser = _args_to_parser([('--var1', {}), ('--var2', {})])
+    config_load.update_parser(parser)
+    assert config_load['var1'] == 'val1'
+    config_load.update_args(parser.parse_args(['--var1', 'new']))
+    assert config_load['var1'] == 'new'
+    ini = config_load.get_ini(incl_unset=True)
+
+    configp = configparser.ConfigParser()
+    configp.read_string(ini)
+    assert configp.get('lago', 'var1') == 'new'
+    assert '#var2 = None' in ini

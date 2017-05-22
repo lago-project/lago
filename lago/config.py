@@ -23,7 +23,7 @@ from warnings import warn
 import configparser
 from xdg import BaseDirectory as base_dirs
 
-from lago.constants import CONFS_PATH
+from lago.constants import CONFS_PATH, CONFIG_DEFAULTS
 from lago.utils import argparse_to_ini
 
 
@@ -106,30 +106,36 @@ class ConfigLoad(object):
 
     """
 
-    def __init__(self, root_section='lago'):
+    def __init__(self, root_section='lago', defaults={}):
         """__init__
         Args:
-            root_section (str):
+            root_section (str): root section in the init
+            defaults (dict): Default dictonary to load, can be empty.
         """
 
         self.root_section = root_section
+        self._defaults = defaults
         self._config = defaultdict(dict)
         self._config.update(self.load())
         self._parser = None
 
     def load(self):
-        """Load all configuration from INI format files and ENV, always
-        preferring the last read. Order of loading is:
-        1) Custom paths as defined in constants.CONFS_PATH
-        2) XDG standard paths
-        3) Environment variables
+        """
+        Load all configurations from available resources, skip if empty:
+
+            1. :attr:`default`` dict passed to :func:`ConfigLoad.__init__`.
+            2. Custom paths as defined in :attr:`CONFS_PATH` in
+                :class:`~lago.constants`.
+            3. XDG standard paths.
+            4. Environment variables.
 
         Returns:
-            dict: dict of section configuration dicts
+            dict: dict of dicts.
 
         """
 
         configp = configparser.ConfigParser()
+        configp.read_dict(self._defaults)
         for path in _get_configs_path():
             try:
                 with open(path, 'r') as config_file:
@@ -149,7 +155,7 @@ class ConfigLoad(object):
         """
 
         for arg in vars(args):
-            if self.get(arg):
+            if self.get(arg) and getattr(args, arg) is not None:
                 self._config[self.root_section][arg] = getattr(args, arg)
 
     def update_parser(self, parser):
@@ -208,27 +214,30 @@ class ConfigLoad(object):
 
         return self._config.get(*args)
 
-    def get_ini(self, defaults_only=False, incl_unset=False):
+    def get_ini(self, incl_unset=False):
         """Return the config dictionary in INI format
         Args:
-            defaults_only (bool): if set, will ignore arguments set by the CLI.
+            incl_unset (bool): include variables with no defaults.
 
         Returns:
             str: string of the config file in INI format
 
         """
-        if self._parser:
-            if not defaults_only:
+
+        configp = configparser.ConfigParser(allow_no_value=True)
+        configp.read_dict(self._config)
+        with StringIO() as config_ini:
+            if self._parser:
                 self._parser.set_defaults(
                     **self.get_section(self.root_section)
                 )
-            return argparse_to_ini(parser=self._parser, incl_unset=incl_unset)
-        else:
-            configp = configparser.ConfigParser(allow_no_value=True)
-            configp.read_dict(self._config)
-            with StringIO() as out_ini:
-                configp.write(out_ini)
-                return out_ini.getvalue()
+                argparse_ini = argparse_to_ini(
+                    parser=self._parser, incl_unset=incl_unset
+                )
+                return argparse_ini
+            else:
+                configp.write(config_ini)
+                return config_ini.getvalue()
 
     def __repr__(self):
         return self._config.__repr__()
@@ -237,4 +246,4 @@ class ConfigLoad(object):
         return self._config.__str__()
 
 
-config = ConfigLoad()
+config = ConfigLoad(defaults=CONFIG_DEFAULTS)

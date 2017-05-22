@@ -51,6 +51,7 @@ autodoc_mock_imports = [
     'stevedore.extension',
     'yaml',
     'xmltodict',
+    'wrapt',
 ]
 
 autodoc_default_flags = [
