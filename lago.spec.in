@@ -60,6 +60,7 @@ BuildRequires: libvirt-python
 BuildRequires: python-enum
 BuildRequires: python-scp
 BuildRequires: python2-rpm-macros
+BuildRequires: python-wrapt
 %if 0%{?fedora} >= 24
 BuildRequires: python2-configparser
 BuildRequires: python2-paramiko >= 2.1.1
@@ -95,6 +96,7 @@ Requires: python-stevedore
 Requires: python-yaml
 Requires: python-enum
 Requires: pyxdg
+Requires: python-wrapt
 %if 0%{?fedora} >= 24
 Requires: python2-configparser
 Requires: python2-paramiko >= 2.1.1

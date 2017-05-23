@@ -44,6 +44,10 @@ class Network(object):
         self._spec = spec
         self.compat = compat
 
+    def __del__(self):
+        if self.libvirt_con is not None:
+            self.libvirt_con.close()
+
     def name(self):
         return self._spec['name']
 

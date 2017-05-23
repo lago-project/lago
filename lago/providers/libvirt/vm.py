@@ -59,6 +59,10 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
         self.vm.cpu_model = self.cpu_model
         self.vm.cpu_vendor = self.cpu_vendor
 
+    def __del__(self):
+        if self.libvirt_con is not None:
+            self.libvirt_con.close()
+
     def start(self):
         super(LocalLibvirtVMProvider, self).start()
         if not self.defined():

@@ -41,6 +41,7 @@ from utils import LagoInitException
 import virt
 import log_utils
 import build
+import sdk_utils
 
 LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
@@ -109,6 +110,7 @@ class Prefix(object):
         self._metadata = None
 
     @property
+    @sdk_utils.expose
     def metadata(self):
         """
         Retrieve the metadata info for this prefix
@@ -1185,6 +1187,10 @@ class Prefix(object):
             rollback.prependDefer(
                 shutil.rmtree, self.paths.prefix, ignore_errors=True
             )
+            self._metadata = {
+                'lago_version': pkg_resources.get_distribution("lago").version,
+            }
+
             conf = self._prepare_domains_images(
                 conf=conf,
                 template_repo=template_repo,
@@ -1200,10 +1206,6 @@ class Prefix(object):
                 vm_specs=conf['domains'],
                 net_specs=conf['nets'],
             )
-
-            self._metadata = {
-                'lago_version': pkg_resources.get_distribution("lago").version,
-            }
 
             if do_bootstrap:
                 self.virt_env.bootstrap()
@@ -1242,6 +1244,7 @@ class Prefix(object):
             out_format
         )
 
+    @sdk_utils.expose
     def start(self, vm_names=None):
         """
         Start this prefix
@@ -1254,6 +1257,7 @@ class Prefix(object):
         """
         self.virt_env.start(vm_names=vm_names)
 
+    @sdk_utils.expose
     def stop(self, vm_names=None):
         """
         Stop this prefix
@@ -1266,6 +1270,7 @@ class Prefix(object):
         """
         self.virt_env.stop(vm_names=vm_names)
 
+    @sdk_utils.expose
     def shutdown(self, vm_names=None, reboot=False):
         """
         Shutdown this prefix
@@ -1341,6 +1346,7 @@ class Prefix(object):
         self.cleanup()
         shutil.rmtree(self._prefix)
 
+    @sdk_utils.expose
     def get_vms(self):
         """
         Retrieve info on all the vms
@@ -1350,6 +1356,7 @@ class Prefix(object):
         """
         return self.virt_env.get_vms()
 
+    @sdk_utils.expose
     def get_nets(self):
         """
         Retrieve info on all the nets from all the domains
@@ -1413,6 +1420,7 @@ class Prefix(object):
         lagofile = paths.Paths(path).prefix_lagofile()
         return os.path.isfile(lagofile)
 
+    @sdk_utils.expose
     @log_task('Collect artifacts')
     def collect_artifacts(self, output_dir, ignore_nopath):
         if os.path.exists(output_dir):

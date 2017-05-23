@@ -13,6 +13,8 @@ res=0
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 echo '~*          Building docs                              ~'
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+
+setup_tox
 build_docs && mv -v docs/_build "$OUT_DOCS_DIR"/
 
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
@@ -21,20 +23,8 @@ echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 if code_changed; then
     run_unit_tests \
     || res=$?
-    find "$PWD" \
-        \( -iname "lago.junit.xml" \
-        -o \
-        -iname "coverage.xml" \
-        -o \
-         \( -type d -iname "htmlcov" \) \
-        -o \
-        -iname "flake8.txt" \
-        \) \
-        -and ! -iname "*$EXPORTED_DIR*" \
-        -print \
-        -exec mv -v -t "$EXPORTED_DIR"  {} \+
-
-
+    collect_test_results "$PWD/" \
+        "$EXPORTED_DIR/test_results/unittest"
 else
     echo " No code changes, skipping static/unit tests"
 fi
@@ -57,9 +47,15 @@ echo '~*          Running basic functional tests             ~'
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 
 if code_changed && [[ "$res" == "0" ]]; then
-    set_guestfs_params
+    set_virt_params
     run_basic_functional_tests \
     || res=$?
+
+    collect_test_results "$PWD/tests/functional" \
+        "$EXPORTED_DIR/test_results/functional-cli"
+    collect_test_results "$PWD/tests/functional-sdk" \
+        "$EXPORTED_DIR/test_results/functional-sdk"
+
 elif [[ "$res" == "0" ]]; then
     echo " No code changes, skipping basic functional tests"
 else

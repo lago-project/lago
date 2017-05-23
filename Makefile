@@ -49,7 +49,7 @@ build:
 check: check-local
 
 check-local:
-	tox -r -e py27
+	tox -v -r -e py27
 
 dist: ${TARBALL_DIST_LOCATION}
 
@@ -88,4 +88,4 @@ clean:
 	rm -f AUTHORS
 
 docs:
-	tox -r -e docs
+	tox -v -r -e docs

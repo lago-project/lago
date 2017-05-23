@@ -73,7 +73,7 @@ def auth_callback(credentials, user_data):
     return 0
 
 
-def get_libvirt_connection(name, libvirt_url='qemu://system'):
+def get_libvirt_connection(name, libvirt_url='qemu:///system'):
     if name not in LIBVIRT_CONNECTIONS:
         auth = [
             [libvirt.VIR_CRED_AUTHNAME, libvirt.VIR_CRED_PASSPHRASE],
