@@ -26,20 +26,15 @@ import logging
 import os
 import pkg_resources
 import sys
+from textwrap import dedent
 import warnings
-
-from collections import defaultdict
 
 import lago
 import lago.plugins
 import lago.plugins.cli
 import lago.templates
 from lago.config import config
-from lago import (
-    log_utils,
-    workdir as lago_workdir,
-    utils,
-)
+from lago import (log_utils, workdir as lago_workdir, utils, lago_ansible)
 from lago.utils import (in_prefix, with_logging, LagoUserException)
 
 LOGGER = logging.getLogger('cli')
@@ -489,47 +484,67 @@ def do_console(prefix, host, **kwargs):
 
 
 @lago.plugins.cli.cli_plugin(
-    help='Create Ansible host inventory of the environment'
+    help='Create Ansible host inventory of the environment',
+    description=dedent(
+        """
+    This method iterates through all the VMs and creates an Ansible
+    host inventory. For each vm it defines an IP address and a private key.
+
+    The default groups are based on the values which associated
+    with the following keys: 'vm-type', 'groups', 'vm-provider'.
+
+    The 'keys' parameter can be used to override the default groups,
+    for example to create a group which based on a 'service_provider',
+    --keys 'service_provider' should be added to this command.
+
+    Nested keys can be used also by specifying the path to the key,
+    for example '/disks/0/metadata/distro' will create a group based on the
+    distro of the os installed on disk at position 0 in the init file.
+    (we assume that numeric values in the path should be used as index for
+    list access).
+
+    If the value associated with the key is a list, a group will be created
+    for every item in that list (this is useful when you want to associate
+    a machine with more than one group).
+
+    The output of this command is printed to standard output.
+
+    Example of a possible output:
+
+    lago ansible_hosts -k 'vm-type'
+
+    [vm-type=ovirt-host]
+    lago-host1 ansible_host=1.2.3.4 ansible_ssh_private_key_file=/path/rsa
+    lago-host2 ansible_host=1.2.3.6 ansible_ssh_private_key_file=/path/rsa
+    [vm-type=ovirt-engine]
+    lago-engine ansible_host=1.2.3.5 ansible_ssh_private_key_file=/path/rsa
+
+    lago ansible_hosts -k 'disks/0/metadata/arch' 'groups'
+
+    [disks/0/metadata/arch=x86_64]
+    vm0-server ansible_host=1.2.3.4 ansible_ssh_private_key_file=/path/rsa
+    vm1-slave ansible_host=1.2.3.5 ansible_ssh_private_key_file=/path/rsa
+    vm2-slave ansible_host=1.2.3.6 ansible_ssh_private_key_file=/path/rsa
+    [groups=slaves]
+    vm1-slave ansible_host=1.2.3.5 ansible_ssh_private_key_file=/path/rsa
+    vm2-slave ansible_host=1.2.3.6 ansible_ssh_private_key_file=/path/rsa
+    [groups=servers]
+    vm0-server ansible_host=1.2.3.4 ansible_ssh_private_key_file=/path/rsa
+    """
+    )
+)
+@lago.plugins.cli.cli_plugin_add_argument(
+    '--keys',
+    '-k',
+    help='Path to the keys that should be used as groups',
+    default=['vm-type', 'groups', 'vm-provider'],
+    metavar='KEY',
+    nargs='*',
 )
 @in_lago_prefix
 @with_logging
-def do_generate_ansible_hosts(prefix, out_format, **kwargs):
-    """
-    Create Ansible host inventory of the environment
-    """
-    #
-    # This method iterates through all the VMs and creates an Ansible
-    # host inventory. It defines an IP address and private key
-    # for the machine in group named by its type, it is printed to
-    # standard output. The content looks for example like this:
-    #
-    # [ovirt-host]
-    # lago-host1 ansible_host=1.2.3.4 ansible_ssh_private_key_file=/path/rsa
-    # lago-host2 ansible_host=1.2.3.6 ansible_ssh_private_key_file=/path/rsa
-    # [ovirt-engine]
-    # lago-engine ansible_host=1.2.3.5 ansible_ssh_private_key_file=/path/rsa
-    #
-    inventory = defaultdict(list)
-    nets = prefix.get_nets()
-    for vm in prefix.virt_env.get_vms().values():
-        vm_mgmt_ip = [
-            nic.get('ip') for nic in vm.nics()
-            if nets[nic.get('net')].is_management()
-        ]
-        for ip in vm_mgmt_ip:
-            inventory[vm._spec['vm-type']].append(
-                "{name} ansible_host={ip} ansible_ssh_private_key_file={key}"
-                .format(
-                    ip=ip,
-                    key=prefix.virt_env.prefix.paths.ssh_id_rsa(),
-                    name=vm.name(),
-                )
-            )
-
-    for name, hosts in inventory.iteritems():
-        print('[{name}]'.format(name=name))
-        for host in sorted(hosts):
-            print(host)
+def do_generate_ansible_hosts(prefix, keys, **kwargs):
+    print(lago_ansible.LagoAnsible(prefix).get_inventory_str(keys))
 
 
 @lago.plugins.cli.cli_plugin(

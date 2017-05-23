@@ -419,6 +419,23 @@ class VMPlugin(plugins.Plugin):
     def mgmt_net(self):
         return self.virt_env.get_net(name=self.mgmt_name)
 
+    @property
+    def vm_type(self):
+        return self._spec['vm-type']
+
+    @property
+    def groups(self):
+        """
+        Returns:
+            list of str: The names of the groups to which this vm belongs
+                (as specified in the init file)
+        """
+        groups = self._spec.get('groups', [])
+        if groups:
+            return groups[:]
+        else:
+            return groups
+
     def name(self):
         return str(self._spec['name'])
 
