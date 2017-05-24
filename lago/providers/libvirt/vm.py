@@ -184,30 +184,32 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
             if self.vm._spec['disks'][0]['type'] != 'empty' and self.vm._spec[
                 'disks'
             ][0]['format'] != 'iso':
-                sysprep.sysprep(
-                    self.vm._spec['disks'][0]['path'],
-                    [
-                        sysprep.set_hostname(self.vm.name()),
-                        sysprep.set_root_password(self.vm.root_password()),
-                        sysprep.add_ssh_key(
-                            self.vm.virt_env.prefix.paths.ssh_id_rsa_pub(),
-                        ),
-                        sysprep.set_iscsi_initiator_name(self.vm.iscsi_name()),
+                sysprep_cmd = [
+                    sysprep.set_hostname(self.vm.name()),
+                    sysprep.set_root_password(self.vm.root_password()),
+                    sysprep.add_ssh_key(
+                        self.vm.virt_env.prefix.paths.ssh_id_rsa_pub(),
+                    ),
+                    sysprep.set_iscsi_initiator_name(self.vm.iscsi_name())
+                ]
+
+                if self.vm.distro() in ('el7', 'fc24', 'fc25', 'fc26'):
+                    sysprep_cmd.append(
                         sysprep.edit(
                             "/boot/grub2/grub.cfg",
                             "s/set timeout=5/set timeout=0/g"
-                        ) if (
-                            self.vm.distro() == 'el7'
-                            or self.vm.distro() == 'fc24'
-                        ) else '',
-                    ] + [
-                        sysprep.config_net_interface_dhcp(
-                            'eth%d' % index,
-                            utils.ipv4_to_mac(nic['ip']),
-                        ) for index, nic in enumerate(self.vm._spec['nics'])
-                        if 'ip' in nic
-                    ],
+                        )
+                    )
+
+                ifaces = [
+                    ('eth{0}'.format(idx), utils.ipv4_to_mac(nic['ip']))
+                    for idx, nic in enumerate(self.vm.spec['nics'])
+                ]
+                sysprep_cmd.extend(
+                    sysprep.config_net_ifaces_dhcp(self.vm.distro(), ifaces)
                 )
+
+                sysprep.sysprep(self.vm._spec['disks'][0]['path'], sysprep_cmd)
 
     def state(self):
         """

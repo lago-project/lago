@@ -20,7 +20,7 @@
 import os
 
 import utils
-
+from textwrap import dedent
 _DOT_SSH = '/root/.ssh'
 _AUTHORIZED_KEYS = os.path.join(_DOT_SSH, 'authorized_keys')
 _SELINUX_CONF_DIR = '/etc/selinux'
@@ -76,20 +76,64 @@ def set_selinux_mode(mode):
     )
 
 
-def _config_net_interface(iface, **kwargs):
+def _config_net_interface(iface, path, **kwargs):
+    return ('--mkdir', path, '--chmod',
+            '0755:{0}'.format(path), ) + _write_file(
+                os.path.join(
+                    path,
+                    'ifcfg-%s' % iface,
+                ),
+                '\n'.join(
+                    ['%s="%s"' % (k.upper(), v) for k, v in kwargs.items()]
+                ),
+            )
+
+
+def config_net_iface_debian(name, mac):
+    iface = dedent(
+        """
+    auto {name}
+    iface {name} inet6 auto
+    iface {name} inet dhcp
+        hwaddress ether {mac}
+    """.format(name=name, mac=mac)
+    )
     return (
-        '--mkdir', '/etc/sysconfig/network-scripts', '--chmod',
-        '0755:/etc/sysconfig/network-scripts',
-    ) + _write_file(
-        os.path.join(
-            '/etc/sysconfig/network-scripts',
-            'ifcfg-%s' % iface,
-        ),
-        '\n'.join(['%s="%s"' % (k.upper(), v) for k, v in kwargs.items()]),
+        _write_file(
+            os.path.join(
+                '/etc/network/interfaces.d', 'ifcfg-{0}.cfg'.format(name)
+            ), iface
+        )
     )
 
 
-def config_net_interface_dhcp(iface, hwaddr):
+def config_net_iface_loop_debian():
+    loop_device = dedent(
+        """
+    auto lo
+        iface lo inet loopback
+
+    source /etc/network/interfaces.d/*.cfg
+    """
+    )
+    return (_write_file('/etc/network/interfaces', loop_device))
+
+
+def config_net_ifaces_dhcp(distro, mapping):
+    if distro == 'debian':
+        cmd = [config_net_iface_loop_debian()]
+        cmd.extend(
+            [config_net_iface_debian(name, mac) for name, mac in mapping]
+        )
+    else:
+        cmd = [config_net_iface_dhcp(name, mac) for name, mac in mapping]
+
+    return cmd
+
+
+def config_net_iface_dhcp(
+    iface, hwaddr, path='/etc/sysconfig/network-scripts'
+):
     return _config_net_interface(
         iface,
         type='Ethernet',
@@ -97,6 +141,7 @@ def config_net_interface_dhcp(iface, hwaddr):
         onboot='yes',
         name=iface,
         hwaddr=hwaddr,
+        path=path,
     )
 
 
