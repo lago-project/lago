@@ -39,8 +39,9 @@ def init(config, workdir=None, **kwargs):
 class SDK(object):
     """
     The SDK can be initialized in 2 ways:
-    1. (Preferred) - by calling :func:`sdk.init`.
-    2. By passing already created workdir and prefix objects.
+
+        1. (Preferred) - by calling :func:`sdk.init`.
+        2. By passing already created workdir and prefix objects.
     """
 
     def __init__(self, workdir, prefix):
