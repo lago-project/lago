@@ -725,14 +725,17 @@ def setup_prefix_logging(logdir):
     file_handler = logging.FileHandler(
         filename=os.path.join(logdir, 'lago.log'),
     )
-    file_formatter = logging.Formatter(
+    file_formatter = get_default_log_formatter()
+    file_handler.setFormatter(file_formatter)
+    logging.root.addHandler(file_handler)
+    hide_paramiko_logs()
+    hide_stevedore_logs()
+
+
+def get_default_log_formatter():
+    return logging.Formatter(
         fmt=(
             '%(asctime)s::%(filename)s::%(funcName)s::%(lineno)s::'
             '%(name)s::%(levelname)s::%(message)s'
         ),
     )
-    file_handler.setLevel(logging.DEBUG)
-    file_handler.setFormatter(file_formatter)
-    logging.root.addHandler(file_handler)
-    hide_paramiko_logs()
-    hide_stevedore_logs()

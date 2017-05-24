@@ -16,4 +16,4 @@ def global_test_results():
 @pytest.fixture(scope='module')
 def tmp_workdir(tmpdir_factory):
     env_workdir = tmpdir_factory.mktemp('env')
-    return str(env_workdir)
+    return env_workdir

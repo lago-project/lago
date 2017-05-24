@@ -21,4 +21,5 @@ xmlunittest
 yapf
 pytest-cov
 pytest-timeout
+pytest-catchlog
 wrapt

@@ -74,11 +74,6 @@ class TestPrefixPathResolution(object):
         assert result == os.path.abspath(str(local_prefix))
 
 
-@pytest.fixture
-def empty_prefix():
-    return prefix.Prefix(prefix='')
-
-
 class TestPrefixNetworkInitalization(object):
     @pytest.fixture()
     def default_mgmt(self):
