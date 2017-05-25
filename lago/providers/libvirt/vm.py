@@ -193,21 +193,25 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
                     sysprep.set_iscsi_initiator_name(self.vm.iscsi_name())
                 ]
 
-                if self.vm.distro() in ('el7', 'fc24', 'fc25', 'fc26'):
+                if self.vm.distro() in ('fc24', 'fc25', 'debian', 'el7'):
+                    path = '/boot/grub2/grub.cfg'
+                    if self.vm.distro() == 'debian':
+                        path = '/boot/grub/grub.cfg'
                     sysprep_cmd.append(
-                        sysprep.edit(
-                            "/boot/grub2/grub.cfg",
-                            "s/set timeout=5/set timeout=0/g"
-                        )
+                        sysprep.edit(path, 's/set timeout=5/set timeout=0/s')
                     )
 
-                ifaces = [
-                    ('eth{0}'.format(idx), utils.ipv4_to_mac(nic['ip']))
-                    for idx, nic in enumerate(self.vm.spec['nics'])
-                ]
-                sysprep_cmd.extend(
-                    sysprep.config_net_ifaces_dhcp(self.vm.distro(), ifaces)
-                )
+                # In fc25 NetworkManager configures the interfaces successfuly
+                # on boot.
+                if self.vm.distro() not in ('fc25', 'fc26'):
+                    ifaces = [
+                        ('eth{0}'.format(idx), utils.ipv4_to_mac(nic['ip']))
+                        for idx, nic in enumerate(self.vm.spec['nics'])
+                    ]
+                    sysprep_cmd.extend(
+                        sysprep.
+                        config_net_ifaces_dhcp(self.vm.distro(), ifaces)
+                    )
 
                 sysprep.sysprep(self.vm._spec['disks'][0]['path'], sysprep_cmd)
 
