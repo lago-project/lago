@@ -28,22 +28,7 @@ import mock
 import lago.workdir
 import lago.prefix
 from lago.utils import LagoUserException
-
-
-@pytest.fixture()
-def mock_workdir(tmpdir, **kwargs):
-    default_props = generate_workdir_props(**kwargs)
-    return mock.Mock(
-        spec_set=lago.workdir.Workdir(str(tmpdir)), **default_props
-    )
-
-
-@pytest.fixture()
-def mock_prefix(tmpdir, **kwargs):
-    if 'initialized' not in kwargs:
-        kwargs['initialized'] = lambda: True
-
-    return mock.Mock(spec_set=lago.prefix.Prefix(str(tmpdir)), **kwargs)
+from utils import generate_workdir_params
 
 
 @pytest.fixture()
@@ -55,24 +40,6 @@ def mock_patch(monkeypatch, topatch, attribute, **kwargs):
     mock_obj = mock.Mock(**kwargs)
     monkeypatch.setattr(topatch, attribute, mock_obj)
     return mock_obj
-
-
-def generate_workdir_props(**kwargs):
-    default_props = {
-        'loaded': False,
-        'path': '.',
-        'prefixes': {},
-        'current': None,
-        'prefix_class': lago.prefix.Prefix
-    }
-    default_props.update(kwargs)
-    return default_props
-
-
-def generate_workdir_params(**kwargs):
-    if 'path' not in kwargs:
-        kwargs['path'] = '.'
-        return kwargs, generate_workdir_props(**kwargs)
 
 
 class TestWorkdirLoaded(object):

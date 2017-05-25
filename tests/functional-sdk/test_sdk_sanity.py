@@ -4,6 +4,8 @@ import textwrap
 import tempfile
 import os
 import shutil
+import logging
+import uuid
 from lago import sdk
 
 
@@ -66,9 +68,19 @@ def test_results(request, global_test_results):
 
 
 @pytest.fixture(scope='module')
-def env(request, init_fname, test_results, tmp_workdir):
-    workdir = os.path.join(tmp_workdir, 'lago')
-    env = sdk.init(init_fname, workdir=workdir)
+def external_log(tmpdir_factory):
+    return tmpdir_factory.mktemp('external_log').join('custom_log.log')
+
+
+@pytest.fixture(scope='module', autouse=True)
+def env(request, init_fname, test_results, tmp_workdir, external_log):
+    workdir = os.path.join(str(tmp_workdir), 'lago')
+    env = sdk.init(
+        init_fname,
+        workdir=workdir,
+        logfile=str(external_log),
+        loglevel=logging.DEBUG
+    )
     env.start()
     yield env
     collect_path = os.path.join(test_results, 'collect')
@@ -86,6 +98,13 @@ def vms(env):
 @pytest.fixture(scope='module')
 def nets(env):
     return env.get_nets()
+
+
+def test_custom_log(external_log):
+    msg = "test_custom_log " + str(uuid.uuid4())
+    logging.root.info(msg)
+    with open(str(external_log), 'r') as f:
+        assert msg in f.read()
 
 
 def test_vms_exists(vms, init_dict):

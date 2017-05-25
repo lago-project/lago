@@ -1,12 +1,38 @@
 from __future__ import print_function
 from lago import cmd
 from lago.config import config as lago_config
+from lago.log_utils import get_default_log_formatter
 from sdk_utils import SDKWrapper
 import weakref
 import os
+import logging
 
 
-def init(config, workdir=None, **kwargs):
+def add_stream_logger(level=logging.DEBUG, name=None):
+    """
+    Add a stream logger. This can be used for printing all SDK calls to stdout
+    while working in an interactive session. Note this is a logger for the
+    entire module, which will apply to all environments started in the same
+    session. If you need a specific logger pass a ``logfile`` to
+    :func:`~sdk.init`
+
+    Args:
+        level(int): :mod:`logging` log level
+        name(str): logger name, will default to the root logger.
+
+    Returns:
+        None
+    """
+
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+    handler = logging.StreamHandler()
+    handler.setFormatter(get_default_log_formatter())
+    handler.setLevel(level)
+    logger.addHandler(handler)
+
+
+def init(config, workdir=None, logfile=None, loglevel=logging.INFO, **kwargs):
     """
     Initialize the Lago environment
 
@@ -14,6 +40,8 @@ def init(config, workdir=None, **kwargs):
         config(str): Path to LagoInitFile
         workdir(str): Path to initalize the workdir, defaults to "$PWD/.lago"
         **kwargs(dict): Pass arguments to :func:`~lago.cmd.do_init`
+        logfile(str): A path to setup a log file.
+        loglevel(int): :mod:`logging` log level.
 
     Returns:
         :class:`~lago.sdk.SDK`: Initialized Lago enviornment
@@ -22,9 +50,15 @@ def init(config, workdir=None, **kwargs):
        :exc:`~lago.utils.LagoException`: If initialization failed
     """
 
-    # .. to-do:: setup logging
-    # .. to-do:: load global configuration from a file
     # .. to-do:: allow loading the env from an existing directory
+
+    logging.root.setLevel(logging.DEBUG)
+    logging.root.addHandler(logging.NullHandler())
+    if logfile:
+        fh = logging.FileHandler(logfile)
+        fh.setLevel(loglevel)
+        fh.setFormatter(get_default_log_formatter())
+        logging.root.addHandler(fh)
 
     defaults = lago_config.get_section('init')
     if workdir is None:
@@ -39,8 +73,9 @@ def init(config, workdir=None, **kwargs):
 class SDK(object):
     """
     The SDK can be initialized in 2 ways:
-    1. (Preferred) - by calling :func:`sdk.init`.
-    2. By passing already created workdir and prefix objects.
+
+        1. (Preferred) - by calling :func:`sdk.init`.
+        2. By passing already created workdir and prefix objects.
     """
 
     def __init__(self, workdir, prefix):
