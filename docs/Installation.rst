@@ -87,4 +87,7 @@ refreshes it's permissions and picks up any newly created users::
 
     $ sudo service libvirtd restart
 
+Iptables must allow internal connection to the internal repository lago publishes:
 
+    $ echo "-A INPUT -p tcp --dport 8585 -j ACCEPT" >> /etc/sysconfig/iptables
+    $ service iptables reload
