@@ -19,6 +19,7 @@ Getting started
 
     Installation
     LagoInitFile
+    SDK
     Lago_Examples
     Configuration
 

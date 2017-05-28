@@ -3,3 +3,6 @@ sphinx>1.0
 dulwich
 configparser
 pyxdg
+nbsphinx
+pypandoc
+
