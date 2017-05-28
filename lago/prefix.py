@@ -1567,6 +1567,7 @@ class Prefix(object):
                         (script, ret, host.name(), ),
                     )
 
+    @sdk_utils.expose
     @log_task('Deploy environment')
     def deploy(self):
         utils.invoke_in_parallel(
