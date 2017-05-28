@@ -150,3 +150,34 @@ def test_custom_gateway(vms, nets, init_dict):
     for net_name, net in init_dict['nets'].iteritems():
         if 'gw' in net:
             assert nets[net_name].gw() == net['gw']
+
+
+def test_load_env_down(env, tmp_workdir):
+    env.stop()
+    workdir = os.path.join(str(tmp_workdir), 'lago')
+    logfile = os.path.join(str(tmp_workdir), 'lago-test_load_env_down.log')
+    loaded_env = sdk.load_env(workdir, logfile=logfile)
+    assert loaded_env is not env
+    assert loaded_env._prefix is not env._prefix
+    assert loaded_env._pprefix is not env._pprefix
+    assert loaded_env._workdir is not env._workdir
+    for vm in loaded_env.get_vms().values():
+        assert vm.state() == 'down'
+    loaded_env.start()
+    for vm in loaded_env.get_vms().values():
+        assert vm.ssh_reachable(tries=30)
+
+
+def test_load_env_up(env, tmp_workdir):
+    workdir = os.path.join(str(tmp_workdir), 'lago')
+    logfile = os.path.join(str(tmp_workdir), 'lago-test_load_env_up.log')
+    loaded_env = sdk.load_env(workdir, logfile=logfile)
+    assert loaded_env is not env
+    assert loaded_env._prefix is not env._prefix
+    assert loaded_env._pprefix is not env._pprefix
+    assert loaded_env._workdir is not env._workdir
+    assert len(loaded_env.get_vms().values()) == 1
+    for vm in loaded_env.get_vms().values():
+        assert vm.state() == 'running'
+    for vm in loaded_env.get_vms().values():
+        assert vm.ssh_reachable(tries=30)

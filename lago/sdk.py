@@ -1,8 +1,9 @@
 from __future__ import print_function
 from lago import cmd
 from lago.config import config as lago_config
+from lago import workdir as lago_workdir
 from lago.log_utils import get_default_log_formatter
-from sdk_utils import SDKWrapper
+from sdk_utils import SDKWrapper, setup_sdk_logging
 import weakref
 import os
 import logging
@@ -50,16 +51,7 @@ def init(config, workdir=None, logfile=None, loglevel=logging.INFO, **kwargs):
        :exc:`~lago.utils.LagoException`: If initialization failed
     """
 
-    # .. to-do:: allow loading the env from an existing directory
-
-    logging.root.setLevel(logging.DEBUG)
-    logging.root.addHandler(logging.NullHandler())
-    if logfile:
-        fh = logging.FileHandler(logfile)
-        fh.setLevel(loglevel)
-        fh.setFormatter(get_default_log_formatter())
-        logging.root.addHandler(fh)
-
+    setup_sdk_logging(logfile, loglevel)
     defaults = lago_config.get_section('init')
     if workdir is None:
         workdir = os.path.abspath('.lago')
@@ -70,12 +62,38 @@ def init(config, workdir=None, logfile=None, loglevel=logging.INFO, **kwargs):
     return SDK(workdir, prefix)
 
 
+def load_env(workdir, logfile=None, loglevel=logging.INFO):
+    """
+    Load an existing Lago environment
+
+    Args:
+        workdir(str): Path to the workdir directory, as created by
+        :func:`~lago.sdk.init` or created by the CLI.
+        logfile(str): A Path to setup a log file.
+        loglevel(int): :mod:`logging` log level.
+
+    Returns:
+        :class:`~lago.sdk.SDK`: Initialized Lago environment
+
+    Raises:
+       :exc:`~lago.utils.LagoException`: If loading the environment failed.
+    """
+
+    setup_sdk_logging(logfile, loglevel)
+    workdir = os.path.abspath(workdir)
+    loaded_workdir = lago_workdir.Workdir(path=workdir)
+    prefix = loaded_workdir.get_prefix('current')
+    return SDK(loaded_workdir, prefix)
+
+
 class SDK(object):
     """
-    The SDK can be initialized in 2 ways:
+    The SDK can be initialized in 3 ways:
 
         1. (Preferred) - by calling :func:`sdk.init`.
-        2. By passing already created workdir and prefix objects.
+        2. By loading an existing workdir from the disk, with
+            :func:`~load_env`.
+        3. By passing already created workdir and prefix objects.
     """
 
     def __init__(self, workdir, prefix):

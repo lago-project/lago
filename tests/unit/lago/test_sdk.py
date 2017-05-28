@@ -18,7 +18,7 @@ class TestSDK(object):
         ]
 
     @pytest.mark.parametrize('level', ['INFO', 'CRITICAL', 'DEBUG'])
-    def test_init_logger(
+    def test_init_logger_new_env(
         self, tmpdir, monkeypatch, mock_workdir, empty_prefix, level
     ):
         log_path = tmpdir.mkdir('logs').join('test.log')
@@ -27,6 +27,29 @@ class TestSDK(object):
         )
         sdk.init(
             config=None, workdir=None, logfile=str(log_path), loglevel=level
+        )
+        handlers = [
+            h for h in logging.root.handlers
+            if isinstance(h, logging.FileHandler)
+        ]
+        assert len(handlers) == 1
+        handler = handlers.pop()
+        assert handler.stream.name == str(log_path)
+        assert handler.level == getattr(logging, level)
+
+        logging.root.removeHandler(handler)
+
+    @pytest.mark.parametrize('level', ['INFO', 'CRITICAL', 'DEBUG'])
+    def test_init_logger_loaded_env(
+        self, tmpdir, monkeypatch, mock_workdir, empty_prefix, level
+    ):
+        log_path = tmpdir.mkdir('logs').join('test.log')
+        monkeypatch.setattr(
+            'lago.workdir.Workdir.get_prefix', lambda *args, **kwargs:
+            empty_prefix
+        )
+        sdk.load_env(
+            workdir=str(tmpdir), logfile=str(log_path), loglevel=level
         )
         handlers = [
             h for h in logging.root.handlers
