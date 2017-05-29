@@ -80,7 +80,7 @@ def _config_net_interface(iface, path, **kwargs):
     cmd = ['--mkdir', path, '--chmod', '0755:{0}'.format(path)]
     iface_path = os.path.join(path, 'ifcfg-{0}'.format(iface))
     config = '\n'.join(
-        ['{0}={1}'.format(k.upper(), v) for k, v in kwargs.viewitems()]
+        ['{0}="{1}"'.format(k.upper(), v) for k, v in kwargs.viewitems()]
     )
     cmd.extend(_write_file(iface_path, config))
     return cmd
