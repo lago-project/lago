@@ -117,13 +117,13 @@ def test_vms_networks_mapping(init_dict, vms):
         assert sorted(vm.nets()) == sorted(nics)
 
 
-@pytest.mark.timeout(100)
+@pytest.mark.timeout(500)
 def test_vms_ssh(vms):
     for vm in vms.values():
-        assert vm.ssh_reachable(tries=30)
+        assert vm.ssh_reachable(tries=200)
 
 
-@pytest.mark.timeout(100)
+@pytest.mark.timeout(500)
 def test_vm_hostname_direct(vms, nets):
     for vm in vms.values():
         assert 'dns_domain_name' in vm.mgmt_net.spec
