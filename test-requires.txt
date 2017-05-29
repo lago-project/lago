@@ -1,7 +1,5 @@
 # https://github.com/pypa/setuptools/issues/1042
 six
-# not provided by pip
-#python-libguestfs
 enum
 dulwich
 flake8
@@ -25,3 +23,7 @@ pytest-cov
 pytest-timeout
 pytest-catchlog
 wrapt
+Jinja2
+# guestfs is not available on PyPI, however it can be installed
+# with a direct link.
+http://download.libguestfs.org/python/guestfs-1.36.4.tar.gz

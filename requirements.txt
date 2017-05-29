@@ -10,3 +10,4 @@ enum
 pyxdg
 configparser
 wrapt
+Jinja2
