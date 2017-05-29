@@ -21,6 +21,9 @@ import os
 
 import utils
 from textwrap import dedent
+import tempfile
+import logging
+LOGGER = logging.getLogger(__name__)
 _DOT_SSH = '/root/.ssh'
 _AUTHORIZED_KEYS = os.path.join(_DOT_SSH, 'authorized_keys')
 _SELINUX_CONF_DIR = '/etc/selinux'
@@ -76,14 +79,28 @@ def set_selinux_mode(mode):
     )
 
 
-def _config_net_interface(iface, path, **kwargs):
-    cmd = ['--mkdir', path, '--chmod', '0755:{0}'.format(path)]
+def _config_net_interface(path, iface, type, bootproto, onboot, hwaddr):
     iface_path = os.path.join(path, 'ifcfg-{0}'.format(iface))
-    config = '\n'.join(
-        ['{0}="{1}"'.format(k.upper(), v) for k, v in kwargs.viewitems()]
-    )
-    cmd.extend(_write_file(iface_path, config))
-    return cmd
+    cfg = dedent(
+        """
+        HWADDR="{hwaddr}"
+        BOOTPROTO="{bootproto}"
+        ONBOOT="{onboot}"
+        TYPE="{type}"
+        NAME="{iface}"
+        """.format(
+            hwaddr=hwaddr,
+            bootproto=bootproto,
+            onboot=onboot,
+            type=type,
+            iface=iface
+        )
+    ).lstrip()
+    with tempfile.NamedTemporaryFile(delete=False) as ifcfg_file:
+        ifcfg_file.write(cfg)
+    LOGGER.debug('generated %s for %s:\n%s', ifcfg_file.name, iface_path, cfg)
+    return ('--mkdir', path, '--chmod', '0755:{0}'.format(path)
+            ) + _upload_file(iface_path, ifcfg_file.name)
 
 
 def config_net_iface_debian(name, mac):
@@ -132,13 +149,12 @@ def config_net_iface_dhcp(
     iface, hwaddr, path='/etc/sysconfig/network-scripts'
 ):
     return _config_net_interface(
-        iface,
+        path=path,
+        iface=iface,
         type='Ethernet',
         bootproto='dhcp',
         onboot='yes',
-        name=iface,
         hwaddr=hwaddr,
-        path=path,
     )
 
 
