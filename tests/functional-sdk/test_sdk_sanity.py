@@ -89,7 +89,11 @@ def env(request, init_fname, test_results, tmp_workdir, external_log):
     yield env
     collect_path = os.path.join(test_results, 'collect')
     env.collect_artifacts(output_dir=collect_path, ignore_nopath=True)
-    shutil.copytree(workdir, os.path.join(test_results, 'workdir'))
+    shutil.copytree(
+        workdir,
+        os.path.join(test_results, 'workdir'),
+        ignore=shutil.ignore_patterns('*images*')
+    )
     env.stop()
     env.destroy()
 
