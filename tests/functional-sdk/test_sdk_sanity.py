@@ -27,6 +27,10 @@ def init_str():
             format: qcow2
         artifacts:
           - /var/log
+          - /etc/hosts
+          - /etc/resolv.conf
+          - /etc/sysconfig
+          - /etc/NetworkManager
     nets:
       net-01:
         type: nat
@@ -85,7 +89,11 @@ def env(request, init_fname, test_results, tmp_workdir, external_log):
     yield env
     collect_path = os.path.join(test_results, 'collect')
     env.collect_artifacts(output_dir=collect_path, ignore_nopath=True)
-    shutil.copytree(workdir, os.path.join(test_results, 'workdir'))
+    shutil.copytree(
+        workdir,
+        os.path.join(test_results, 'workdir'),
+        ignore=shutil.ignore_patterns('*images*')
+    )
     env.stop()
     env.destroy()
 
@@ -117,13 +125,13 @@ def test_vms_networks_mapping(init_dict, vms):
         assert sorted(vm.nets()) == sorted(nics)
 
 
-@pytest.mark.timeout(100)
+@pytest.mark.timeout(500)
 def test_vms_ssh(vms):
     for vm in vms.values():
-        assert vm.ssh_reachable(tries=30)
+        assert vm.ssh_reachable(tries=200)
 
 
-@pytest.mark.timeout(100)
+@pytest.mark.timeout(500)
 def test_vm_hostname_direct(vms, nets):
     for vm in vms.values():
         assert 'dns_domain_name' in vm.mgmt_net.spec
