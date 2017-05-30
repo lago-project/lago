@@ -27,6 +27,10 @@ def init_str():
             format: qcow2
         artifacts:
           - /var/log
+          - /etc/hosts
+          - /etc/resolv.conf
+          - /etc/sysconfig
+          - /etc/NetworkManager
     nets:
       net-01:
         type: nat
