@@ -119,8 +119,8 @@ You can also run an interactive SSH session:
 Controlling the environment
 ----------------------------
 
-You can stop or destroy the environment by calling
-:func:~lago.prefix.Prefix.start` or :func:`~lago.prefix.Prefix.stop`, finally
+You can start or stop the environment by calling
+:func:`~lago.prefix.Prefix.start` and :func:`~lago.prefix.Prefix.stop`, finally
 you can destroy the environment with :func:`lago.sdk.SDK.destroy` method,
 note that it will stop all VMs, and remove the provided working directory.
 
@@ -138,7 +138,7 @@ Generally speaking, the workdir disk consumption depends on which operation
 you run inside the underlying VMs. Lago uses QCOW2 layered images by default,
 so that each environment you create, sets up its own layer on top of the
 original template Lago downloaded the first time ``init`` was ran with that
-specific template. So when the VM starts, it usually consumes less than 10MB.
+specific template. So when the VM starts, it usually consumes less than 30MB.
 As you do more operations - the size might increase, as your current image
 diverges from the original template. For more information see qemu-img_
 
@@ -147,7 +147,7 @@ diverges from the original template. For more information see qemu-img_
 Differences from the CLI
 ========================
 
-1. Creating Different ``prefixes`` inside the prefix is not supported. In the
+1. Creating Different ``prefixes`` inside the workdir is not supported. In the
    CLI, you can have several prefixes inside a ``workdir``. The reasoning
    behind that is that when working from Python, you can manage the
    environment directly by your own(using a temporary or fixed path).
