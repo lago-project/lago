@@ -4,6 +4,7 @@ libffi-devel
 libvirt-devel
 libxslt-devel
 openssl-devel
+pandoc
 python2-devel
 python-dulwich
 python-libguestfs
