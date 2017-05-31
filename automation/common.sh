@@ -5,6 +5,15 @@
 
 readonly PIP_CACHE_DIR=/var/tmp/lago_pip_cache
 
+readonly CHECK_PATCH_BATS=('basic.bats' \
+    'collect.bats' \
+    'deploy.bats' \
+    'export.bats' \
+    'start.bats' \
+    'status.bats' )
+
+readonly CHECK_MERGED_BATS=('snapshot.bats')
+
 set_virt_params() {
     # see: https://bugzilla.redhat.com/show_bug.cgi?id=1404287
     export LIBGUESTFS_APPEND="edd=off"
@@ -18,6 +27,9 @@ set_virt_params() {
     export LIBGUESTFS_DEBUG=1 LIBGUESTFS_TRACE=1
 
     export LIBVIRT_LOG_OUTPUTS="1:file:$PWD/exported-artifacts/libvirtd.log"
+
+    [[ -e /etc/sudoers ]] \
+    && sed -i -e 's/^Defaults\s*requiretty/Defaults !requiretty/' /etc/sudoers
 }
 
 code_changed() {
@@ -94,45 +106,34 @@ run_installation_tests() {
 }
 
 
-run_basic_functional_cli_tests() {
+run_functional_cli_tests() {
     local res=0
+    local tests
+    tests=("$@")
     pushd tests/functional
-    sg lago -c "bats \
-        *basic.bats \
-        status.bats \
-        start.bats \
-        collect.bats \
-        deploy.bats \
-        export.bats" \
-    | tee functional_tests.tap
+    sg lago -c "bats ${tests[*]} " | tee functional_tests.tap
     res=${PIPESTATUS[0]}
     popd
     return "$res"
 }
 
-run_basic_functional_sdk_tests() {
+run_functional_sdk_tests() {
+    local stage
+    stage="$1"
+
     unset LAGO__START__WAIT_SUSPEND
     TEST_RESULTS="$PWD/exported-artifacts/test_results/functional-sdk" \
-       tox -v -r -c tox-sdk.ini py27-sdk
+       tox -v -r -c tox-sdk.ini -e py27-sdk -- --stage "$stage"
 }
 
-run_basic_functional_tests() {
-    run_basic_functional_cli_tests
-    run_basic_functional_sdk_tests
+run_functional_tests() {
+    local stage tests_var
+    stage="$1"
+    tests_var="${stage^^}_BATS[@]"
+    run_functional_cli_tests "${!tests_var}"
+    run_functional_sdk_tests "$stage"
 }
 
-
-run_full_functional_tests() {
-    local res
-    # Allow notty sudo, for the tests on jenkinslike environment
-    [[ -e /etc/sudoers ]] \
-    && sed -i -e 's/^Defaults\s*requiretty/Defaults !requiretty/' /etc/sudoers
-
-    sg lago -c 'bats tests/functional/*.bats' \
-    | tee exported-artifacts/functional_tests.tap
-    res=${PIPESTATUS[0]}
-    return "$res"
-}
 
 
 collect_test_results() {

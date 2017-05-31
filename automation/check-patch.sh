@@ -48,7 +48,7 @@ echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 
 if code_changed && [[ "$res" == "0" ]]; then
     set_virt_params
-    run_basic_functional_tests \
+    run_functional_tests "check_patch" \
     || res=$?
 
     collect_test_results "$PWD/tests/functional" \
