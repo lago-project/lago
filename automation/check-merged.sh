@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash -xe
 EXPORTED_DIR="$PWD/exported-artifacts"
 OUT_DOCS_DIR="$EXPORTED_DIR/docs"
 
@@ -40,10 +40,12 @@ echo '~*          Running functional tests                   ~'
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 if [[ "$res" == "0" ]]; then
     set_virt_params
-    run_full_functional_tests \
+    run_functional_tests "check_merged" \
     || res=$?
     collect_test_results "$PWD/tests/functional" \
         "$EXPORTED_DIR/test_results/functional-cli"
+    collect_test_results "$PWD/tests/functional-sdk" \
+        "$EXPORTED_DIR/test_results/functional-sdk"
 else
     echo " Already failed, skipping"
 fi

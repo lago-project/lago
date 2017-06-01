@@ -1,3 +1,5 @@
+# https://github.com/pypa/setuptools/issues/1042
+six
 # not provided by pip
 #python-libguestfs
 enum
