@@ -235,7 +235,7 @@ class VMProviderPlugin(plugins.Plugin):
             :exc:`~lago.plugins.vm.ExtractPathError`: on all other failures.
         """
         if self.vm.alive() and self.vm.ssh_reachable(
-            tries=1, propagate_fail=False
+            tries=5, propagate_fail=False
         ):
             self._extract_paths_scp(paths=paths, ignore_nopath=ignore_nopath)
         else:
