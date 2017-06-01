@@ -366,6 +366,8 @@ def get_ssh_client(
                     host_name,
                     err,
                 )
+            except EOFError as err:
+                LOGGER.debug('EOFError connecting to %s: %s', host_name, err)
             ssh_tries -= 1
             time.sleep(1)
         else:
