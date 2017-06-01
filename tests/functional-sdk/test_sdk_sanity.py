@@ -8,6 +8,7 @@ import logging
 import uuid
 from jinja2 import Environment, BaseLoader
 from lago import sdk
+from lago.utils import run_command
 
 
 @pytest.fixture(scope='module')
@@ -15,7 +16,7 @@ def init_str(images):
     init_template = textwrap.dedent(
         """
     domains:
-      {% for vm_name, template in images.iteritems() %}
+      {% for vm_name, template in images.viewitems() %}
       {{ vm_name }}:
         memory: 1024
         nics:
@@ -33,6 +34,7 @@ def init_str(images):
           - /etc/resolv.conf
           - /etc/sysconfig
           - /etc/NetworkManager
+        groups: group{{ loop.index % 2 }}
       {% endfor %}
 
     nets:
@@ -205,3 +207,37 @@ def test_load_env_up(env, vms, tmp_workdir):
         assert vm.state() == 'running'
     for vm in loaded_env.get_vms().values():
         assert vm.ssh_reachable(tries=200)
+
+
+@pytest.mark.check_merged
+def test_ansible_inventory(monkeypatch, env, test_results, vms):
+
+    # ansible returns the results in a bulk to stdout. Ideally we would test
+    # forthe hostname of each machine, but that is broken on debian.
+    # Instead, we let it compute something and count the unique occurences.
+
+    cmd = 'echo __abcd$(( 24 + 12 ))efgh___'
+    expected = '__abcd36efgh__'
+    results = []
+
+    with env.ansible_inventory_temp_file(keys=['groups']) as inv:
+        for group in ['group0', 'group1']:
+            logfile = os.path.join(
+                test_results, 'ansible-{0}.log'.format(group)
+            )
+            monkeypatch.setenv('ANSIBLE_LOG_PATH', logfile)
+            monkeypatch.setenv('ANSIBLE_HOST_KEY_CHECKING', 'False')
+            res = run_command(
+                [
+                    'ansible', 'groups={0}'.format(group), '-v', '-u', 'root',
+                    '-i', inv.name, '-m', 'raw', '-a', cmd
+                ]
+            )
+
+            assert res.code == 0
+            assert res.out is not None
+            results.append(res)
+
+    occurences = sum([result.out.count(expected) for result in results])
+
+    assert occurences == len(vms.keys())

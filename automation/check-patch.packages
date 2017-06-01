@@ -1,3 +1,4 @@
+ansible
 bats
 dnf
 dnf-command(builddep)

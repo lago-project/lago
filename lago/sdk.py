@@ -1,6 +1,7 @@
 from __future__ import print_function
 from lago import cmd
 from lago.config import config as lago_config
+from lago.lago_ansible import LagoAnsible
 from lago import workdir as lago_workdir
 from lago.log_utils import get_default_log_formatter
 from sdk_utils import SDKWrapper, setup_sdk_logging
@@ -136,3 +137,62 @@ class SDK(object):
         entirely the Lago working directory.
         """
         self._workdir.destroy()
+
+    def ansible_inventory_temp_file(
+        self, keys=['vm-type', 'groups', 'vm-provider']
+    ):
+        """
+        Context manager which returns Ansible inventory written on a tempfile.
+        This is the same as :func:`~ansible_inventory`, only the inventory file
+        is written to a tempfile.
+
+        Args:
+            keys (list of str): Path to the keys that will be used to
+                create groups.
+
+        Yields:
+            tempfile.NamedTemporaryFile: Temp file containing the inventory
+        """
+        lansible = LagoAnsible(self._prefix)
+        return lansible.get_inventory_temp_file(keys=keys)
+
+    def ansible_inventory(
+        self,
+        keys=['vm-type', 'groups', 'vm-provider'],
+    ):
+        """
+        Get an Ansible inventory as a string, ``keys`` should be list on which
+        to group the hosts by. You can use any key defined in LagoInitFile.
+
+        Examples of possible `keys`:
+
+            `keys=['disks/0/metadata/arch']`, would group the hosts by the
+            architecture.
+
+            `keys=['/disks/0/metadata/distro', 'disks/0/metadata/arch']`,
+                would create groups by architecture and also by distro.
+
+            `keys=['groups']` - would group hosts by the groups defined for
+                each VM in the LagoInitFile, i.e.:
+
+                    domains:
+
+                        vm-01:
+                            ...
+                            groups: web-server
+                            ..
+                        vm-02:
+                            ..
+                            groups: db-server
+
+
+        Args:
+            keys (list of str): Path to the keys that will be used to
+                create groups.
+
+        Returns:
+            str: INI-like Ansible inventory
+        """
+
+        lansible = LagoAnsible(self._prefix)
+        return lansible.get_inventory_str(keys=keys)
