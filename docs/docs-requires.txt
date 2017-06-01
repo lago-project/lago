@@ -7,4 +7,4 @@ configparser
 pyxdg
 nbsphinx
 pypandoc
-
+ipython
