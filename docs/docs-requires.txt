@@ -1,3 +1,5 @@
+# https://github.com/pypa/setuptools/issues/1042
+six
 # For the docs
 sphinx>1.0
 dulwich
