@@ -28,6 +28,8 @@ def init_str(images):
             name: root
             dev: sda
             format: qcow2
+        metadata:
+            {{ vm_name }}: {{ vm_name }}
         artifacts:
           - /var/log
           - /etc/hosts
@@ -131,6 +133,13 @@ def test_vms_networks_mapping(init_dict, vm_name, vms):
     vm = vms[vm_name]
     nics = [nic['net'] for nic in init_dict['domains'][vm_name]['nics']]
     assert sorted(vm.nets()) == sorted(nics)
+
+
+def test_metadata(vm_name, vms):
+    vm = vms[vm_name]
+    metadata_spec = vm.spec['metadata']
+
+    assert vm.metadata[vm_name] == metadata_spec[vm_name] == vm_name
 
 
 def test_networks_exists(env, init_dict):
