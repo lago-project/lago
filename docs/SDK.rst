@@ -6,7 +6,7 @@ Lago directly from Python. Currently, most CLI operations are supported from
 the SDK, though not all of them(specifically, snapshot and export).
 
 
-Starting an enviornment from the SDK
+Starting an environment from the SDK
 ====================================
 
 Prerequirements
@@ -17,7 +17,7 @@ Prerequirements
 2. Create a ``LagoInitFile``, check out `LagoInitFile syntax`_ for more details.
 
 
-Prepare the enviornment
+Prepare the environment
 -----------------------
 *Note*: This example is available as a Jupyter notebook `here`_ or converted to
 `reST here`_.
@@ -75,7 +75,7 @@ alternatively if working in an interactive session, by running:
 
 Which will print all the Lago operations to stdout.
 
-Starting the enviornment
+Starting the environment
 ------------------------
 
 Once :func:`~lago.sdk.init` method returns, the environment is ready to be
