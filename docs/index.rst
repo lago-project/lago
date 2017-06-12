@@ -15,13 +15,15 @@ Getting started
 ---------------
 
 .. toctree::
-    :maxdepth: 3
+    :maxdepth: 4
 
     Installation
     LagoInitFile
     SDK
     Lago_Examples
+    Templates
     Configuration
+    CPU
 
 Developing
 ------------
