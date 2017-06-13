@@ -1,5 +1,13 @@
-LagoInitFile
-============
+##########################
+LagoInitFile Specification
+##########################
+
+Note: this is work under progress, if you'd like to contribute to the
+documentation, please feel free to open a PR. In the meanwhile, we recommend
+looking at LagoInitFile examples available at:
+
+https://github.com/lago-project/lago-examples/tree/master/init-files
+
 Each environment in Lago is created from an init file, the recommended format
 is YAML, although at the moment of writing JSON is still supported. By default,
 Lago will look for a file named ``LagoInitFile`` in the directory it was
@@ -7,19 +15,17 @@ triggered. However you can pick a different file by running::
 
     $ lago init <FILENAME>
 
-Also note that you can create different prefixes in the same environment, by
-using the ``--prefix-name`` option::
 
-    $ lago --prefix-name env1 init LagoInitFile-el73
-    $ lago --prefix-name env2 init LagoInitFile-fc24
-
-To change the default environment run::
-
-    $ lago set-current ENV_NAME
+Sections
+========
+The init file is composed out of two major sections: domains, and nets.
+Each virtual machine you wish to create needs to be under the ``domains``
+section. ``nets`` will define the network topology, and when you add a
+nic to a domain, it must be defined in the ``nets`` section.
 
 
-LagoInitFile example
-^^^^^^^^^^^^^^^^^^^^
+Example:
+
 .. code-block:: yaml
 
     domains:
@@ -45,95 +51,115 @@ LagoInitFile example
         management: true
         dns_domain_name: lago.local
 
+domains
+-------
 
-``LagoInitFile`` Syntax
-^^^^^^^^^^^^^^^^^^^^^^^
+``<name>``: The name of the virtual machine.
 
-**Disclaimer: Work in progress**
+    memory(int)
+       The virtual machine memory in GBs.
+    vcpu(int)
+        Number of virtual CPUs.
+    service_provider(string)
+       This will instruct which service provider to use when enabling services
+       in the VM by  calling :func:`lago.plugins.vm.VMPlugin.service`,
+       Possible values: `systemd, sysvinit`.
+    cpu_model(string)
+        CPU Family to emulate for the virtual machine. The list of supported
+        types depends on your hardware and the libvirtd version you use,
+        to list them you can run locally:
+
+        .. code-block:: bash
+
+            $ virsh cpu-models x86_64
+
+    cpu_custom(dict)
+        This allows more fine-grained control of the CPU type,
+        see CPU_ section for details.
+    nics(list)
+        Network interfaces. Each network interface must be defined in the
+        global `nets` section. By default each nic will be assigned an IP
+        according to the network definition. However, you may also use
+        static IPs here, by writing:
+
+        .. code-block:: yaml
+
+            nics:
+                - net: net-01
+                  ip:  192.168.220.2
+
+        The same network can be declared multiple times for each domain.
+
+    disks(list)
+        type
+            Disk type, possible values:
+
+            template
+                A Lago template, this would normally the bootable device.
+            file
+                A local disk image. Lago will thinly provision it during init
+                stage, this device will not be bootable. But can obviously
+                be used for additional storage.
+        template_name(string)
+            Applies only to disks of type ``template``. This should be one
+            of the available Lago templates, see Templates_ section for
+            the list.
+        size(string)
+            Disk size to thinly provision in GB. This is only supported in
+            ``file`` disks.
+
+        format(string)
+            *TO-DO: no docs yet..*
+        device(string)
+            Linux device: vda, sdb, etc. Using a device named "sd*" will use
+            virtio-scsi.
+        build(list)
+            Only supported on template disks. Run a custom builder on this
+            template.
+
+            virt-customize(dict)
+                List of instructions to pass to `virt-customize,`_ this stage
+                will happen during `init``. A special instruction is `ssh-inject`:
+
+                .. code-block:: yaml
+
+                    - template_name: el7.3-base
+                      build:
+                          - virt-customize
+                                ssh-inject: ''
+
+                Which will ensure Lago's generated SSH keys will be injected
+                into the VM. This is useful when you don't want to run the
+                bootstrap stage.
+
+    artifacts(list)
+        Paths on the VM that Lago should collect when using `lago collect`
+        from the CLI, or :func:`~lago.prefix.Prefix.collect_artifacts` from
+        the SDK.
+    groups(list)
+        Groups this VM belongs to. This is most usefull when deploying the VM
+        with Ansible.
+    bootstrap(bool)
+        Whether to run bootstrap stage on the VM's template disk, defaults
+        to True.
+    ssh-user(string)
+        SSH user to use and configure, defaults to `root`
+    vm-provider(string)
+        VM Provider plugin to use, defaults to `local-libvirt`.
+    vm-type(string)
+        VM Plugin to use. A custom VM Plugin can be passed here,
+        note that it needs to be available in your Python Entry points.
+        See lago-ost-plugin_ for an example.
+    metadata(dict)
+        *TO-DO: no docs yet..*
 
 
-``domains`` section
--------------------
-
-* ``vcpu``: Number of virtual CPUs.
-
-* ``cpu_model: <model>``: This defines an exact match of a CPU model.
-  The generated Libvirt ``<cpu>`` XML will be:
-
-  .. code-block:: xml
-
-      <cpu>
-          <model>Westmere</model>
-          <topology cores="1" sockets="3" threads="1"/>
-          <feature name="vmx" policy="require"/>
-      </cpu>
+nets
+----
+*TO-DO: no docs yet..*
 
 
-  If the vendor of the host CPU and the selected model match, it will attempt
-  to require ``vmx`` on Intel CPUs and ``svm`` on AMD CPUs, assuming the host
-  CPU has that feature.
-  The topology node will be generated with sockets equals to ``vcpu``
-  parameter, by default it is set to ``2``.
-
-* ``cpu_custom``: This allows to override entirely the CPU definition,
-  by writing the domain CPU XML in YAML syntax, for example, for the following
-  LagoInitFile:
-
-  .. code-block:: yaml
-
-      domains:
-        vm-el73:
-          vcpu: 2
-          cpu_custom:
-            '@mode': custom
-            '@match': exact
-            model:
-              '@fallback': allow
-              '#text': Westmere
-            feature:
-              '@policy': optional
-              '@name': 'vmx'
-            numa:
-              cell:
-                -
-                  '@id': 0
-                  '@cpus': 0
-                  '@memory': 2048
-                  '@unit': 'MiB'
-                -
-                  '@id': 1
-                  '@cpus': 1
-                  '@memory': 2048
-                  '@unit': 'MiB'
-        ...
-
-
-  This will be the generated ``<cpu>`` XML:
-
-  .. code-block:: xml
-
-
-    <cpu mode="custom" match="exact">
-        <model fallback="allow">Westmere</model>
-        <feature policy="optional" name="vmx"/>
-        <numa>
-            <cell id="0" cpus="0" memory="2048" unit="MiB"/>
-            <cell id="1" cpus="1" memory="2048" unit="MiB"/>
-        </numa>
-        <topology cores="1" sockets="2" threads="1"/>
-    </cpu>
-    <vcpu>2</vcpu>
-
-  The conversion is pretty straight-forward, ``@`` maps to attribute, and
-  ``#text`` to text fields. If ``topology`` section is not defined, it will be
-  added.
-
-* No ``cpu_custom`` or ``cpu_model``: Then Libvirt's ``host-passthrough`` will
-  be used. For more information see: `Libvirt CPU model`_
-
-  .. _`Libvirt CPU model`: https://libvirt.org/formatdomain.html#elementsCPU
-
-
-.. todo:: add under domains: service_provider, memory, nics, artifacts.
-.. todo:: Add disks section
-.. todo:: Add nets section
+.. _Templates: Templates.html
+.. _`virt-customize,`: http://libguestfs.org/virt-customize.1.html
+.. _lago-ost-plugin: https://github.com/lago-project/lago-ost-plugin/blob/master/setup.cfg
+.. _CPU: CPU.html
