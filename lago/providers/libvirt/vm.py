@@ -39,6 +39,9 @@ LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
 log_task = functools.partial(log_utils.log_task, logger=LOGGER)
 
+KDUMP_SERVICE = '/etc/systemd/system/multi-user.target.wants/kdump.service'
+POSTFIX_SERVICE = '/etc/systemd/system/multi-user.target.wants/postfix.service'
+
 
 class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
     def __init__(self, vm):
@@ -186,6 +189,8 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
             ][0]['format'] != 'iso':
                 sysprep_cmd = [
                     sysprep.set_hostname(self.vm.name()),
+                    sysprep.delete_file(KDUMP_SERVICE),
+                    sysprep.delete_file(POSTFIX_SERVICE),
                     sysprep.set_root_password(self.vm.root_password()),
                     sysprep.add_ssh_key(
                         self.vm.virt_env.prefix.paths.ssh_id_rsa_pub(),

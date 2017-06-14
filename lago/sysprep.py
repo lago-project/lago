@@ -163,6 +163,10 @@ def edit(filename, expression):
     return ('--edit', editstr, )
 
 
+def delete_file(filename):
+    return ('--delete', filename)
+
+
 def update():
     return ('--update', '--network', )
 
