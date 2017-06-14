@@ -3,8 +3,7 @@ import lago.build as build
 import pytest
 
 fixtures_normalize_options = [
-    ({}, []),
-    (
+    ({}, []), (
         OrderedDict(
             [
                 ('option0', 'arg0'),
@@ -19,8 +18,7 @@ fixtures_normalize_options = [
             '--option2',
             'arg2',
         ]
-    ),
-    (
+    ), (
         OrderedDict([
             ('a', 'arg0'),
             ('b', ''),
@@ -32,7 +30,17 @@ fixtures_normalize_options = [
             '--option2',
             'arg2',
         ]
-    ),
+    ), (
+        OrderedDict(
+            [
+                ('a', 'arg0'), ('b', ['argb0', 'argb1', 'argb2']),
+                ('empty-list', []), ('c', None)
+            ]
+        ), [
+            '-a', 'arg0', '-b', 'argb0', '-b', 'argb1', '-b', 'argb2',
+            '--empty-list', '-c'
+        ]
+    )
 ]
 
 fixtures_check_path_to_default_ssh_key = [

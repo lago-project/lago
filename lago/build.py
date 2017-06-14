@@ -21,7 +21,7 @@ class Build(object):
     'Command.cmd' is the a list containing the command and its args,
     for example:
     Command.name = 'virt-customize'
-    Command.cmd = ['virt-customize', '-a', PATH_TO_DISk, SOME_CMDS...]
+    Command.cmd = ['virt-customize', '-a', PATH_TO_DISK, SOME_CMDS...]
 
     Attributes:
         name (str): The name of the vm this builder belongs
@@ -36,17 +36,24 @@ class Build(object):
     def normalize_options(options):
         """
         Turns a mapping of 'option: arg' to a list and prefix the options.
+        arg can be a list of arguments.
+
         for example:
 
         dict = {
             o1: a1,
             o2: ,
-            o3: a3,
+            o3: [a31, a32]
+            o4: []
         }
 
         will be transformed to:
 
-        [prefix_option(o1), a1, prefix_option(o2), prefix_option(o3), a3]
+        [
+            prefix_option(o1), a1, prefix_option(o2),
+            prefix_option(o3), a31, prefix_option(o3), a32
+            prefix_option(o4)
+        ]
 
         note that empty arguments are omitted
 
@@ -57,9 +64,19 @@ class Build(object):
             lst: A normalized version of 'options' as mentioned above
         """
         normalized_options = []
-        for option, arg in options.viewitems():
-            normalized_options.append(Build.prefix_option(option))
+
+        def _add(option, arg=None):
+            normalized_options.append(option)
             arg and normalized_options.append(arg)
+
+        for option, arg in options.viewitems():
+            prefixed_option = Build.prefix_option(option)
+            if isinstance(arg, list) and arg:
+                for a in arg:
+                    _add(prefixed_option, a)
+            else:
+                _add(prefixed_option, arg)
+
         return normalized_options
 
     @staticmethod
@@ -178,6 +195,7 @@ class Build(object):
         with LogTask('Building {} disk {}'.format(self.name, self.disk_path)):
             for command in self.build_cmds:
                 with LogTask('Running command {}'.format(command.name)):
+                    LOGGER.debug(command.cmd)
                     result = utils.run_command(command.cmd)
                     if result:
                         raise BuildException(result.err)
