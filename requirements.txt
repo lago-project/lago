@@ -1,8 +1,10 @@
 configparser
 enum
+libvirt-python
 lockfile
 lxml
 paramiko
+pbr
 pyxdg
 PyYAML
 scp
