@@ -12,6 +12,76 @@ recommended method of installation is using the RPM. The easiest way, is
 to use the `Install script`_ which we test and verify regularly [2]_.
 
 
+pip
+===
+
+1. Install system package dependencies, this may vary according to your
+   distribution:
+
+   A. CentOS 7.3+
+
+   .. code:: bash
+
+        $ yum install -y epel-release centos-release-qemu-ev
+        $ yum install -y libvirt libvirt-devel libguestfs-tools \
+            libguestfs-devel gcc libffi-devel openssl-devel \
+            qemu-kvm-ev
+
+
+   B. Fedora 24+
+
+   .. code:: bash
+
+       $ yum install -y libvirt libvirt-devel libguestfs-tools \
+           libguestfs-devel gcc libffi-devel openssl-devel qemu-kvm
+
+   C. Debian / Ubuntu - *TO-DO*
+   D. ArchLinux - *TO-DO*
+
+2. Install libguestfs Python bindings, as they are not available on PyPI [3]_:
+
+   .. code:: bash
+
+       $ pip install http://download.libguestfs.org/python/guestfs-1.36.4.tar.gz
+
+
+3. Install Lago with pip:
+
+   .. code:: bash
+
+       $ pip install lago
+
+
+4. Setup permissions(replacing USERNAME accordingly):
+
+   .. code:: bash
+
+       $ sudo usermod -a -G qemu,libvirt USERNAME
+       $ sudo usermod -a -G USERNAME qemu
+       $ chmod g+x $HOME
+
+5. Create a global share for Lago to store templates:
+
+   .. code:: bash
+
+       $ sudo mkdir -p /var/lib/lago
+       $ sudo mkdir -p /var/lib/lago/{repos,store,subnets}
+       $ sudo chown -R USERNAME:USERNAME /var/lib/lago
+
+
+   *Note:* if you don't want to share the templates between users, have a look
+   at the Configuration_ section, and change ``lease_dir``, ``template_repos``
+   and ``template_store`` accordingly.
+
+6. Restart libvirt(if you have systemd, otherwise use your distribution
+   specific tool):
+
+   .. code:: bash
+
+       $ systemctl restart libvirtd
+
+7. Log out and login again
+
 
 Fedora 24+ / CentOS 7.3
 =======================
@@ -94,7 +164,7 @@ Manual installation
 
        $ sudo usermod -a -G lago USERNAME
        $ sudo usermod -a -G qemu USERNAME
-       $ sudo usermod -a -g USERNAME qemu
+       $ sudo usermod -a -G USERNAME qemu
 
 
 4. Add group execution rights to your home directory: [1]_
@@ -118,13 +188,21 @@ FAQ
 ===
 
 * *Q*: After using the install script, how do I fix the permissions for
-         another username?
+  another username?
 
   *A*: Run:
 
          .. code:: bash
 
              $ ./install_lago.sh -p --user [new_user]
+
+
+* *Q*: Can Lago be installed in a Python virtualenv?
+
+  *A*: Follow the same procedure as in the pip_ instructions, only run the
+       pip installation under your virtualenv. Consult [3]_ if you want
+       to install libguestfs Python bindings not from pip.
+
 
 Troubleshooting
 ================
@@ -147,3 +225,12 @@ Troubleshooting
 .. [2] If the installation script does not work for you on the supported
        distributions, please open an issue at h
        ttps://github.com/lago-project/lago-demo.git
+.. [3] libguestfs Python bindings is unfortunately not available on PyPI,
+       see https://bugzilla.redhat.com/show_bug.cgi?id=1075594 for current
+       status. You may also use the system-wide package, if those are
+       available for your distribution. In that case, if using a virtualenv,
+       ensure you are creating it with '--system-site-packages' option.
+       For Fedora/CentOS the package is named `python2-libguestfs`, and for
+       Debian `python-guestfs`.
+
+.. _Configuration: Configuration.html
