@@ -1,1 +1,10 @@
-include AUTHORS COPYING README.md
+include AUTHORS COPYING README.rst
+exclude tox*.ini
+exclude .style*
+exclude *spec.in
+exclude test-requires.txt
+recursive-include lago *
+recursive-exclude scripts *
+recursive-exclude tests *
+recursive-exclude automation *
+recursive-exclude docs *
