@@ -9,7 +9,6 @@ lxml
 mock
 paramiko
 pytest
-python-magic
 pyyaml
 scp
 stevedore

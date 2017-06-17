@@ -44,7 +44,6 @@ autodoc_mock_imports = [
     'lockfile',
     'lxml',
     'lxml.etree',
-    'magic',
     'paramiko',
     'scp',
     'stevedore',
