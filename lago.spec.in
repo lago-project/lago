@@ -56,7 +56,7 @@ BuildRequires: pyxdg
 BuildRequires: python-xmltodict
 BuildRequires: python-lxml
 BuildRequires: libvirt-python
-BuildRequires: python-enum
+BuildRequires: python-enum34
 BuildRequires: python-scp
 BuildRequires: python2-rpm-macros
 BuildRequires: python-wrapt
@@ -94,7 +94,7 @@ Requires: python-scp
 Requires: python-setuptools
 Requires: python-stevedore
 Requires: python-yaml
-Requires: python-enum
+Requires: python-enum34
 Requires: pyxdg
 Requires: python-wrapt
 %if 0%{?fedora} >= 24

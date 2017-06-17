@@ -1,6 +1,6 @@
 # https://github.com/pypa/setuptools/issues/1042
 six
-enum
+enum34
 dulwich
 flake8
 libvirt-python

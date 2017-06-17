@@ -1,5 +1,5 @@
 configparser
-enum
+enum34
 libvirt-python
 lockfile
 lxml
