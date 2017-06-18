@@ -83,6 +83,7 @@ BuildRequires: git
 
 Requires: python
 Requires: libguestfs-tools
+Requires: libguestfs-devel
 Requires: libvirt >= 1.2.8
 Requires: libvirt-python
 Requires: python-libguestfs
