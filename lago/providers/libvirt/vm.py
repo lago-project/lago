@@ -309,6 +309,8 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
             compress(bool): if true, compress each disk.
 
         """
+        formats_to_exclude = {'iso'}
+
         if not os.path.isdir(dst_dir):
             os.mkdir(dst_dir)
 
@@ -321,6 +323,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
                 *args,
                 **kwargs
             ) for disk in self.vm.disks
+            if disk.get('format') not in formats_to_exclude
         ]
 
         # TODO: make this step parallel
