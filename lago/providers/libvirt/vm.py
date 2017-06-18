@@ -311,9 +311,6 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
         """
         formats_to_exclude = {'iso'}
 
-        if not os.path.isdir(dst_dir):
-            os.mkdir(dst_dir)
-
         export_managers = [
             export.DiskExportManager.get_instance_by_type(
                 dst=dst_dir,
@@ -326,9 +323,9 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
             if disk.get('format') not in formats_to_exclude
         ]
 
-        # TODO: make this step parallel
-        for manager in export_managers:
-            manager.export()
+        utils.invoke_different_funcs_in_parallel(
+            *map(lambda manager: manager.export, export_managers)
+        )
 
     @vm_plugin.check_defined
     def interactive_console(self):
