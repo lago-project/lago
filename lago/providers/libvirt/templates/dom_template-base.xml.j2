@@ -27,7 +27,7 @@
         <target type='virtio' name='org.qemu.guest_agent.0'/>
       </channel>
       <rng model='virtio'>
-        <backend model='random'>/dev/urandom</backend>
+        <backend model='random'>{{ '/dev/urandom' if libvirt_ver >= 2002001 else '/dev/random' }}</backend>
         <address type='pci' domain='0x0000' bus='0x00' slot='0x09' function='0x0'/>
       </rng>
       <console type='pty'>
