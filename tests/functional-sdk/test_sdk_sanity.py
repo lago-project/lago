@@ -177,7 +177,9 @@ def test_vms_ipv4_dns(vms, vm_name):
     peers = [vm for vm in vms.values() if vm.name() != vm_name]
     for peer in peers:
         cmd = ['ping', '-c2']
-        if not any(distro in vm_name for distro in ['debian', 'ubuntu']):
+        if not any(
+            distro in vm_name for distro in ['el6', 'debian', 'ubuntu']
+        ):
             cmd.append('-4')
         cmd.append(peer.name())
         res = root.ssh(cmd)
