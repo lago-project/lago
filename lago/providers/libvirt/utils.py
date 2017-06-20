@@ -21,10 +21,14 @@
 Utilities to help deal with the libvirt python bindings
 """
 import libvirt
-import pkg_resources
 import xmltodict
 import lxml.etree
+import logging
+import pkg_resources
+from jinja2 import Environment, PackageLoader, TemplateNotFound
 from lago.config import config
+
+LOGGER = logging.getLogger(__name__)
 
 #: Mapping of domain statuses values to human readable strings
 DOMAIN_STATES = {
@@ -98,6 +102,33 @@ def get_template(basename):
     return pkg_resources.resource_string(
         __name__, '/'.join(['templates', basename])
     )
+
+
+def get_domain_template(distro, libvirt_ver, **kwargs):
+    """
+    Get a rendered Jinja2 domain template
+
+    Args:
+        distro(str): domain distro
+        libvirt_ver(int): libvirt version
+        kwargs(dict): args for template render
+
+    Returns:
+        str: rendered template
+    """
+    env = Environment(
+        loader=PackageLoader('lago', 'providers/libvirt/templates'),
+        trim_blocks=True,
+        lstrip_blocks=True,
+    )
+
+    template_name = 'dom_template-{0}.xml.j2'.format(distro)
+    try:
+        template = env.get_template(template_name)
+    except TemplateNotFound:
+        LOGGER.debug('could not find template %s using default', template_name)
+        template = env.get_template('dom_template-base.xml.j2')
+    return template.render(libvirt_ver=libvirt_ver, **kwargs)
 
 
 def dict_to_xml(spec, full_document=False):
