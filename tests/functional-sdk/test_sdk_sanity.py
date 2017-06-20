@@ -36,6 +36,7 @@ def init_str(images):
           - /etc/resolv.conf
           - /etc/sysconfig
           - /etc/NetworkManager
+          - /root/virt-sysprep-firstboot.log
         groups: group{{ loop.index % 2 }}
       {% endfor %}
 
@@ -252,3 +253,25 @@ def test_ansible_inventory(monkeypatch, env, test_results, vms):
     occurences = sum([result.out.count(expected) for result in results])
 
     assert occurences == len(vms.keys())
+
+
+def test_systemd_analyze(test_results, vms, vm_name):
+    vm = vms[vm_name]
+    res = vm.ssh(['command', '-v', 'systemd-analyze'])
+    if res.code != 0:
+        raise pytest.skip(
+            'systemd-analyze not available on {0}'.format(vm_name)
+        )
+
+    res = vm.ssh(['systemd-analyze'])
+    assert res.code == 0
+    log = '\n'.join([res.out, res.err])
+
+    res = vm.ssh(['systemd-analyze', 'blame'])
+    assert res.code == 0
+    log = log + '\n'.join([res.out, res.err])
+    fname = os.path.join(
+        test_results, 'systemd-analyze-{0}.txt'.format(vm.name())
+    )
+    with open(fname, 'w') as out:
+        out.write(log)
