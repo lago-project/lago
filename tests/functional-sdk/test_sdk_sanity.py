@@ -9,6 +9,7 @@ import uuid
 from jinja2 import Environment, BaseLoader
 from lago import sdk
 from lago.utils import run_command
+from lago.plugins.vm import ExtractPathNoPathError
 
 
 @pytest.fixture(scope='module')
@@ -31,6 +32,8 @@ def init_str(images):
         metadata:
             {{ vm_name }}: {{ vm_name }}
         artifacts:
+          - /should/not/exist
+          - /root/custom
           - /var/log
           - /etc/hosts
           - /etc/resolv.conf
@@ -275,3 +278,36 @@ def test_systemd_analyze(test_results, vms, vm_name):
     )
     with open(fname, 'w') as out:
         out.write(log)
+
+
+def test_collect_exists(tmpdir, vms, vm_name):
+    path = '/root/custom'
+    filename = 'test_file'
+    custom_file = os.path.join(path, filename)
+
+    content = 'nothing-{0}'.format(vm_name)
+
+    vm = vms[vm_name]
+    with tempfile.NamedTemporaryFile(delete=False) as f:
+        f.write(content)
+
+    res = vm.ssh(['mkdir', '-p', '/root/custom'])
+    assert res.code == 0
+
+    vm.copy_to(f.name, custom_file, recursive=False)
+
+    vm.collect_artifacts(str(tmpdir), ignore_nopath=True)
+
+    dest = os.path.join(str(tmpdir), path.replace('/', '_'), filename)
+    with open(dest, 'r') as out_file:
+        result = out_file.readlines()
+
+    assert len(result) == 1
+    assert result[0].strip() == content
+
+
+def test_collect_raises(tmpdir, vms, vm_name):
+    vm = vms[vm_name]
+    dest = os.path.join(str(tmpdir), 'collect-failure')
+    with pytest.raises(ExtractPathNoPathError):
+        vm.collect_artifacts(dest, ignore_nopath=False)
