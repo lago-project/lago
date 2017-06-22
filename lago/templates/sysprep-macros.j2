@@ -37,3 +37,15 @@ source /etc/network/interfaces.d/*.cfg \
 {% endfor %}
 {% endfilter %}
 {% endmacro %}
+
+
+{% macro network_devices_cirros(mappings) %}
+write /etc/network/interfaces:auto lo \
+iface lo inet loopback \
+{% filter dedent %}
+{%+ for iface, mac in mappings.viewitems() %}
+    auto {{ iface }} \
+    iface {{ iface }} inet dhcp \
+{% endfor %}
+{% endfilter %}
+{% endmacro %}
