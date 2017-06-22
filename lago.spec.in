@@ -50,14 +50,13 @@ BuildArch: noarch
 BuildRequires: python2-devel
 BuildRequires: python-stevedore
 BuildRequires: python-setuptools
-BuildRequires: python-magic
 BuildRequires: python-lockfile
 BuildRequires: python-yaml
 BuildRequires: pyxdg
 BuildRequires: python-xmltodict
 BuildRequires: python-lxml
 BuildRequires: libvirt-python
-BuildRequires: python-enum
+BuildRequires: python-enum34
 BuildRequires: python-scp
 BuildRequires: python2-rpm-macros
 BuildRequires: python-wrapt
@@ -84,19 +83,19 @@ BuildRequires: git
 
 Requires: python
 Requires: libguestfs-tools
+Requires: libguestfs-devel
 Requires: libvirt >= 1.2.8
 Requires: libvirt-python
 Requires: python-libguestfs
 Requires: python-lxml
 Requires: python-lockfile
-Requires: python-magic
 Requires: python-pbr
 Requires: python-xmltodict
 Requires: python-scp
 Requires: python-setuptools
 Requires: python-stevedore
 Requires: python-yaml
-Requires: python-enum
+Requires: python-enum34
 Requires: pyxdg
 Requires: python-wrapt
 %if 0%{?fedora} >= 24

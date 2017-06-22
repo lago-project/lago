@@ -1,29 +1,14 @@
-# https://github.com/pypa/setuptools/issues/1042
-six
-enum
+-r requirements.txt
 dulwich
 flake8
-libvirt-python
-lockfile
-lxml
 mock
-paramiko
-pytest
-python-magic
-pyyaml
-scp
-stevedore
-xmltodict
-configparser
-pyxdg
 futures
 xmlunittest
 yapf
+pytest
 pytest-cov
 pytest-timeout
 pytest-catchlog
-wrapt
-Jinja2
 # guestfs is not available on PyPI, however it can be installed
 # with a direct link.
 http://download.libguestfs.org/python/guestfs-1.36.4.tar.gz

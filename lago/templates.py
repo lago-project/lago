@@ -22,7 +22,6 @@ import errno
 import functools
 import json
 import logging
-import magic
 import os
 import posixpath
 import shutil
@@ -196,26 +195,17 @@ class HttpTemplateProvider:
         with log_utils.LogTask('Download image %s' % handle, logger=LOGGER):
             self.open_url(url=handle, dest=dest)
 
-        self.extract_if_needed(dest)
+        self.extract_image_xz(dest)
 
     @staticmethod
-    def extract_if_needed(path):
-        type_guesser = magic.open(magic.MAGIC_MIME)
-        type_guesser.load()
-        if 'application/x-xz' not in type_guesser.file(path):
-            return
-
+    def extract_image_xz(path):
         if not path.endswith('.xz'):
             os.rename(path, path + '.xz')
+            path = path + '.xz'
 
         with log_utils.LogTask('Decompress local image', logger=LOGGER):
             ret = utils.run_command(
-                [
-                    'xz',
-                    '--threads=0',
-                    '--decompress',
-                    path + '.xz',
-                ],
+                ['xz', '--threads=0', '--decompress', path],
             )
 
         if ret:

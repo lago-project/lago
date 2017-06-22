@@ -2,6 +2,7 @@ ansible
 bats
 git
 libffi-devel
+libguestfs-devel
 libvirt-devel
 libguestfs-devel
 libxslt-devel
@@ -9,7 +10,6 @@ openssl-devel
 pandoc
 python2-devel
 python-dulwich
-python-libguestfs
 python-pip
 python-virtualenv
 python-tox

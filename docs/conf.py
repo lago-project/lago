@@ -44,7 +44,6 @@ autodoc_mock_imports = [
     'lockfile',
     'lxml',
     'lxml.etree',
-    'magic',
     'paramiko',
     'scp',
     'stevedore',
@@ -96,8 +95,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Lago'
-copyright = u'2015, David Caro'
-author = u'David Caro'
+copyright = u'2015-2017, David Caro and Lago developers'
+author = u'David Caro and Lago Developers'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
