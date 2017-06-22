@@ -64,7 +64,9 @@ BuildRequires: python-wrapt
 %if 0%{?fedora} >= 24
 BuildRequires: python2-configparser
 BuildRequires: python2-paramiko >= 2.1.1
+BuildRequires: python2-jinja2
 %else
+BuildRequires: python-jinja2
 BuildRequires: python-configparser
 BuildRequires: python2-paramiko
 %endif
@@ -98,9 +100,11 @@ Requires: python-enum
 Requires: pyxdg
 Requires: python-wrapt
 %if 0%{?fedora} >= 24
+Requires: python2-jinja2
 Requires: python2-configparser
 Requires: python2-paramiko >= 2.1.1
 %else
+Requires: python-jinja2
 Requires: python-configparser
 Requires: python2-paramiko
 %endif
@@ -121,9 +125,11 @@ Requires: sudo
 %doc AUTHORS COPYING README.rst
 %{python2_sitelib}/%{name}/*.py*
 %{python2_sitelib}/%{name}/plugins/*.py*
+%{python2_sitelib}/%{name}/templates/*.j2
 %{python2_sitelib}/%{name}/providers/*.py*
 %{python2_sitelib}/%{name}/providers/libvirt/*.py*
 %{python2_sitelib}/%{name}/providers/libvirt/templates/*.xml
+
 %{python2_sitelib}/%{name}-%{version}-py*.egg-info
 %{_bindir}/lagocli
 %{_bindir}/lago

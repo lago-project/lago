@@ -1,0 +1,12 @@
+selinux-relabel
+hostname {{ hostname }}
+root-password password:{{ root_password }}
+{% if guestfs_ver['major'] >= 1 and guestfs_ver['minor'] >= 34 %}
+ssh-inject root:file:{{public_key}}
+{% else %}
+mkdir /root/.ssh
+chmod 0700:/root/.ssh
+upload {{ public_key }}:/root/.ssh/authorized_keys
+chmod 0600:/root/.ssh/authorized_keys
+run-command chown root:root /root/.ssh/authorized_keys
+{% endif -%}

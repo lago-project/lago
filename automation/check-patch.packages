@@ -6,6 +6,7 @@ git
 grubby
 libffi-devel
 libvirt-devel
+libguestfs-devel
 libxslt-devel
 openssl-devel
 pandoc

@@ -1,0 +1,6 @@
+{% import 'sysprep-macros.j2' as macros %}
+{% include 'sysprep-base.j2' %}
+
+{{ macros.network_devices_debian(mappings=mappings) }}
+
+edit /boot/grub/grub.cfg:s/set timeout=5/set timeout=0/g

@@ -1,5 +1,5 @@
 #
-# Copyright 2015 Red Hat, Inc.
+# Copyright 2015-2017 Red Hat, Inc.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,164 +20,83 @@
 import os
 
 import utils
-from textwrap import dedent
-import tempfile
 import logging
+import tempfile
+from jinja2 import Environment, PackageLoader
+import textwrap
+import sys
+
 LOGGER = logging.getLogger(__name__)
-_DOT_SSH = '/root/.ssh'
-_AUTHORIZED_KEYS = os.path.join(_DOT_SSH, 'authorized_keys')
-_SELINUX_CONF_DIR = '/etc/selinux'
-_SELINUX_CONF_PATH = os.path.join(_SELINUX_CONF_DIR, 'config')
-_ISCSI_DIR = '/etc/iscsi'
+
+try:
+    import guestfs
+except ImportError:
+    LOGGER.debug('guestfs not available, ignoring')
 
 
-def set_hostname(hostname):
-    return ('--hostname', hostname)
-
-
-def set_root_password(password):
-    return ('--root-password', 'password:%s' % password)
-
-
-def _write_file(path, content):
-    return ('--write', '%s:%s' % (path, content))
-
-
-def _upload_file(local_path, remote_path):
-    return ('--upload', '%s:%s' % (remote_path, local_path))
-
-
-def set_iscsi_initiator_name(name):
-    return ('--mkdir', _ISCSI_DIR, '--chmod',
-            '0755:%s' % _ISCSI_DIR, ) + _write_file(
-                os.path.join(_ISCSI_DIR, 'initiatorname.iscsi'),
-                'InitiatorName=%s' % name,
-            )  # noqa: E126
-
-
-def add_ssh_key(key, with_restorecon_fix=False):
-    extra_options = ('--mkdir', _DOT_SSH, '--chmod', '0700:%s' %
-                     _DOT_SSH, ) + _upload_file(_AUTHORIZED_KEYS, key)
-    if (not os.stat(key).st_uid == 0 or not os.stat(key).st_gid == 0):
-        extra_options += (
-            '--run-command', 'chown root.root %s' % _AUTHORIZED_KEYS,
-        )
-    if with_restorecon_fix:
-        # Fix for fc23 not relabeling on boot
-        # https://bugzilla.redhat.com/1049656
-        extra_options += ('--firstboot-command', 'restorecon -R /root/.ssh', )
-    return extra_options
-
-
-def set_selinux_mode(mode):
-    return (
-        '--mkdir', _SELINUX_CONF_DIR, '--chmod', '0755:%s' % _SELINUX_CONF_DIR,
-    ) + _write_file(
-        _SELINUX_CONF_PATH,
-        ('SELINUX=%s\n'
-         'SELINUXTYPE=targeted\n') % mode,
-    )
-
-
-def _config_net_interface(path, iface, type, bootproto, onboot, hwaddr):
-    iface_path = os.path.join(path, 'ifcfg-{0}'.format(iface))
-    cfg = dedent(
-        """
-        HWADDR="{hwaddr}"
-        BOOTPROTO="{bootproto}"
-        ONBOOT="{onboot}"
-        TYPE="{type}"
-        NAME="{iface}"
-        """.format(
-            hwaddr=hwaddr,
-            bootproto=bootproto,
-            onboot=onboot,
-            type=type,
-            iface=iface
-        )
-    ).lstrip()
-    with tempfile.NamedTemporaryFile(delete=False) as ifcfg_file:
-        ifcfg_file.write(cfg)
-    LOGGER.debug('generated %s for %s:\n%s', ifcfg_file.name, iface_path, cfg)
-    return ('--mkdir', path, '--chmod', '0755:{0}'.format(path)
-            ) + _upload_file(iface_path, ifcfg_file.name)
-
-
-def config_net_iface_debian(name, mac):
-    iface = dedent(
-        """
-    auto {name}
-    iface {name} inet6 auto
-    iface {name} inet dhcp
-        hwaddress ether {mac}
-    """.format(name=name, mac=mac)
-    )
-    return (
-        _write_file(
-            os.path.join(
-                '/etc/network/interfaces.d', 'ifcfg-{0}.cfg'.format(name)
-            ), iface
-        )
-    )
-
-
-def config_net_iface_loop_debian():
-    loop_device = dedent(
-        """
-    auto lo
-        iface lo inet loopback
-
-    source /etc/network/interfaces.d/*.cfg
-    """
-    )
-    return (_write_file('/etc/network/interfaces', loop_device))
-
-
-def config_net_ifaces_dhcp(distro, mapping):
-    if distro == 'debian':
-        cmd = [config_net_iface_loop_debian()]
-        cmd.extend(
-            [config_net_iface_debian(name, mac) for name, mac in mapping]
-        )
+def _guestfs_version(default={'major': 1L, 'minor': 20L}):
+    if 'guestfs' in sys.modules:
+        g = guestfs.GuestFS(python_return_dict=True)
+        guestfs_ver = g.version()
+        g.close()
     else:
-        cmd = [config_net_iface_dhcp(name, mac) for name, mac in mapping]
+        guestfs_ver = default
 
-    return cmd
+    return guestfs_ver
 
 
-def config_net_iface_dhcp(
-    iface, hwaddr, path='/etc/sysconfig/network-scripts'
-):
-    return _config_net_interface(
-        path=path,
-        iface=iface,
-        type='Ethernet',
-        bootproto='dhcp',
-        onboot='yes',
-        hwaddr=hwaddr,
+def _render_template(distro, loader, **kwargs):
+    env = Environment(
+        loader=loader,
+        trim_blocks=True,
+        lstrip_blocks=True,
     )
+    env.filters['dedent'] = textwrap.dedent
+    template_name = 'sysprep-{0}.j2'.format(distro)
+    template = env.select_template([template_name, 'sysprep-base.j2'])
+    sysprep_content = template.render(guestfs_ver=_guestfs_version(), **kwargs)
+    with tempfile.NamedTemporaryFile(delete=False) as sysprep_file:
+        sysprep_file.write('# {0}\n'.format(template.name))
+        sysprep_file.write(sysprep_content)
+
+    LOGGER.debug(
+        ('Generated sysprep template '
+         'at {0}:\n{1}').format(sysprep_file.name, sysprep_content)
+    )
+    return sysprep_file.name
 
 
-def edit(filename, expression):
-    editstr = '%s:""%s""' % (filename, expression)
-    return ('--edit', editstr, )
+def sysprep(disk, distro, loader=None, backend='direct', **kwargs):
+    """
+    Run virt-sysprep on the ``disk``, commands are built from the distro
+    specific template and arguments passed in ``kwargs``. If no template is
+    available it will default to ``sysprep-base.j2``.
 
+    Args:
+        disk(str): path to disk
+        distro(str): distro to render template for
+        loader(jinja2.BaseLoader): Jinja2 template loader, if not passed,
+            will search Lago's package.
+        backend(str): libguestfs backend to use
+        **kwargs(dict): environment variables for Jinja2 template
 
-def delete_file(filename):
-    return ('--delete', filename)
+    Returns:
+        None
 
+    Raises:
+        RuntimeError: On virt-sysprep none 0 exit code.
+    """
 
-def update():
-    return ('--update', '--network', )
+    if loader is None:
+        loader = PackageLoader('lago', 'templates')
+    sysprep_file = _render_template(distro, loader=loader, **kwargs)
 
+    cmd = ['virt-sysprep', '-a', disk]
+    cmd.extend(['--commands-from-file', sysprep_file])
 
-def sysprep(disk, mods, backend='direct'):
-    cmd = ['virt-sysprep', '-a', disk, '--selinux-relabel']
     env = os.environ.copy()
     if 'LIBGUESTFS_BACKEND' not in env:
         env['LIBGUESTFS_BACKEND'] = backend
-    for mod in mods:
-        cmd.extend(mod)
 
     ret = utils.run_command(cmd, env=env)
     if ret:
