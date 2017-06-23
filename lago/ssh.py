@@ -328,31 +328,24 @@ def get_ssh_client(
             ssh_tries = int(config.get('ssh_tries', 10))
 
         start_time = time.time()
+        client = paramiko.SSHClient()
+        client.set_missing_host_key_policy(
+            paramiko.AutoAddPolicy(),
+        )
         while ssh_tries > 0:
             LOGGER.debug(
                 'Still got %d tries for %s',
                 ssh_tries,
                 host_name,
             )
-            client = paramiko.SSHClient()
-            client.set_missing_host_key_policy(
-                paramiko.AutoAddPolicy(),
-            )
             try:
-                if ssh_key:
-                    client.connect(
-                        ip_addr,
-                        username=username,
-                        password=password,
-                        key_filename=ssh_key,
-                        timeout=ssh_timeout,
-                    )
-                else:
-                    client.connect(
-                        ip_addr,
-                        username='root',
-                        timeout=ssh_timeout,
-                    )
+                client.connect(
+                    ip_addr,
+                    username=username,
+                    password=password,
+                    key_filename=ssh_key,
+                    timeout=ssh_timeout,
+                )
                 break
             except (socket.error, socket.timeout) as err:
                 LOGGER.debug(
