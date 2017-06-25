@@ -186,11 +186,16 @@ class VirtEnv(object):
                 'The following vms must be off:\n{}'.
                 format('\n'.join([_vm.name() for _vm in running_vms]))
             )
-        # TODO: run the export task in parallel
 
         with LogTask('Exporting disks to: {}'.format(dst_dir)):
-            for _vm in vms:
-                _vm.export_disks(standalone, dst_dir, compress)
+
+            if not os.path.isdir(dst_dir):
+                os.mkdir(dst_dir)
+
+            def _export_disks(vm):
+                vm.export_disks(standalone, dst_dir, compress)
+
+            utils.invoke_in_parallel(_export_disks, vms)
 
         self.generate_init(os.path.join(dst_dir, init_file_name), out_format)
 

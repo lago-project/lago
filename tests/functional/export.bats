@@ -21,6 +21,13 @@ LAYERED_EXPORT_DIR="${FIXTURES}/${LAYERED_ENV}"
 # needed in order to run libguestfs inside mock
 export LIBGUESTFS_BACKEND=direct
 
+@test "export.populating_repo_store" {
+    # As there's no way to know the last test result, we will handle it here
+    rm -rf "$REPO_STORE"
+    cp -a "$FIXTURES/store_skel" "$REPO_STORE"
+    env_setup.populate_disks "$REPO_STORE"
+}
+
 @test "export.init" {
     local workdir="$FIXTURES"/workdir
     local suite="$FIXTURES"/suite.json
@@ -113,16 +120,11 @@ export LIBGUESTFS_BACKEND=direct
 @test "export.init_exported_sa_env" {
     cd "$STAND_ALONE_EXPORT_DIR"
 
-    local suite="${FIXTURES}/exported_suite.json"
-    # will be used by exported_suite.json
-    export EXPORTED_ENV=$STAND_ALONE_EXPORT_DIR
-
     helpers.run_ok "$LAGOCLI" \
         init \
         --template-repo-path "$REPO_CONF" \
         --template-repo-name "$REPO_NAME" \
-        --template-store "$STORE" \
-        "$suite"
+        --template-store "$STORE"
 }
 
 @test "export.test_sa_exported_env: testing standalone exported env" {
@@ -143,16 +145,11 @@ export LIBGUESTFS_BACKEND=direct
 @test "export.init_exported_layered_env" {
     cd "$LAYERED_EXPORT_DIR"
 
-    local suite="${FIXTURES}/exported_suite.json"
-    # will be used by exported_suite.json
-    export EXPORTED_ENV=$LAYERED_EXPORT_DIR
-
     helpers.run_ok "$LAGOCLI" \
         init \
         --template-repo-path "$REPO_CONF" \
         --template-repo-name "$REPO_NAME" \
-        --template-store "$STORE" \
-        "$suite"
+        --template-store "$STORE"
 }
 
 @test "export.test_exported_layered_env: testing layered exported env" {

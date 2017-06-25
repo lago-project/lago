@@ -309,8 +309,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
             compress(bool): if true, compress each disk.
 
         """
-        if not os.path.isdir(dst_dir):
-            os.mkdir(dst_dir)
+        formats_to_exclude = {'iso'}
 
         export_managers = [
             export.DiskExportManager.get_instance_by_type(
@@ -321,11 +320,12 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
                 *args,
                 **kwargs
             ) for disk in self.vm.disks
+            if disk.get('format') not in formats_to_exclude
         ]
 
-        # TODO: make this step parallel
-        for manager in export_managers:
-            manager.export()
+        utils.invoke_different_funcs_in_parallel(
+            *map(lambda manager: manager.export, export_managers)
+        )
 
     @vm_plugin.check_defined
     def interactive_console(self):
