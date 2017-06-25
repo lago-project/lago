@@ -51,6 +51,7 @@ autodoc_mock_imports = [
     'yaml',
     'xmltodict',
     'wrapt',
+    'netaddr',
 ]
 
 autodoc_default_flags = [

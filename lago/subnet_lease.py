@@ -366,6 +366,9 @@ class SubnetStore(object):
         Returns:
             bool: True if subnet can be parsed into IPNetwork object and is
                 inside the range, False otherwise
+
+        Raises:
+            netaddr.AddrFormatError: If subnet can not be parsed into an ip.
         """
 
         return \
