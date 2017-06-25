@@ -14,6 +14,17 @@ readonly CHECK_PATCH_BATS=('basic.bats' \
 
 readonly CHECK_MERGED_BATS=('snapshot.bats')
 
+fail_nonzero() {
+    local res msg
+    res=$1
+    msg=$2
+    if [[ "$res" -ne 0 ]]; then
+        echo "$msg"
+        exit "$res"
+    fi
+}
+
+
 set_virt_params() {
     # see: https://bugzilla.redhat.com/show_bug.cgi?id=1404287
     export LIBGUESTFS_APPEND="edd=off"
@@ -38,7 +49,7 @@ code_changed() {
         return 0
     fi
     git diff-tree --no-commit-id --name-only -r HEAD..HEAD^ \
-    | grep --quiet -v -e '\(docs/\|README.md\)'
+    | grep --quiet -v -e '\(docs/\|README.rst\)'
     return $?
 }
 
@@ -130,7 +141,7 @@ run_functional_tests() {
     local stage tests_var
     stage="$1"
     tests_var="${stage^^}_BATS[@]"
-    run_functional_cli_tests "${!tests_var}"
+    run_functional_cli_tests "${!tests_var}" || return $?
     run_functional_sdk_tests "$stage"
 }
 
