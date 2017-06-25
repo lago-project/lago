@@ -259,11 +259,16 @@ class VMProviderPlugin(plugins.Plugin):
                     propagate_fail=False
                 )
             except SCPException as err:
-                err_sfx = ': No such file or directory'
-                if ignore_nopath and str.endswith(str(err.message), err_sfx):
-                    LOGGER.debug('%s: ignoring', err.message)
+                err_substr = ': No such file or directory'
+                if len(err.args) > 0 and isinstance(
+                    err.args[0], basestring
+                ) and err_substr in err.args[0]:
+                    if ignore_nopath:
+                        LOGGER.debug('%s: ignoring', err.args[0])
+                    else:
+                        raise ExtractPathNoPathError(err.args[0])
                 else:
-                    raise ExtractPathNoPathError(err.message)
+                    raise
 
 
 class VMPlugin(plugins.Plugin):
