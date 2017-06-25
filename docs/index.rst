@@ -23,6 +23,7 @@ Getting started
     Lago_Examples
     Templates
     Configuration
+    BUILD
     CPU
 
 Developing
