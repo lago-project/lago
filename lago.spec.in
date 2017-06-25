@@ -79,6 +79,7 @@ BuildRequires: python-dulwich
 %endif
 BuildRequires: python-flake8
 BuildRequires: git
+BuildRequires: python-netaddr
 
 
 Requires: python
@@ -98,6 +99,7 @@ Requires: python-yaml
 Requires: python-enum34
 Requires: pyxdg
 Requires: python-wrapt
+Requires: python-netaddr
 %if 0%{?fedora} >= 24
 Requires: python2-jinja2
 Requires: python2-configparser
