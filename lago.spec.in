@@ -130,6 +130,7 @@ Requires: sudo
 %{python2_sitelib}/%{name}/providers/*.py*
 %{python2_sitelib}/%{name}/providers/libvirt/*.py*
 %{python2_sitelib}/%{name}/providers/libvirt/templates/*.xml
+%{python2_sitelib}/%{name}/providers/libvirt/templates/*.j2
 
 %{python2_sitelib}/%{name}-%{version}-py*.egg-info
 %{_bindir}/lagocli
