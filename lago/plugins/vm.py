@@ -218,6 +218,13 @@ class VMProviderPlugin(plugins.Plugin):
         """
         return self.vm.interactive_ssh()
 
+    def extract_paths_dead(self, paths, ignore_nopath):
+        """
+        Extract the given paths from the domain, without the underlying OS
+        awareness
+        """
+        pass
+
     def extract_paths(self, paths, ignore_nopath):
         """
         Extract the given paths from the domain
@@ -372,6 +379,12 @@ class VMPlugin(plugins.Plugin):
         Thin method that just uses the provider
         """
         return self.provider.extract_paths(paths, *args, **kwargs)
+
+    def extract_paths_dead(self, paths, *args, **kwargs):
+        """
+        Thin method that just uses the provider
+        """
+        return self.provider.extract_paths_dead(paths, *args, **kwargs)
 
     def export_disks(
         self, standalone=True, dst_dir=None, compress=False, *args, **kwargs

@@ -311,3 +311,48 @@ def test_collect_raises(tmpdir, vms, vm_name):
     dest = os.path.join(str(tmpdir), 'collect-failure')
     with pytest.raises(ExtractPathNoPathError):
         vm.collect_artifacts(dest, ignore_nopath=False)
+
+
+@pytest.mark.parametrize('mode', (['normal', 'dead']))
+def test_extract_paths(tmpdir, vms, vm_name, mode):
+    vm = vms[vm_name]
+    content = str(uuid.uuid4())
+    dst = '/root/extract-{vm}-{mode}'.format(vm=vm_name, mode=mode)
+    with tempfile.NamedTemporaryFile(delete=False) as f:
+        f.write(content)
+    vm.copy_to(f.name, dst, recursive=False)
+    res = vm.ssh(['sync'])
+    assert res.code == 0
+    res = vm.ssh(['cat', dst])
+    assert res.out.strip() == content
+
+    if mode == 'normal':
+        extract = getattr(vm, 'extract_paths')
+    elif mode == 'dead':
+        extract = getattr(vm, 'extract_paths_dead')
+    local_file = os.path.join(str(tmpdir), os.path.basename(dst))
+    extract([(dst, local_file)], ignore_nopath=False)
+
+    with open(local_file, 'r') as result_file:
+        result = result_file.readlines()
+
+    assert len(result) == 1
+    assert result[0].strip() == content
+
+
+@pytest.mark.parametrize('mode', ['normal', 'dead'])
+@pytest.mark.parametrize(
+    'bad_path', ['/nothing/here', '/var/log/nested_nothing', '/root/nowhere']
+)
+def test_extract_paths_ignore_nopath(tmpdir, vms, vm_name, mode, bad_path):
+    vm = vms[vm_name]
+    dst = os.path.join(str(tmpdir), 'extract-failure')
+    if mode == 'normal':
+        extract = getattr(vm, 'extract_paths')
+    elif mode == 'dead':
+        extract = getattr(vm, 'extract_paths_dead')
+
+    with pytest.raises(ExtractPathNoPathError):
+        extract([(bad_path, dst)], ignore_nopath=False)
+
+    extract([(bad_path, dst)], ignore_nopath=True)
