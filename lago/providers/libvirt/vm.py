@@ -51,6 +51,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
             name=self.vm.virt_env.uuid + libvirt_url,
             libvirt_url=libvirt_url,
         )
+        self._libvirt_ver = self.libvirt_con.getVersion()
 
         caps_raw_xml = self.libvirt_con.getCapabilities()
         self._caps = ET.fromstring(caps_raw_xml)
@@ -367,19 +368,10 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
         """
         return self._cpu.vendor
 
-    def _load_domain_xml(self):
-        if self.vm.distro() == 'el6':
-            dom_raw_xml = libvirt_utils.get_template('dom_template-el6.xml')
-        else:
-            dom_raw_xml = libvirt_utils.get_template('dom_template.xml')
-        return dom_raw_xml
-
     def _libvirt_name(self):
         return self.vm.virt_env.prefixed_name(self.vm.name())
 
-    def _libvirt_xml(self):
-        dom_raw_xml = self._load_domain_xml()
-
+    def _get_qemu_kvm_path(self):
         qemu_kvm_path = self._caps.findtext(
             "guest[os_type='hvm']/arch[@name='x86_64']/domain[@type='kvm']"
             "/emulator"
@@ -393,19 +385,28 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
             )
 
         if not qemu_kvm_path:
-            raise Exception('kvm executable not found')
+            raise utils.LagoException('kvm executable not found')
 
-        replacements = {
-            '@NAME@': self._libvirt_name(),
-            '@MEM_SIZE@': self.vm._spec.get('memory', 16 * 1024),
-            '@QEMU_KVM@': qemu_kvm_path,
+        return qemu_kvm_path
+
+    def _load_xml(self):
+
+        args = {
+            'distro': self.vm.distro(),
+            'libvirt_ver': self._libvirt_ver,
+            'name': self._libvirt_name(),
+            'mem_size': self.vm.spec.get('memory', 16 * 1024),
+            'qemu_kvm': self._get_qemu_kvm_path()
         }
 
-        for key, val in replacements.items():
-            dom_raw_xml = dom_raw_xml.replace(key, str(val), 1)
+        dom_raw_xml = libvirt_utils.get_domain_template(**args)
 
         parser = ET.XMLParser(remove_blank_text=True)
-        dom_xml = ET.fromstring(dom_raw_xml, parser)
+        return ET.fromstring(dom_raw_xml, parser)
+
+    def _libvirt_xml(self):
+
+        dom_xml = self._load_xml()
 
         for child in self._cpu:
             dom_xml.append(child)
