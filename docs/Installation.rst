@@ -32,7 +32,7 @@ pip
 
    .. code:: bash
 
-       $ yum install -y libvirt libvirt-devel libguestfs-tools \
+       $ dnf install -y libvirt libvirt-devel libguestfs-tools \
            libguestfs-devel gcc libffi-devel openssl-devel qemu-kvm
 
    C. Debian / Ubuntu - *TO-DO*
