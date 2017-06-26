@@ -243,7 +243,8 @@ class FileExportManager(DiskExportManager):
                     shutil.rmtree, self.dst, ignore_errors=True
                 )
                 self.copy()
-                self.sparse()
+                if not self.disk['format'] == 'iso':
+                    self.sparse()
                 self.calc_sha('sha1')
                 self.update_lago_metadata()
                 self.write_lago_metadata()
