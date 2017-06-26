@@ -39,9 +39,6 @@ LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
 log_task = functools.partial(log_utils.log_task, logger=LOGGER)
 
-KDUMP_SERVICE = '/etc/systemd/system/multi-user.target.wants/kdump.service'
-POSTFIX_SERVICE = '/etc/systemd/system/multi-user.target.wants/postfix.service'
-
 
 class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
     def __init__(self, vm):
