@@ -344,35 +344,47 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
             ignore_nopath=ignore_nopath
         )
 
-    def export_disks(self, standalone, dst_dir, compress, *args, **kwargs):
+    def export_disks(
+        self,
+        standalone,
+        dst_dir,
+        compress,
+        collect_only=False,
+        with_threads=True,
+        *args,
+        **kwargs
+    ):
         """
-        Exports all the disks of self.
-        For each disk type, handler function should be added.
+        Export all the disks of self.
 
         Args:
             standalone (bool): if true, merge the base images and the layered
-             image into a new file (Supported only in qcow2 format)
+                image into a new file (Supported only in qcow2 format)
             dst_dir (str): dir to place the exported disks
             compress(bool): if true, compress each disk.
+            collect_only(bool): If true, return only a dict which maps between
+                the name of the vm to the paths of the disks that will be
+                exported (don't export anything).
+            with_threads(bool): If True, export disks in parallel
 
+        Returns:
+            (dict): which maps between the name of the vm to the paths of
+            the disks that will be exported
         """
-        formats_to_exclude = {'iso'}
-
-        export_managers = [
-            export.DiskExportManager.get_instance_by_type(
-                dst=dst_dir,
-                disk=disk,
-                do_compress=compress,
-                standalone=standalone,
-                *args,
-                **kwargs
-            ) for disk in self.vm.disks
-            if disk.get('format') not in formats_to_exclude
-        ]
-
-        utils.invoke_different_funcs_in_parallel(
-            *map(lambda manager: manager.export, export_managers)
+        vm_export_mgr = export.VMExportManager(
+            disks=self.vm.disks,
+            dst=dst_dir,
+            compress=compress,
+            with_threads=with_threads,
+            standalone=standalone,
+            *args,
+            **kwargs
         )
+
+        if collect_only:
+            return {self.vm.name(): vm_export_mgr.collect_paths()}
+        else:
+            return {self.vm.name(): vm_export_mgr.export()}
 
     @vm_plugin.check_defined
     def interactive_console(self):

@@ -387,13 +387,21 @@ class VMPlugin(plugins.Plugin):
         return self.provider.extract_paths_dead(paths, *args, **kwargs)
 
     def export_disks(
-        self, standalone=True, dst_dir=None, compress=False, *args, **kwargs
+        self,
+        standalone=True,
+        dst_dir=None,
+        compress=False,
+        collect_only=False,
+        with_threads=True,
+        *args,
+        **kwargs
     ):
         """
         Thin method that just uses the provider
         """
         return self.provider.export_disks(
-            standalone, dst_dir, compress, *args, **kwargs
+            standalone, dst_dir, compress, collect_only, with_threads, *args,
+            **kwargs
         )
 
     def copy_to(self, local_path, remote_path, recursive=True):

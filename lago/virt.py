@@ -17,6 +17,7 @@
 #
 # Refer to the README and COPYING files for full details of the license
 #
+from copy import deepcopy
 import functools
 import hashlib
 import json
@@ -162,9 +163,17 @@ class VirtEnv(object):
             utils.invoke_in_parallel(lambda vm: vm.bootstrap(), vms)
 
     def export_vms(
-        self, vms_names, standalone, dst_dir, compress, init_file_name,
-        out_format
+        self,
+        vms_names,
+        standalone,
+        dst_dir,
+        compress,
+        init_file_name,
+        out_format,
+        collect_only=False,
+        with_threads=True
     ):
+        # todo: move this logic to PrefixExportManager
         if not vms_names:
             vms_names = self._vms.keys()
 
@@ -173,9 +182,10 @@ class VirtEnv(object):
         for name in vms_names:
             try:
                 vm = self._vms[name]
-                vms.append(vm)
-                if vm.defined():
-                    running_vms.append(vm)
+                if not vm.spec.get('skip-export'):
+                    vms.append(vm)
+                    if vm.defined():
+                        running_vms.append(vm)
             except KeyError:
                 raise utils.LagoUserException(
                     'Entity {} does not exist'.format(name)
@@ -188,18 +198,37 @@ class VirtEnv(object):
             )
 
         with LogTask('Exporting disks to: {}'.format(dst_dir)):
-
             if not os.path.isdir(dst_dir):
                 os.mkdir(dst_dir)
 
             def _export_disks(vm):
-                vm.export_disks(standalone, dst_dir, compress)
+                return vm.export_disks(
+                    standalone, dst_dir, compress, collect_only, with_threads
+                )
 
-            utils.invoke_in_parallel(_export_disks, vms)
+            if collect_only:
+                return (
+                    reduce(
+                        lambda x, y: x.update(y) or x, map(_export_disks, vms)
+                    )
+                )
+            else:
+                if with_threads:
+                    results = utils.invoke_in_parallel(_export_disks, vms)
+                else:
+                    results = map(_export_disks, vms)
 
-        self.generate_init(os.path.join(dst_dir, init_file_name), out_format)
+                results = reduce(lambda x, y: x.update(y) or x, results)
 
-    def generate_init(self, dst, out_format, filters=None):
+        self.generate_init(
+            os.path.join(dst_dir, init_file_name), out_format, vms
+        )
+
+        results['init-file'] = os.path.join(dst_dir, init_file_name)
+
+        return results
+
+    def generate_init(self, dst, out_format, vms_to_include, filters=None):
         """
         Generate an init file which represents this env and can
         be used with the images created by self.export_vms
@@ -210,9 +239,12 @@ class VirtEnv(object):
                 formatter for the output (the default is yaml)
             filters (list): list of paths to keys that should be removed from
                 the init file
+            vms_to_include (list of :class:lago.plugins.vm.VMPlugin):
+                list of vms to include in the init file
         Returns:
             None
         """
+        # todo: move this logic to PrefixExportManager
         with LogTask('Exporting init file to: {}'.format(dst)):
             # Set the default formatter to yaml. The default formatter
             # doesn't generate a valid init file, so it's not reasonable
@@ -226,9 +258,20 @@ class VirtEnv(object):
                     'domains/*/metadata/deploy-scripts', 'domains/*/snapshots',
                     'domains/*/name', 'nets/*/mapping', 'nets/*/dns_records'
                 ]
+
             spec = self.get_env_spec(filters)
+            temp = {}
+
+            for vm in vms_to_include:
+                temp[vm.name()] = spec['domains'][vm.name()]
+
+            spec['domains'] = temp
 
             for _, domain in spec['domains'].viewitems():
+                domain['disks'] = [
+                    d for d in domain['disks'] if not d.get('skip-export')
+                ]
+
                 for disk in domain['disks']:
                     if disk['type'] == 'template':
                         disk['template_type'] = 'qcow2'
@@ -264,12 +307,12 @@ class VirtEnv(object):
         spec = {
             'domains':
                 {
-                    vm_name: vm_object.spec
+                    vm_name: deepcopy(vm_object.spec)
                     for vm_name, vm_object in self._vms.viewitems()
                 },
             'nets':
                 {
-                    net_name: net_object.spec
+                    net_name: deepcopy(net_object.spec)
                     for net_name, net_object in self._nets.viewitems()
                 }
         }
