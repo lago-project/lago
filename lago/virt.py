@@ -163,8 +163,14 @@ class VirtEnv(object):
             utils.invoke_in_parallel(lambda vm: vm.bootstrap(), vms)
 
     def export_vms(
-        self, vms_names, standalone, dst_dir, compress, init_file_name,
-        out_format
+        self,
+        vms_names,
+        standalone,
+        dst_dir,
+        compress,
+        init_file_name,
+        out_format,
+        collect_only=False
     ):
         if not vms_names:
             vms_names = self._vms.keys()
@@ -190,14 +196,22 @@ class VirtEnv(object):
             )
 
         with LogTask('Exporting disks to: {}'.format(dst_dir)):
-
             if not os.path.isdir(dst_dir):
                 os.mkdir(dst_dir)
 
             def _export_disks(vm):
-                vm.export_disks(standalone, dst_dir, compress)
+                return vm.export_disks(
+                    standalone, dst_dir, compress, collect_only
+                )
 
-            utils.invoke_in_parallel(_export_disks, vms)
+            if collect_only:
+                return (
+                    reduce(
+                        lambda x, y: x.update(y) or x, map(_export_disks, vms)
+                    )
+                )
+            else:
+                utils.invoke_in_parallel(_export_disks, vms)
 
         self.generate_init(
             os.path.join(dst_dir, init_file_name), out_format, vms

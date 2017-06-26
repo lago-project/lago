@@ -1221,12 +1221,18 @@ class Prefix(object):
         utils.invoke_in_parallel(build.Build.build, builders)
 
     def export_vms(
-        self, vms_names, standalone, export_dir, compress, init_file_name,
-        out_format
+        self,
+        vms_names,
+        standalone,
+        export_dir,
+        compress,
+        init_file_name,
+        out_format,
+        collect_only=False
     ):
-        self.virt_env.export_vms(
+        return self.virt_env.export_vms(
             vms_names, standalone, export_dir, compress, init_file_name,
-            out_format
+            out_format, collect_only
         )
 
     @sdk_utils.expose
