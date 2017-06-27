@@ -326,13 +326,11 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
         )
 
         if collect_only:
-            return {
-                self.vm.name():
-                    [
-                        os.path.basename(disk['path'])
-                        for disk in disks_to_export
-                    ]
-            }
+            names = [
+                os.path.basename(disk['path']) for disk in disks_to_export
+            ]
+
+            return {self.vm.name(): names}
 
         export_managers = [
             export.DiskExportManager.get_instance_by_type(

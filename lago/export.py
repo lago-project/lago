@@ -185,9 +185,16 @@ class TemplateExportManager(DiskExportManager):
                 # this identifier will be used later by Lago in order
                 # to resolve and download the base image
                 parent = self.src_qemu_info[0]['backing-filename']
-                parent = './{}'.format(
-                    os.path.basename(parent.split(':', 1)[1])
-                )
+                # Hack for working with lago images naming convention
+                # For example: /var/lib/lago/store/phx_repo:el7.3-base:v1
+                # Extract only the image name (in the example el7.3-base)
+                parent = os.path.basename(parent)
+                try:
+                    parent = parent.split(':', 1)[1]
+                except IndexError:
+                    pass
+
+                parent = './{}'.format(parent)
                 utils.qemu_rebase(
                     target=self.dst, backing_file=parent, safe=False
                 )
