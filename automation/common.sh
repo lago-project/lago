@@ -92,6 +92,9 @@ run_installation_tests() {
     else
         yum=yum
     fi
+    echo "Running sdist installation tests"
+    tox -v -r -e sdist
+
     # fail if a glob turns out empty
     shopt -s failglob
     for package in {python-,}lago ; do
