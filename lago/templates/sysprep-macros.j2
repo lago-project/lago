@@ -9,11 +9,11 @@ mkdir /etc/sysconfig/network-scripts
 chmod 0755:/etc/sysconfig/network-scripts
 {% filter dedent %}
 {% for iface, mac in mappings.viewitems() %}
-	write /etc/sysconfig/network-scripts/ifcfg-{{iface}}:HWADDR="{{mac}}" \
+	write /etc/sysconfig/network-scripts/ifcfg-{{ iface }}:HWADDR="{{ mac }}" \
 	BOOTPROTO="dhcp" \
 	ONBOOT="yes" \
 	TYPE="Ethernet" \
-	NAME="{{iface}}" \
+	NAME="{{ iface }}" \
 
 {% endfor %}
 {% endfilter %}
