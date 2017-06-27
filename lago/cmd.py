@@ -344,15 +344,23 @@ def do_shutdown(prefix, vm_names, reboot, **kwargs):
     default='LagoInitFile',
     help='The name of the exported init file',
 )
+@lago.plugins.cli.cli_plugin_add_argument(
+    '--collect-only',
+    action='store_true',
+    help='Only output the disks that will be exported',
+)
 @in_lago_prefix
 @with_logging
 def do_export(
     prefix, vm_names, standalone, dst_dir, compress, init_file_name,
-    out_format, **kwargs
+    out_format, collect_only, **kwargs
 ):
-    prefix.export_vms(
-        vm_names, standalone, dst_dir, compress, init_file_name, out_format
+    output = prefix.export_vms(
+        vm_names, standalone, dst_dir, compress, init_file_name, out_format,
+        collect_only
     )
+    if collect_only:
+        print(out_format.format(output))
 
 
 @lago.plugins.cli.cli_plugin(

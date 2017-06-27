@@ -298,7 +298,15 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
             )
             self._extract_paths_gfs(paths=paths, ignore_nopath=ignore_nopath)
 
-    def export_disks(self, standalone, dst_dir, compress, *args, **kwargs):
+    def export_disks(
+        self,
+        standalone,
+        dst_dir,
+        compress,
+        collect_only=False,
+        *args,
+        **kwargs
+    ):
         """
         Exports all the disks of self.
         For each disk type, handler function should be added.
@@ -308,9 +316,21 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
              image into a new file (Supported only in qcow2 format)
             dst_dir (str): dir to place the exported disks
             compress(bool): if true, compress each disk.
+            collect_only(bool): If true return only a dict with the names
+                of the disks that will be exported
 
         """
-        formats_to_exclude = {'iso'}
+
+        disks_to_export = (
+            disk for disk in self.vm.disks if not disk.get('skip-export')
+        )
+
+        if collect_only:
+            names = [
+                os.path.basename(disk['path']) for disk in disks_to_export
+            ]
+
+            return {self.vm.name(): names}
 
         export_managers = [
             export.DiskExportManager.get_instance_by_type(
@@ -320,8 +340,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
                 standalone=standalone,
                 *args,
                 **kwargs
-            ) for disk in self.vm.disks
-            if disk.get('format') not in formats_to_exclude
+            ) for disk in disks_to_export
         ]
 
         utils.invoke_different_funcs_in_parallel(
