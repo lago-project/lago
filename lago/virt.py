@@ -38,7 +38,7 @@ log_task = functools.partial(log_utils.log_task, logger=LOGGER)
 
 
 def _gen_ssh_command_id():
-    return uuid.uuid1().hex[:8]
+    return uuid.uuid4().hex[:8]
 
 
 def _guestfs_copy_path(g, guest_path, host_path):

@@ -209,8 +209,8 @@ class Prefix(object):
             rollback.prependDefer(shutil.rmtree, prefix)
 
             with open(self.paths.uuid(), 'w') as f, \
-                    LogTask('Generate prefix uuid'):
-                f.write(uuid.uuid1().hex)
+                    LogTask('Generate prefix uuid4'):
+                f.write(uuid.uuid4().hex)
 
             with LogTask('Create ssh keys'):
                 self._create_ssh_keys()
