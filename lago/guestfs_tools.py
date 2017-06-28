@@ -21,6 +21,7 @@
 import os
 import guestfs
 import logging
+import time
 
 from lago.plugins.vm import ExtractPathError, ExtractPathNoPathError
 
@@ -74,7 +75,7 @@ def extract_paths(disk_path, disk_root, paths, ignore_nopath):
     gfs_cli = guestfs.GuestFS(python_return_dict=True)
     disk_path = os.path.expandvars(disk_path)
     try:
-        gfs_cli.add_drive_opts(disk_path, format='qcow2', readonly=1)
+        gfs_cli.add_drive_ro(disk_path)
         gfs_cli.set_backend(os.environ.get('LIBGUESTFS_BACKEND', 'direct'))
         gfs_cli.launch()
         rootfs = [
@@ -88,7 +89,31 @@ def extract_paths(disk_path, disk_root, paths, ignore_nopath):
             )
         else:
             rootfs = rootfs[0]
-        gfs_cli.mount_ro(rootfs, '/')
+
+        max_attempts = 5
+        for attempt in range(max_attempts):
+            try:
+                gfs_cli.mount_ro(rootfs, '/')
+                break
+            except RuntimeError as err:
+                if attempt <= max_attempts:
+                    LOGGER.debug(err)
+                    LOGGER.debug(
+                        (
+                            'failed mounting %s:%s using guestfs, '
+                            'attempt %s/%s'
+                        ), disk_path, rootfs, attempt + 1, max_attempts
+                    )
+                    time.sleep(1)
+                else:
+                    LOGGER.debug(
+                        (
+                            'failed mounting %s:%s using guestfs', disk_path,
+                            rootfs
+                        )
+                    )
+                    raise
+
         for (guest_path, host_path) in paths:
             msg = ('Extracting guestfs://{0} to {1}').format(
                 guest_path, host_path
