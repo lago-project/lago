@@ -164,10 +164,13 @@ domains
 
 nets
 ----
-``<name>``: The name of the network.
+``<name>``: The name of the network, should be an alphanumeric string.
+            Currently we do not enforce that it is only alphanumeric,
+            but we might do so in the future.
 
     type(string)
         Type of the network. May be `nat` or `bridge`.
+
 
 
 .. _Templates: Templates.html

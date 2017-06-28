@@ -56,7 +56,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
         self._has_guestfs = 'lago.guestfs_tools' in sys.modules
         libvirt_url = config.get('libvirt_url')
         self.libvirt_con = libvirt_utils.get_libvirt_connection(
-            name=self.vm.virt_env.uuid + libvirt_url,
+            name=vm.virt_env.prefix.prefixed_name(libvirt_url),
             libvirt_url=libvirt_url,
         )
         self._libvirt_ver = self.libvirt_con.getLibVersion()
@@ -472,7 +472,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
         return self._cpu.vendor
 
     def _libvirt_name(self):
-        return self.vm.virt_env.prefixed_name(self.vm.name())
+        return self.vm.virt_env.prefix.prefixed_name(self.vm.name())
 
     def _get_qemu_kvm_path(self):
         qemu_kvm_path = self._caps.findtext(
@@ -598,9 +598,8 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
             interface.append(
                 ET.Element(
                     'source',
-                    network=self.vm.virt_env.prefixed_name(
-                        dev_spec['net'], max_length=15
-                    ),
+                    network=self.vm.virt_env.prefix.
+                    prefixed_name(dev_spec['net']),
                 ),
             )
             interface.append(
