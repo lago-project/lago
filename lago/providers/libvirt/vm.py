@@ -57,7 +57,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
             name=self.vm.virt_env.uuid + libvirt_url,
             libvirt_url=libvirt_url,
         )
-        self._libvirt_ver = self.libvirt_con.getVersion()
+        self._libvirt_ver = self.libvirt_con.getLibVersion()
 
         caps_raw_xml = self.libvirt_con.getCapabilities()
         self._caps = ET.fromstring(caps_raw_xml)
