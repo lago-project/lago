@@ -114,23 +114,31 @@ domains
             Linux device: vda, sdb, etc. Using a device named "sd*" will use
             virtio-scsi.
         build(list)
-            Only supported on template disks. Run a custom builder on this
-            template.
+          This section should describe how to build/configure VMs.
+          The build/configure action will happen during ``init``.
 
             virt-customize(dict)
-                List of instructions to pass to `virt-customize,`_ this stage
-                will happen during `init``. A special instruction is `ssh-inject`:
+                Instructions to pass to `virt-customize`_, where the key is the name
+                of the option and the value is the arguments for that option.
+
+                This operation is only supported on disks which contains OS.
+
+                A special instruction is ``ssh-inject: ''``
+                Which will ensure Lago's generated SSH keys will be injected
+                into the VM. This is useful when you don't want to run the
+                bootstrap stage.
+
+                For example:
 
                 .. code-block:: yaml
 
                     - template_name: el7.3-base
                       build:
-                          - virt-customize
+                          - virt-customize:
                                 ssh-inject: ''
+                                touch: [/root/file1, /root/file2]
 
-                Which will ensure Lago's generated SSH keys will be injected
-                into the VM. This is useful when you don't want to run the
-                bootstrap stage.
+                See `build`_ section for details.
 
     artifacts(list)
         Paths on the VM that Lago should collect when using `lago collect`
@@ -160,6 +168,7 @@ nets
 
 
 .. _Templates: Templates.html
-.. _`virt-customize,`: http://libguestfs.org/virt-customize.1.html
+.. _`virt-customize`: http://libguestfs.org/virt-customize.1.html
 .. _lago-ost-plugin: https://github.com/lago-project/lago-ost-plugin/blob/master/setup.cfg
 .. _CPU: CPU.html
+.. _build: BUILD.html
