@@ -23,29 +23,35 @@ import logging
 import os
 import pwd
 import time
+import sys
 
-import guestfs
 import libvirt
 from lxml import etree as ET
 
 from lago import export, log_utils, sysprep, utils
+from lago.utils import LagoException
 from lago.config import config
 from lago.plugins import vm as vm_plugin
-from lago.plugins.vm import ExtractPathError, ExtractPathNoPathError
+from lago.plugins.vm import ExtractPathError
 from lago.providers.libvirt import utils as libvirt_utils
 from lago.providers.libvirt import cpu
+from lago.validation import check_import
 
 LOGGER = logging.getLogger(__name__)
+
+if check_import('guestfs'):
+    from lago import guestfs_tools
+else:
+    LOGGER.debug('guestfs not available')
+
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
 log_task = functools.partial(log_utils.log_task, logger=LOGGER)
-
-KDUMP_SERVICE = '/etc/systemd/system/multi-user.target.wants/kdump.service'
-POSTFIX_SERVICE = '/etc/systemd/system/multi-user.target.wants/postfix.service'
 
 
 class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
     def __init__(self, vm):
         super(LocalLibvirtVMProvider, self).__init__(vm)
+        self._has_guestfs = 'lago.guestfs_tools' in sys.modules
         libvirt_url = config.get('libvirt_url')
         self.libvirt_con = libvirt_utils.get_libvirt_connection(
             name=self.vm.virt_env.uuid + libvirt_url,
@@ -267,10 +273,12 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
 
         Attempt to extract all files defined in ``paths`` with the method
         defined in :func:`~lago.plugins.vm.VMProviderPlugin.extract_paths`,
-        if it fails, will try extracting the files with libguestfs.
+        if it fails, and `guestfs` is available it will try extracting the
+        files with guestfs.
 
         Args:
-            paths(list of str): paths to extract
+            paths(list of tuples): files to extract in
+                `[(src1, dst1), (src2, dst2)...]` format.
             ignore_nopath(boolean): if True will ignore none existing paths.
 
         Returns:
@@ -278,7 +286,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
 
         Raises:
             :exc:`~lago.plugins.vm.ExtractPathNoPathError`: if a none existing
-                path was found on the VM, and `ignore_nopath` is True.
+                path was found on the VM, and `ignore_nopath` is False.
             :exc:`~lago.plugins.vm.ExtractPathError`: on all other failures.
         """
 
@@ -292,11 +300,49 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
             LOGGER.debug(
                 '%s: failed extracting files: %s', self.vm.name(), err.message
             )
-            LOGGER.debug(
-                '%s: attempting to extract files with libguestfs',
-                self.vm.name()
+            if self._has_guestfs:
+                self.extract_paths_dead(paths, ignore_nopath)
+            else:
+                raise
+
+    def extract_paths_dead(self, paths, ignore_nopath):
+        """
+        Extract the given paths from the domain using guestfs.
+        Using guestfs can have side-effects and should be used as a second
+        option, mainly when SSH is not available.
+
+        Args:
+            paths(list of str): paths to extract
+            ignore_nopath(boolean): if True will ignore none existing paths.
+
+        Returns:
+            None
+
+        Raises:
+            :exc:`~lago.utils.LagoException`: if :mod:`guestfs` is not
+                importable.
+            :exc:`~lago.plugins.vm.ExtractPathNoPathError`: if a none existing
+                path was found on the VM, and `ignore_nopath` is True.
+            :exc:`~lago.plugins.vm.ExtractPathError`: on failure extracting
+                the files.
+        """
+        if not self._has_guestfs:
+            raise LagoException(
+                ('guestfs module not available, cannot '
+                 )('extract files with libguestfs')
             )
-            self._extract_paths_gfs(paths=paths, ignore_nopath=ignore_nopath)
+
+        LOGGER.debug(
+            '%s: attempting to extract files with libguestfs', self.vm.name()
+        )
+        guestfs_tools.extract_paths(
+            disk_path=self.vm.spec['disks'][0]['path'],
+            disk_root=self.vm.spec['disks'][0]['metadata'].get(
+                'root-partition', 'root'
+            ),
+            paths=paths,
+            ignore_nopath=ignore_nopath
+        )
 
     def export_disks(self, standalone, dst_dir, compress, *args, **kwargs):
         """
@@ -572,49 +618,6 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
             self._reclaim_disks()
             self.vm._spec['snapshots'][name] = snap_info
 
-    def _extract_paths_gfs(self, paths, ignore_nopath):
-        gfs_cli = guestfs.GuestFS(python_return_dict=True)
-        try:
-            disk_path = os.path.expandvars(self.vm._spec['disks'][0]['path'])
-            disk_root_part = self.vm._spec['disks'][0]['metadata'].get(
-                'root-partition',
-                'root',
-            )
-            gfs_cli.add_drive_opts(disk_path, format='qcow2', readonly=1)
-            gfs_cli.set_backend(os.environ.get('LIBGUESTFS_BACKEND', 'direct'))
-            gfs_cli.launch()
-            rootfs = [
-                filesystem for filesystem in gfs_cli.list_filesystems()
-                if disk_root_part in filesystem
-            ]
-            if not rootfs:
-                raise RuntimeError(
-                    'No root fs (%s) could be found for %s from list %s' % (
-                        disk_root_part, disk_path,
-                        str(gfs_cli.list_filesystems())
-                    )
-                )
-            else:
-                rootfs = rootfs[0]
-            gfs_cli.mount_ro(rootfs, '/')
-            for (guest_path, host_path) in paths:
-                msg = ('Extracting guestfs://{0}:{1} to {2}').format(
-                    self.vm.name(), host_path, guest_path
-                )
-
-                LOGGER.debug(msg)
-                try:
-                    _guestfs_copy_path(gfs_cli, guest_path, host_path)
-                except ExtractPathNoPathError as err:
-                    if ignore_nopath:
-                        LOGGER.debug('%s: ignoring', err)
-                    else:
-                        raise
-
-        finally:
-            gfs_cli.shutdown()
-            gfs_cli.close()
-
     def _reclaim_disk(self, path):
         qemu_uid = None
         try:
@@ -629,26 +632,3 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
     def _reclaim_disks(self):
         for disk in self.vm._spec['disks']:
             self._reclaim_disk(disk['path'])
-
-
-def _guestfs_copy_path(guestfs_conn, guest_path, host_path):
-    if guestfs_conn.is_file(guest_path):
-        with open(host_path, 'w') as dest_fd:
-            dest_fd.write(guestfs_conn.read_file(guest_path))
-
-    elif guestfs_conn.is_dir(guest_path):
-        os.mkdir(host_path)
-        for path in guestfs_conn.ls(guest_path):
-            _guestfs_copy_path(
-                guestfs_conn,
-                os.path.join(
-                    guest_path,
-                    path,
-                ),
-                os.path.join(host_path, os.path.basename(path)),
-            )
-    else:
-        raise ExtractPathNoPathError(
-            ('unable to extract {0}: path does not '
-             'exist.').format(guest_path)
-        )
