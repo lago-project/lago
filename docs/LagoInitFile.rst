@@ -164,7 +164,10 @@ domains
 
 nets
 ----
-*TO-DO: no docs yet..*
+``<name>``: The name of the network.
+
+    type(string)
+        Type of the network. May be `nat` or `bridge`.
 
 
 .. _Templates: Templates.html
