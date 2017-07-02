@@ -31,6 +31,7 @@ import uuid
 import warnings
 import pkg_resources
 from os.path import join
+from plugins.output import YAMLOutFormatPlugin
 
 import xmltodict
 
@@ -1220,13 +1221,47 @@ class Prefix(object):
 
         utils.invoke_in_parallel(build.Build.build, builders)
 
+    @sdk_utils.expose
     def export_vms(
-        self, vms_names, standalone, export_dir, compress, init_file_name,
-        out_format
+        self,
+        vms_names=None,
+        standalone=False,
+        export_dir='.',
+        compress=False,
+        init_file_name='LagoInitFile',
+        out_format=YAMLOutFormatPlugin(),
+        collect_only=False,
+        with_threads=True,
     ):
-        self.virt_env.export_vms(
+        """
+        Export vm images disks and init file.
+        The exported images and init file can be used to recreate
+        the environment.
+
+        Args:
+            vms_names(list of str): Names of the vms to export, if None
+                export all the vms in the env (default=None)
+            standalone(bool): If false, export a layered image
+                (default=False)
+            export_dir(str): Dir to place the exported images and init file
+            compress(bool): If True compress the images with xz
+                  (default=False)
+            init_file_name(str): The name of the exported init file
+                (default='LagoInitfile')
+            out_format(:class:`lago.plugins.output.OutFormatPlugin`):
+                The type of the exported init file (the default is yaml)
+            collect_only(bool): If True, return only a mapping from vm name
+                to the disks that will be exported. (default=False)
+            with_threads(bool): If True, run the export in parallel
+                (default=True)
+
+        Returns
+            Unless collect_only == True, a mapping between vms' disks.
+
+        """
+        return self.virt_env.export_vms(
             vms_names, standalone, export_dir, compress, init_file_name,
-            out_format
+            out_format, collect_only, with_threads
         )
 
     @sdk_utils.expose
