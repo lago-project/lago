@@ -25,6 +25,7 @@ import logging
 import os
 import shutil
 import subprocess
+from textwrap import dedent
 import urlparse
 import urllib
 import uuid
@@ -837,35 +838,55 @@ class Prefix(object):
         """
         qemu_info = utils.get_qemu_info(disk_path)
         parent = qemu_info.get('backing-filename')
+        if not parent:
+            return
 
-        if parent:
-            LOGGER.info('Resolving Parent')
-            name, version = os.path.basename(parent).split(':', 1)
-            if not (name and version):
-                raise RuntimeError(
-                    'Unsupported backing-filename: {}'
-                    'backing-filename should be in the format'
-                    'name:version'.format(parent)
+        if os.path.isfile(parent):
+            if os.path.samefile(
+                os.path.realpath(parent),
+                os.path.realpath(os.path.expandvars(disk_path))
+            ):
+                raise LagoInitException(
+                    dedent(
+                        """
+                        Disk {} and its backing file are the same file.
+                        """.format(disk_path)
+                    )
                 )
-            _, _, base = self._handle_lago_template(
-                '', {'template_name': name,
-                     'template_version': version}, template_store,
-                template_repo
+            # The parent exist and we have the correct pointer
+            return
+
+        LOGGER.info('Resolving Parent')
+        try:
+            name, version = os.path.basename(parent).split(':', 1)
+        except ValueError:
+            raise LagoInitException(
+                dedent(
+                    """
+                    Backing file resolution of disk {} failed.
+                    Backing file {} is not a Lago image.
+                    """.format(disk_path, parent)
+                )
             )
 
-            # The child has the right pointer to his parent
-            base = os.path.expandvars(base)
-            if base == parent:
-                return
+        _, _, base = self._handle_lago_template(
+            '', {'template_name': name,
+                 'template_version': version}, template_store, template_repo
+        )
 
-            # The child doesn't have the right pointer to his
-            # parent, We will fix it with a symlink
-            link_name = os.path.join(
-                os.path.dirname(disk_path), '{}:{}'.format(name, version)
-            )
-            link_name = os.path.expandvars(link_name)
+        # The child has the right pointer to his parent
+        base = os.path.expandvars(base)
+        if base == parent:
+            return
 
-            self._create_link_to_parent(base, link_name)
+        # The child doesn't have the right pointer to his
+        # parent, We will fix it with a symlink
+        link_name = os.path.join(
+            os.path.dirname(disk_path), '{}:{}'.format(name, version)
+        )
+        link_name = os.path.expandvars(link_name)
+
+        self._create_link_to_parent(base, link_name)
 
     def _create_link_to_parent(self, base, link_name):
         if not os.path.islink(link_name):
