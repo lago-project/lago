@@ -619,30 +619,26 @@ def do_status(prefix, out_format, **kwargs):
     print(out_format.format(info_dict))
 
 
-@lago.plugins.cli.cli_plugin(
-    help='List the name of the available given virtual resources'
-)
+@lago.plugins.cli.cli_plugin(help='List the prefixes (envs) in a Workdir')
 @lago.plugins.cli.cli_plugin_add_argument(
-    'resource_type',
-    help='Type of resource to list',
-    metavar='RESOURCE_TYPE',
-    choices=['envs', 'prefixes'],
+    'workdir_path',
+    help=dedent(
+        """
+        Path to the Workdir. If not provided Lago will
+        try to find a Workdir relative to the current directory.
+        """
+    ),
+    metavar='WORKDIR_PATH',
+    type=os.path.abspath,
+    nargs='?',
 )
-@in_lago_prefix
-@with_logging
-def do_list(
-    prefix, resource_type, out_format, prefix_path, workdir_path, **kwargs
-):
-    if resource_type in ['prefixes', 'envs']:
-        if prefix_path:
-            raise RuntimeError('Using a plain prefix')
-        else:
-            if workdir_path == 'auto':
-                workdir_path = lago_workdir.resolve_workdir_path()
+def do_list(workdir_path, out_format, **kwargs):
+    if not workdir_path:
+        workdir_path = lago_workdir.Workdir.resolve_workdir_path()
 
-            workdir = lago_workdir.Workdir(path=workdir_path)
-            workdir.load()
-            resources = workdir.prefixes.keys()
+    workdir = lago_workdir.Workdir(path=workdir_path)
+    workdir.load()
+    resources = workdir.prefixes.keys()
 
     print(out_format.format(resources))
 
