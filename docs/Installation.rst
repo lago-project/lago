@@ -2,41 +2,44 @@
 Installing Lago
 ###############
 
-Lago is officially supported and tested on Fedora 24+ and CentOS 7.3
-distributions. However, it should be fairly easy to get it running on
-debian variants.
-
-As Lago requires libvirtd installed and several group permissions,
-it cannot be installed solely via ``pip``. For that reason the
-recommended method of installation is using the RPM. The easiest way, is
-to use the `Install script`_ which we test and verify regularly [2]_.
-
+Lago is officially supported and tested on Fedora 24+ and CentOS 7.3+
+distributions. However, it should be fairly easy to install it on any Linux
+distribution that can run libvirt and qemu-kvm using `pip`_,
+here we provide instructions also for Ubuntu 16.04 which we test from time to
+time. Feel free to open PR if you got it running on a distribution which is not
+listed here so it could be added.
 
 pip
 ===
 
-1. Install system package dependencies, this may vary according to your
-   distribution:
+1. Install system package dependencies:
 
    A. CentOS 7.3+
 
    .. code:: bash
 
         $ yum install -y epel-release centos-release-qemu-ev
-        $ yum install -y libvirt libvirt-devel libguestfs-tools \
-            libguestfs-devel gcc libffi-devel openssl-devel \
-            qemu-kvm-ev
+        $ yum install -y python-devel libvirt libvirt-devel \
+            libguestfs-tools libguestfs-devel gcc libffi-devel \
+            openssl-devel qemu-kvm-ev
 
 
    B. Fedora 24+
 
    .. code:: bash
 
-       $ dnf install -y libvirt libvirt-devel libguestfs-tools \
-           libguestfs-devel gcc libffi-devel openssl-devel qemu-kvm
+       $ dnf install -y python2-devel libvirt libvirt-devel \
+           libguestfs-tools libguestfs-devel gcc libffi-devel \
+           openssl-devel qemu-kvm
 
-   C. Debian / Ubuntu - *TO-DO*
-   D. ArchLinux - *TO-DO*
+   C. Ubuntu 16.04+
+
+   .. code:: bash
+
+      $ apt-get install -y python-dev build-essential libssl-dev \
+          libffi-dev qemu-kvm libvirt-bin libvirt-dev pkg-config \
+          libguestfs-tools libguestfs-dev
+
 
 2. Install libguestfs Python bindings, as they are not available on PyPI [3]_:
 
@@ -54,11 +57,21 @@ pip
 
 4. Setup permissions(replacing USERNAME accordingly):
 
-   .. code:: bash
+   * Fedora / CentOS:
 
-       $ sudo usermod -a -G qemu,libvirt USERNAME
-       $ sudo usermod -a -G USERNAME qemu
-       $ chmod g+x $HOME
+     .. code:: bash
+
+         $ sudo usermod -a -G qemu,libvirt USERNAME
+         $ sudo usermod -a -G USERNAME qemu
+         $ sudo chmod g+x $HOME
+
+
+   * Ubuntu 16.04+ :
+
+     .. code:: bash
+
+         $ sudo usermod -a -G libvirtd,kvm USERNAME
+         $ chmod 0644 /boot/vmlinuz*
 
 5. Create a global share for Lago to store templates:
 
@@ -69,12 +82,13 @@ pip
        $ sudo chown -R USERNAME:USERNAME /var/lib/lago
 
 
-   *Note:* if you don't want to share the templates between users, have a look
-   at the Configuration_ section, and change ``lease_dir``, ``template_repos``
-   and ``template_store`` accordingly.
+   *Note:* If you'd like to store the templates in a different location
+   look at the Configuration_ section, and change ``lease_dir``,
+   ``template_repos`` and ``template_store`` accordingly. This can be done
+   after the installation is completed.
 
-6. Restart libvirt(if you have systemd, otherwise use your distribution
-   specific tool):
+
+6. Restart libvirt:
 
    .. code:: bash
 
@@ -82,9 +96,10 @@ pip
 
 7. Log out and login again
 
+Thats it! Lago should be working now. You can jump to `Lago Examples`_.
 
-Fedora 24+ / CentOS 7.3
-=======================
+RPM Based - Fedora 24+ / CentOS 7.3+
+====================================
 
 .. _`Install script`:
 
@@ -109,11 +124,10 @@ Install script
 
 3. Log out and login again.
 
-That's it! Lago should be installed.
 
 
-Manual installation
--------------------
+Manual RPM installation
+-----------------------
 
 
 1. Add the following repository to a new file at
@@ -147,8 +161,6 @@ Manual installation
 
            $ sudo yum install -y epel-release centos-release-qemu-ev
 
-
-   .. todo:: point to the release rpm once it's implemented, and use gpgcheck=1
 
 
 2. With the Lago repository configured, run(for Fedora use ``dnf`` instead):
@@ -210,7 +222,7 @@ Troubleshooting
 * *Problem*: QEMU throws an error it can't access files in my home directory.
 
   *Solution*: Check again that you have setup the permissions described in the
-  `Manual Installation`_ section. After doing that, log out and log in again.
+  `Manual RPM Installation`_ section. After doing that, log out and log in again.
   If QEMU has the proper permissions, the following command should work(
   replace ``some/nested/path`` with a directory inside your home directory):
 
@@ -231,6 +243,7 @@ Troubleshooting
        available for your distribution. In that case, if using a virtualenv,
        ensure you are creating it with '--system-site-packages' option.
        For Fedora/CentOS the package is named `python2-libguestfs`, and for
-       Debian `python-guestfs`.
+       Ubuntu `python-guestfs`.
 
 .. _Configuration: Configuration.html
+.. _`Lago Examples`: Lago_Examples.html
