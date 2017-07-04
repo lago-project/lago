@@ -33,5 +33,42 @@ Available templates
 | ubuntu16.04-base | Ubuntu 16.04 |
 +------------------+--------------+
 
+Repository metadata
+===================
+
+A templates repository should contain a `repo.metadata` file describing all
+available templates. The repository build script creates this file 
+automatically. The file contains a serialized JSON object with the following
+members:
+
+    ``name``: 
+        The name of the repository.
+    
+    ``sources``: 
+        
+        ``<name>``: Name of a source.
+        
+            *TO-DO: no docs yet...*
+    
+    ``templates``: 
+    
+        ``<name>``: Unique template name.
+        
+            ``versions``:
+                
+                ``<version>``: Unique version string.
+                
+                    ``source``:
+                        Name of the source from which this template version 
+                        was created.
+                        
+                    ``timestamp``:
+                        Creation time of the template version.
+                        
+                    ``handle``:
+                        Either a base file name of the template located in the
+                        root directory of the repository, or a root-relative
+                        path to the template file.
+
 .. _here: http://templates.ovirt.org/repo/
 .. _repository: https://github.com/lago-project/lago-images
