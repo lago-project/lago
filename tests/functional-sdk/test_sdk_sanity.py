@@ -6,10 +6,13 @@ import os
 import shutil
 import logging
 import uuid
+import filecmp
 from jinja2 import Environment, BaseLoader
 from lago import sdk
 from lago.utils import run_command
 from lago.plugins.vm import ExtractPathNoPathError
+
+from utils import RandomizedDir
 
 
 @pytest.fixture(scope='module')
@@ -40,6 +43,8 @@ def init_str(images):
           - /etc/sysconfig
           - /etc/NetworkManager
           - /root/virt-sysprep-firstboot.log
+          - /root/extract-{{ vm_name }}-dead
+          - /root/extract-{{ vm_name }}-normal
         groups: group{{ loop.index % 2 }}
       {% endfor %}
 
@@ -122,6 +127,13 @@ def vms(env):
 @pytest.fixture(scope='module')
 def nets(env):
     return env.get_nets()
+
+
+@pytest.fixture
+def randomized_dir(tmpdir):
+    randomized_path = os.path.join(str(tmpdir), 'random')
+    os.makedirs(randomized_path)
+    return RandomizedDir(path=randomized_path, depth=5)
 
 
 def test_custom_log(external_log):
@@ -316,30 +328,24 @@ def test_collect_raises(tmpdir, vms, vm_name):
 
 
 @pytest.mark.parametrize('mode', (['normal', 'dead']))
-def test_extract_paths(tmpdir, vms, vm_name, mode):
+def test_extract_paths(tmpdir, randomized_dir, vms, vm_name, mode):
     vm = vms[vm_name]
-    content = str(uuid.uuid4())
     dst = '/root/extract-{vm}-{mode}'.format(vm=vm_name, mode=mode)
-    with tempfile.NamedTemporaryFile(delete=False) as f:
-        f.write(content)
-    vm.copy_to(f.name, dst, recursive=False)
+    vm.copy_to(randomized_dir.path, dst, recursive=True)
     res = vm.ssh(['sync'])
     assert res.code == 0
-    res = vm.ssh(['cat', dst])
-    assert res.out.strip() == content
-
     if mode == 'normal':
         extract = getattr(vm, 'extract_paths')
     elif mode == 'dead':
         extract = getattr(vm, 'extract_paths_dead')
-    local_file = os.path.join(str(tmpdir), os.path.basename(dst))
-    extract([(dst, local_file)], ignore_nopath=False)
+    extracted_path = str(tmpdir)
+    extract([(dst, extracted_path)], ignore_nopath=False)
 
-    with open(local_file, 'r') as result_file:
-        result = result_file.readlines()
-
-    assert len(result) == 1
-    assert result[0].strip() == content
+    cmp_res = filecmp.dircmp(
+        os.path.join(extracted_path, os.path.basename(dst)),
+        randomized_dir.path
+    )
+    assert sorted(cmp_res.left_list) == sorted(cmp_res.right_list)
 
 
 @pytest.mark.parametrize('mode', ['normal', 'dead'])
