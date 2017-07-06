@@ -38,8 +38,8 @@ Repository metadata
 
 A templates repository should contain a `repo.metadata` file describing all
 available templates. The repository build script creates this file 
-automatically. The file contains a serialized JSON object with the following
-members:
+automatically. The file contains a serialized JSON object with the members
+detailed below. For an example, see the above repository's `metadata file`_.
 
     ``name``: 
         The name of the repository.
@@ -48,7 +48,17 @@ members:
         
         ``<name>``: Name of a source.
         
-            *TO-DO: no docs yet...*
+            ``type``: 
+                Source type. May be either ``http`` or ``file``.
+            
+            ``args``:
+                Varies depending on the source type.
+                
+                For an ``http`` source, should contain a ``baseurl`` member
+                pointing to the root of the repository on the web.
+                
+                For a ``file`` source, should contain a ``root`` member pointing
+                to the root of the repository on the filesystem.
     
     ``templates``: 
     
@@ -72,3 +82,4 @@ members:
 
 .. _here: http://templates.ovirt.org/repo/
 .. _repository: https://github.com/lago-project/lago-images
+.. _metadata file: http://templates.ovirt.org/repo/repo.metadata
