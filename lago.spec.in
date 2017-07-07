@@ -83,11 +83,11 @@ BuildRequires: python-netaddr
 
 
 Requires: python
-Requires: libguestfs-tools
-Requires: libguestfs-devel
+Requires: libguestfs-tools >= 1.30
+Requires: libguestfs-devel >= 1.30
 Requires: libvirt >= 1.2.8
 Requires: libvirt-python
-Requires: python-libguestfs
+Requires: python-libguestfs >= 1.30
 Requires: python-lxml
 Requires: python-lockfile
 Requires: python-pbr
