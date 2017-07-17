@@ -27,6 +27,7 @@ import sys
 
 import libvirt
 from lxml import etree as ET
+from textwrap import dedent
 
 from lago import export, log_utils, sysprep, utils
 from lago.utils import LagoException
@@ -86,12 +87,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
             LOGGER.debug('libvirt XML: %s\n', dom_xml)
             with LogTask('Starting VM %s' % self.vm.name()):
                 if wait_suspend is None:
-                    dom = self.libvirt_con.createXML(dom_xml)
-                    if not dom:
-                        raise RuntimeError(
-                            'Failed to create Domain: %s' % dom_xml
-                        )
-
+                    self._createXML(dom_xml)
                 else:
                     LOGGER.debug('starting domain in paused mode')
                     try:
@@ -100,7 +96,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
                         raise ValueError(
                             'LAGO__START__WAIT_SUSPEND value is not a number'
                         )
-                    dom = self.libvirt_con.createXML(
+                    dom = self._createXML(
                         dom_xml, flags=libvirt.VIR_DOMAIN_START_PAUSED
                     )
                     time.sleep(wait_suspend)
@@ -109,6 +105,54 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
                         raise RuntimeError(
                             'failed to resume %s domain' % dom.name()
                         )
+
+    def _createXML(self, dom_xml, flags=0):
+        try:
+            dom = self.libvirt_con.createXML(dom_xml, flags)
+        except libvirt.libvirtError as e:
+            # 38 for general system call failure
+            # 18 for failure in libvirt's storage driver
+            if e.get_error_code() == 38 and \
+                e.get_error_domain() == 18 and \
+                    'Cannot access storage file' in e.get_error_message():
+                raise LagoLocalLibvirtVMProviderException(
+                    dedent(
+                        """
+                        Lago couldn't create VM: '{vm_name}' because of
+                        missing permissions.
+
+                        This error usually occurs when 'qemu' user doesn't
+                        have permissions to access the storage files of
+                        the vm located at {images_path}
+
+                        A solution for the problem will be to set the
+                        'execute/search' bit for any directory in the following
+                        hierarchy {images_path}.
+                        This can be achieved with:
+
+                            chmod o+x /path/to/directory
+
+
+                        For more information please refer to Lago's
+                        installation docs.
+
+                        Original error message from libvirt:
+
+                            {libvirt_msg}
+                        """
+                    ).format(
+                        vm_name=self.vm.name(),
+                        images_path=self.vm.virt_env.prefix.paths.images(),
+                        libvirt_msg=e.get_error_message()
+                    )
+                )
+            else:
+                raise
+
+        if not dom:
+            raise RuntimeError('Failed to create Domain: {}'.format(dom_xml))
+
+        return dom
 
     def stop(self):
         super(LocalLibvirtVMProvider, self).stop()
@@ -644,3 +688,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
     def _reclaim_disks(self):
         for disk in self.vm._spec['disks']:
             self._reclaim_disk(disk['path'])
+
+
+class LagoLocalLibvirtVMProviderException(utils.LagoException):
+    pass
