@@ -4,14 +4,11 @@ git
 libffi-devel
 libguestfs-devel
 libvirt-devel
-libguestfs-devel
 libxslt-devel
 openssl-devel
 pandoc
 python2-devel
 python-dulwich
 python-pip
-python-virtualenv
-python-tox
 yum
 yum-utils
