@@ -4,6 +4,8 @@ from StringIO import StringIO
 
 from lago import utils
 
+import pytest
+
 
 def deep_compare(original_obj, copy_obj):
     assert copy_obj == original_obj
@@ -107,3 +109,121 @@ class TestLoadVirtStream(object):
         expected = {'one': 1}
         loaded_conf = utils.load_virt_stream(virt_fd=bad_json)
         assert deep_compare(expected, loaded_conf)
+
+
+# yapf: disable
+class TestDeepUpdate(object):
+    @pytest.mark.parametrize(
+        'a, b, expected',
+        [
+            (
+                {
+                    'run_cmd': [1, 2]
+                },
+                {
+                    'run_cmd': [3, 4]
+                },
+                {
+                    'run_cmd': [1, 2, 3, 4]
+                }
+            ),
+            (
+                {
+                    'run_cmd_1': [1, 2],
+                    'run_cmd_2': ['a,', 'b']
+                },
+                {
+                    'run_cmd_1': [3, 4]
+                },
+                {
+                    'run_cmd_1': [1, 2, 3, 4],
+                    'run_cmd_2': ['a,', 'b']
+                }
+            ),
+            (
+                {
+                    'run_cmd_1': {
+                        'aa': [1, 2],
+                        'bb': 100
+                    },
+                    'run_cmd_2': {
+                        'a': 1,
+                        'b': 2
+                    }
+                },
+                {
+                    'run_cmd_1': {
+                        'aa': [3, 4],
+                        'bb': 'hi'
+                    },
+                    'run_cmd_2': {
+                        'a': 10,
+                        'c': 3
+                    }
+                },
+                {
+                    'run_cmd_1': {
+                        'aa': [1, 2, 3, 4],
+                        'bb': 'hi'
+                    },
+                    'run_cmd_2': {
+                        'a': 10,
+                        'b': 2,
+                        'c': 3
+                    }
+                }
+            ),
+            (
+                {}, {}, {}
+            ),
+            (
+                {
+                    'run_cmd_1': {
+                        'a': {
+                            'a': 1,
+                            'c': None
+                        }
+                    },
+                    'run_cmd_2': [1, 2]
+                },
+                {
+                    'run_cmd_2': [3, 4],
+                    'run_cmd_1': {
+                        'a': {
+                            'a': 'a',
+                            'b': 'b'
+                        }
+                    },
+                    'run_cmd_3': 'a'
+                },
+                {
+                    'run_cmd_1': {
+                        'a': {
+                            'a': 'a',
+                            'b': 'b',
+                            'c': None
+                        }
+                    },
+                    'run_cmd_2': [1, 2, 3, 4],
+                    'run_cmd_3': 'a'
+                }
+            )
+        ]
+    )
+    def test_deep_update(self, a, b, expected):
+        result = utils.deep_update(a, b)
+        assert deep_compare(result, expected)
+
+    @pytest.mark.parametrize(
+        'a, b',
+        [
+            ({}, []),
+            ('a', {}),
+            ([], [])
+        ]
+    )
+    def test_deep_update_not_supported_types(self, a, b):
+        with pytest.raises(utils.LagoException):
+            utils.deep_update(a, b)
+
+# yapf: enable

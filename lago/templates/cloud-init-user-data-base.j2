@@ -1,0 +1,9 @@
+#cloud-config
+users:
+  - name: root
+    ssh-authorized-keys:
+      - {{ public_key }}
+chpasswd:
+  list:
+    - root:{{ root_password }}
+  expire: False
