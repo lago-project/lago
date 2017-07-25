@@ -22,7 +22,6 @@ import functools
 import json
 import logging
 import os
-import uuid
 import yaml
 
 from lago import log_utils, plugins, utils
@@ -33,34 +32,6 @@ from lago.providers.libvirt.network import BridgeNetwork, NATNetwork
 LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
 log_task = functools.partial(log_utils.log_task, logger=LOGGER)
-
-
-def _gen_ssh_command_id():
-    return uuid.uuid4().hex[:8]
-
-
-def _guestfs_copy_path(g, guest_path, host_path):
-    if g.is_file(guest_path):
-        with open(host_path, 'w') as f:
-            f.write(g.read_file(guest_path))
-    elif g.is_dir(guest_path):
-        os.mkdir(host_path)
-        for path in g.ls(guest_path):
-            _guestfs_copy_path(
-                g,
-                os.path.join(
-                    guest_path,
-                    path,
-                ),
-                os.path.join(host_path, os.path.basename(path)),
-            )
-
-
-def _path_to_xml(basename):
-    return os.path.join(
-        os.path.dirname(__file__),
-        basename,
-    )
 
 
 class VirtEnv(object):
