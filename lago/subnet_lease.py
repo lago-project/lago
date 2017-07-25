@@ -19,6 +19,7 @@
 #
 
 from future.utils import raise_from
+from future.builtins import super
 import functools
 import json
 import os
@@ -515,12 +516,12 @@ class LagoSubnetLeaseException(utils.LagoException):
     def __init__(self, msg, prv_msg=None):
         if prv_msg is not None:
             msg = msg + '\nOriginal Exception: {0}'.format(prv_msg)
-        super(LagoSubnetLeaseException, self).__init__(msg)
+        super().__init__(msg)
 
 
 class LagoSubnetLeaseLockException(LagoSubnetLeaseException):
     def __init__(self, store_path):
-        super(LagoSubnetLeaseLockException, self).__init__(
+        super().__init__(
             dedent(
                 """
                 Failed to acquire a lock for store {}.
@@ -535,7 +536,7 @@ class LagoSubnetLeaseLockException(LagoSubnetLeaseException):
 
 class LagoSubnetLeaseStoreFullException(LagoSubnetLeaseException):
     def __init__(self, store_range):
-        super(LagoSubnetLeaseStoreFullException, self).__init__(
+        super().__init__(
             dedent(
                 """
                 Can't acquire subnet from range {}
@@ -548,7 +549,7 @@ class LagoSubnetLeaseStoreFullException(LagoSubnetLeaseException):
 
 class LagoSubnetLeaseTakenException(LagoSubnetLeaseException):
     def __init__(self, required_subnet, lease_taken_by):
-        super(LagoSubnetLeaseTakenException, self).__init__(
+        super().__init__(
             dedent(
                 """
                 Can't acquire subnet {}.
@@ -560,7 +561,7 @@ class LagoSubnetLeaseTakenException(LagoSubnetLeaseException):
 
 class LagoSubnetLeaseOutOfRangeException(LagoSubnetLeaseException):
     def __init__(self, required_subnet, store_range):
-        super(LagoSubnetLeaseException, self).__init__(
+        super().__init__(
             dedent(
                 """
                 Subnet {} is not valid.
@@ -572,7 +573,7 @@ class LagoSubnetLeaseOutOfRangeException(LagoSubnetLeaseException):
 
 class LagoSubnetLeaseMalformedAddrException(LagoSubnetLeaseException):
     def __init__(self, required_subnet):
-        super(LagoSubnetLeaseException, self).__init__(
+        super().__init__(
             dedent(
                 """
                 Address {} is not a valid ip address
@@ -583,7 +584,7 @@ class LagoSubnetLeaseMalformedAddrException(LagoSubnetLeaseException):
 
 class LagoSubnetLeaseBadPermissionsException(LagoSubnetLeaseException):
     def __init__(self, store_path, prv_msg):
-        super(LagoSubnetLeaseBadPermissionsException, self).__init__(
+        super().__init__(
             dedent(
                 """
                     Failed to get access to the store at {}.
