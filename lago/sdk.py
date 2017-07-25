@@ -1,4 +1,5 @@
 from __future__ import print_function
+from future.builtins import super
 from lago import cmd
 from lago.config import config as lago_config
 from lago.lago_ansible import LagoAnsible
@@ -117,7 +118,7 @@ class SDK(object):
 
     def __getattr__(self, name):
         try:
-            attr = super(SDK, self).__getattr__(name)
+            attr = super().__getattr__(name)
         except AttributeError:
             attr = getattr(self._pprefix, name)
         return attr

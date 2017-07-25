@@ -17,6 +17,8 @@
 #
 # Refer to the README and COPYING files for full details of the license
 #
+
+from future.builtins import super
 from lago.plugins.service import (
     ServicePlugin,
     ServiceState,
@@ -27,11 +29,11 @@ class SystemdService(ServicePlugin):
     BIN_PATH = '/usr/bin/systemctl'
 
     def _request_start(self):
-        super(SystemdService, self)._request_start()
+        super()._request_start()
         return self._vm.ssh([self.BIN_PATH, 'start', self._name])
 
     def _request_stop(self):
-        super(SystemdService, self)._request_stop()
+        super()._request_stop()
         return self._vm.ssh([self.BIN_PATH, 'stop', self._name])
 
     def state(self):
@@ -52,11 +54,11 @@ class SysVInitService(ServicePlugin):
     BIN_PATH = '/sbin/service'
 
     def _request_start(self):
-        super(SysVInitService, self)._request_start()
+        super()._request_start()
         return self._vm.ssh([self.BIN_PATH, self._name, 'start'])
 
     def _request_stop(self):
-        super(SysVInitService, self)._request_stop()
+        super()._request_stop()
         return self._vm.ssh([self.BIN_PATH, self._name, 'stop'])
 
     def state(self):
@@ -76,7 +78,7 @@ class SystemdContainerService(ServicePlugin):
     HOST_BIN_PATH = '/usr/bin/systemctl'
 
     def _request_start(self):
-        super(SystemdContainerService, self)._request_start()
+        super()._request_start()
         ret = self._vm.ssh(
             [self.BIN_PATH, 'exec vdsmc systemctl start', self._name]
         )
@@ -87,7 +89,7 @@ class SystemdContainerService(ServicePlugin):
         return self._vm.ssh([self.HOST_BIN_PATH, 'start', self._name])
 
     def _request_stop(self):
-        super(SystemdContainerService, self)._request_stop()
+        super()._request_stop()
         ret = self._vm.ssh(
             [self.BIN_PATH, 'exec vdsmc systemctl stop', self._name]
         )

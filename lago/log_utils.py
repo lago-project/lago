@@ -1,5 +1,5 @@
 #
-# Copyright 2015 Red Hat, Inc.
+# Copyright 2015-2017 Red Hat, Inc.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 """
 This module defines the special logging tools that lago uses
 """
+from future.builtins import super
 import logging
 import logging.config
 import os
@@ -110,7 +111,7 @@ class ColorFormatter(logging.Formatter):
         else:
             color = self.DEFAULT
 
-        message = super(ColorFormatter, self).format(record)
+        message = super().format(record)
         if record.args:
             try:
                 message = message % record.args
@@ -224,7 +225,7 @@ class TaskHandler(logging.StreamHandler):
         level=logging.NOTSET,
         formatter=ColorFormatter,
     ):
-        super(TaskHandler, self).__init__()
+        super().__init__()
         self.formatter = formatter
         self.initial_depth = initial_depth
         self.tasks_by_thread = {}
@@ -521,8 +522,8 @@ class TaskHandler(logging.StreamHandler):
                 '  ' * (task_level - 1) + extra_prefix + str(record.msg)
             )
 
-        super(TaskHandler, self).emit(record)
-        super(TaskHandler, self).flush()
+        super().emit(record)
+        super().flush()
 
     def emit(self, record):
         """

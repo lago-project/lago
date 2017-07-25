@@ -18,6 +18,7 @@
 # Refer to the README and COPYING files for full details of the license
 #
 
+from future.builtins import super
 import functools
 import logging
 import os
@@ -51,7 +52,7 @@ log_task = functools.partial(log_utils.log_task, logger=LOGGER)
 
 class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
     def __init__(self, vm):
-        super(LocalLibvirtVMProvider, self).__init__(vm)
+        super().__init__(vm)
         self._has_guestfs = 'lago.guestfs_tools' in sys.modules
         libvirt_url = config.get('libvirt_url')
         self.libvirt_con = libvirt_utils.get_libvirt_connection(
@@ -75,7 +76,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
             self.libvirt_con.close()
 
     def start(self):
-        super(LocalLibvirtVMProvider, self).start()
+        super().start()
         if not self.defined():
             # the wait_suspend method is a work around for:
             # https://bugzilla.redhat.com/show_bug.cgi?id=1411025
@@ -155,7 +156,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
         return dom
 
     def stop(self):
-        super(LocalLibvirtVMProvider, self).stop()
+        super().stop()
         if self.defined():
             self.vm._ssh_client = None
             with LogTask('Destroying VM %s' % self.vm.name()):
@@ -164,7 +165,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
                 ).destroy()
 
     def shutdown(self, *args, **kwargs):
-        super(LocalLibvirtVMProvider, self).shutdown(*args, **kwargs)
+        super().shutdown(*args, **kwargs)
 
         self._shutdown(
             libvirt_cmd=libvirt.virDomain.shutdown,
@@ -182,7 +183,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
             )
 
     def reboot(self, *args, **kwargs):
-        super(LocalLibvirtVMProvider, self).reboot(*args, **kwargs)
+        super().reboot(*args, **kwargs)
 
         self._shutdown(
             libvirt_cmd=libvirt.virDomain.reboot,
@@ -336,7 +337,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
 
         try:
 
-            super(LocalLibvirtVMProvider, self).extract_paths(
+            super().extract_paths(
                 paths=paths,
                 ignore_nopath=ignore_nopath,
             )

@@ -17,7 +17,7 @@
 #
 # Refer to the README and COPYING files for full details of the license
 #
-
+from future.builtins import super
 from collections import defaultdict
 import functools
 import logging
@@ -301,11 +301,11 @@ class BridgeNetwork(Network):
 
         brctl.create(self._libvirt_name())
         try:
-            super(BridgeNetwork, self).start()
+            super().start()
         except:
             brctl.destroy(self._libvirt_name())
 
     def stop(self):
-        super(BridgeNetwork, self).stop()
+        super().stop()
         if brctl.exists(self._libvirt_name()):
             brctl.destroy(self._libvirt_name())
