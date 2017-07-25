@@ -1,9 +1,17 @@
 from lago import subnet_lease
+from lago.subnet_lease import (
+    LagoSubnetLeaseOutOfRangeException, LagoSubnetLeaseStoreFullException,
+    LagoSubnetLeaseTakenException, LagoSubnetLeaseMalformedAddrException,
+    LagoSubnetLeaseBadPermissionsException
+)
+
 import pytest
 import uuid
 import os
 import json
 import shutil
+import random
+from mock import patch
 
 
 def lease_has_valid_uuid(path_to_lease):
@@ -39,6 +47,15 @@ class PrefixMock(object):
     @property
     def uuid_path(self):
         return self._uuid_path
+
+
+@pytest.fixture
+def prefix_mock_gen(tmpdir):
+    def gen():
+        while True:
+            yield PrefixMock(path=str(tmpdir.mkdtemp(rootdir=str(tmpdir))))
+
+    return gen
 
 
 class TestSubnetStore(object):
@@ -83,12 +100,12 @@ class TestSubnetStore(object):
 
     @pytest.mark.parametrize('subnet', ['127.0.0.1', '10.10.10.0'])
     def test_fail_on_out_of_range_subnet(self, subnet_store, subnet, prefix):
-        with pytest.raises(subnet_lease.LagoSubnetLeaseOutOfRangeException):
+        with pytest.raises(LagoSubnetLeaseOutOfRangeException):
             subnet_store.acquire(prefix.uuid_path, subnet)
 
     @pytest.mark.parametrize('subnet', ['256.256.256.56', '0.0.0.-1'])
     def test_fail_on_malformed_address(self, subnet_store, subnet, prefix):
-        with pytest.raises(subnet_lease.LagoSubnetLeaseMalformedAddrException):
+        with pytest.raises(LagoSubnetLeaseMalformedAddrException):
             subnet_store.acquire(prefix.uuid_path, subnet)
 
     def test_fail_on_full_store(self, subnet_store, prefix):
@@ -97,7 +114,7 @@ class TestSubnetStore(object):
         ):
             subnet_store.acquire(prefix.uuid_path)
 
-        with pytest.raises(subnet_lease.LagoSubnetLeaseStoreFullException):
+        with pytest.raises(LagoSubnetLeaseStoreFullException):
             subnet_store.acquire(prefix.uuid_path)
 
     def test_recalim_lease(self, subnet_store, prefix):
@@ -109,7 +126,7 @@ class TestSubnetStore(object):
         assert network == reclaimed_network
 
     def test_fail_to_calim_taken_lease(self, subnet_store, prefixes):
-        with pytest.raises(subnet_lease.LagoSubnetLeaseTakenException):
+        with pytest.raises(LagoSubnetLeaseTakenException):
             network = subnet_store.acquire(prefixes[0].uuid_path)
             subnet_store.acquire(prefixes[1].uuid_path, str(network))
 
@@ -117,3 +134,38 @@ class TestSubnetStore(object):
         network = subnet_store.acquire(prefixes[0].uuid_path)
         prefixes[0].remove()
         subnet_store.acquire(prefixes[1].uuid_path, str(network))
+
+    @pytest.mark.parametrize('num_prefixes', [7, 10, 55])
+    @pytest.mark.parametrize('remains', [0, 3, 6])
+    def test_release_several_prefixes(
+        self, subnet_store, prefix_mock_gen, num_prefixes, remains
+    ):
+        gen = prefix_mock_gen()
+        for _ in range(num_prefixes):
+            subnet_store.acquire(next(gen).uuid_path)
+        acquired = subnet_store.list_leases()
+        assert all(lease.valid for lease in acquired)
+        assert len(acquired) == num_prefixes
+        assert len(os.listdir(subnet_store.path)) == num_prefixes
+        to_release = random.sample(acquired, num_prefixes - remains)
+        subnet_store.release([lease.subnet for lease in to_release])
+        assert len(subnet_store.list_leases()) == remains
+        assert len(os.listdir(subnet_store.path)) == remains
+
+    def test_list_leases_raises(self, subnet_store):
+        with patch('lago.subnet_lease.os.listdir') as mock_listdir:
+            mock_listdir.side_effect = OSError(13, 'mocking orig'),
+            with pytest.raises(
+                LagoSubnetLeaseBadPermissionsException
+            ) as excinfo:
+                subnet_store.list_leases()
+            assert mock_listdir.call_count == 1
+            try:
+                raise LagoSubnetLeaseBadPermissionsException(
+                    store_path=subnet_store.path, prv_msg=None
+                )
+            except LagoSubnetLeaseBadPermissionsException as err:
+                exp_begin = err.args[0]
+
+            assert str(excinfo.value).startswith(exp_begin)
+            assert str(excinfo.value).endswith('mocking orig')

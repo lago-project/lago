@@ -1,5 +1,5 @@
 #
-# Copyright 2014 Red Hat, Inc.
+# Copyright 2014-2017 Red Hat, Inc.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -284,10 +284,8 @@ class Prefix(object):
 
                 allocated_subnets.append(allocated_subnet)
         except:
-            for subnet in allocated_subnets:
-                self._subnet_store.release(subnet)
+            self._subnet_store.release(allocated_subnets)
             raise
-
         return allocated_subnets, conf
 
     def _add_nic_to_mapping(self, net, dom, nic):
@@ -516,10 +514,8 @@ class Prefix(object):
             self._allocate_ips_to_nics(conf)
             self._add_dns_records(conf, mgmts)
         except:
-            for subnet in allocated_subnets:
-                self._subnet_store.release(subnet)
+            self._subnet_store.release(allocated_subnets)
             raise
-
         return conf
 
     def _add_mgmt_to_domains(self, conf, mgmts):
@@ -1384,6 +1380,12 @@ class Prefix(object):
         Destroy this prefix, running any cleanups and removing any files
         inside it.
         """
+
+        subnets = (
+            str(net.gw()) for net in self.virt_env.get_nets().itervalues()
+        )
+
+        self._subnet_store.release(subnets)
         self.cleanup()
         shutil.rmtree(self._prefix)
 

@@ -1,5 +1,5 @@
 #
-# Copyright 2014 Red Hat, Inc.
+# Copyright 2014-2017 Red Hat, Inc.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,6 +17,9 @@
 #
 # Refer to the README and COPYING files for full details of the license
 #
+
+from future.utils import raise_from
+from future.builtins import super
 import functools
 import json
 import os
@@ -106,12 +109,13 @@ class SubnetStore(object):
             otherwise create it.
         """
         try:
-            if not os.path.isdir:
+            if not os.path.isdir(self.path):
                 os.makedirs(self.path)
         except OSError as e:
-            # errno 13 = Permission denied
-            if e.errno == 13:
-                raise LagoSubnetLeaseBadPermissionsException(self.path)
+            raise_from(
+                LagoSubnetLeaseBadPermissionsException(self.path, e.strerror),
+                e
+            )
 
     def acquire(self, uuid_path, subnet=None):
         """
@@ -207,9 +211,8 @@ class SubnetStore(object):
         if not lease.exist:
             return None
 
-        env = lease.has_env
-        if env:
-            return env
+        if lease.has_env:
+            return lease.uuid_path
         else:
             self._release(lease)
             return None
@@ -245,13 +248,41 @@ class SubnetStore(object):
             'Assigned subnet lease {} to {}'.format(lease.path, uuid_path)
         )
 
-    def release(self, subnet):
+    def list_leases(self, uuid=None):
         """
-        Free the lease of the given subnet
+        List current subnet leases
 
         Args:
-            subnet (str or netaddr.IPAddress): dotted ipv4 subnet in CIDR
-                notation (for example ```192.168.200.0/24```) or IPAddress
+            uuid(str): Filter the leases by uuid
+
+        Returns:
+            list of :class:~Lease: current leases
+        """
+
+        try:
+            lease_files = os.listdir(self.path)
+        except OSError as e:
+            raise_from(
+                LagoSubnetLeaseBadPermissionsException(self.path, e.strerror),
+                e
+            )
+
+        leases = [
+            self.create_lease_object_from_idx(lease_file.split('.')[0])
+            for lease_file in lease_files
+        ]
+        if not uuid:
+            return leases
+        else:
+            return [lease for lease in leases if lease.uuid == uuid]
+
+    def release(self, subnets):
+        """
+        Free the lease of the given subnets
+
+        Args:
+            subnets (list of str or netaddr.IPAddress): dotted ipv4 subnet in
+                CIDR notation (for example ```192.168.200.0/24```) or IPAddress
                 object.
 
         Raises:
@@ -259,12 +290,17 @@ class SubnetStore(object):
             LagoSubnetLeaseLockException:
                 If the lock to self.path can't be acquired.
         """
-        if isinstance(subnet, IPNetwork):
-            subnet = str(subnet)
 
+        if isinstance(subnets, str) or isinstance(subnets, IPNetwork):
+            subnets = [subnets]
+        subnets_iter = (
+            str(subnet) if isinstance(subnet, IPNetwork) else subnet
+            for subnet in subnets
+        )
         try:
             with self._create_lock():
-                self._release(self.create_lease_object_from_subnet(subnet))
+                for subnet in subnets_iter:
+                    self._release(self.create_lease_object_from_subnet(subnet))
         except (utils.TimerException, LockFailed):
             raise LagoSubnetLeaseLockException(self.path)
 
@@ -405,11 +441,6 @@ class Lease(object):
         self._path = None
         self._realise_lease_path()
 
-    @staticmethod
-    def from_lease_filename(store_path, store_template, lease_filename):
-        third_octet = lease_filename.split('.')[0]
-        return Lease(store_path, store_template.format(third_octet))
-
     def _realise_lease_path(self):
         ip = self.subnet.split('/')[0]
         idx = ip.split('.')[2]
@@ -433,6 +464,14 @@ class Lease(object):
         return uuid_path, uuid
 
     @property
+    def uuid(self):
+        return self.metadata[1]
+
+    @property
+    def uuid_path(self):
+        return self.metadata[0]
+
+    @property
     def has_env(self):
         return self._has_env()
 
@@ -445,7 +484,7 @@ class Lease(object):
 
         with open(uuid_path, mode='rt') as f:
             if f.read() == uuid:
-                return uuid_path
+                return True
             else:
                 return False
 
@@ -474,12 +513,15 @@ class Lease(object):
 
 
 class LagoSubnetLeaseException(utils.LagoException):
-    pass
+    def __init__(self, msg, prv_msg=None):
+        if prv_msg is not None:
+            msg = msg + '\nOriginal Exception: {0}'.format(prv_msg)
+        super().__init__(msg)
 
 
 class LagoSubnetLeaseLockException(LagoSubnetLeaseException):
     def __init__(self, store_path):
-        super(LagoSubnetLeaseLockException, self).__init__(
+        super().__init__(
             dedent(
                 """
                 Failed to acquire a lock for store {}.
@@ -494,7 +536,7 @@ class LagoSubnetLeaseLockException(LagoSubnetLeaseException):
 
 class LagoSubnetLeaseStoreFullException(LagoSubnetLeaseException):
     def __init__(self, store_range):
-        super(LagoSubnetLeaseStoreFullException, self).__init__(
+        super().__init__(
             dedent(
                 """
                 Can't acquire subnet from range {}
@@ -507,7 +549,7 @@ class LagoSubnetLeaseStoreFullException(LagoSubnetLeaseException):
 
 class LagoSubnetLeaseTakenException(LagoSubnetLeaseException):
     def __init__(self, required_subnet, lease_taken_by):
-        super(LagoSubnetLeaseTakenException, self).__init__(
+        super().__init__(
             dedent(
                 """
                 Can't acquire subnet {}.
@@ -519,7 +561,7 @@ class LagoSubnetLeaseTakenException(LagoSubnetLeaseException):
 
 class LagoSubnetLeaseOutOfRangeException(LagoSubnetLeaseException):
     def __init__(self, required_subnet, store_range):
-        super(LagoSubnetLeaseException, self).__init__(
+        super().__init__(
             dedent(
                 """
                 Subnet {} is not valid.
@@ -531,7 +573,7 @@ class LagoSubnetLeaseOutOfRangeException(LagoSubnetLeaseException):
 
 class LagoSubnetLeaseMalformedAddrException(LagoSubnetLeaseException):
     def __init__(self, required_subnet):
-        super(LagoSubnetLeaseException, self).__init__(
+        super().__init__(
             dedent(
                 """
                 Address {} is not a valid ip address
@@ -541,13 +583,14 @@ class LagoSubnetLeaseMalformedAddrException(LagoSubnetLeaseException):
 
 
 class LagoSubnetLeaseBadPermissionsException(LagoSubnetLeaseException):
-    def __init__(self, store_path):
-        super(LagoSubnetLeaseException, self).__init__(
+    def __init__(self, store_path, prv_msg):
+        super().__init__(
             dedent(
                 """
                     Failed to get access to the store at {}.
                     Please make sure that you have R/W permissions to this
-                    directory.
+                    directory and that it exists.
                     """.format(store_path)
-            )
+            ),
+            prv_msg=prv_msg,
         )
