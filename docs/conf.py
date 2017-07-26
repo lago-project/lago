@@ -39,6 +39,7 @@ shutil.move('../ChangeLog', '_static/ChangeLog.txt')
 # expected with no need to download them (some are not in pip even)
 autodoc_mock_imports = [
     'enum',
+    'future',
     'guestfs',
     'libvirt',
     'lockfile',
