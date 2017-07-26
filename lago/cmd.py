@@ -21,7 +21,6 @@
 from __future__ import print_function
 
 import argparse
-import grp
 import logging
 import os
 import pkg_resources
@@ -899,11 +898,6 @@ def create_parser(cli_plugins, out_plugins):
     return parser
 
 
-def check_group_membership():
-    if 'lago' not in [grp.getgrgid(gid).gr_name for gid in os.getgroups()]:
-        warnings.warn('current session does not belong to lago group.')
-
-
 def main():
     cli_plugins = lago.plugins.load_plugins(
         lago.plugins.PLUGIN_ENTRY_POINTS['cli']
@@ -935,8 +929,6 @@ def main():
         logging.getLogger('py.warnings').setLevel(logging.ERROR)
     else:
         warnings.formatwarning = lambda message, *args, **kwargs: message
-
-    check_group_membership()
 
     args.out_format = out_plugins[args.out_format]
     if args.prefix_path:
