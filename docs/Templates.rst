@@ -26,6 +26,8 @@ Available templates
 +------------------+--------------+
 | fc25-base        | Fedora 25    |
 +------------------+--------------+
+| fc26-base        | Fedora 26    |
++------------------+--------------+
 | el6-base         | CentOS 6.7   |
 +------------------+--------------+
 | debian8-base     | Debian 8     |
@@ -37,44 +39,44 @@ Repository metadata
 ===================
 
 A templates repository should contain a `repo.metadata` file describing all
-available templates. The repository build script creates this file 
+available templates. The repository build script creates this file
 automatically. The file contains a serialized JSON object with the members
 detailed below. For an example, see the above repository's `metadata file`_.
 
-    ``name``: 
+    ``name``:
         The name of the repository.
-    
-    ``sources``: 
-        
+
+    ``sources``:
+
         ``<name>``: Name of a source.
-        
-            ``type``: 
+
+            ``type``:
                 Source type. May be either ``http`` or ``file``.
-            
+
             ``args``:
                 Varies depending on the source type.
-                
+
                 For an ``http`` source, should contain a ``baseurl`` member
                 pointing to the root of the repository on the web.
-                
+
                 For a ``file`` source, should contain a ``root`` member pointing
                 to the root of the repository on the filesystem.
-    
-    ``templates``: 
-    
+
+    ``templates``:
+
         ``<name>``: Unique template name.
-        
+
             ``versions``:
-                
+
                 ``<version>``: Unique version string.
-                
+
                     ``source``:
-                        Name of the source from which this template version 
+                        Name of the source from which this template version
                         was created.
-                        
+
                     ``timestamp``:
                         Creation time of the template version.
-                        
+
                     ``handle``:
                         Either a base file name of the template located in the
                         root directory of the repository, or a root-relative
