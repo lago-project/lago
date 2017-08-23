@@ -10,6 +10,7 @@ PyYAML
 scp
 setuptools
 stevedore
+SQLAlchemy
 future
 wrapt
 Jinja2

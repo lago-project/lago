@@ -891,32 +891,24 @@ class Prefix(object):
     def _handle_lago_template(
         self, disk_path, template_spec, template_store, template_repo
     ):
+        from templates import LagoImageProvider
+        from templates_store import ImagesStore
+        store = ImagesStore(root='/tmp/fancy_store_test')
+        provider = LagoImageProvider(
+            store=store,
+            config={
+                'url': 'http://templates.ovirt.org/repo/repo.metadata',
+                'name': 'us-lago-test'
+            }
+        )
+        image = provider.update(template_spec['template_name'])
         disk_metadata = template_spec.get('metadata', {})
-        if template_store is None or template_repo is None:
-            raise RuntimeError('No templates directory provided')
-
-        template = template_repo.get_by_name(template_spec['template_name'])
-        template_version = template.get_version(
-            template_spec.get('template_version', None)
-        )
-        if template_version not in template_store:
-            LOGGER.info(
-                log_utils.log_always("Template %s not in cache, downloading") %
-                template_version.name,
-            )
-            template_store.download(template_version)
-
-        disk_metadata.update(
-            template_store.get_stored_metadata(
-                template_version,
-            ),
-        )
-        base = template_store.get_path(template_version)
+        disk_metadata.update(store.get_metadata(image.hash))
         qemu_cmd = [
             'qemu-img', 'create', '-f', 'qcow2', '-o', 'lazy_refcounts=on',
-            '-b', base, disk_path
+            '-b', image.file, disk_path
         ]
-        return qemu_cmd, disk_metadata, base
+        return qemu_cmd, disk_metadata, image.file
 
     def _ova_to_spec(self, filename):
         """

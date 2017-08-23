@@ -20,6 +20,7 @@
 import Queue
 import collections
 import datetime
+import errno
 import fcntl
 import functools
 import json
@@ -580,7 +581,9 @@ def run_command_with_validation(
 ):
     result = run_command(cmd)
     if result and fail_on_error:
-        raise RuntimeError('{}\n{}'.format(msg, result.err))
+        raise LagoException(
+            '{}\nstdout: {}\nstderr: {}'.format(msg, result.out, result.err)
+        )
 
     return result
 
@@ -696,6 +699,11 @@ def get_hash(file_path, checksum='sha1'):
     return sha.hexdigest()
 
 
+def verify_hash(file_path, expected_hash, hash_algo):
+    calculated_hash = get_hash(file_path, checksum=hash_algo)
+    return calculated_hash == expected_hash
+
+
 def filter_spec(spec, paths, wildcard='*', separator='/'):
     """
     Remove keys from a spec file.
@@ -790,6 +798,26 @@ def ver_cmp(ver1, ver2):
     return cmp(
         pkg_resources.parse_version(ver1), pkg_resources.parse_version(ver2)
     )
+
+
+def safe_unlink(path):
+    """
+    Same as os.unlink, only ignores file does not exist errors
+
+    Args:
+        path(str): path to remove
+
+    """
+
+    try:
+        os.unlink(path)
+    except OSError as e:
+        if e.errno != errno.ENOENT:
+            raise
+
+
+def simple_move(source, dest):
+    shutil.move(source, dest)
 
 
 class LagoException(Exception):

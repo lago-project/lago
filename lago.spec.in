@@ -61,6 +61,7 @@ BuildRequires: python-scp
 BuildRequires: python2-rpm-macros
 BuildRequires: python-wrapt
 BuildRequires: python2-future
+BuildRequires: sqlite-3
 %if 0%{?fedora} >= 24
 BuildRequires: python2-configparser
 BuildRequires: python2-paramiko >= 2.1.1
@@ -88,6 +89,7 @@ Requires: libguestfs-tools >= 1.30
 Requires: libguestfs-devel >= 1.30
 Requires: libvirt >= 1.2.8
 Requires: libvirt-python
+Requires: sqlite-3
 Requires: python-libguestfs >= 1.30
 Requires: python-lxml
 Requires: python-lockfile

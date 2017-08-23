@@ -18,6 +18,7 @@ definitions:
         having to change the template name everywhere
 
 """
+import qemuimg
 import errno
 import functools
 import json
@@ -27,14 +28,22 @@ import posixpath
 import shutil
 import urllib
 import sys
-
+from datetime import datetime
 import lockfile
-
+import tempfile
 import utils
 from . import log_utils
 from .config import config
-
+from collections import namedtuple
+from utils import LagoException
+from future.utils import raise_from
 LOGGER = logging.getLogger(__name__)
+
+ImageName = namedtuple('ImageName', 'name, hash')
+
+
+class LagoImageError(LagoException):
+    pass
 
 
 class FileSystemTemplateProvider:
@@ -387,6 +396,11 @@ class TemplateRepository:
         Raises:
             KeyError: if no template is found
         """
+        if name not in self._dom['templates']:
+            raise LagoImageError(
+                'No image named {0} at {1}'.format(name, self.name)
+            )
+
         spec = self._dom.get('templates', {})[name]
         return Template(
             name=name,
@@ -420,6 +434,10 @@ class Template:
         """
         self.name = name
         self._versions = versions
+
+    @property
+    def versions(self):
+        return self._versions
 
     def get_version(self, ver_name=None):
         """
@@ -473,6 +491,12 @@ class TemplateVersion:
         self._hash = None
         self._metadata = None
 
+    def __repr__(self):
+        return (
+            '<TemplateVersion(name={0}, source={1}, handle={2}, '
+            'timestamp={3})>'
+        ).format(self.name, self._source, self._handle, self._timestamp)
+
     def timestamp(self):
         """
         Getter for the timestamp
@@ -515,17 +539,192 @@ class TemplateVersion:
         self._source.download_image(self._handle, destination)
 
 
-def _locked(func):
-    """
-    Decorator that ensures that the decorated function has the lock of the
-    repo while running, meant to decorate only bound functions for classes that
-    have `lock_path` method.
-    """
+RemoteImage = namedtuple(
+    'RemoteImage', 'name, hash, creation_date,repo_name,tags,template_version'
+)
 
-    @functools.wraps(func)
-    def wrapper(self, *args, **kwargs):
-        with lockfile.LockFile(self.lock_path()):
-            return func(self, *args, **kwargs)
+
+class LagoImageProvider(object):
+    def __init__(self, config, store):
+        self._name = config['name']
+        self._url = config['url']
+        self.max_versions = config.get('max_versions', 5)
+        self._store = store
+        self._config = config
+        if not self._store.exists_repo(self.name):
+            store.add_repo(repo_name=self.name, repo_type='lago')
+
+    def update(self, raw_name, fail=False):
+        image_info = self._make_name(raw_name)
+        local_images = self.list_local_images(image_info)
+        remote_images = []
+        try:
+            remote_images = self.list_remote_images(image_info.name)
+        except LagoImageError:
+            if fail:
+                raise
+
+        if image_info.hash is None:
+            result = self._decide_by_name(
+                image_info.name, local_images, remote_images
+            )
+        else:
+            result = self._decide_by_hash(
+                image_info.hash, local_images, remote_images
+            )
+
+        if isinstance(result, RemoteImage):
+            image = self._add_from_remote(result)
+            if len(local_images) > self.max_versions:
+                LOGGER.debug(
+                    'more than %s images per name, deleting %s',
+                    self.max_versions, local_images[0].hash
+                )
+                self.store.delete_image(local_images[0].hash)
+        else:
+            image = result
+        return image
+
+    def list_local_images(self, image_info):
+        if image_info.hash is None:
+            return self._store.search(image_info.name, self.name)
+        else:
+            return [self._store.get_image(image_info.hash)]
+
+    def list_remote_images(self, name):
+        try:
+            remote_repo = TemplateRepository.from_url(self.url)
+        except RuntimeError as exc:
+            raise_from(
+                exc,
+                LagoImageError(
+                    'Unable to fetch Lago images '
+                    'repository from '
+                    '{0}'.format(self._url)
+                )
+            )
+        candidates = remote_repo.get_by_name(name)
+        remote_images = []
+        for ver_name, ver in candidates.versions.viewitems():
+            try:
+                sha1 = 'sha1:' + ver.get_metadata()['sha1']
+            except KeyError:
+                LOGGER.warning(
+                    (
+                        'Image without hash found at {0}, ignoring '
+                        'image: {1}'
+                    ).format(self.url, ver.name)
+                )
+                continue
+
+            remote_images.append(
+                RemoteImage(
+                    name=name,
+                    repo_name=self.name,
+                    hash=sha1,
+                    creation_date=datetime.fromtimestamp(ver.timestamp()),
+                    tags=[ver_name],
+                    template_version=ver
+                )
+            )
+            if remote_images != []:
+                remote_images.sort(key=lambda image: image.creation_date)
+
+        return remote_images
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def url(self):
+        return self._url
+
+    def _add_from_remote(self, remote_image):
+        tmp_dir = self._store.tmp_dir
+        _, tmp_dest = tempfile.mkstemp(dir=tmp_dir)
+        try:
+            remote_image.template_version.download(tmp_dest)
+            result = utils.verify_hash(
+                tmp_dest,
+                remote_image.hash.split(':')[-1],
+                hash_algo=remote_image.hash.split(':')[0]
+            )
+            if result is False:
+                raise LagoImageError(
+                    (
+                        'Failed verifying hash for image: '
+                        '{0}.'.format(remote_image)
+                    )
+                )
+
+            image = self._store.add_image(
+                name=remote_image.name,
+                repo_name=remote_image.repo_name,
+                hash=remote_image.hash,
+                image_file=tmp_dest,
+                creation_date=remote_image.creation_date,
+                metadata=remote_image.template_version.get_metadata(),
+                tags=remote_image.tags,
+                transfer_function=qemuimg.convert
+            )
+            return image
+        finally:
+            os.unlink(tmp_dest)
+
+    def _decide_by_hash(self, hash, local_images, remote_images):
+        raise LagoException('fetching by hash not implemented yet')
+
+    def _decide_by_name(self, name, local_images, remote_images):
+        if not local_images and not remote_images:
+            raise LagoImageError(
+                (
+                    'Unable to list remote images, and no '
+                    'local image {0} found.'
+                ).format(name)
+            )
+
+        elif local_images and not remote_images:
+            LOGGER.debug(
+                'no remote image was found with name %s, using local '
+                'image: %s', name, local_images[-1]
+            )
+            return local_images[-1]
+
+        elif not local_images and remote_images:
+            LOGGER.debug(
+                'no local image %s, acquiring remote: %s', name,
+                remote_images[-1]
+            )
+            return remote_images[-1]
+
+        else:
+            head_remote = remote_images[-1]
+            head_local = local_images[-1]
+            if head_remote.hash != head_local.hash and head_remote.creation_date > head_local.creation_date:
+                LOGGER.debug(
+                    (
+                        'found newer version for image name %s '
+                        'remote: %s, local: %s'
+                    ), name, head_remote, head_local
+                )
+                return head_remote
+            else:
+                return head_local
+
+    def _make_name(self, name):
+        components = name.split(':')
+        if len(components) == 1:
+            return ImageName(components[0], None)
+        elif len(components) == 2:
+            return ImageName(components[0], 'sha1:' + components[1])
+        else:
+            raise LagoImageError(
+                (
+                    'Illegal image name name, should be '
+                    'name[:SHA1]: {0}'.format(name)
+                )
+            )
 
 
 class TemplateStore:
