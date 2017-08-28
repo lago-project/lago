@@ -568,10 +568,6 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
             disk.append(serial)
 
             disk.append(
-                ET.Element('boot', order="{}".format(disk_order + 1)),
-            )
-
-            disk.append(
                 ET.Element(
                     'source',
                     file=os.path.expandvars(dev_spec['path']),
