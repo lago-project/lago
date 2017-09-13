@@ -64,10 +64,9 @@ setup_tox() {
     chown -R "$USER:" "$PIP_CACHE_DIR"
     export PIP_CACHE_DIR
     # https://github.com/pypa/setuptools/issues/1042
-    pip install six
-    pip install \
-        --upgrade \
-        pip setuptools virtualenv tox
+    for package in "six" "pip" "setuptools" "virtualenv" "tox"; do
+        pip install --upgrade "$package" || return 1
+    done
 }
 
 build_docs() {
