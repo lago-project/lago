@@ -239,7 +239,9 @@ class VMProviderPlugin(plugins.Plugin):
         Raises:
             :exc:`~lago.plugins.vm.ExtractPathNoPathError`: if a none existing
                 path was found on the VM, and ``ignore_nopath`` is True.
-            :exc:`~lago.plugins.vm.ExtractPathError`: on all other failures.
+            :exc:`~lago.plugins.vm.ExtractPathError`: If the vm isn't alive
+                nor ssh reachable.
+            :exc:`~scp.SCPException`: If an error occurred during scp.
         """
         if self.vm.alive() and self.vm.ssh_reachable(
             tries=5, propagate_fail=False
