@@ -27,6 +27,8 @@ import pkg_resources
 import sys
 from textwrap import dedent
 import warnings
+import urllib2
+from tempfile import NamedTemporaryFile
 
 import lago
 import lago.plugins
@@ -49,14 +51,15 @@ in_lago_prefix = in_prefix(
 @lago.plugins.cli.cli_plugin_add_argument(
     'virt_config',
     help=(
-        'Configuration of resources to deploy, json and yaml file formats '
-        'are supported, takes option precedence over workdir. Will use '
-        '$PWD/LagoInitFile by default. You can use any env vars in that file, '
-        'inculuding the extra ones LAGO_PREFIX_PATH LAGO_WORKDIR_PATH and '
-        'LAGO_INITFILE_PATH'
+        'Configuration of resources to deploy, YAML and JSON file formats '
+        'are supported, takes option precedence over workdir. Also possible '
+        'to pass a valid URL which will be downloaed. Will use '
+        '$PWD/LagoInitFile as default. You can use any env vars in that file '
+        'including the extra ones: LAGO_PREFIX_PATH, LAGO_WORKDIR_PATH and '
+        'LAGO_INITFILE_PATH. '
     ),
     metavar='VIRT_CONFIG',
-    type=os.path.abspath,
+    type=str,
     nargs='?',
 )
 @lago.plugins.cli.cli_plugin_add_argument(
@@ -66,7 +69,7 @@ in_lago_prefix = in_prefix(
         '$PWD/.lago'
     ),
     metavar='WORKDIR',
-    type=os.path.abspath,
+    type=str,
     nargs='?',
 )
 @lago.plugins.cli.cli_plugin_add_argument(
@@ -122,20 +125,37 @@ def do_init(
     skip_build=False,
     **kwargs
 ):
-
     if virt_config is None and workdir is not None:
         virt_config = workdir
         workdir = None
 
     if workdir is None:
         workdir = os.path.abspath('.lago')
+    else:
+        workdir = os.path.abspath(workdir)
 
     if virt_config is None:
         virt_config = os.path.abspath('LagoInitFile')
+    elif virt_config.startswith(('http://', 'https://')):
+        try:
+            LOGGER.debug('Downloading init file from url %s', virt_config)
+            res = urllib2.urlopen(virt_config)
+        except urllib2.URLError as e:
+            raise LagoUserException(
+                ('Error downloading {0}: '
+                 ' {1}').format(virt_config, str(e.msg))
+            ), None, sys.exc_info()[2]
+        os.environ['LAGO_INITFILE_PATH'] = os.path.abspath(os.curdir)
+        with NamedTemporaryFile(delete=False) as temp_fd:
+            temp_fd.writelines(res.readlines())
+        virt_config = temp_fd.name
+
     if not os.path.isfile(virt_config):
         raise LagoUserException(
             'Unable to find init file: {0}'.format(virt_config)
         )
+
+    virt_config = os.path.abspath(virt_config)
 
     os.environ['LAGO_INITFILE_PATH'
                ] = os.path.dirname(os.path.abspath(virt_config))
