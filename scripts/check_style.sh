@@ -18,13 +18,12 @@ fi
 yapf --version
 echo "running yapf on the following files:"
 echo "$files"
-# see: https://github.com/google/yapf/issues/325
-# yapf --diff will always exit with '0' as return code
-yapf_diff=$(yapf --style .style.yapf --diff --parallel $files)
 
-if [[ -n "${yapf_diff// }" ]]; then
-    echo "yapf diff: "
-    echo -e "$yapf_diff\n"
+echo "yapf diff:"
+if yapf --style .style.yapf --diff --parallel $files; then
+    echo "no diff"
+    echo "yapf style check: OK"
+else
     cat <<EOF
     ***************************************************************************
     Yapf failed, make sure to run:
@@ -49,6 +48,3 @@ if [[ -n "${yapf_diff// }" ]]; then
 EOF
     exit 1
 fi
-
-echo "yapf style check: OK"
-exit 0
