@@ -137,8 +137,9 @@ def do_init(
             'Unable to find init file: {0}'.format(virt_config)
         )
 
-    os.environ['LAGO_INITFILE_PATH'
-               ] = os.path.dirname(os.path.abspath(virt_config))
+    os.environ['LAGO_INITFILE_PATH'] = os.path.dirname(
+        os.path.abspath(virt_config)
+    )
 
     if prefix_name == 'current':
         prefix_name = 'default'
@@ -918,9 +919,7 @@ def main():
             task_tree_depth=args.logdepth,
             level=getattr(logging, args.loglevel.upper()),
             dump_level=logging.ERROR,
-            formatter=log_utils.ColorFormatter(
-                fmt='%(msg)s',
-            )
+            formatter=log_utils.ColorFormatter(fmt='%(msg)s', )
         )
     ]
 

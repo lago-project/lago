@@ -276,8 +276,9 @@ class NATNetwork(Network):
                 net_xml.append(dns)
 
         LOGGER.debug(
-            'Generated Network XML\n {0}'.
-            format(ET.tostring(net_xml, pretty_print=True))
+            'Generated Network XML\n {0}'.format(
+                ET.tostring(net_xml, pretty_print=True)
+            )
         )
         return ET.tostring(net_xml)
 

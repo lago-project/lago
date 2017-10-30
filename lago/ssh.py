@@ -329,9 +329,7 @@ def get_ssh_client(
 
         start_time = time.time()
         client = paramiko.SSHClient()
-        client.set_missing_host_key_policy(
-            paramiko.AutoAddPolicy(),
-        )
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy(), )
         while ssh_tries > 0:
             LOGGER.debug(
                 'Still got %d tries for %s',
