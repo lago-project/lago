@@ -149,8 +149,9 @@ class LagoAnsible(object):
         temp_file = tempfile.NamedTemporaryFile(mode='r+t')
         inventory = self.get_inventory_str(keys)
         LOGGER.debug(
-            'Writing inventory to temp file {} \n{}'.
-            format(temp_file.name, inventory)
+            'Writing inventory to temp file {} \n{}'.format(
+                temp_file.name, inventory
+            )
         )
         temp_file.write(inventory)
         temp_file.flush()

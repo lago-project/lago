@@ -117,8 +117,9 @@ def guestfs_conn_mount_ro(disk_path, disk_root, retries=5, wait=1):
                     continue
                 else:
                     raise GuestFSError(
-                        'failed mounting {0}:{1} using guestfs'.
-                        format(disk_path, rootfs)
+                        'failed mounting {0}:{1} using guestfs'.format(
+                            disk_path, rootfs
+                        )
                     )
             yield conn
             try:
@@ -163,8 +164,9 @@ def find_rootfs(conn, disk_root):
             rootfs = [fs for fs in filesystems.keys() if disk_root in fs]
             if not rootfs:
                 raise GuestFSError(
-                    'no root fs {0} could be found from list {1}'.
-                    format(disk_root, str(filesystems))
+                    'no root fs {0} could be found from list {1}'.format(
+                        disk_root, str(filesystems)
+                    )
                 )
     return sorted(rootfs)[0]
 
@@ -216,8 +218,9 @@ def _copy_path(conn, guest_path, host_path):
         except RuntimeError as err:
             LOGGER.debug(err)
             raise GuestFSError(
-                'failed copying file {0} to {1} using guestfs'.
-                format(guest_path, host_path)
+                'failed copying file {0} to {1} using guestfs'.format(
+                    guest_path, host_path
+                )
             )
     elif conn.is_dir(guest_path, followsymlinks=True):
         if not os.path.isdir(host_path):
@@ -227,8 +230,9 @@ def _copy_path(conn, guest_path, host_path):
         except RuntimeError as err:
             LOGGER.debug(err)
             raise GuestFSError(
-                'failed copying directory {0} to {1} using guestfs'.
-                format(guest_path, host_path)
+                'failed copying directory {0} to {1} using guestfs'.format(
+                    guest_path, host_path
+                )
             )
     else:
         raise ExtractPathNoPathError(

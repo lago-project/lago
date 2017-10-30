@@ -515,8 +515,9 @@ def with_logging(func):
 
 
 def add_timestamp_suffix(base_string):
-    return datetime.datetime.fromtimestamp(time.time(
-    )).strftime(base_string + '.%Y-%m-%d_%H:%M:%S')
+    return datetime.datetime.fromtimestamp(
+        time.time()
+    ).strftime(base_string + '.%Y-%m-%d_%H:%M:%S')
 
 
 def rotate_dir(base_dir):

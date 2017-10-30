@@ -160,9 +160,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
         if self.defined():
             self.vm._ssh_client = None
             with LogTask('Destroying VM %s' % self.vm.name()):
-                self.libvirt_con.lookupByName(
-                    self._libvirt_name(),
-                ).destroy()
+                self.libvirt_con.lookupByName(self._libvirt_name(), ).destroy()
 
     def shutdown(self, *args, **kwargs):
         super().shutdown(*args, **kwargs)
@@ -446,9 +444,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
             "console",
             self._libvirt_name(),
         ]
-        return utils.run_interactive_command(
-            command=virsh_command,
-        )
+        return utils.run_interactive_command(command=virsh_command, )
 
     @property
     def cpu_model(self):

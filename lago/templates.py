@@ -274,14 +274,12 @@ def find_repo_by_name(name, repo_dir=None):
     if repo_dir is None:
         repo_dir = config.get('template_repos')
 
-    ret, out, _ = utils.run_command(
-        [
-            'find',
-            repo_dir,
-            '-name',
-            '*.json',
-        ],
-    )
+    ret, out, _ = utils.run_command([
+        'find',
+        repo_dir,
+        '-name',
+        '*.json',
+    ], )
 
     repos = [
         TemplateRepository.from_url(line.strip()) for line in out.split('\n')
@@ -650,8 +648,10 @@ class TemplateStore:
             sha1 = utils.get_hash(temp_dest)
             if temp_ver.get_hash() != sha1:
                 raise RuntimeError(
-                    'Image %s does not match the expected hash %s' %
-                    (temp_ver.name, sha1.hexdigest(), )
+                    'Image %s does not match the expected hash %s' % (
+                        temp_ver.name,
+                        sha1.hexdigest(),
+                    )
                 )
 
             with open('%s.hash' % dest, 'w') as f:

@@ -102,7 +102,9 @@ def sysprep(disk, distro, loader=None, backend='direct', **kwargs):
     if ret:
         raise RuntimeError(
             'Failed to bootstrap %s\ncommand:%s\nstdout:%s\nstderr:%s' % (
-                disk, ' '.join('"%s"' % elem for elem in cmd), ret.out,
+                disk,
+                ' '.join('"%s"' % elem for elem in cmd),
+                ret.out,
                 ret.err,
             )
         )

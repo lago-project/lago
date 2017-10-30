@@ -111,8 +111,9 @@ class VirtEnv(object):
             vm_type = self.vm_types[vm_type_name]
         except KeyError:
             raise RuntimeError(
-                'Unknown VM type: {0}, available types: {1}'.
-                format(vm_type_name, ','.join(self.vm_types.keys()))
+                'Unknown VM type: {0}, available types: {1}'.format(
+                    vm_type_name, ','.join(self.vm_types.keys())
+                )
             )
         vm_spec['vm-type'] = vm_type_name
         return vm_type(self, vm_spec)
@@ -193,8 +194,9 @@ class VirtEnv(object):
 
         if running_vms:
             raise utils.LagoUserException(
-                'The following vms must be off:\n{}'.
-                format('\n'.join([_vm.name() for _vm in running_vms]))
+                'The following vms must be off:\n{}'.format(
+                    '\n'.join([_vm.name() for _vm in running_vms])
+                )
             )
 
         with LogTask('Exporting disks to: {}'.format(dst_dir)):
@@ -478,8 +480,9 @@ class VirtEnv(object):
 
         if missing_vms:
             raise utils.LagoUserException(
-                'The following vms do not exist: \n{}'.
-                format('\n'.join(missing_vms))
+                'The following vms do not exist: \n{}'.format(
+                    '\n'.join(missing_vms)
+                )
             )
 
         return vms

@@ -767,7 +767,8 @@ def _resolve_service_class(class_name, service_providers):
     raise plugins.NoSuchPluginError(
         'No service provider plugin with class name %s found, loaded '
         'providers: %s' % (
-            class_name, [
+            class_name,
+            [
                 plugin.__class__.__name__
                 for plugin in service_providers.itervalues()
             ],
