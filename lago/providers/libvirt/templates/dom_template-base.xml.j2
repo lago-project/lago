@@ -2,9 +2,14 @@
     <name>{{ name }}</name>
     <memory unit='MiB'>{{ mem_size }}</memory>
     <iothreads>1</iothreads>
+    <pm>
+      <suspend-to-disk enabled='no'/>
+      <suspend-to-mem enabled='no'/>
+    </pm>
     <os>
       <type arch='x86_64' machine='pc'>hvm</type>
       <bootmenu enable='no'/>
+      <bios useserial='no'/>
     </os>
     <features>
       <acpi/>
@@ -21,6 +26,7 @@
         <driver name='qemu' type='qcow2'/>
         <source file='DISK_PATH'/>
         <target dev='DISK_DEV' bus='virtio'/>
+        <boot order='1'/>
       </disk>
       <channel type='unix'>
         <source mode='bind'/>
