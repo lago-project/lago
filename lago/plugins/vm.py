@@ -479,8 +479,19 @@ class VMPlugin(plugins.Plugin):
         for net in nets.values():
             mapping = net.mapping()
             for hostname, ip in mapping.items():
-                if hostname.startswith(self.name()):
+                # hostname is <hostname>-<ifacename>
+                if hostname.startswith(self.name() + "-"):
                     ips.append(str(ip))
+        return ips
+
+    def ips_in_net(self, net_name):
+        ips = []
+        net = self.virt_env.get_net(name=net_name)
+        mapping = net.mapping()
+        for hostname, ip in mapping.items():
+            # hostname is <hostname>-<ifacename>
+            if hostname.startswith(self.name() + "-"):
+                ips.append(str(ip))
         return ips
 
     def ssh(
