@@ -502,6 +502,24 @@ class Prefix(object):
                 nic['ip'] = vacant
                 self._add_nic_to_mapping(net, dom_spec, nic)
 
+    def _set_mtu_to_nics(self, conf):
+        """
+        For all the nics of all the domains in the conf that have MTU set,
+        save the MTU on the NIC definition.
+
+        Args:
+            conf (dict): Configuration spec to extract the domains from
+
+        Returns:
+            None
+        """
+        for dom_name, dom_spec in conf.get('domains', {}).items():
+            for idx, nic in enumerate(dom_spec.get('nics', [])):
+                net = self._get_net(conf, dom_name, nic)
+                mtu = net.get('mtu', 1500)
+                if mtu != 1500:
+                    nic['mtu'] = mtu
+
     def _config_net_topology(self, conf):
         """
         Initialize and populate all the network related elements, like
@@ -522,6 +540,7 @@ class Prefix(object):
             self._add_mgmt_to_domains(conf, mgmts)
             self._register_preallocated_ips(conf)
             self._allocate_ips_to_nics(conf)
+            self._set_mtu_to_nics(conf)
             self._add_dns_records(conf, mgmts)
         except:
             self._subnet_store.release(allocated_subnets)
