@@ -461,13 +461,15 @@ class Prefix(object):
             net = conf['nets'][nic['net']]
         except KeyError:
             raise LagoInitException(
-                (
-                    'Unrecognized network in {0}: '
-                    '{1}, available: '
-                    '{2}'
-                ).format(
-                    dom_name, nic['net'],
-                    ','.join(conf.get('nets', {}).keys())
+                dedent(
+                    """
+                    Unrecognized network in {0}: {1},
+                    available: {2}
+                    """.format(
+                        dom_name,
+                        nic['net'],
+                        ','.join(conf.get('nets', {}).keys()),
+                    )
                 )
             )
 
@@ -1640,5 +1642,6 @@ class Prefix(object):
     @log_task('Deploy environment')
     def deploy(self):
         utils.invoke_in_parallel(
-            self._deploy_host, self.virt_env.get_vms().values()
+            self._deploy_host,
+            self.virt_env.get_vms().values()
         )
