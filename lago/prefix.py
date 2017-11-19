@@ -456,6 +456,23 @@ class Prefix(object):
 
                 self._add_nic_to_mapping(net, dom_spec, nic)
 
+    def _get_net(self, conf, dom_name, nic):
+        try:
+            net = conf['nets'][nic['net']]
+        except KeyError:
+            raise LagoInitException(
+                (
+                    'Unrecognized network in {0}: '
+                    '{1}, available: '
+                    '{2}'
+                ).format(
+                    dom_name, nic['net'],
+                    ','.join(conf.get('nets', {}).keys())
+                )
+            )
+
+        return net
+
     def _allocate_ips_to_nics(self, conf):
         """
         For all the nics of all the domains in the conf that have dynamic ip,
@@ -471,19 +488,7 @@ class Prefix(object):
             for idx, nic in enumerate(dom_spec.get('nics', [])):
                 if 'ip' in nic:
                     continue
-                try:
-                    net = conf['nets'][nic['net']]
-                except KeyError:
-                    raise LagoInitException(
-                        (
-                            'Unrecognized network in {0}: '
-                            '{1}, available: '
-                            '{2}'
-                        ).format(
-                            dom_name, nic['net'],
-                            ','.join(conf.get('nets', {}).keys())
-                        )
-                    )
+                net = self._get_net(conf, dom_name, nic)
                 if net['type'] != 'nat':
                     continue
 
@@ -582,19 +587,9 @@ class Prefix(object):
         for dom_name, dom_spec in conf['domains'].items():
             mgmts = []
             for nic in dom_spec['nics']:
-                net_name = nic['net']
-                try:
-                    net = conf['nets'][net_name]
-                except KeyError:
-                    raise LagoInitException(
-                        (
-                            'Unrecognized NIC: {0}, '
-                            'configured for VM: '
-                            '{1} '
-                        ).format(net_name, dom_name)
-                    )
+                net = self._get_net(conf, dom_name, nic)
                 if net.get('management', False) is True:
-                    mgmts.append(net_name)
+                    mgmts.append(nic['net'])
             if len(mgmts) == 0:
                 raise LagoInitException(
                     (
