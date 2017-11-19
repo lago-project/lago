@@ -27,6 +27,7 @@ import pkg_resources
 import sys
 from textwrap import dedent
 import warnings
+from signal import signal, SIGTERM, SIGHUP
 
 import lago
 import lago.plugins
@@ -899,7 +900,30 @@ def create_parser(cli_plugins, out_plugins):
     return parser
 
 
+def exit_handler(signum, frame):
+    """
+    Catch SIGTERM and SIGHUP and call "sys.exit" which raises
+    "SystemExit" exception.
+    This will trigger all the cleanup code defined in ContextManagers
+    and "finally" statements.
+
+    For more details about the arguments see "signal" documentation.
+
+    Args:
+        signum(int): The signal's number
+        frame(frame): The current stack frame, can be None
+    """
+
+    LOGGER.debug('signal {} was caught'.format(signum))
+    sys.exit(128 + signum)
+
+
 def main():
+
+    # Trigger cleanup on SIGTERM and SIGHUP
+    signal(SIGTERM, exit_handler)
+    signal(SIGHUP, exit_handler)
+
     cli_plugins = lago.plugins.load_plugins(
         lago.plugins.PLUGIN_ENTRY_POINTS['cli']
     )

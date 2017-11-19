@@ -390,6 +390,7 @@ class LockFile(object):
             with ExceptionTimer(timeout=self.timeout):
                 LOGGER.debug('Acquiring lock for {}'.format(self.path))
                 self.lock.acquire()
+                LOGGER.debug('Holding the lock for {}'.format(self.path))
         except TimerException:
             raise TimerException(
                 'Unable to acquire lock for %s in %s secs',
@@ -398,7 +399,10 @@ class LockFile(object):
             )
 
     def __exit__(self, *_):
-        self.lock.release()
+        if self.lock.is_locked():
+            LOGGER.debug('Trying to release lock {}'.format(self.path))
+            self.lock.release()
+            LOGGER.debug('Lock {} was released')
 
 
 def read_nonblocking(file_descriptor):
