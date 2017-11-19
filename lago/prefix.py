@@ -389,10 +389,10 @@ class Prefix(object):
         LOGGER.debug('Using network %s as main DNS server', dns_mgmt)
         forward = conf['nets'][dns_mgmt].get('gw')
         dns_records = {}
-        for name, net in nets.iteritems():
-            dns_records.update(net['mapping'].copy())
-            if name not in mgmts:
-                net['dns_forward'] = forward
+        for net_name, net_spec in nets.iteritems():
+            dns_records.update(net_spec['mapping'].copy())
+            if net_name not in mgmts:
+                net_spec['dns_forward'] = forward
 
         for mgmt in mgmts:
             if nets[mgmt].get('dns_records'):
@@ -534,12 +534,12 @@ class Prefix(object):
 
         """
 
-        for name, domain in conf['domains'].iteritems():
+        for dom_name, dom_spec in conf['domains'].iteritems():
             domain_mgmt = [
-                nic['net'] for nic in domain['nics'] if nic['net'] in mgmts
+                nic['net'] for nic in dom_spec['nics'] if nic['net'] in mgmts
             ].pop()
 
-            domain['mgmt_net'] = domain_mgmt
+            dom_spec['mgmt_net'] = domain_mgmt
 
     def _validate_netconfig(self, conf):
         """
@@ -579,9 +579,9 @@ class Prefix(object):
                 ).format(','.join(no_mgmt_dns))
             )
 
-        for name, domain_spec in conf['domains'].items():
+        for dom_name, dom_spec in conf['domains'].items():
             mgmts = []
-            for nic in domain_spec['nics']:
+            for nic in dom_spec['nics']:
                 net_name = nic['net']
                 try:
                     net = conf['nets'][net_name]
@@ -591,7 +591,7 @@ class Prefix(object):
                             'Unrecognized NIC: {0}, '
                             'configured for VM: '
                             '{1} '
-                        ).format(net_name, name)
+                        ).format(net_name, dom_name)
                     )
                 if net.get('management', False) is True:
                     mgmts.append(net_name)
@@ -601,7 +601,7 @@ class Prefix(object):
                         'VM {0} has no management network, '
                         'please connect it to '
                         'one.'
-                    ).format(name)
+                    ).format(dom_name)
                 )
 
             if len(mgmts) > 1:
@@ -610,7 +610,7 @@ class Prefix(object):
                         'VM {0} has more than one management '
                         'network: {1}. It should have exactly '
                         'one.'
-                    ).format(name, ','.join(mgmts))
+                    ).format(dom_name, ','.join(mgmts))
                 )
 
     def _create_disk(
@@ -1098,17 +1098,17 @@ class Prefix(object):
         if not os.path.exists(self.paths.images()):
             os.makedirs(self.paths.images())
 
-        for name, domain_spec in conf['domains'].items():
-            if not name:
+        for dom_name, dom_spec in conf['domains'].items():
+            if not dom_name:
                 raise RuntimeError(
                     'An invalid (empty) domain name was found in the '
                     'configuration file. Cannot continue. A name must be '
                     'specified for the domain'
                 )
 
-            domain_spec['name'] = name
-            conf['domains'][name] = self._prepare_domain_image(
-                domain_spec=domain_spec,
+            dom_spec['name'] = dom_name
+            conf['domains'][dom_name] = self._prepare_domain_image(
+                domain_spec=dom_spec,
                 prototypes=conf.get('prototypes', {}),
                 template_repo=template_repo,
                 template_store=template_store,
