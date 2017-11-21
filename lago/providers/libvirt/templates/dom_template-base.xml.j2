@@ -49,4 +49,10 @@
       <timer name='kvmclock'>
       </timer>
     </clock>
+    <filesystem type='mount' accessmode='mapped'>                                
+     <source dir='/var/lib/lago/reposync/'/>                               
+     <target dir='/vm_data/yum-repos/'/>                                        
+     <readonly/>                                                                
+     <address type='pci' domain='0x0000' bus='0x00' slot='0x08' function='0x0'/>
+   </filesystem>                                                                
 </domain>
