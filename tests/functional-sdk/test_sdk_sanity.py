@@ -171,6 +171,12 @@ def test_custom_gateway(vms, nets, init_dict):
             assert nets[net_name].gw() == net['gw']
 
 
+def test_vm_is_running(vms, vm_name):
+    vm = vms[vm_name]
+    assert vm.defined()
+    assert vm.state() == 'running'
+
+
 def test_vms_ssh(vms, vm_name):
     vm = vms[vm_name]
     assert vm.ssh_reachable(tries=200)
