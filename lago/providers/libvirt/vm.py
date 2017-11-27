@@ -601,6 +601,13 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
                     type='virtio',
                 ),
             )
+            if self._libvirt_ver > 3001001:
+                mtu = dev_spec.get('mtu', '1500')
+                if mtu != '1500':
+                    interface.append(ET.Element(
+                        'mtu',
+                        size=str(mtu),
+                    ))
             if 'ip' in dev_spec:
                 interface.append(
                     ET.Element(
