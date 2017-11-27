@@ -389,10 +389,10 @@ class Prefix(object):
         LOGGER.debug('Using network %s as main DNS server', dns_mgmt)
         forward = conf['nets'][dns_mgmt].get('gw')
         dns_records = {}
-        for name, net in nets.iteritems():
-            dns_records.update(net['mapping'].copy())
-            if name not in mgmts:
-                net['dns_forward'] = forward
+        for net_name, net_spec in nets.iteritems():
+            dns_records.update(net_spec['mapping'].copy())
+            if net_name not in mgmts:
+                net_spec['dns_forward'] = forward
 
         for mgmt in mgmts:
             if nets[mgmt].get('dns_records'):
@@ -456,6 +456,25 @@ class Prefix(object):
 
                 self._add_nic_to_mapping(net, dom_spec, nic)
 
+    def _get_net(self, conf, dom_name, nic):
+        try:
+            net = conf['nets'][nic['net']]
+        except KeyError:
+            raise LagoInitException(
+                dedent(
+                    """
+                    Unrecognized network in {0}: {1},
+                    available: {2}
+                    """.format(
+                        dom_name,
+                        nic['net'],
+                        ','.join(conf.get('nets', {}).keys()),
+                    )
+                )
+            )
+
+        return net
+
     def _allocate_ips_to_nics(self, conf):
         """
         For all the nics of all the domains in the conf that have dynamic ip,
@@ -471,19 +490,7 @@ class Prefix(object):
             for idx, nic in enumerate(dom_spec.get('nics', [])):
                 if 'ip' in nic:
                     continue
-                try:
-                    net = conf['nets'][nic['net']]
-                except KeyError:
-                    raise LagoInitException(
-                        (
-                            'Unrecognized network in {0}: '
-                            '{1}, available: '
-                            '{2}'
-                        ).format(
-                            dom_name, nic['net'],
-                            ','.join(conf.get('nets', {}).keys())
-                        )
-                    )
+                net = self._get_net(conf, dom_name, nic)
                 if net['type'] != 'nat':
                     continue
 
@@ -496,6 +503,24 @@ class Prefix(object):
                 )
                 nic['ip'] = vacant
                 self._add_nic_to_mapping(net, dom_spec, nic)
+
+    def _set_mtu_to_nics(self, conf):
+        """
+        For all the nics of all the domains in the conf that have MTU set,
+        save the MTU on the NIC definition.
+
+        Args:
+            conf (dict): Configuration spec to extract the domains from
+
+        Returns:
+            None
+        """
+        for dom_name, dom_spec in conf.get('domains', {}).items():
+            for idx, nic in enumerate(dom_spec.get('nics', [])):
+                net = self._get_net(conf, dom_name, nic)
+                mtu = net.get('mtu', 1500)
+                if mtu != 1500:
+                    nic['mtu'] = mtu
 
     def _config_net_topology(self, conf):
         """
@@ -517,6 +542,7 @@ class Prefix(object):
             self._add_mgmt_to_domains(conf, mgmts)
             self._register_preallocated_ips(conf)
             self._allocate_ips_to_nics(conf)
+            self._set_mtu_to_nics(conf)
             self._add_dns_records(conf, mgmts)
         except:
             self._subnet_store.release(allocated_subnets)
@@ -534,12 +560,12 @@ class Prefix(object):
 
         """
 
-        for name, domain in conf['domains'].iteritems():
+        for dom_name, dom_spec in conf['domains'].iteritems():
             domain_mgmt = [
-                nic['net'] for nic in domain['nics'] if nic['net'] in mgmts
+                nic['net'] for nic in dom_spec['nics'] if nic['net'] in mgmts
             ].pop()
 
-            domain['mgmt_net'] = domain_mgmt
+            dom_spec['mgmt_net'] = domain_mgmt
 
     def _validate_netconfig(self, conf):
         """
@@ -579,29 +605,19 @@ class Prefix(object):
                 ).format(','.join(no_mgmt_dns))
             )
 
-        for name, domain_spec in conf['domains'].items():
+        for dom_name, dom_spec in conf['domains'].items():
             mgmts = []
-            for nic in domain_spec['nics']:
-                net_name = nic['net']
-                try:
-                    net = conf['nets'][net_name]
-                except KeyError:
-                    raise LagoInitException(
-                        (
-                            'Unrecognized NIC: {0}, '
-                            'configured for VM: '
-                            '{1} '
-                        ).format(net_name, name)
-                    )
+            for nic in dom_spec['nics']:
+                net = self._get_net(conf, dom_name, nic)
                 if net.get('management', False) is True:
-                    mgmts.append(net_name)
+                    mgmts.append(nic['net'])
             if len(mgmts) == 0:
                 raise LagoInitException(
                     (
                         'VM {0} has no management network, '
                         'please connect it to '
                         'one.'
-                    ).format(name)
+                    ).format(dom_name)
                 )
 
             if len(mgmts) > 1:
@@ -610,7 +626,7 @@ class Prefix(object):
                         'VM {0} has more than one management '
                         'network: {1}. It should have exactly '
                         'one.'
-                    ).format(name, ','.join(mgmts))
+                    ).format(dom_name, ','.join(mgmts))
                 )
 
     def _create_disk(
@@ -1098,17 +1114,17 @@ class Prefix(object):
         if not os.path.exists(self.paths.images()):
             os.makedirs(self.paths.images())
 
-        for name, domain_spec in conf['domains'].items():
-            if not name:
+        for dom_name, dom_spec in conf['domains'].items():
+            if not dom_name:
                 raise RuntimeError(
                     'An invalid (empty) domain name was found in the '
                     'configuration file. Cannot continue. A name must be '
                     'specified for the domain'
                 )
 
-            domain_spec['name'] = name
-            conf['domains'][name] = self._prepare_domain_image(
-                domain_spec=domain_spec,
+            dom_spec['name'] = dom_name
+            conf['domains'][dom_name] = self._prepare_domain_image(
+                domain_spec=dom_spec,
                 prototypes=conf.get('prototypes', {}),
                 template_repo=template_repo,
                 template_store=template_store,
@@ -1626,5 +1642,6 @@ class Prefix(object):
     @log_task('Deploy environment')
     def deploy(self):
         utils.invoke_in_parallel(
-            self._deploy_host, self.virt_env.get_vms().values()
+            self._deploy_host,
+            self.virt_env.get_vms().values()
         )

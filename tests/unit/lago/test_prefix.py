@@ -173,8 +173,10 @@ class TestPrefixNetworkInitalization(object):
                     'nets': {
                         'mgmt': {}
                     }
-                },
-                ('Unrecognized NIC: does_not_exist, configured for VM: vm-01')
+                }, (
+                    r'Unrecognized network in vm-01: does_not_exist,\n'
+                    'available: mgmt'
+                )
             ),
             (
                 {
