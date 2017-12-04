@@ -331,11 +331,6 @@ def get_ssh_client(
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy(), )
         while ssh_tries > 0:
-            LOGGER.debug(
-                'Still got %d tries for %s',
-                ssh_tries,
-                host_name,
-            )
             try:
                 client.connect(
                     ip_addr,
@@ -360,6 +355,11 @@ def get_ssh_client(
             except EOFError as err:
                 LOGGER.debug('EOFError connecting to %s: %s', host_name, err)
             ssh_tries -= 1
+            LOGGER.debug(
+                'Still got %d tries for %s',
+                ssh_tries,
+                host_name,
+            )
             time.sleep(1)
         else:
             end_time = time.time()
