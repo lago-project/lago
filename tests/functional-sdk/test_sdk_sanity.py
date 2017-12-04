@@ -333,8 +333,11 @@ def test_collect_raises(tmpdir, vms, vm_name):
         vm.collect_artifacts(dest, ignore_nopath=False)
 
 
+# todo: Test extract_paths_dead once we figure why it's unstable in CI
 @pytest.mark.parametrize('mode', (['normal', 'dead']))
 def test_extract_paths(tmpdir, randomized_dir, vms, vm_name, mode):
+    if mode == 'dead':
+        pytest.skip('extract_paths_dead is not stable in CI')
     vm = vms[vm_name]
     dst = '/root/extract-{vm}-{mode}'.format(vm=vm_name, mode=mode)
     vm.copy_to(randomized_dir.path, dst, recursive=True)
@@ -354,11 +357,14 @@ def test_extract_paths(tmpdir, randomized_dir, vms, vm_name, mode):
     assert sorted(cmp_res.left_list) == sorted(cmp_res.right_list)
 
 
+# todo: Test extract_paths_dead once we figure why it's unstable in CI
 @pytest.mark.parametrize('mode', ['normal', 'dead'])
 @pytest.mark.parametrize(
     'bad_path', ['/nothing/here', '/var/log/nested_nothing', '/root/nowhere']
 )
 def test_extract_paths_ignore_nopath(tmpdir, vms, vm_name, mode, bad_path):
+    if mode == 'dead':
+        pytest.skip('extract_paths_dead is not stable in CI')
     vm = vms[vm_name]
     dst = os.path.join(str(tmpdir), 'extract-failure')
     if mode == 'normal':
