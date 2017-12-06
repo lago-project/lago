@@ -1621,7 +1621,7 @@ class Prefix(object):
                 return
 
             with LogTask('Wait for ssh connectivity'):
-                if not host.ssh_reachable(tries=1):
+                if not host.ssh_reachable(tries=1, propagate_fail=False):
                     time.sleep(10)
                     host.wait_for_ssh()
 
