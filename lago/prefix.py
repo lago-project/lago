@@ -26,6 +26,7 @@ import os
 import shutil
 import subprocess
 from textwrap import dedent
+import time
 import urlparse
 import urllib
 import uuid
@@ -1620,7 +1621,9 @@ class Prefix(object):
                 return
 
             with LogTask('Wait for ssh connectivity'):
-                host.wait_for_ssh()
+                if not host.ssh_reachable(tries=1):
+                    time.sleep(10)
+                    host.wait_for_ssh()
 
             for script in deploy_scripts:
                 script = os.path.expanduser(os.path.expandvars(script))
