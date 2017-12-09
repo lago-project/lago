@@ -10,3 +10,5 @@ upload {{ public_key }}:/root/.ssh/authorized_keys
 chmod 0600:/root/.ssh/authorized_keys
 run-command chown root:root /root/.ssh/authorized_keys
 {% endif -%}
+mkdir /etc/cloud
+touch /etc/cloud/cloud-init.disabled
