@@ -400,9 +400,9 @@ class LockFile(object):
 
     def __exit__(self, *_):
         if self.lock.is_locked():
-            LOGGER.debug('Trying to release lock {}'.format(self.path))
+            LOGGER.debug('Trying to release lock for {}'.format(self.path))
             self.lock.release()
-            LOGGER.debug('Lock {} was released')
+            LOGGER.debug('Lock for {} was released'.format(self.path))
 
 
 def read_nonblocking(file_descriptor):
