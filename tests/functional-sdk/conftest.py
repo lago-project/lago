@@ -4,14 +4,14 @@ import shutil
 
 _local_config = {
     'check_patch': {
-        'images': ['el7.3-base']
+        'images': ['el7.4-base']
     },
     'check_merged':
         {
             'images':
                 [
-                    'el7.3-base', 'el6-base', 'fc24-base', 'fc25-base',
-                    'fc26-base', 'ubuntu16.04-base', 'debian8-base'
+                    'el7.4-base', 'el6-base', 'fc25-base', 'fc26-base',
+                    'fc27-base', 'ubuntu16.04-base', 'debian8-base'
                 ]
         }  # noqa: E123
 }
