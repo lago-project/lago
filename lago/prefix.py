@@ -1435,6 +1435,19 @@ class Prefix(object):
         """
         return self.virt_env.get_nets()
 
+    def get_ssh_pub_key(self):
+        """
+        Returns the contents of the SSH public key.
+        To be used to install hosts with public key, or
+        set cloud-init configuration with public key, or
+        for Ansible integration
+
+        Returns:
+            str: SSH public key
+        """
+        with open(self.paths.ssh_id_rsa_pub()) as pub_key:
+            return pub_key.read()
+
     @classmethod
     def resolve_prefix_path(cls, start_path=None):
         """
