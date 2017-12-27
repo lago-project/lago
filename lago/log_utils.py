@@ -1,5 +1,5 @@
 #
-# Copyright 2015 Red Hat, Inc.
+# Copyright 2015-2017 Red Hat, Inc.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,11 +20,12 @@
 """
 This module defines the special logging tools that lago uses
 """
+from future.builtins import super
 import logging
 import logging.config
 import os
 import re
-import sys
+import traceback
 import datetime
 import threading
 import uuid as uuid_m
@@ -110,7 +111,7 @@ class ColorFormatter(logging.Formatter):
         else:
             color = self.DEFAULT
 
-        message = super(ColorFormatter, self).format(record)
+        message = super().format(record)
         if record.args:
             try:
                 message = message % record.args
@@ -224,7 +225,7 @@ class TaskHandler(logging.StreamHandler):
         level=logging.NOTSET,
         formatter=ColorFormatter,
     ):
-        super(TaskHandler, self).__init__()
+        super().__init__()
         self.formatter = formatter
         self.initial_depth = initial_depth
         self.tasks_by_thread = {}
@@ -521,8 +522,8 @@ class TaskHandler(logging.StreamHandler):
                 '  ' * (task_level - 1) + extra_prefix + str(record.msg)
             )
 
-        super(TaskHandler, self).emit(record)
-        super(TaskHandler, self).flush()
+        super().emit(record)
+        super().flush()
 
     def emit(self, record):
         """
@@ -599,10 +600,12 @@ class LogTask(object):
         getattr(self.logger, self.level)(START_TASK_TRIGGER_MSG % self.header)
         return self
 
-    def __exit__(self, *args, **kwargs):
-        exc_type, _, _ = sys.exc_info()
+    def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_type and self.propagate:
             end_log_task(self.header, level='error')
+            str_tb = ''.join(traceback.format_tb(exc_tb))
+            self.logger.debug(str_tb)
+            return False
         else:
             getattr(self.logger,
                     self.level)(END_TASK_TRIGGER_MSG % self.header)
@@ -723,14 +726,17 @@ def setup_prefix_logging(logdir):
     file_handler = logging.FileHandler(
         filename=os.path.join(logdir, 'lago.log'),
     )
-    file_formatter = logging.Formatter(
+    file_formatter = get_default_log_formatter()
+    file_handler.setFormatter(file_formatter)
+    logging.root.addHandler(file_handler)
+    hide_paramiko_logs()
+    hide_stevedore_logs()
+
+
+def get_default_log_formatter():
+    return logging.Formatter(
         fmt=(
             '%(asctime)s::%(filename)s::%(funcName)s::%(lineno)s::'
             '%(name)s::%(levelname)s::%(message)s'
         ),
     )
-    file_handler.setLevel(logging.DEBUG)
-    file_handler.setFormatter(file_formatter)
-    logging.root.addHandler(file_handler)
-    hide_paramiko_logs()
-    hide_stevedore_logs()

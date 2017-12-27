@@ -1,5 +1,5 @@
 #
-# Copyright 2015 Red Hat, Inc.
+# Copyright 2015-2017 Red Hat, Inc.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,125 +20,83 @@
 import os
 
 import utils
+import logging
+import tempfile
+from jinja2 import Environment, PackageLoader
+import textwrap
+import sys
 
-_DOT_SSH = '/root/.ssh'
-_AUTHORIZED_KEYS = os.path.join(_DOT_SSH, 'authorized_keys')
-_SELINUX_CONF_DIR = '/etc/selinux'
-_SELINUX_CONF_PATH = os.path.join(_SELINUX_CONF_DIR, 'config')
-_ISCSI_DIR = '/etc/iscsi'
+LOGGER = logging.getLogger(__name__)
 
-
-def set_hostname(hostname):
-    return ('--hostname', hostname)
-
-
-def set_root_password(password):
-    return ('--root-password', 'password:%s' % password)
+try:
+    import guestfs
+except ImportError:
+    LOGGER.debug('guestfs not available, ignoring')
 
 
-def _write_file(path, content):
-    return ('--write', '%s:%s' % (path, content))
+def _guestfs_version(default={'major': 1L, 'minor': 20L}):
+    if 'guestfs' in sys.modules:
+        g = guestfs.GuestFS(python_return_dict=True)
+        guestfs_ver = g.version()
+        g.close()
+    else:
+        guestfs_ver = default
+
+    return guestfs_ver
 
 
-def _upload_file(local_path, remote_path):
-    return ('--upload', '%s:%s' % (remote_path, local_path))
-
-
-def set_iscsi_initiator_name(name):
-    return (
-        '--mkdir',
-        _ISCSI_DIR,
-        '--chmod',
-        '0755:%s' % _ISCSI_DIR,
-    ) + _write_file(
-        os.path.join(_ISCSI_DIR, 'initiatorname.iscsi'),
-        'InitiatorName=%s' % name,
+def _render_template(distro, loader, **kwargs):
+    env = Environment(
+        loader=loader,
+        trim_blocks=True,
+        lstrip_blocks=True,
     )
+    env.filters['dedent'] = textwrap.dedent
+    template_name = 'sysprep-{0}.j2'.format(distro)
+    template = env.select_template([template_name, 'sysprep-base.j2'])
+    sysprep_content = template.render(guestfs_ver=_guestfs_version(), **kwargs)
+    with tempfile.NamedTemporaryFile(delete=False) as sysprep_file:
+        sysprep_file.write('# {0}\n'.format(template.name))
+        sysprep_file.write(sysprep_content)
 
-
-def add_ssh_key(key, with_restorecon_fix=False):
-    extra_options = (
-        '--mkdir',
-        _DOT_SSH,
-        '--chmod',
-        '0700:%s' % _DOT_SSH,
-    ) + _upload_file(_AUTHORIZED_KEYS, key)
-    if (not os.stat(key).st_uid == 0 or not os.stat(key).st_gid == 0):
-        extra_options += (
-            '--run-command',
-            'chown root.root %s' % _AUTHORIZED_KEYS,
-        )
-    if with_restorecon_fix:
-        # Fix for fc23 not relabeling on boot
-        # https://bugzilla.redhat.com/1049656
-        extra_options += (
-            '--firstboot-command',
-            'restorecon -R /root/.ssh',
-        )
-    return extra_options
-
-
-def set_selinux_mode(mode):
-    return (
-        '--mkdir',
-        _SELINUX_CONF_DIR,
-        '--chmod',
-        '0755:%s' % _SELINUX_CONF_DIR,
-    ) + _write_file(
-        _SELINUX_CONF_PATH,
-        ('SELINUX=%s\n'
-         'SELINUXTYPE=targeted\n') % mode,
+    LOGGER.debug(
+        ('Generated sysprep template '
+         'at {0}:\n{1}').format(sysprep_file.name, sysprep_content)
     )
+    return sysprep_file.name
 
 
-def _config_net_interface(iface, **kwargs):
-    return (
-        '--mkdir',
-        '/etc/sysconfig/network-scripts',
-        '--chmod',
-        '0755:/etc/sysconfig/network-scripts',
-    ) + _write_file(
-        os.path.join(
-            '/etc/sysconfig/network-scripts',
-            'ifcfg-%s' % iface,
-        ),
-        '\n'.join(['%s="%s"' % (k.upper(), v) for k, v in kwargs.items()]),
-    )
+def sysprep(disk, distro, loader=None, backend='direct', **kwargs):
+    """
+    Run virt-sysprep on the ``disk``, commands are built from the distro
+    specific template and arguments passed in ``kwargs``. If no template is
+    available it will default to ``sysprep-base.j2``.
 
+    Args:
+        disk(str): path to disk
+        distro(str): distro to render template for
+        loader(jinja2.BaseLoader): Jinja2 template loader, if not passed,
+            will search Lago's package.
+        backend(str): libguestfs backend to use
+        **kwargs(dict): environment variables for Jinja2 template
 
-def config_net_interface_dhcp(iface, hwaddr):
-    return _config_net_interface(
-        iface,
-        type='Ethernet',
-        bootproto='dhcp',
-        onboot='yes',
-        name=iface,
-        hwaddr=hwaddr,
-    )
+    Returns:
+        None
 
+    Raises:
+        RuntimeError: On virt-sysprep none 0 exit code.
+    """
 
-def edit(filename, expression):
-    editstr = '%s:""%s""' % (filename, expression)
-    return (
-        '--edit',
-        editstr,
-    )
+    if loader is None:
+        loader = PackageLoader('lago', 'templates')
+    sysprep_file = _render_template(distro, loader=loader, **kwargs)
 
+    cmd = ['virt-sysprep', '-a', disk]
+    cmd.extend(['--commands-from-file', sysprep_file])
 
-def update():
-    return (
-        '--update',
-        '--network',
-    )
-
-
-def sysprep(disk, mods, backend='direct'):
-    cmd = ['virt-sysprep', '-a', disk, '--selinux-relabel']
     env = os.environ.copy()
     if 'LIBGUESTFS_BACKEND' not in env:
         env['LIBGUESTFS_BACKEND'] = backend
-    for mod in mods:
-        cmd.extend(mod)
 
     ret = utils.run_command(cmd, env=env)
     if ret:

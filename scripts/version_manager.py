@@ -79,8 +79,8 @@ def get_tags(repo):
     return {
         commit: os.path.basename(tag_ref)
         for tag_ref, commit in repo.get_refs().items()
-        if tag_ref.startswith('refs/tags/') and
-        VALID_TAG.match(tag_ref[len('refs/tags/'):])
+        if tag_ref.startswith('refs/tags/')
+        and VALID_TAG.match(tag_ref[len('refs/tags/'):])
     }
 
 

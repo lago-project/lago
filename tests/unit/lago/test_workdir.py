@@ -28,22 +28,7 @@ import mock
 import lago.workdir
 import lago.prefix
 from lago.utils import LagoUserException
-
-
-@pytest.fixture()
-def mock_workdir(tmpdir, **kwargs):
-    default_props = generate_workdir_props(**kwargs)
-    return mock.Mock(
-        spec_set=lago.workdir.Workdir(str(tmpdir)), **default_props
-    )
-
-
-@pytest.fixture()
-def mock_prefix(tmpdir, **kwargs):
-    if 'initialized' not in kwargs:
-        kwargs['initialized'] = lambda: True
-
-    return mock.Mock(spec_set=lago.prefix.Prefix(str(tmpdir)), **kwargs)
+from utils import generate_workdir_params
 
 
 @pytest.fixture()
@@ -55,24 +40,6 @@ def mock_patch(monkeypatch, topatch, attribute, **kwargs):
     mock_obj = mock.Mock(**kwargs)
     monkeypatch.setattr(topatch, attribute, mock_obj)
     return mock_obj
-
-
-def generate_workdir_props(**kwargs):
-    default_props = {
-        'loaded': False,
-        'path': '.',
-        'prefixes': {},
-        'current': None,
-        'prefix_class': lago.prefix.Prefix
-    }
-    default_props.update(kwargs)
-    return default_props
-
-
-def generate_workdir_params(**kwargs):
-    if 'path' not in kwargs:
-        kwargs['path'] = '.'
-        return kwargs, generate_workdir_props(**kwargs)
 
 
 class TestWorkdirLoaded(object):
@@ -313,12 +280,10 @@ class TestWorkdir(object):
         mock_workdir,
         monkeypatch,
     ):
-        (
-            mock_workdir,
-            mock_walk,
-            mock_islink,
-            mock_readlink,
-        ) = self._prepare_load_positive_run(tmpdir, mock_workdir, monkeypatch)
+        (mock_workdir, mock_walk, mock_islink,
+         mock_readlink, ) = self._prepare_load_positive_run(
+             tmpdir, mock_workdir, monkeypatch
+         )  # noqa: E121
 
         assert mock_workdir.load() is None
         assert mock_workdir.current == 'another'
@@ -332,12 +297,10 @@ class TestWorkdir(object):
         mock_workdir,
         monkeypatch,
     ):
-        (
-            mock_workdir,
-            mock_walk,
-            mock_islink,
-            mock_readlink,
-        ) = self._prepare_load_positive_run(tmpdir, mock_workdir, monkeypatch)
+        (mock_workdir, mock_walk, mock_islink,
+         mock_readlink) = self._prepare_load_positive_run(
+             tmpdir, mock_workdir, monkeypatch
+         )  # noqa: E121
 
         assert mock_workdir.load() is None
         assert (
@@ -654,18 +617,12 @@ class TestWorkdir(object):
     @pytest.mark.parametrize(
         'to_destroy',
         (
-            None,
-            [],
-            ['ni!'],
-            ['nini!', 'ninini!'],
+            None, [], ['ni!'], ['nini!', 'ninini!'],
             ['ni!', 'nini!', 'ninini!'],
         ),
         ids=(
-            'None as prefixes',
-            'empty list as prefixes',
-            'one prefix',
-            'many prefixes',
-            'all prefixes',
+            'None as prefixes', 'empty list as prefixes', 'one prefix',
+            'many prefixes', 'all prefixes',
         ),
     )
     def test_destroy(
@@ -708,46 +665,21 @@ class TestWorkdir(object):
     @pytest.mark.parametrize(
         'workdir_parent,params,should_be_found',
         (
-            (
-                os.curdir,
-                {
-                    'start_path': 'auto'
-                },
-                True,
-            ),
-            (
-                os.curdir,
-                {},
-                True,
-            ),
-            (
-                '/one/two',
-                {
-                    'start_path': '/one/two/three'
-                },
-                True,
-            ),
-            (
-                '/one',
-                {
-                    'start_path': '/one/two/three'
-                },
-                True,
-            ),
-            (
-                'shrubbery',
-                {
-                    'start_path': '/one/two/three'
-                },
-                False,
-            ),
+            (os.curdir, {
+                'start_path': 'auto'
+            }, True, ), (os.curdir, {}, True, ),
+            ('/one/two', {
+                'start_path': '/one/two/three'
+            }, True, ), ('/one', {
+                'start_path': '/one/two/three'
+            }, True, ),
+            ('shrubbery', {
+                'start_path': '/one/two/three'
+            }, False, ),
         ),
         ids=(
-            'auto uses curdir',
-            'default uses curdir',
-            'recurse one level',
-            'recurse many levels',
-            'not found',
+            'auto uses curdir', 'default uses curdir', 'recurse one level',
+            'recurse many levels', 'not found',
         ),
     )
     def test_resolve_workdir_path_from_outside_of_it(
@@ -784,31 +716,14 @@ class TestWorkdir(object):
     @pytest.mark.parametrize(
         'workdir_path,params,should_be_found',
         (
-            (
-                os.curdir,
-                {
-                    'start_path': 'auto'
-                },
-                True,
-            ),
-            (
-                os.curdir,
-                {},
-                True,
-            ),
-            (
-                'shrubbery',
-                {
-                    'start_path': '/one/two/three'
-                },
-                False,
-            ),
+            (os.curdir, {
+                'start_path': 'auto'
+            }, True, ), (os.curdir, {}, True, ),
+            ('shrubbery', {
+                'start_path': '/one/two/three'
+            }, False, ),
         ),
-        ids=(
-            'auto uses curdir',
-            'default uses curdir',
-            'not found',
-        ),
+        ids=('auto uses curdir', 'default uses curdir', 'not found', ),
     )
     def test_resolve_workdir_path_from_inside_of_it(
         self,

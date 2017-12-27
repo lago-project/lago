@@ -1,3 +1,4 @@
+from future.builtins import super
 from abc import ABCMeta, abstractmethod
 import logging
 import functools
@@ -16,11 +17,11 @@ LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
 
 class DiskExportManager(object):
     """
-    ExportManager object is responsible on the export process of an image
-    from the current Lago prefix.
+    DiskExportManager object is responsible on the export process of
+    an image from the current Lago prefix.
 
-    DiskExportManger is the base class of specific ExportManagers.
-    Each specific ExportManger is responsible on the export process of an
+    DiskExportManger is the base class of specific DiskExportManger.
+    Each specific DiskExportManger is responsible on the export process of an
     image with a specific type (e.g template, file...)
 
     Attributes:
@@ -32,7 +33,8 @@ class DiskExportManager(object):
             as found in workdir/current/virt/VM-NAME
         exported_metadata(dict): A copy of the source disk metadata, this
             dict should be updated with new values during the export process.
-            do_compress(bool): If true, apply compression to the exported disk.
+        do_compress(bool): If true, apply compression to the exported
+            disk.
     """
 
     __metaclass__ = ABCMeta
@@ -65,7 +67,8 @@ class DiskExportManager(object):
             disk (dict): Disk attributes
                 (of the disk that should be exported) as
                 found in workdir/current/virt/VM-NAME
-            do_compress(bool): If true, apply compression to the exported disk.
+            do_compress(bool): If true, apply compression to the exported
+                disk.
         Returns
             An instance of a subclass of DiskExportManager which
             matches the disk type.
@@ -152,9 +155,7 @@ class TemplateExportManager(DiskExportManager):
     """
 
     def __init__(self, dst, disk_type, disk, do_compress, *args, **kwargs):
-        super(TemplateExportManager, self).__init__(
-            dst, disk_type, disk, do_compress
-        )
+        super().__init__(dst, disk_type, disk, do_compress)
         self.standalone = kwargs['standalone']
         self.src_qemu_info = utils.get_qemu_info(self.src, backing_chain=True)
 
@@ -186,15 +187,24 @@ class TemplateExportManager(DiskExportManager):
                 # this identifier will be used later by Lago in order
                 # to resolve and download the base image
                 parent = self.src_qemu_info[0]['backing-filename']
-                parent = './{}'.format(
-                    os.path.basename(parent.split(':', 1)[1])
-                )
+
+                # Hack for working with lago images naming convention
+                # For example: /var/lib/lago/store/phx_repo:el7.3-base:v1
+                # Extract only the image name and the version
+                # (in the example el7.3-base:v1)
+                parent = os.path.basename(parent)
+                try:
+                    parent = parent.split(':', 1)[1]
+                except IndexError:
+                    pass
+
+                parent = './{}'.format(parent)
                 utils.qemu_rebase(
                     target=self.dst, backing_file=parent, safe=False
                 )
 
     def update_lago_metadata(self):
-        super(TemplateExportManager, self).update_lago_metadata()
+        super().update_lago_metadata()
 
         if self.standalone:
             self.exported_metadata['base'] = 'None'
@@ -231,9 +241,7 @@ class FileExportManager(DiskExportManager):
     """
 
     def __init__(self, dst, disk_type, disk, do_compress, *args, **kwargs):
-        super(FileExportManager, self).__init__(
-            dst, disk_type, disk, do_compress
-        )
+        super().__init__(dst, disk_type, disk, do_compress)
 
     def export(self):
         """
@@ -245,12 +253,96 @@ class FileExportManager(DiskExportManager):
                     shutil.rmtree, self.dst, ignore_errors=True
                 )
                 self.copy()
-                self.sparse()
+                if not self.disk['format'] == 'iso':
+                    self.sparse()
                 self.calc_sha('sha1')
                 self.update_lago_metadata()
                 self.write_lago_metadata()
                 self.compress()
                 rollback.clear()
+
+
+class VMExportManager(object):
+    """
+    VMExportManager object is responsible on the export process of a list of
+    disks.
+
+    Attributes:
+        disks (list of dicts): Disks to export.
+        dst (str): Where to place the exported disks.
+        compress(bool): If True compress each exported disk.
+        with_threads(bool): If True, run the export in parallel
+        *args(list): Extra args, will be passed to each
+            DiskExportManager
+        **kwargs(dict): Extra args, will be passed to each
+            DiskExportManager
+
+    """
+
+    def __init__(
+        self, disks, dst, compress, with_threads=True, *args, **kwargs
+    ):
+        self._disks = disks
+        self._dst = os.path.expandvars(os.path.realpath(dst))
+        self._compress = compress
+        self._with_threads = with_threads
+        self._args = args
+        self._kwargs = kwargs
+
+    def _collect(self):
+        """
+        Returns:
+            (generator of dicts): The disks that needed to be exported
+        """
+        return (disk for disk in self._disks if not disk.get('skip-export'))
+
+    def collect_paths(self):
+        """
+        Returns:
+            (list of str): The path of the disks that will be exported.
+        """
+        return [os.path.expandvars(disk['path']) for disk in self._collect()]
+
+    def exported_disks_paths(self):
+        """
+        Returns:
+            (list of str): The path of the exported disks.
+        """
+        return [
+            os.path.join(self._dst, os.path.basename(disk['path']))
+            for disk in self._collect()
+        ]
+
+    def _get_export_mgr(self):
+        """
+        Returns:
+            (DiskExportManager): Handler for each disk
+        """
+        return (
+            DiskExportManager.get_instance_by_type(
+                dst=self._dst,
+                disk=disk,
+                do_compress=self._compress,
+                *self._args,
+                **self._kwargs
+            ) for disk in self._collect()
+        )
+
+    def export(self):
+        """
+        Run the export process
+        Returns:
+            (list of str): The path of the exported disks.
+        """
+        if self._with_threads:
+            utils.invoke_different_funcs_in_parallel(
+                *map(lambda mgr: mgr.export, self._get_export_mgr())
+            )
+        else:
+            for mgr in self._get_export_mgr():
+                mgr.export()
+
+        return self.exported_disks_paths()
 
 
 HANDLERS = {

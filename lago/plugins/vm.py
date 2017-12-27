@@ -61,7 +61,17 @@ class ExtractPathNoPathError(VMError):
     pass
 
 
-def _check_alive(func):
+def check_defined(func):
+    @functools.wraps(func)
+    def wrapper(self, *args, **kwargs):
+        if not self.defined():
+            raise RuntimeError('VM %s is not defined' % self.vm.name())
+        return func(self, *args, **kwargs)
+
+    return wrapper
+
+
+def check_alive(func):
     @functools.wraps(func)
     def wrapper(self, *args, **kwargs):
         if not self.alive():
@@ -208,6 +218,13 @@ class VMProviderPlugin(plugins.Plugin):
         """
         return self.vm.interactive_ssh()
 
+    def extract_paths_dead(self, paths, ignore_nopath):
+        """
+        Extract the given paths from the domain, without the underlying OS
+        awareness
+        """
+        pass
+
     def extract_paths(self, paths, ignore_nopath):
         """
         Extract the given paths from the domain
@@ -225,7 +242,7 @@ class VMProviderPlugin(plugins.Plugin):
             :exc:`~lago.plugins.vm.ExtractPathError`: on all other failures.
         """
         if self.vm.alive() and self.vm.ssh_reachable(
-            tries=1, propagate_fail=False
+            tries=5, propagate_fail=False
         ):
             self._extract_paths_scp(paths=paths, ignore_nopath=ignore_nopath)
         else:
@@ -249,11 +266,16 @@ class VMProviderPlugin(plugins.Plugin):
                     propagate_fail=False
                 )
             except SCPException as err:
-                err_sfx = ': No such file or directory'
-                if ignore_nopath and str.endswith(str(err.message), err_sfx):
-                    LOGGER.debug('%s: ignoring', err.message)
+                err_substr = ': No such file or directory'
+                if len(err.args) > 0 and isinstance(
+                    err.args[0], basestring
+                ) and err_substr in err.args[0]:
+                    if ignore_nopath:
+                        LOGGER.debug('%s: ignoring', err.args[0])
+                    else:
+                        raise ExtractPathNoPathError(err.args[0])
                 else:
-                    raise ExtractPathNoPathError(err.message)
+                    raise
 
 
 class VMPlugin(plugins.Plugin):
@@ -358,14 +380,28 @@ class VMPlugin(plugins.Plugin):
         """
         return self.provider.extract_paths(paths, *args, **kwargs)
 
+    def extract_paths_dead(self, paths, *args, **kwargs):
+        """
+        Thin method that just uses the provider
+        """
+        return self.provider.extract_paths_dead(paths, *args, **kwargs)
+
     def export_disks(
-        self, standalone=True, dst_dir=None, compress=False, *args, **kwargs
+        self,
+        standalone=True,
+        dst_dir=None,
+        compress=False,
+        collect_only=False,
+        with_threads=True,
+        *args,
+        **kwargs
     ):
         """
         Thin method that just uses the provider
         """
         return self.provider.export_disks(
-            standalone, dst_dir, compress, *args, **kwargs
+            standalone, dst_dir, compress, collect_only, with_threads, *args,
+            **kwargs
         )
 
     def copy_to(self, local_path, remote_path, recursive=True):
@@ -401,6 +437,31 @@ class VMPlugin(plugins.Plugin):
     def spec(self):
         return deepcopy(self._spec)
 
+    @property
+    def mgmt_name(self):
+        return self._spec.get('mgmt_net', None)
+
+    @property
+    def mgmt_net(self):
+        return self.virt_env.get_net(name=self.mgmt_name)
+
+    @property
+    def vm_type(self):
+        return self._spec['vm-type']
+
+    @property
+    def groups(self):
+        """
+        Returns:
+            list of str: The names of the groups to which this vm belongs
+                (as specified in the init file)
+        """
+        groups = self._spec.get('groups', [])
+        if groups:
+            return groups[:]
+        else:
+            return groups
+
     def name(self):
         return str(self._spec['name'])
 
@@ -408,7 +469,8 @@ class VMPlugin(plugins.Plugin):
         return 'iqn.2014-07.org.lago:%s' % self.name()
 
     def ip(self):
-        return str(self.virt_env.get_net().resolve(self.name()))
+        res = self.mgmt_net.resolve(self.name())
+        return res.encode('ascii', 'ignore')
 
     def all_ips(self):
         nets = {}
@@ -417,8 +479,19 @@ class VMPlugin(plugins.Plugin):
         for net in nets.values():
             mapping = net.mapping()
             for hostname, ip in mapping.items():
-                if hostname.startswith(self.name()):
+                # hostname is <hostname>-<ifacename>
+                if hostname.startswith(self.name() + "-"):
                     ips.append(str(ip))
+        return ips
+
+    def ips_in_net(self, net_name):
+        ips = []
+        net = self.virt_env.get_net(name=net_name)
+        mapping = net.mapping()
+        for hostname, ip in mapping.items():
+            # hostname is <hostname>-<ifacename>
+            if hostname.startswith(self.name() + "-"):
+                ips.append(str(ip))
         return ips
 
     def ssh(
@@ -469,7 +542,7 @@ class VMPlugin(plugins.Plugin):
     def alive(self):
         return self.state() == 'running'
 
-    @_check_alive
+    @check_alive
     def ssh_reachable(self, tries=None, propagate_fail=True):
         """
         Check if the VM is reachable with ssh
@@ -510,14 +583,14 @@ class VMPlugin(plugins.Plugin):
         with open(path, 'w') as f:
             utils.json_dump(self._spec, f)
 
-    @_check_alive
+    @check_alive
     def service(self, name):
         if self._service_class is None:
             self._detect_service_provider()
 
         return self._service_class(self, name)
 
-    @_check_alive
+    @check_alive
     def interactive_ssh(self, command=None):
         if command is None:
             command = ['bash']

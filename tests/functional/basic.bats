@@ -112,7 +112,6 @@ REPO_NAME="local_tests_repo"
     done
 }
 
-
 @test "basic.full_run: init workdir with LagoInitFile and non default prefix setting it as current" {
     local workdir="$FIXTURES"/workdir
     local suite="$FIXTURES"/suite.json
@@ -138,7 +137,18 @@ REPO_NAME="local_tests_repo"
     helpers.links_to "$WORKDIR/current" "default"
 }
 
+@test "basic.full_run: list prefixes" {
+    cd "$FIXTURES"
 
+    local prefixes=($("$LAGOCLI" list | sort))
+    local wanted_prefixes=($(echo "${PREFIX_NAMES[@]} default" | tr ' ' '\n' | sort))
+
+    helpers.equals ${#prefixes[@]} ${#wanted_prefixes[@]}
+
+    for (( i=0; i<${#prefixes[@]}; i++ )); do
+        helpers.equals "${prefixes[i]}" "${wanted_prefixes[i]}"
+    done
+}
 
 @test "basic.full_run: current prefix status when stopped" {
     common.is_initialized "$WORKDIR" || skip "Workdir not initiated"

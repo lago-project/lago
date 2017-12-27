@@ -33,6 +33,7 @@ import threading
 import textwrap
 import time
 import yaml
+import pkg_resources
 from io import StringIO
 import lockfile
 import argparse
@@ -96,7 +97,13 @@ class VectorThread:
 def invoke_in_parallel(func, *args_sequences):
     vt = VectorThread(func_vector(func, zip(*args_sequences)))
     vt.start_all()
-    vt.join_all()
+    return vt.join_all()
+
+
+def invoke_different_funcs_in_parallel(*funcs):
+    vt = VectorThread(funcs)
+    vt.start_all()
+    return vt.join_all()
 
 
 _CommandStatus = collections.namedtuple(
@@ -149,9 +156,8 @@ def _run_command(
         uuid = uuid_m.uuid4()
 
     if constants.LIBEXEC_DIR not in os.environ['PATH'].split(':'):
-        os.environ['PATH'] = '%s:%s' % (
-            constants.LIBEXEC_DIR, os.environ['PATH']
-        )
+        os.environ['PATH'
+                   ] = '%s:%s' % (constants.LIBEXEC_DIR, os.environ['PATH'])
 
     if input_data and not stdin:
         kwargs['stdin'] = subprocess.PIPE
@@ -382,8 +388,9 @@ class LockFile(object):
         """
         try:
             with ExceptionTimer(timeout=self.timeout):
-                with LogTask('Acquiring lock for %s' % self.path):
-                    self.lock.acquire()
+                LOGGER.debug('Acquiring lock for {}'.format(self.path))
+                self.lock.acquire()
+                LOGGER.debug('Holding the lock for {}'.format(self.path))
         except TimerException:
             raise TimerException(
                 'Unable to acquire lock for %s in %s secs',
@@ -392,7 +399,10 @@ class LockFile(object):
             )
 
     def __exit__(self, *_):
-        self.lock.release()
+        if self.lock.is_locked():
+            LOGGER.debug('Trying to release lock for {}'.format(self.path))
+            self.lock.release()
+            LOGGER.debug('Lock for {} was released'.format(self.path))
 
 
 def read_nonblocking(file_descriptor):
@@ -509,8 +519,9 @@ def with_logging(func):
 
 
 def add_timestamp_suffix(base_string):
-    return datetime.datetime.fromtimestamp(time.time(
-    )).strftime(base_string + '.%Y-%m-%d_%H:%M:%S')
+    return datetime.datetime.fromtimestamp(
+        time.time()
+    ).strftime(base_string + '.%Y-%m-%d_%H:%M:%S')
 
 
 def rotate_dir(base_dir):
@@ -554,8 +565,8 @@ def _add_subparser_to_cp(cp, section, actions, incl_unset):
     cp.add_section(section)
     print_actions = (
         action for action in actions
-        if (action.default and action.default != '==SUPPRESS=='
-            ) or (action.default is None and incl_unset)
+        if (action.default and action.default != '==SUPPRESS==') or
+        (action.default is None and incl_unset)
     )
     for action in print_actions:
         var = str(action.dest)
@@ -755,8 +766,9 @@ def filter_spec(spec, paths, wildcard='*', separator='/'):
                 except TypeError:
                     raise LagoUserException(
                         'Malformed path "{{path}}", can not get '
-                        'by key from type {spec_type}'.
-                        format(spec_type=type(spec))
+                        'by key from type {spec_type}'.format(
+                            spec_type=type(spec)
+                        )
                     )
 
     for path in paths:
@@ -767,7 +779,29 @@ def filter_spec(spec, paths, wildcard='*', separator='/'):
             raise
 
 
+def ver_cmp(ver1, ver2):
+    """
+    Compare lago versions
+
+    Args:
+        ver1(str): version string
+        ver2(str): version string
+
+    Returns:
+        Return negative if ver1<ver2, zero if ver1==ver2, positive if
+        ver1>ver2.
+    """
+
+    return cmp(
+        pkg_resources.parse_version(ver1), pkg_resources.parse_version(ver2)
+    )
+
+
 class LagoException(Exception):
+    pass
+
+
+class LagoInitException(LagoException):
     pass
 
 

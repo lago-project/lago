@@ -37,7 +37,7 @@ REPO_NAME="local_tests_repo"
     pushd "$FIXTURES"
     outdir="$FIXTURES/output"
     rm -rf "$outdir"
-    helpers.run_ok "$LAGOCLI" collect --output "$outdir"
+    helpers.run_ok "$LAGOCLI" --loglevel=debug collect --output "$outdir"
 }
 
 @test "collect: fails if files to collect don't exist and no-skip is set" {
@@ -45,7 +45,7 @@ REPO_NAME="local_tests_repo"
     pushd "$FIXTURES"
     outdir="$FIXTURES/output"
     rm -rf "$outdir"
-    helpers.run_nook "$LAGOCLI" collect --no-skip --output "$outdir"
+    helpers.run_nook "$LAGOCLI" --loglevel=debug collect --no-skip --output "$outdir"
 }
 
 
@@ -71,7 +71,7 @@ EOC
     )
 
     rm -rf "$outdir"
-    helpers.run_ok "$LAGOCLI" collect --output "$outdir"
+    helpers.run_ok "$LAGOCLI" --loglevel=debug collect --output "$outdir"
 
     for host in vm01; do
         helpers.is_dir "$outdir/$host"
@@ -107,7 +107,7 @@ EOC
 
     rm -rf "$outdir"
     mkdir "$outdir"
-    helpers.run_ok "$LAGOCLI" collect --output "$outdir"
+    helpers.run_ok "$LAGOCLI" --loglevel=debug collect --output "$outdir"
 
     for host in vm01; do
         helpers.is_dir "$outdir/$host"

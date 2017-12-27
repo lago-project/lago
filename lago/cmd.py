@@ -21,25 +21,20 @@
 from __future__ import print_function
 
 import argparse
-import grp
 import logging
 import os
 import pkg_resources
 import sys
+from textwrap import dedent
 import warnings
-
-from collections import defaultdict
+from signal import signal, SIGTERM, SIGHUP
 
 import lago
 import lago.plugins
 import lago.plugins.cli
 import lago.templates
 from lago.config import config
-from lago import (
-    log_utils,
-    workdir as lago_workdir,
-    utils,
-)
+from lago import (log_utils, workdir as lago_workdir, utils, lago_ansible)
 from lago.utils import (in_prefix, with_logging, LagoUserException)
 
 LOGGER = logging.getLogger('cli')
@@ -64,7 +59,6 @@ in_lago_prefix = in_prefix(
     metavar='VIRT_CONFIG',
     type=os.path.abspath,
     nargs='?',
-    default=None,
 )
 @lago.plugins.cli.cli_plugin_add_argument(
     'workdir',
@@ -75,12 +69,10 @@ in_lago_prefix = in_prefix(
     metavar='WORKDIR',
     type=os.path.abspath,
     nargs='?',
-    default=None,
 )
 @lago.plugins.cli.cli_plugin_add_argument(
     '--template-repo-path',
     help='Repo file describing the templates',
-    default='http://templates.ovirt.org/repo/repo.metadata',
 )
 @lago.plugins.cli.cli_plugin_add_argument(
     '--template-repo-name',
@@ -89,13 +81,11 @@ in_lago_prefix = in_prefix(
 @lago.plugins.cli.cli_plugin_add_argument(
     '--template-store',
     help='Location to store templates at',
-    default='/var/lib/lago/store',
     type=os.path.abspath,
 )
 @lago.plugins.cli.cli_plugin_add_argument(
     '--template-repos',
     help='Location to store repos',
-    default='/var/lib/lago/repos',
     type=os.path.abspath,
 )
 @lago.plugins.cli.cli_plugin_add_argument(
@@ -112,6 +102,14 @@ in_lago_prefix = in_prefix(
         'root pass for example'
     ),
 )
+@lago.plugins.cli.cli_plugin_add_argument(
+    '--skip-build',
+    action='store_true',
+    help=(
+        'If passed, will skip the build commands specified in the build'
+        'section of all the disks'
+    ),
+)
 def do_init(
     workdir,
     virt_config,
@@ -122,6 +120,7 @@ def do_init(
     template_repos=None,
     set_current=False,
     skip_bootstrap=False,
+    skip_build=False,
     **kwargs
 ):
 
@@ -139,8 +138,9 @@ def do_init(
             'Unable to find init file: {0}'.format(virt_config)
         )
 
-    os.environ['LAGO_INITFILE_PATH'
-               ] = os.path.dirname(os.path.abspath(virt_config))
+    os.environ['LAGO_INITFILE_PATH'] = os.path.dirname(
+        os.path.abspath(virt_config)
+    )
 
     if prefix_name == 'current':
         prefix_name = 'default'
@@ -188,6 +188,7 @@ def do_init(
                     repo,
                     store,
                     do_bootstrap=not skip_bootstrap,
+                    do_build=not skip_build,
                 )
 
             if set_current:
@@ -196,6 +197,8 @@ def do_init(
         except:
             workdir.cleanup()
             raise
+
+        return workdir, prefix
 
 
 @lago.plugins.cli.cli_plugin(help='Clean up deployed resources')
@@ -342,15 +345,28 @@ def do_shutdown(prefix, vm_names, reboot, **kwargs):
     default='LagoInitFile',
     help='The name of the exported init file',
 )
+@lago.plugins.cli.cli_plugin_add_argument(
+    '--collect-only',
+    action='store_true',
+    help='Only output the disks that will be exported',
+)
+@lago.plugins.cli.cli_plugin_add_argument(
+    '--without-threads',
+    action='store_true',
+    help='If set, do not use threads',
+)
 @in_lago_prefix
 @with_logging
 def do_export(
     prefix, vm_names, standalone, dst_dir, compress, init_file_name,
-    out_format, **kwargs
+    out_format, collect_only, without_threads, **kwargs
 ):
-    prefix.export_vms(
-        vm_names, standalone, dst_dir, compress, init_file_name, out_format
+    output = prefix.export_vms(
+        vm_names, standalone, dst_dir, compress, init_file_name, out_format,
+        collect_only, not without_threads
     )
+    if collect_only:
+        print(out_format.format(output))
 
 
 @lago.plugins.cli.cli_plugin(
@@ -456,7 +472,9 @@ def do_shell(prefix, host, args=None, **kwargs):
     sys.exit(result.code)
 
 
-@lago.plugins.cli.cli_plugin(help='Open serial console to the domain', )
+@lago.plugins.cli.cli_plugin(
+    help='Open serial console to the domain',
+)
 @lago.plugins.cli.cli_plugin_add_argument(
     'host',
     help='Host to connect to',
@@ -480,47 +498,67 @@ def do_console(prefix, host, **kwargs):
 
 
 @lago.plugins.cli.cli_plugin(
-    help='Create Ansible host inventory of the environment'
+    help='Create Ansible host inventory of the environment',
+    description=dedent(
+        """
+    This method iterates through all the VMs and creates an Ansible
+    host inventory. For each vm it defines an IP address and a private key.
+
+    The default groups are based on the values which associated
+    with the following keys: 'vm-type', 'groups', 'vm-provider'.
+
+    The 'keys' parameter can be used to override the default groups,
+    for example to create a group which based on a 'service_provider',
+    --keys 'service_provider' should be added to this command.
+
+    Nested keys can be used also by specifying the path to the key,
+    for example '/disks/0/metadata/distro' will create a group based on the
+    distro of the os installed on disk at position 0 in the init file.
+    (we assume that numeric values in the path should be used as index for
+    list access).
+
+    If the value associated with the key is a list, a group will be created
+    for every item in that list (this is useful when you want to associate
+    a machine with more than one group).
+
+    The output of this command is printed to standard output.
+
+    Example of a possible output:
+
+    lago ansible_hosts -k 'vm-type'
+
+    [vm-type=ovirt-host]
+    lago-host1 ansible_host=1.2.3.4 ansible_ssh_private_key_file=/path/rsa
+    lago-host2 ansible_host=1.2.3.6 ansible_ssh_private_key_file=/path/rsa
+    [vm-type=ovirt-engine]
+    lago-engine ansible_host=1.2.3.5 ansible_ssh_private_key_file=/path/rsa
+
+    lago ansible_hosts -k 'disks/0/metadata/arch' 'groups'
+
+    [disks/0/metadata/arch=x86_64]
+    vm0-server ansible_host=1.2.3.4 ansible_ssh_private_key_file=/path/rsa
+    vm1-slave ansible_host=1.2.3.5 ansible_ssh_private_key_file=/path/rsa
+    vm2-slave ansible_host=1.2.3.6 ansible_ssh_private_key_file=/path/rsa
+    [groups=slaves]
+    vm1-slave ansible_host=1.2.3.5 ansible_ssh_private_key_file=/path/rsa
+    vm2-slave ansible_host=1.2.3.6 ansible_ssh_private_key_file=/path/rsa
+    [groups=servers]
+    vm0-server ansible_host=1.2.3.4 ansible_ssh_private_key_file=/path/rsa
+    """
+    )
+)
+@lago.plugins.cli.cli_plugin_add_argument(
+    '--keys',
+    '-k',
+    help='Path to the keys that should be used as groups',
+    default=['vm-type', 'groups', 'vm-provider'],
+    metavar='KEY',
+    nargs='*',
 )
 @in_lago_prefix
 @with_logging
-def do_generate_ansible_hosts(prefix, out_format, **kwargs):
-    """
-    Create Ansible host inventory of the environment
-    """
-    #
-    # This method iterates through all the VMs and creates an Ansible
-    # host inventory. It defines an IP address and private key
-    # for the machine in group named by its type, it is printed to
-    # standard output. The content looks for example like this:
-    #
-    # [ovirt-host]
-    # lago-host1 ansible_host=1.2.3.4 ansible_ssh_private_key_file=/path/rsa
-    # lago-host2 ansible_host=1.2.3.6 ansible_ssh_private_key_file=/path/rsa
-    # [ovirt-engine]
-    # lago-engine ansible_host=1.2.3.5 ansible_ssh_private_key_file=/path/rsa
-    #
-    inventory = defaultdict(list)
-    nets = prefix.get_nets()
-    for vm in prefix.virt_env.get_vms().values():
-        vm_mgmt_ip = [
-            nic.get('ip') for nic in vm.nics()
-            if nets[nic.get('net')].is_management()
-        ]
-        for ip in vm_mgmt_ip:
-            inventory[vm._spec['vm-type']].append(
-                "{name} ansible_host={ip} ansible_ssh_private_key_file={key}"
-                .format(
-                    ip=ip,
-                    key=prefix.virt_env.prefix.paths.ssh_id_rsa(),
-                    name=vm.name(),
-                )
-            )
-
-    for name, hosts in inventory.iteritems():
-        print('[{name}]'.format(name=name))
-        for host in sorted(hosts):
-            print(host)
+def do_generate_ansible_hosts(prefix, keys, **kwargs):
+    print(lago_ansible.LagoAnsible(prefix).get_inventory_str(keys))
 
 
 @lago.plugins.cli.cli_plugin(
@@ -582,30 +620,26 @@ def do_status(prefix, out_format, **kwargs):
     print(out_format.format(info_dict))
 
 
-@lago.plugins.cli.cli_plugin(
-    help='List the name of the available given virtual resources'
-)
+@lago.plugins.cli.cli_plugin(help='List the prefixes (envs) in a Workdir')
 @lago.plugins.cli.cli_plugin_add_argument(
-    'resource_type',
-    help='Type of resource to list',
-    metavar='RESOURCE_TYPE',
-    choices=['envs', 'prefixes'],
+    'workdir_path',
+    help=dedent(
+        """
+        Path to the Workdir. If not provided Lago will
+        try to find a Workdir relative to the current directory.
+        """
+    ),
+    metavar='WORKDIR_PATH',
+    type=os.path.abspath,
+    nargs='?',
 )
-@in_lago_prefix
-@with_logging
-def do_list(
-    prefix, resource_type, out_format, prefix_path, workdir_path, **kwargs
-):
-    if resource_type in ['prefixes', 'envs']:
-        if prefix_path:
-            raise RuntimeError('Using a plain prefix')
-        else:
-            if workdir_path == 'auto':
-                workdir_path = lago_workdir.resolve_workdir_path()
+def do_list(workdir_path, out_format, **kwargs):
+    if not workdir_path:
+        workdir_path = lago_workdir.Workdir.resolve_workdir_path()
 
-            workdir = lago_workdir.Workdir(path=workdir_path)
-            workdir.load()
-            resources = workdir.prefixes.keys()
+    workdir = lago_workdir.Workdir(path=workdir_path)
+    workdir.load()
+    resources = workdir.prefixes.keys()
 
     print(out_format.format(resources))
 
@@ -725,19 +759,13 @@ def do_deploy(prefix, **kwargs):
 
 @lago.plugins.cli.cli_plugin(help="Dump configuration file")
 @lago.plugins.cli.cli_plugin_add_argument(
-    '--defaults_only',
-    help='Ignore CLI parameters and print loaded configs only.',
-    action='store_true',
-    default=False
-)
-@lago.plugins.cli.cli_plugin_add_argument(
     '--verbose',
     help='Include parameters with no default value.',
     action='store_true',
     default=False,
 )
-def do_generate(defaults_only, verbose, **kwargs):
-    print(config.get_ini(defaults_only=defaults_only, incl_unset=verbose))
+def do_generate(verbose, **kwargs):
+    print(config.get_ini(incl_unset=verbose))
 
 
 def create_parser(cli_plugins, out_plugins):
@@ -748,12 +776,11 @@ def create_parser(cli_plugins, out_plugins):
     parser.add_argument(
         '-l',
         '--loglevel',
-        default='info',
         choices=['info', 'debug', 'error', 'warning'],
         help='Log level to use'
     )
     parser.add_argument(
-        '--logdepth', default=3, type=int, help='How many task levels to show'
+        '--logdepth', type=int, help='How many task levels to show'
     )
 
     parser.add_argument(
@@ -789,40 +816,33 @@ def create_parser(cli_plugins, out_plugins):
         '--prefix-name',
         '-P',
         action='store',
-        default='current',
-        dest='prefix_name',
         help='Name of the prefix to use.',
     )
     parser.add_argument(
         '--ssh-user',
         action='store',
-        default='root',
         help='User for SSH provider.',
     )
     parser.add_argument(
         '--ssh-password',
         action='store',
-        default='123456',
         help='Password for SSH provider.',
     )
     parser.add_argument(
         '--ssh-tries',
         action='store',
-        default=100,
         type=int,
         help='Number of ssh time outs to wait before failing.',
     )
     parser.add_argument(
         '--ssh-timeout',
         action='store',
-        default=10,
         type=int,
         help='Seconds to wait before marking SSH connection as failed.'
     )
     parser.add_argument(
         '--libvirt_url',
         action='store',
-        default='qemu:///system',
         help='libvirt URI, currently only '
         'system'
         ' is supported.'
@@ -840,32 +860,27 @@ def create_parser(cli_plugins, out_plugins):
     parser.add_argument(
         '--default_vm_type',
         action='store',
-        default='default',
         help='Default vm type',
     )
 
     parser.add_argument(
         '--default_vm_provider',
         action='store',
-        default='local-libvirt',
         help='Default vm provider',
     )
     parser.add_argument(
         '--default_root_password',
         action='store',
-        default='123456',
         help='Default root password',
     )
     parser.add_argument(
         '--lease_dir',
         action='store',
-        default='/var/lib/lago/subnets',
         help='Path to store created subnets configurations'
     )
     parser.add_argument(
         '--reposync-dir',
         action='store',
-        default='/var/lib/lago/reposync',
         help='Reposync dir if used',
     )
 
@@ -885,12 +900,30 @@ def create_parser(cli_plugins, out_plugins):
     return parser
 
 
-def check_group_membership():
-    if 'lago' not in [grp.getgrgid(gid).gr_name for gid in os.getgroups()]:
-        warnings.warn('current session does not belong to lago group.')
+def exit_handler(signum, frame):
+    """
+    Catch SIGTERM and SIGHUP and call "sys.exit" which raises
+    "SystemExit" exception.
+    This will trigger all the cleanup code defined in ContextManagers
+    and "finally" statements.
+
+    For more details about the arguments see "signal" documentation.
+
+    Args:
+        signum(int): The signal's number
+        frame(frame): The current stack frame, can be None
+    """
+
+    LOGGER.debug('signal {} was caught'.format(signum))
+    sys.exit(128 + signum)
 
 
 def main():
+
+    # Trigger cleanup on SIGTERM and SIGHUP
+    signal(SIGTERM, exit_handler)
+    signal(SIGHUP, exit_handler)
+
     cli_plugins = lago.plugins.load_plugins(
         lago.plugins.PLUGIN_ENTRY_POINTS['cli']
     )
@@ -910,9 +943,7 @@ def main():
             task_tree_depth=args.logdepth,
             level=getattr(logging, args.loglevel.upper()),
             dump_level=logging.ERROR,
-            formatter=log_utils.ColorFormatter(
-                fmt='%(msg)s',
-            )
+            formatter=log_utils.ColorFormatter(fmt='%(msg)s', )
         )
     ]
 
@@ -921,8 +952,6 @@ def main():
         logging.getLogger('py.warnings').setLevel(logging.ERROR)
     else:
         warnings.formatwarning = lambda message, *args, **kwargs: message
-
-    check_group_membership()
 
     args.out_format = out_plugins[args.out_format]
     if args.prefix_path:
@@ -934,7 +963,7 @@ def main():
 
     try:
         cli_plugins[args.verb].do_run(args)
-    except utils.LagoUserException as e:
+    except utils.LagoException as e:
         LOGGER.info(e.message)
         LOGGER.debug(e)
         sys.exit(2)

@@ -14,11 +14,10 @@
     "local_tests": {
       "args": {
         "root":
-            "$BATS_TEST_DIRNAME/fixtures/basic/repo_store"
+            "$BATS_TEST_DIRNAME/fixtures/export/repo_store"
       },
       "type": "file"
     }
   },
   "name": "local_tests_repo"
 }
-

@@ -1,13 +1,14 @@
+ansible
 bats
 git
 libffi-devel
+libguestfs-devel
 libvirt-devel
 libxslt-devel
 openssl-devel
+pandoc
 python2-devel
 python-dulwich
-python-libguestfs
 python-pip
-python-virtualenv
 yum
 yum-utils

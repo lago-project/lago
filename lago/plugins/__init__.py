@@ -65,7 +65,7 @@ def load_plugins(namespace, instantiate=True):
         namespace=namespace,
         on_load_failure_callback=(
             lambda _, ep, err: LOGGER.
-            debug('Could not load %r: %s', ep.name, err)
+            warning('Could not load plugin {}: {}'.format(ep.name, err))
         )
     )
     if instantiate:

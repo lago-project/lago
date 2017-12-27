@@ -1,5 +1,5 @@
 #
-# Copyright 2014 Red Hat, Inc.
+# Copyright 2014-2017 Red Hat, Inc.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,19 +25,26 @@ import logging
 import os
 import shutil
 import subprocess
+from textwrap import dedent
+import time
 import urlparse
 import urllib
 import uuid
 import warnings
+import pkg_resources
 from os.path import join
+from plugins.output import YAMLOutFormatPlugin
 
 import xmltodict
 
 import paths
 import subnet_lease
 import utils
+from utils import LagoInitException
 import virt
 import log_utils
+import build
+import sdk_utils
 
 LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
@@ -104,8 +111,11 @@ class Prefix(object):
         self.paths = paths.Paths(self._prefix)
         self._virt_env = None
         self._metadata = None
+        self._subnet_store = subnet_lease.SubnetStore()
 
-    def _get_metadata(self):
+    @property
+    @sdk_utils.expose
+    def metadata(self):
         """
         Retrieve the metadata info for this prefix
 
@@ -115,11 +125,7 @@ class Prefix(object):
         if self._metadata is None:
             try:
                 with open(self.paths.metadata()) as metadata_fd:
-                    json_data = metadata_fd.read()
-                    if json_data:
-                        self._metadata = json.load(json_data)
-                    else:
-                        raise IOError()
+                    self._metadata = json.load(metadata_fd)
             except IOError:
                 self._metadata = {}
         return self._metadata
@@ -132,7 +138,7 @@ class Prefix(object):
             None
         """
         with open(self.paths.metadata(), 'w') as metadata_fd:
-            utils.json_dump(self._get_metadata(), metadata_fd)
+            utils.json_dump(self.metadata, metadata_fd)
 
     def save(self):
         """
@@ -249,32 +255,6 @@ class Prefix(object):
 
         return conf
 
-    @staticmethod
-    def _check_predefined_subnets(conf):
-        """
-        Checks if all of the nets defined in the config are inside the allowed
-        range, throws exception if not
-
-        Args:
-            conf (dict): Configuration spec where to get the nets definitions
-                from
-
-        Returns:
-            None
-
-        Raises:
-            RuntimeError: If there are any subnets out of the allowed range
-        """
-        for net_spec in conf.get('nets', {}).itervalues():
-            subnet = net_spec.get('gw')
-            if subnet is None:
-                continue
-
-            if subnet_lease.is_leasable_subnet(subnet):
-                raise RuntimeError(
-                    '%s subnet can only be dynamically allocated' % (subnet)
-                )
-
     def _allocate_subnets(self, conf):
         """
         Allocate all the subnets needed by the given configuration spec
@@ -289,21 +269,39 @@ class Prefix(object):
         allocated_subnets = []
         try:
             for net_spec in conf.get('nets', {}).itervalues():
-                if 'gw' in net_spec or net_spec['type'] != 'nat':
+                if net_spec['type'] != 'nat':
                     continue
-                net_spec['gw'] = subnet_lease.acquire(self.paths.uuid())
-                allocated_subnets.append(net_spec['gw'])
-        except:
-            for subnet in allocated_subnets:
-                subnet_lease.release(subnet)
-            raise
 
+                gateway = net_spec.get('gw')
+                if gateway:
+                    allocated_subnet = self._subnet_store.acquire(
+                        self.paths.uuid(), gateway
+                    )
+                else:
+                    allocated_subnet = self._subnet_store.acquire(
+                        self.paths.uuid()
+                    )
+                    net_spec['gw'] = str(allocated_subnet.iter_hosts().next())
+
+                allocated_subnets.append(allocated_subnet)
+        except:
+            self._subnet_store.release(allocated_subnets)
+            raise
         return allocated_subnets, conf
 
     def _add_nic_to_mapping(self, net, dom, nic):
         """
-        Populates the given net spec mapping entry with the nicks of the given
-        domain
+        Populates the given net spec mapping entry with the nics of the given
+        domain, by the following rules:
+
+            * If ``net`` is management, 'domain_name': nic_ip
+            * For each interface: 'domain_name-eth#': nic_ip, where # is the
+            index of the nic in the *domain* definition.
+            * For each interface: 'domain_name-net_name-#': nic_ip,
+            where # is a running number of interfaces from that network.
+            * For each interface: 'domain_name-net_name', which has an
+            identical IP to 'domain_name-net_name-0'
+
 
         Args:
             net (dict): Network spec to populate
@@ -316,8 +314,92 @@ class Prefix(object):
         """
         dom_name = dom['name']
         idx = dom['nics'].index(nic)
-        name = idx == 0 and dom_name or '%s-eth%d' % (dom_name, idx)
+        name = '{0}-eth{1}'.format(dom_name, idx)
         net['mapping'][name] = nic['ip']
+        if dom['nics'][idx]['net'] == dom['mgmt_net']:
+            net['mapping'][dom_name] = nic['ip']
+
+        name_by_net = '{0}-{1}'.format(dom_name, nic['net'])
+        named_nets = sorted(
+            [
+                net_name for net_name in net['mapping'].keys()
+                if net_name.startswith(name_by_net) and net_name != name_by_net
+            ]
+        )
+
+        if len(named_nets) == 0:
+            named_idx = 0
+            net['mapping'][name_by_net] = nic['ip']
+        else:
+            named_idx = len(named_nets)
+        named_net = '{0}-{1}'.format(name_by_net, named_idx)
+
+        net['mapping'][named_net] = nic['ip']
+
+    def _select_mgmt_networks(self, conf):
+        """
+        Select management networks. If no management network is found, it will
+        mark the first network found by sorted the network lists. Also adding
+        default DNS domain, if none is set.
+
+        Args:
+            conf(spec): spec
+
+        """
+
+        nets = conf['nets']
+        mgmts = sorted(
+            [
+                name for name, net in nets.iteritems()
+                if net.get('management') is True
+            ]
+        )
+
+        if len(mgmts) == 0:
+            mgmt_name = sorted((nets.keys()))[0]
+            LOGGER.debug(
+                'No management network configured, selecting network %s',
+                mgmt_name
+            )
+            nets[mgmt_name]['management'] = True
+            mgmts.append(mgmt_name)
+
+        for mgmt_name in mgmts:
+            if nets[mgmt_name].get('dns_domain_name', None) is None:
+                nets[mgmt_name]['dns_domain_name'] = 'lago.local'
+
+        return mgmts
+
+    def _add_dns_records(self, conf, mgmts):
+        """
+        Add DNS records dict('dns_records') to ``conf`` for each
+        management network. Add DNS forwarder IP('dns_forward') for each none
+        management network.
+
+
+        Args:
+            conf(spec): spec
+            mgmts(list): management networks names
+
+        Returns:
+            None
+        """
+
+        nets = conf['nets']
+        dns_mgmt = mgmts[-1]
+        LOGGER.debug('Using network %s as main DNS server', dns_mgmt)
+        forward = conf['nets'][dns_mgmt].get('gw')
+        dns_records = {}
+        for net_name, net_spec in nets.iteritems():
+            dns_records.update(net_spec['mapping'].copy())
+            if net_name not in mgmts:
+                net_spec['dns_forward'] = forward
+
+        for mgmt in mgmts:
+            if nets[mgmt].get('dns_records'):
+                nets[mgmt]['dns_records'].update(dns_records)
+            else:
+                nets[mgmt]['dns_records'] = dns_records
 
     def _register_preallocated_ips(self, conf):
         """
@@ -344,7 +426,7 @@ class Prefix(object):
                     continue
 
                 net = conf['nets'][nic['net']]
-                if subnet_lease.is_leasable_subnet(net['gw']):
+                if self._subnet_store.is_leasable_subnet(net['gw']):
                     nic['ip'] = _create_ip(
                         net['gw'], int(nic['ip'].split('.')[-1])
                     )
@@ -375,6 +457,25 @@ class Prefix(object):
 
                 self._add_nic_to_mapping(net, dom_spec, nic)
 
+    def _get_net(self, conf, dom_name, nic):
+        try:
+            net = conf['nets'][nic['net']]
+        except KeyError:
+            raise LagoInitException(
+                dedent(
+                    """
+                    Unrecognized network in {0}: {1},
+                    available: {2}
+                    """.format(
+                        dom_name,
+                        nic['net'],
+                        ','.join(conf.get('nets', {}).keys()),
+                    )
+                )
+            )
+
+        return net
+
     def _allocate_ips_to_nics(self, conf):
         """
         For all the nics of all the domains in the conf that have dynamic ip,
@@ -390,8 +491,7 @@ class Prefix(object):
             for idx, nic in enumerate(dom_spec.get('nics', [])):
                 if 'ip' in nic:
                     continue
-
-                net = conf['nets'][nic['net']]
+                net = self._get_net(conf, dom_name, nic)
                 if net['type'] != 'nat':
                     continue
 
@@ -404,6 +504,24 @@ class Prefix(object):
                 )
                 nic['ip'] = vacant
                 self._add_nic_to_mapping(net, dom_spec, nic)
+
+    def _set_mtu_to_nics(self, conf):
+        """
+        For all the nics of all the domains in the conf that have MTU set,
+        save the MTU on the NIC definition.
+
+        Args:
+            conf (dict): Configuration spec to extract the domains from
+
+        Returns:
+            None
+        """
+        for dom_name, dom_spec in conf.get('domains', {}).items():
+            for idx, nic in enumerate(dom_spec.get('nics', [])):
+                net = self._get_net(conf, dom_name, nic)
+                mtu = net.get('mtu', 1500)
+                if mtu != 1500:
+                    nic['mtu'] = mtu
 
     def _config_net_topology(self, conf):
         """
@@ -418,17 +536,99 @@ class Prefix(object):
             None
         """
         conf = self._init_net_specs(conf)
-        self._check_predefined_subnets(conf)
+        mgmts = self._select_mgmt_networks(conf)
+        self._validate_netconfig(conf)
         allocated_subnets, conf = self._allocate_subnets(conf)
         try:
+            self._add_mgmt_to_domains(conf, mgmts)
             self._register_preallocated_ips(conf)
             self._allocate_ips_to_nics(conf)
+            self._set_mtu_to_nics(conf)
+            self._add_dns_records(conf, mgmts)
         except:
-            for subnet in allocated_subnets:
-                subnet_lease.release(subnet)
+            self._subnet_store.release(allocated_subnets)
             raise
-
         return conf
+
+    def _add_mgmt_to_domains(self, conf, mgmts):
+        """
+        Add management network key('mgmt_net') to each domain. Note this
+        assumes ``conf`` was validated.
+
+        Args:
+            conf(dict): spec
+            mgmts(list): list of management networks names
+
+        """
+
+        for dom_name, dom_spec in conf['domains'].iteritems():
+            domain_mgmt = [
+                nic['net'] for nic in dom_spec['nics'] if nic['net'] in mgmts
+            ].pop()
+
+            dom_spec['mgmt_net'] = domain_mgmt
+
+    def _validate_netconfig(self, conf):
+        """
+        Validate network configuration
+
+        Args:
+            conf(dict): spec
+
+        Returns:
+            None
+
+
+        Raises:
+            :exc:`~lago.utils.LagoInitException`: If a VM has more than
+            one management network configured, or a network which is not
+            management has DNS attributes, or a VM is configured with a
+            none-existence NIC, or a VM has no management network.
+        """
+
+        nets = conf.get('nets', {})
+        if len(nets) == 0:
+            # TO-DO: add default networking if no network is configured
+            raise LagoInitException('No networks configured.')
+
+        no_mgmt_dns = [
+            name for name, net in nets.iteritems()
+            if net.get('management', None) is None and
+            (net.get('main_dns') or net.get('dns_domain_name'))
+        ]
+        if len(no_mgmt_dns) > 0 and len(nets.keys()) > 1:
+            raise LagoInitException(
+                (
+                    'Networks: {0}, misconfigured, they '
+                    'are not marked as management, but have '
+                    'DNS attributes. DNS is supported '
+                    'only in management networks.'
+                ).format(','.join(no_mgmt_dns))
+            )
+
+        for dom_name, dom_spec in conf['domains'].items():
+            mgmts = []
+            for nic in dom_spec['nics']:
+                net = self._get_net(conf, dom_name, nic)
+                if net.get('management', False) is True:
+                    mgmts.append(nic['net'])
+            if len(mgmts) == 0:
+                raise LagoInitException(
+                    (
+                        'VM {0} has no management network, '
+                        'please connect it to '
+                        'one.'
+                    ).format(dom_name)
+                )
+
+            if len(mgmts) > 1:
+                raise LagoInitException(
+                    (
+                        'VM {0} has more than one management '
+                        'network: {1}. It should have exactly '
+                        'one.'
+                    ).format(dom_name, ','.join(mgmts))
+                )
 
     def _create_disk(
         self,
@@ -660,35 +860,55 @@ class Prefix(object):
         """
         qemu_info = utils.get_qemu_info(disk_path)
         parent = qemu_info.get('backing-filename')
+        if not parent:
+            return
 
-        if parent:
-            LOGGER.info('Resolving Parent')
-            name, version = os.path.basename(parent).split(':', 1)
-            if not (name and version):
-                raise RuntimeError(
-                    'Unsupported backing-filename: {}'
-                    'backing-filename should be in the format'
-                    'name:version'.format(parent)
+        if os.path.isfile(parent):
+            if os.path.samefile(
+                os.path.realpath(parent),
+                os.path.realpath(os.path.expandvars(disk_path))
+            ):
+                raise LagoInitException(
+                    dedent(
+                        """
+                        Disk {} and its backing file are the same file.
+                        """.format(disk_path)
+                    )
                 )
-            _, _, base = self._handle_lago_template(
-                '', {'template_name': name,
-                     'template_version': version}, template_store,
-                template_repo
+            # The parent exist and we have the correct pointer
+            return
+
+        LOGGER.info('Resolving Parent')
+        try:
+            name, version = os.path.basename(parent).split(':', 1)
+        except ValueError:
+            raise LagoInitException(
+                dedent(
+                    """
+                    Backing file resolution of disk {} failed.
+                    Backing file {} is not a Lago image.
+                    """.format(disk_path, parent)
+                )
             )
 
-            # The child has the right pointer to his parent
-            base = os.path.expandvars(base)
-            if base == parent:
-                return
+        _, _, base = self._handle_lago_template(
+            '', {'template_name': name,
+                 'template_version': version}, template_store, template_repo
+        )
 
-            # The child doesn't have the right pointer to his
-            # parent, We will fix it with a symlink
-            link_name = os.path.join(
-                os.path.dirname(disk_path), '{}:{}'.format(name, version)
-            )
-            link_name = os.path.expandvars(link_name)
+        # The child has the right pointer to his parent
+        base = os.path.expandvars(base)
+        if base == parent:
+            return
 
-            self._create_link_to_parent(base, link_name)
+        # The child doesn't have the right pointer to his
+        # parent, We will fix it with a symlink
+        link_name = os.path.join(
+            os.path.dirname(disk_path), '{}:{}'.format(name, version)
+        )
+        link_name = os.path.expandvars(link_name)
+
+        self._create_link_to_parent(base, link_name)
 
     def _create_link_to_parent(self, base, link_name):
         if not os.path.islink(link_name):
@@ -713,7 +933,9 @@ class Prefix(object):
             template_store.download(template_version)
 
         disk_metadata.update(
-            template_store.get_stored_metadata(template_version, ),
+            template_store.get_stored_metadata(
+                template_version,
+            ),
         )
         base = template_store.get_path(template_version)
         qemu_cmd = [
@@ -864,6 +1086,7 @@ class Prefix(object):
         template_repo=None,
         template_store=None,
         do_bootstrap=True,
+        do_build=True,
     ):
         """
         Initializes all the virt infrastructure of the prefix, creating the
@@ -885,23 +1108,24 @@ class Prefix(object):
             template_repo=template_repo,
             template_store=template_store,
             do_bootstrap=do_bootstrap,
+            do_build=do_build
         )
 
     def _prepare_domains_images(self, conf, template_repo, template_store):
         if not os.path.exists(self.paths.images()):
             os.makedirs(self.paths.images())
 
-        for name, domain_spec in conf['domains'].items():
-            if not name:
+        for dom_name, dom_spec in conf['domains'].items():
+            if not dom_name:
                 raise RuntimeError(
                     'An invalid (empty) domain name was found in the '
                     'configuration file. Cannot continue. A name must be '
                     'specified for the domain'
                 )
 
-            domain_spec['name'] = name
-            conf['domains'][name] = self._prepare_domain_image(
-                domain_spec=domain_spec,
+            dom_spec['name'] = dom_name
+            conf['domains'][dom_name] = self._prepare_domain_image(
+                domain_spec=dom_spec,
                 prototypes=conf.get('prototypes', {}),
                 template_repo=template_repo,
                 template_store=template_store,
@@ -956,21 +1180,20 @@ class Prefix(object):
                 template_repo=template_repo,
                 template_store=template_store,
             )
-            new_disks.append(
-                {
-                    'path': path,
-                    'dev': disk['dev'],
-                    'format': disk['format'],
-                    'metadata': metadata,
-                    'type': disk['type'],
-                    'name': disk['name']
-                },
-            )
+            new_disk = copy.deepcopy(disk)
+            new_disk['path'] = path
+            new_disk['metadata'] = metadata
+            new_disks.append(new_disk)
 
         return new_disks
 
     def virt_conf(
-        self, conf, template_repo=None, template_store=None, do_bootstrap=True
+        self,
+        conf,
+        template_repo=None,
+        template_store=None,
+        do_bootstrap=True,
+        do_build=True
     ):
         """
         Initializes all the virt infrastructure of the prefix, creating the
@@ -981,6 +1204,9 @@ class Prefix(object):
             conf (dict): Configuration spec
             template_repo (TemplateRepository): template repository intance
             template_store (TemplateStore): template store instance
+            do_bootstrap(bool): If true run virt-sysprep on the images
+            do_build(bool): If true run build commands on the images,
+                see lago.build.py for more info.
 
         Returns:
             None
@@ -990,6 +1216,10 @@ class Prefix(object):
             rollback.prependDefer(
                 shutil.rmtree, self.paths.prefix, ignore_errors=True
             )
+            self._metadata = {
+                'lago_version': pkg_resources.get_distribution("lago").version,
+            }
+
             conf = self._prepare_domains_images(
                 conf=conf,
                 template_repo=template_repo,
@@ -1005,21 +1235,79 @@ class Prefix(object):
                 vm_specs=conf['domains'],
                 net_specs=conf['nets'],
             )
+
             if do_bootstrap:
                 self.virt_env.bootstrap()
+
+            if do_build:
+                self.build(conf['domains'])
 
             self.save()
             rollback.clear()
 
+    def build(self, conf):
+        builders = []
+        for vm_name, spec in conf.viewitems():
+            disks = spec.get('disks')
+            if disks:
+                for disk in disks:
+                    build_spec = disk.get('build')
+                    if build_spec:
+                        builders.append(
+                            build.Build.get_instance_from_build_spec(
+                                name=vm_name,
+                                disk_path=disk['path'],
+                                build_spec=build_spec,
+                                paths=self.paths
+                            )
+                        )
+
+        utils.invoke_in_parallel(build.Build.build, builders)
+
+    @sdk_utils.expose
     def export_vms(
-        self, vms_names, standalone, export_dir, compress, init_file_name,
-        out_format
+        self,
+        vms_names=None,
+        standalone=False,
+        export_dir='.',
+        compress=False,
+        init_file_name='LagoInitFile',
+        out_format=YAMLOutFormatPlugin(),
+        collect_only=False,
+        with_threads=True,
     ):
-        self.virt_env.export_vms(
+        """
+        Export vm images disks and init file.
+        The exported images and init file can be used to recreate
+        the environment.
+
+        Args:
+            vms_names(list of str): Names of the vms to export, if None
+                export all the vms in the env (default=None)
+            standalone(bool): If false, export a layered image
+                (default=False)
+            export_dir(str): Dir to place the exported images and init file
+            compress(bool): If True compress the images with xz
+                  (default=False)
+            init_file_name(str): The name of the exported init file
+                (default='LagoInitfile')
+            out_format(:class:`lago.plugins.output.OutFormatPlugin`):
+                The type of the exported init file (the default is yaml)
+            collect_only(bool): If True, return only a mapping from vm name
+                to the disks that will be exported. (default=False)
+            with_threads(bool): If True, run the export in parallel
+                (default=True)
+
+        Returns
+            Unless collect_only == True, a mapping between vms' disks.
+
+        """
+        return self.virt_env.export_vms(
             vms_names, standalone, export_dir, compress, init_file_name,
-            out_format
+            out_format, collect_only, with_threads
         )
 
+    @sdk_utils.expose
     def start(self, vm_names=None):
         """
         Start this prefix
@@ -1032,6 +1320,7 @@ class Prefix(object):
         """
         self.virt_env.start(vm_names=vm_names)
 
+    @sdk_utils.expose
     def stop(self, vm_names=None):
         """
         Stop this prefix
@@ -1044,6 +1333,7 @@ class Prefix(object):
         """
         self.virt_env.stop(vm_names=vm_names)
 
+    @sdk_utils.expose
     def shutdown(self, vm_names=None, reboot=False):
         """
         Shutdown this prefix
@@ -1116,9 +1406,16 @@ class Prefix(object):
         Destroy this prefix, running any cleanups and removing any files
         inside it.
         """
+
+        subnets = (
+            str(net.gw()) for net in self.virt_env.get_nets().itervalues()
+        )
+
+        self._subnet_store.release(subnets)
         self.cleanup()
         shutil.rmtree(self._prefix)
 
+    @sdk_utils.expose
     def get_vms(self):
         """
         Retrieve info on all the vms
@@ -1128,6 +1425,7 @@ class Prefix(object):
         """
         return self.virt_env.get_vms()
 
+    @sdk_utils.expose
     def get_nets(self):
         """
         Retrieve info on all the nets from all the domains
@@ -1204,6 +1502,7 @@ class Prefix(object):
         lagofile = paths.Paths(path).prefix_lagofile()
         return os.path.isfile(lagofile)
 
+    @sdk_utils.expose
     @log_task('Collect artifacts')
     def collect_artifacts(self, output_dir, ignore_nopath):
         if os.path.exists(output_dir):
@@ -1335,7 +1634,9 @@ class Prefix(object):
                 return
 
             with LogTask('Wait for ssh connectivity'):
-                host.wait_for_ssh()
+                if not host.ssh_reachable(tries=1, propagate_fail=False):
+                    time.sleep(10)
+                    host.wait_for_ssh()
 
             for script in deploy_scripts:
                 script = os.path.expanduser(os.path.expandvars(script))
@@ -1353,8 +1654,10 @@ class Prefix(object):
                         ),
                     )
 
+    @sdk_utils.expose
     @log_task('Deploy environment')
     def deploy(self):
         utils.invoke_in_parallel(
-            self._deploy_host, self.virt_env.get_vms().values()
+            self._deploy_host,
+            self.virt_env.get_vms().values()
         )

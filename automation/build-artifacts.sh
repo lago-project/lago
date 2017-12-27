@@ -13,10 +13,12 @@ echo "cleaning $YUM metadata"
 $YUM clean metadata
 
 echo "cleaning $BUILDS, $EXPORTS"
-rm -rf "$BUILDS" "$EXPORTS"/*{.rpm,.tar.gz}
+rm -rf "$BUILDS" "$EXPORTS"/*{.rpm,.tar.gz} "$DIST"
 mkdir -p "$BUILDS"
 mkdir -p "$EXPORTS"
 
+make clean
+make python-sdist DIST_DIR="$PWD/exported-artifacts"
 make clean
 make lago.spec
 
@@ -26,6 +28,4 @@ $BUILDDEP -y lago.spec
 echo "creating RPM"
 make rpm OUTPUT_DIR="$BUILDS"
 
-find "$BUILDS" \
-    \( -iname \*.rpm -or -iname \*.tar.gz \) \
-    -exec mv {} "$EXPORTS/" \;
+find "$BUILDS" -iname "*.rpm" -exec mv {} "$EXPORTS/" \;

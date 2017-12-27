@@ -9,13 +9,11 @@ VERBS=(
     deploy
     destroy
     init
-    ovirt
     shell
     snapshot
     start
     status
     stop
-    template-repo
     console
     generate-config
     'export'

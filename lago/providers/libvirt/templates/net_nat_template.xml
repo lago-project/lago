@@ -1,0 +1,11 @@
+<network>
+  <name>@NAME@</name>
+  <forward mode='nat'>
+    <nat>
+      <port start='1024' end='65535'/>
+    </nat>
+  </forward>
+  <bridge name='@BR_NAME@' stp='on' delay='0' />
+  <ip address='@GW_ADDR@' netmask='255.255.255.0' />
+  <ip family='ipv6' address='fd8f:1391:3a82:@SUBNET@::1' prefix='64' />
+</network>

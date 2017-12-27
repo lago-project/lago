@@ -22,3 +22,5 @@ AUTHORS
 .cache*
 tags
 cscope.out
+*ipynb_checkpoints*
+flake8.txt

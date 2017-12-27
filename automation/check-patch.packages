@@ -1,3 +1,4 @@
+ansible
 bats
 dnf
 dnf-command(builddep)
@@ -5,10 +6,10 @@ git
 grubby
 libffi-devel
 libvirt-devel
+libguestfs-devel
 libxslt-devel
 openssl-devel
+pandoc
 python2-devel
 python2-dulwich
-python2-libguestfs
-python2-virtualenv
 python-pip

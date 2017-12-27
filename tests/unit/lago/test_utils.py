@@ -14,11 +14,10 @@ def deep_compare(original_obj, copy_obj):
 
     if isinstance(original_obj, dict):
         assert copy_obj is not original_obj
-        for orig_item, copy_item in zip(
-            original_obj.items(), copy_obj.items()
-        ):
-            assert orig_item[0] == copy_item[0]
-            assert deep_compare(orig_item[1], copy_item[1])
+        assert len(original_obj.keys()) == len(copy_obj.keys())
+        for key in original_obj.keys():
+            assert original_obj[key] == copy_obj[key]
+            assert deep_compare(original_obj[key], copy_obj[key])
 
     return True
 
@@ -57,6 +56,7 @@ class TestDeepCopy(object):
                 'dummy_int': 234,
             },
         }
+
         copied_object = utils.deepcopy(base_object)
         assert deep_compare(base_object, copied_object)
 

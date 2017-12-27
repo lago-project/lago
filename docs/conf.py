@@ -28,18 +28,6 @@ subprocess.call(
         os.path.dirname(__file__), '../lago'
     ]
 )
-subprocess.call(
-    [
-        'sphinx-apidoc', '--module-first', '--no-toc', '-f', '-o',
-        os.path.dirname(__file__), '../ovirtlago'
-    ]
-)
-subprocess.call(
-    [
-        'sphinx-apidoc', '--module-first', '--no-toc', '-f', '-o',
-        os.path.dirname(__file__), '../lago_template_repo'
-    ]
-)
 subprocess.call([
     'make',
     '--directory=..',
@@ -56,21 +44,14 @@ autodoc_mock_imports = [
     'lockfile',
     'lxml',
     'lxml.etree',
-    'magic',
-    'ovirtsdk',
-    'ovirtsdk.api',
-    'ovirtsdk.infrastructure',
-    'ovirtsdk.infrastructure.errors',
-    'ovirtsdk.infrastructure.errors.RequestError',
     'paramiko',
-    'rpmUtils',
-    'rpmUtils.arch',
-    'rpmUtils.miscutils',
     'scp',
     'stevedore',
     'stevedore.extension',
     'yaml',
     'xmltodict',
+    'wrapt',
+    'netaddr',
 ]
 
 autodoc_default_flags = [
@@ -89,12 +70,10 @@ needs_sphinx = '1.3'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.intersphinx',
-    'sphinx.ext.todo',
-    'sphinx.ext.coverage',
-    'sphinx.ext.viewcode',
-    'sphinx.ext.napoleon',
+    'sphinx.ext.autodoc', 'sphinx.ext.intersphinx', 'sphinx.ext.todo',
+    'sphinx.ext.coverage', 'sphinx.ext.viewcode', 'sphinx.ext.napoleon',
+    'nbsphinx', 'IPython.sphinxext.ipython_console_highlighting',
+    'IPython.sphinxext.ipython_directive'
 ]
 
 napoleon_google_docstring = True
@@ -117,8 +96,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Lago'
-copyright = u'2015, David Caro'
-author = u'David Caro'
+copyright = u'2015-2017, David Caro and Lago developers'
+author = u'David Caro and Lago Developers'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -144,7 +123,7 @@ language = None
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ['_build']
+exclude_patterns = ['_build', '**.ipynb_checkpoints']
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
@@ -365,5 +344,4 @@ texinfo_documents = [
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
     'https://docs.python.org/': None,
-    'https://nose.readthedocs.org/en/latest/': None,
 }

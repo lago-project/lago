@@ -1,0 +1,49 @@
+<domain type='kvm'>
+    <name>{{ name }}</name>
+    <memory unit='MiB'>{{ mem_size }}</memory>
+    <iothreads>1</iothreads>
+    <os>
+      <type arch='x86_64' machine='pc'>hvm</type>
+      <bootmenu enable='no'/>
+    </os>
+    <features>
+      <acpi/>
+      <apic/>
+      <pae/>
+      <vmport state='off'/>
+    </features>
+    <devices>
+     <emulator>{{ qemu_kvm }}</emulator>
+      <memballoon model='none'/>
+      <controller type='usb' model='none'>
+      </controller>
+      <disk type='file' device='disk'>
+        <driver name='qemu' type='qcow2'/>
+        <source file='DISK_PATH'/>
+        <target dev='DISK_DEV' bus='virtio'/>
+      </disk>
+      <channel type='unix'>
+        <source mode='bind'/>
+        <target type='virtio' name='org.qemu.guest_agent.0'/>
+      </channel>
+      <serial type='pty'>
+          <target port='0'/>
+      </serial>
+      <rng model='virtio'>
+        <backend model='random'>/dev/random</backend>
+        <address type='pci' domain='0x0000' bus='0x00' slot='0x09' function='0x0'/>
+      </rng>
+      <console type='pty'>
+        <target type='serial' port='0'/>
+      </console>
+      <video>
+        <model type='cirrus' vram='16384' heads='1'/>
+        <alias name='video0'/>
+        <address type='pci' domain='0x0000' bus='0x00' slot='0x02' function='0x0'/>
+      </video>
+    </devices>
+    <clock offset='utc'>
+      <timer name='kvmclock'>
+      </timer>
+    </clock>
+</domain>

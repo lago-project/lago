@@ -1,0 +1,5 @@
+{% import 'sysprep-macros.j2' as macros %}
+{% include 'sysprep-base.j2' %}
+
+{{ macros.iscsi(name=iscsi_name, hostname=hostname) }}
+{{ macros.network_devices_el(mappings=mappings) }}

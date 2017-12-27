@@ -15,12 +15,16 @@ Getting started
 ---------------
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 4
 
     Installation
+    LagoInitFile
+    SDK
     Lago_Examples
+    Templates
     Configuration
-    Debugging_and_Troubleshooting
+    BUILD
+    CPU
 
 Developing
 ------------
@@ -40,7 +44,6 @@ Contents
    :maxdepth: 4
 
    lago
-   lago_template_repo
    ovirtlago
 
 
