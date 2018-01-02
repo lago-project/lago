@@ -52,6 +52,7 @@ autodoc_mock_imports = [
     'xmltodict',
     'wrapt',
     'netaddr',
+    'future',
 ]
 
 autodoc_default_flags = [
