@@ -163,6 +163,7 @@ def ssh_script(
     password='123456',
 ):
     host_name = host_name or ip_addr
+    LOGGER.debug('Running %s on host %s', path, host_name)
     with open(path) as script_fd:
         return ssh(
             ip_addr=ip_addr,
