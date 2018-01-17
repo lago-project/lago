@@ -227,12 +227,13 @@ def do_cleanup(prefix, **kwargs):
 def do_destroy(
     prefix, yes, all_prefixes, parent_workdir, prefix_name, **kwargs
 ):
-    warn_message = prefix.paths.prefix
-    path = prefix.paths.prefix
 
     if all_prefixes:
         warn_message = 'all the prefixes under ' + parent_workdir.path
         path = parent_workdir.path
+    else:
+        warn_message = prefix.paths.prefix_path()
+        path = warn_message
 
     if not yes:
         response = raw_input(
@@ -575,7 +576,7 @@ def do_status(prefix, out_format, **kwargs):
         'Prefix':
             {
                 'Base directory':
-                    prefix.paths.prefix,
+                    prefix.paths.prefix_path(),
                 'UUID':
                     uuid,
                 'Networks':

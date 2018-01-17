@@ -95,8 +95,7 @@ class Prefix(object):
     environment.
 
     Attributes:
-        _prefix (str): Path to the directory of this prefix
-        _paths (lago.path.Paths): Path handler class
+        _paths (lago.path.Paths): Paths handler class
         _virt_env (lago.virt.VirtEnv): Lazily loaded virtual env handler
         _metadata (dict): Lazily loaded metadata
     """
@@ -107,8 +106,7 @@ class Prefix(object):
         Args:
             prefix (str): Path of the prefix
         """
-        self._prefix = prefix
-        self.paths = paths.Paths(self._prefix)
+        self._paths = paths.Paths(prefix)
         self._virt_env = None
         self._metadata = None
         self._subnet_store = subnet_lease.SubnetStore()
@@ -195,7 +193,7 @@ class Prefix(object):
         Raises:
             RuntimeError: If it fails to create the prefix dir
         """
-        prefix = self.paths.prefix
+        prefix = self.paths.prefix_path()
         os.environ['LAGO_PREFIX_PATH'] = prefix
         os.environ['LAGO_WORKDIR_PATH'] = os.path.dirname(prefix)
 
@@ -1211,10 +1209,10 @@ class Prefix(object):
         Returns:
             None
         """
-        os.environ['LAGO_PREFIX_PATH'] = self.paths.prefix
+        os.environ['LAGO_PREFIX_PATH'] = self.paths.prefix_path()
         with utils.RollbackContext() as rollback:
             rollback.prependDefer(
-                shutil.rmtree, self.paths.prefix, ignore_errors=True
+                shutil.rmtree, self.paths.prefix_path(), ignore_errors=True
             )
             self._metadata = {
                 'lago_version': pkg_resources.get_distribution("lago").version,
@@ -1401,6 +1399,10 @@ class Prefix(object):
             self._virt_env = self._create_virt_env()
         return self._virt_env
 
+    @property
+    def paths(self):
+        return self._paths
+
     def destroy(self):
         """
         Destroy this prefix, running any cleanups and removing any files
@@ -1413,7 +1415,7 @@ class Prefix(object):
 
         self._subnet_store.release(subnets)
         self.cleanup()
-        shutil.rmtree(self._prefix)
+        shutil.rmtree(self.paths.prefix_path())
 
     @sdk_utils.expose
     def get_vms(self):
@@ -1434,6 +1436,18 @@ class Prefix(object):
             dict of str->list(str): dictionary with net_name -> net list
         """
         return self.virt_env.get_nets()
+
+    @sdk_utils.expose
+    def get_paths(self):
+        """
+        Get the Paths object of this prefix.
+        The Paths object contains the paths to the internal directories
+        and files of this prefix.
+
+        Returns:
+            :class:`lago.paths.Paths`: The Paths object of this prefix
+        """
+        return self.paths
 
     @classmethod
     def resolve_prefix_path(cls, start_path=None):

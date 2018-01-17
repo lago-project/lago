@@ -21,11 +21,26 @@ import os
 
 
 class Paths(object):
-    def __init__(self, prefix):
-        self.prefix = prefix
+    """
+    A Paths object contains methods for getting the paths to the
+    directories and files which composes the prefix.
+
+    Attributes:
+        _prefix_path (str): Path to the directory of the prefix
+    """
+
+    def __init__(self, prefix_path):
+        """
+        Args:
+            prefix_path (str): Path to the directory of the prefix
+        """
+        self._prefix_path = prefix_path
 
     def prefixed(self, *args):
-        return os.path.join(self.prefix, *args)
+        return os.path.join(self._prefix_path, *args)
+
+    def prefix_path(self):
+        return self._prefix_path
 
     def uuid(self):
         return self.prefixed('uuid')
