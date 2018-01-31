@@ -106,6 +106,8 @@ class Prefix(object):
         Args:
             prefix (str): Path of the prefix
         """
+        # self._prefix should be dropped in lago ver 0.44
+        self._prefix = prefix
         self._paths = paths.Paths(prefix)
         self._virt_env = None
         self._metadata = None
@@ -1402,6 +1404,10 @@ class Prefix(object):
     @property
     def paths(self):
         return self._paths
+
+    @paths.setter
+    def paths(self, val):
+        self._paths = val
 
     def destroy(self):
         """
