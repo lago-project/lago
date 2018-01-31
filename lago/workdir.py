@@ -442,7 +442,7 @@ class Workdir(object):
         """
         try:
             cls(path=path).load()
-        except Exception:
+        except MalformedWorkdir:
             return False
 
         return True
