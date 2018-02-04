@@ -71,8 +71,8 @@ def load_plugins(namespace, instantiate=True):
     if instantiate:
         plugins = dict(
             (
-                ext.name, ext.plugin if isinstance(ext.plugin, Plugin) else
-                ext.plugin()
+                ext.name,
+                ext.plugin if isinstance(ext.plugin, Plugin) else ext.plugin()
             ) for ext in mgr
         )
     else:
