@@ -44,9 +44,10 @@ class CPU(object):
         if spec.get('vcpu'):
             self.vcpu_set = True
             self.vcpu_num = spec['vcpu']
-        self.cpu = spec.get('cpu_custom')
+        self.cpu_custom = spec.get('cpu_custom')
         self.cpu_model = spec.get('cpu_model')
         self.host_cpu = host_cpu
+        self.memory = spec.get('memory')
         self.validate()
 
         self._cpu_xml = self.generate_cpu_xml()
@@ -61,10 +62,10 @@ class CPU(object):
         Validate CPU-related VM spec are compatible
 
         Raises:
-            :exc:`~LagoInitException`: if both 'cpu_model' and 'cpu' are
+            :exc:`~LagoInitException`: if both 'cpu_model' and 'cpu_custom' are
                 defined.
         """
-        if self.cpu is not None and self.cpu_model:
+        if self.cpu_custom is not None and self.cpu_model:
             raise LagoInitException(
                 'Defining both cpu_model and cpu_custom is '
                 'not supported.'
@@ -82,7 +83,7 @@ class CPU(object):
     def model(self):
         if self.cpu_model:
             return self.cpu_model
-        elif not self.cpu:
+        elif not self.cpu_custom:
             return self.host_cpu.xpath('model')[0].text
         else:
             return self._cpu_xml.xpath('model')[0].text
@@ -91,7 +92,7 @@ class CPU(object):
     def vendor(self):
         if self.cpu_model:
             return LibvirtCPU.get_cpu_vendor(self.cpu_model)
-        elif not self.cpu:
+        elif not self.cpu_custom:
             return self.host_cpu.xpath('vendor')[0].text
         else:
             return LibvirtCPU.get_cpu_vendor(self.model)
@@ -103,7 +104,7 @@ class CPU(object):
         Returns:
             lxml.etree.Element: cpu node
         """
-        if self.cpu:
+        if self.cpu_custom:
             return self.generate_custom(
                 cpu=self.cpu,
                 vcpu_num=self.vcpu_num,
@@ -134,7 +135,7 @@ class CPU(object):
         Generate host-passthrough XML cpu node
 
         Args:
-            vcpu_num(int): number of virtual CPUs
+            vcpu_num(str): number of virtual CPUs
 
         Returns:
             lxml.etree.Element: CPU XML node
@@ -142,6 +143,8 @@ class CPU(object):
 
         cpu = ET.Element('cpu', mode='host-passthrough')
         cpu.append(self.generate_topology(vcpu_num))
+        if vcpu_num > 1:
+            cpu.append(self.generate_numa(vcpu_num))
         return cpu
 
     def generate_custom(self, cpu, vcpu_num, fill_topology):
@@ -229,7 +232,7 @@ class CPU(object):
         Generate CPU <topology> XML child
 
         Args:
-            vcpu_num(int): number of virtual CPUs
+            vcpu_num(str): number of virtual CPUs
             cores(int): number of cores
             threads(int): number of threads
 
@@ -244,12 +247,79 @@ class CPU(object):
             threads=str(threads),
         )
 
+    def generate_numa(self, vcpu_num):
+        """
+        Generate guest CPU <numa> XML child
+        Configures 1, 2 or 4 vCPUs per cell.
+
+        Args:
+            vcpu_num(str): number of virtual CPUs
+
+        Returns:
+            lxml.etree.Element: numa XML element
+        """
+
+        if int(vcpu_num) == 2:
+            # 2 vCPUs is a special case.
+            # We wish to have 2 cells,
+            # with 1 vCPU in each.
+            # This is also the common case.
+            total_cells = 2
+            cpus_per_cell = 1
+        elif int(vcpu_num) == 4:
+            # 4 vCPU is a special case.
+            # We wish to have 2 cells,
+            # with 2 vCPUs in each.
+            total_cells = 2
+            cpus_per_cell = 2
+        else:
+            cell_info = divmod(int(vcpu_num), 4)
+            if cell_info[1] == 0:
+                # 4 vCPUs in each cell
+                total_cells = cell_info[0]
+                cpus_per_cell = 4
+            elif cell_info[1] == 2:
+                # 2 vCPUs in each cell
+                total_cells = (cell_info[0] * 2) + 1
+                cpus_per_cell = 2
+            else:
+                # 1 vCPU per cell...
+                total_cells = int(vcpu_num)
+                cpus_per_cell = 1
+
+        numa = ET.Element('numa')
+        memory_per_cell = divmod(int(self.memory), total_cells)
+        LOGGER.debug(
+            'numa\n: cpus_per_cell: {0}, total_cells: {1}'.format(
+                cpus_per_cell, total_cells
+            )
+        )
+        for cell_id in xrange(0, total_cells):
+            first_cpu_in_cell = cell_id * cpus_per_cell
+            if cpus_per_cell == 1:
+                cpus_in_cell = str(first_cpu_in_cell)
+            else:
+                cpus_in_cell = '{0}-{1}'.format(
+                    first_cpu_in_cell, first_cpu_in_cell + cpus_per_cell - 1
+                )
+            cell = ET.Element(
+                'cell',
+                id=str(cell_id),
+                cpus=cpus_in_cell,
+                memory=str(memory_per_cell[0]),
+                unit='MiB',
+            )
+            numa.append(cell)
+
+        LOGGER.debug('numa:\n{}'.format(ET.tostring(numa, pretty_print=True)))
+        return numa
+
     def generate_vcpu(self, vcpu_num):
         """
         Generate <vcpu> domain XML child
 
         Args:
-            vcpu_num(int): number of virtual cpus
+            vcpu_num(str): number of virtual cpus
 
         Returns:
             lxml.etree.Element: vcpu XML element

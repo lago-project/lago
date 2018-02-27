@@ -52,7 +52,7 @@ class TestCPU(XmlTestCase):
             } for tup in permutations(range(1, 4), 3)
         ]
 
-        empty_cpu = cpu.CPU(spec={}, host_cpu=None)
+        empty_cpu = cpu.CPU(spec={'memory': 2048}, host_cpu=None)
         for comb in combs:
             self.assertXmlEquivalentOutputs(
                 ET.tostring(empty_cpu.generate_topology(**comb)),
@@ -62,15 +62,54 @@ class TestCPU(XmlTestCase):
     def test_generate_host_passthrough(self):
         _xml = """
         <cpu mode="host-passthrough">
-            <topology sockets="{0}" cores="1" threads="1"/>
+            <topology sockets="{0}" cores="1" threads="1"/>{1}
         </cpu>
         """
-        empty_cpu = cpu.CPU(spec={}, host_cpu=None)
-        for vcpu_num in [1, 9, 11, 120]:
-            self.assertXmlEquivalentOutputs(
-                ET.tostring(empty_cpu.generate_host_passthrough(vcpu_num)),
-                _xml.format(vcpu_num)
-            )
+        empty_cpu = cpu.CPU(spec={'memory': 2048}, host_cpu=None)
+        vcpu_num = 1
+        self.assertXmlEquivalentOutputs(
+            ET.tostring(empty_cpu.generate_host_passthrough(vcpu_num)),
+            _xml.format(vcpu_num, '')
+        )
+
+        _numa2 = """
+        <numa>
+            <cell cpus="0" id="0" memory="1023" unit="MiB"/>
+            <cell cpus="1" id="1" memory="1023" unit="MiB"/>
+        </numa>
+        """
+        empty_cpu = cpu.CPU(spec={'memory': 2047}, host_cpu=None)
+        vcpu_num = 2
+        self.assertXmlEquivalentOutputs(
+            ET.tostring(empty_cpu.generate_host_passthrough(vcpu_num)),
+            _xml.format(vcpu_num, _numa2)
+        )
+
+        _numa3 = """
+        <numa>
+            <cell cpus="0" id="0" memory="682" unit="MiB"/>
+            <cell cpus="1" id="1" memory="682" unit="MiB"/>
+            <cell cpus="2" id="2" memory="682" unit="MiB"/>
+        </numa>
+        """
+        vcpu_num = 3
+        self.assertXmlEquivalentOutputs(
+            ET.tostring(empty_cpu.generate_host_passthrough(vcpu_num)),
+            _xml.format(vcpu_num, _numa3)
+        )
+
+        _numa8 = """
+        <numa>
+            <cell cpus="0-3" id="0" memory="2048" unit="MiB"/>
+            <cell cpus="4-7" id="1" memory="2048" unit="MiB"/>
+        </numa>
+        """
+        empty_cpu = cpu.CPU(spec={'memory': 4096}, host_cpu=None)
+        vcpu_num = 8
+        self.assertXmlEquivalentOutputs(
+            ET.tostring(empty_cpu.generate_host_passthrough(vcpu_num)),
+            _xml.format(vcpu_num, _numa8)
+        )
 
     def test_generate_exact_intel_vmx_intel_vmx(self, vcpu=2, model='Penryn'):
 
@@ -93,11 +132,12 @@ class TestCPU(XmlTestCase):
                              </cpu>
                              """
         )
-        empty_cpu = cpu.CPU(spec={}, host_cpu=None)
+        empty_cpu = cpu.CPU(spec={'memory': 2048}, host_cpu=None)
         self.assertXmlEquivalentOutputs(
             ET.tostring(
-                empty_cpu.
-                generate_exact(model=model, vcpu_num=vcpu, host_cpu=host)
+                empty_cpu.generate_exact(
+                    model=model, vcpu_num=vcpu, host_cpu=host
+                )
             ), _xml
         )
 
@@ -120,11 +160,12 @@ class TestCPU(XmlTestCase):
                              </cpu>
                              """
         )
-        empty_cpu = cpu.CPU(spec={}, host_cpu=None)
+        empty_cpu = cpu.CPU(spec={'memory': 2048}, host_cpu=None)
         self.assertXmlEquivalentOutputs(
             ET.tostring(
-                empty_cpu.
-                generate_exact(model=model, vcpu_num=vcpu, host_cpu=host)
+                empty_cpu.generate_exact(
+                    model=model, vcpu_num=vcpu, host_cpu=host
+                )
             ), _xml
         )
 
@@ -147,11 +188,12 @@ class TestCPU(XmlTestCase):
                              </cpu>
                              """
         )
-        empty_cpu = cpu.CPU(spec={}, host_cpu=None)
+        empty_cpu = cpu.CPU(spec={'memory': 2048}, host_cpu=None)
         self.assertXmlEquivalentOutputs(
             ET.tostring(
-                empty_cpu.
-                generate_exact(model=model, vcpu_num=vcpu, host_cpu=host)
+                empty_cpu.generate_exact(
+                    model=model, vcpu_num=vcpu, host_cpu=host
+                )
             ), _xml
         )
 
@@ -174,25 +216,34 @@ class TestCPU(XmlTestCase):
                              </cpu>
                              """
         )
-        empty_cpu = cpu.CPU(spec={}, host_cpu=None)
+        empty_cpu = cpu.CPU(spec={'memory': 2048}, host_cpu=None)
         self.assertXmlEquivalentOutputs(
             ET.tostring(
-                empty_cpu.
-                generate_exact(model=model, vcpu_num=vcpu, host_cpu=host)
+                empty_cpu.generate_exact(
+                    model=model, vcpu_num=vcpu, host_cpu=host
+                )
             ), _xml
         )
 
     def test_init_default(self):
-        spec = {}
+        spec = {'memory': 2048}
         _xml = """
         <cpu mode="host-passthrough">
             <topology sockets="2" cores="1" threads="1"/>
+            <numa>
+                <cell cpus="0" id="0" memory="1024" unit="MiB"/>
+                <cell cpus="1" id="1" memory="1024" unit="MiB"/>
+            </numa>
         </cpu>
         """
         def_cpu = cpu.CPU(spec=spec, host_cpu=self.get_host_cpu())
         self.assertXmlEquivalentOutputs(ET.tostring(def_cpu.cpu_xml), _xml)
 
     def test_init_custom_and_model_not_allowed(self):
-        spec = {'cpu_custom': 'custom', 'cpu_model': 'DummyModel'}
+        spec = {
+            'cpu_custom': 'custom',
+            'cpu_model': 'DummyModel',
+            'memory': 2048
+        }
         with pytest.raises(LagoInitException):
             cpu.CPU(spec=spec, host_cpu=self.get_host_cpu())
