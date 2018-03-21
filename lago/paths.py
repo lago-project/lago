@@ -34,6 +34,8 @@ class Paths(object):
         Args:
             prefix_path (str): Path to the directory of the prefix
         """
+        # self._prefix should be dropped in lago ver 0.44
+        self.prefix = prefix_path
         self._prefix_path = prefix_path
 
     def prefixed(self, *args):
