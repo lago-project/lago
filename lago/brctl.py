@@ -56,5 +56,14 @@ def destroy(name):
 
 
 def exists(name):
-    ret, out, err = _brctl('show', name)
-    return err == ''
+    ret, out, _ = utils.run_command(
+        ['ip', '-o', 'link', 'show', 'type', 'bridge']
+    )
+    if ret:
+        raise RuntimeError('Failed to check if bridge {} exists'.format(name))
+
+    for entry in out.splitlines():
+        if name == entry.split(':')[1].strip():
+            return True
+
+    return False
