@@ -8,3 +8,6 @@ edit /boot/grub2/grub.cfg:s/set timeout=5/set timeout=0/g
 
 delete /etc/systemd/system/multi-user.target.wants/kdump.service
 delete /etc/systemd/system/multi-user.target.wants/postfix.service
+mkdir /etc/cloud
+chmod 0755:/etc/cloud
+touch /etc/cloud/cloud-init.disabled
