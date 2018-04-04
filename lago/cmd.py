@@ -148,7 +148,10 @@ def do_init(
     with log_utils.LogTask('Initialize and populate prefix', LOGGER):
         LOGGER.debug('Using workdir %s', workdir)
         workdir = lago_workdir.Workdir(workdir)
-        if not os.path.exists(workdir.path):
+        if not (
+            os.path.exists(workdir.path)
+            and lago.workdir.Workdir.is_workdir(workdir.path)
+        ):
             LOGGER.debug(
                 'Initializing workdir %s with prefix %s',
                 workdir.path,
