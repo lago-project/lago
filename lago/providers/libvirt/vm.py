@@ -475,24 +475,6 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
     def _libvirt_name(self):
         return self.vm.virt_env.prefixed_name(self.vm.name())
 
-    def _get_qemu_kvm_path(self):
-        qemu_kvm_path = self._caps.findtext(
-            "guest[os_type='hvm']/arch[@name='x86_64']/domain[@type='kvm']"
-            "/emulator"
-        )
-
-        if not qemu_kvm_path:
-            LOGGER.warning("hardware acceleration not available")
-            qemu_kvm_path = self._caps.findtext(
-                "guest[os_type='hvm']/arch[@name='x86_64']"
-                "/domain[@type='qemu']/../emulator"
-            )
-
-        if not qemu_kvm_path:
-            raise utils.LagoException('kvm executable not found')
-
-        return qemu_kvm_path
-
     def _load_xml(self):
 
         args = {
@@ -500,7 +482,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
             'libvirt_ver': self._libvirt_ver,
             'name': self._libvirt_name(),
             'mem_size': self.vm.spec.get('memory', 16 * 1024),
-            'qemu_kvm': self._get_qemu_kvm_path()
+            'qemu_kvm': libvirt_utils.get_qemu_kvm_path()
         }
 
         dom_raw_xml = libvirt_utils.get_domain_template(**args)
