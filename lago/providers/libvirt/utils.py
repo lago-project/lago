@@ -26,6 +26,7 @@ import lxml.etree
 import logging
 import pkg_resources
 from jinja2 import Environment, PackageLoader, TemplateNotFound
+from lago.utils import LagoException
 from lago.config import config
 
 LOGGER = logging.getLogger(__name__)
@@ -47,6 +48,7 @@ LIBVIRT_CONNECTION = None
 LIBVIRT_CONN_COUNTER = 0
 LIBVIRT_VER = None
 LIBVIRT_CAPS = None
+QEMU_KVM_PATH = None
 
 
 class Domain(object):
@@ -85,6 +87,7 @@ def get_libvirt_connection(libvirt_url='qemu:///system'):
     global LIBVIRT_VERSION
     global LIBVIRT_CAPS
     global LIBVIRT_CONN_COUNTER
+    global QEMU_KVM_PATH
     if LIBVIRT_CONNECTION is None:
         auth = [
             [libvirt.VIR_CRED_AUTHNAME, libvirt.VIR_CRED_PASSPHRASE],
@@ -94,6 +97,20 @@ def get_libvirt_connection(libvirt_url='qemu:///system'):
         LIBVIRT_VERSION = LIBVIRT_CONNECTION.getLibVersion()
         caps_raw_xml = LIBVIRT_CONNECTION.getCapabilities()
         LIBVIRT_CAPS = lxml.etree.fromstring(caps_raw_xml)
+        _qemu_kvm_path = LIBVIRT_CAPS.findtext(
+            "guest[os_type='hvm']/arch[@name='x86_64']/domain[@type='kvm']"
+            "/emulator"
+        )
+        if not _qemu_kvm_path:
+            LOGGER.warning("hardware acceleration not available")
+            _qemu_kvm_path = LIBVIRT_CAPS.findtext(
+                "guest[os_type='hvm']/arch[@name='x86_64']"
+                "/domain[@type='qemu']/../emulator"
+            )
+
+        if not _qemu_kvm_path:
+            raise LagoException('kvm executable not found')
+        QEMU_KVM_PATH = _qemu_kvm_path
 
     LIBVIRT_CONN_COUNTER += 1
     return LIBVIRT_CONNECTION
@@ -113,6 +130,10 @@ def get_libvirt_version():
 
 def get_libvirt_caps():
     return LIBVIRT_CAPS
+
+
+def get_qemu_kvm_path():
+    return QEMU_KVM_PATH
 
 
 def get_template(basename):
