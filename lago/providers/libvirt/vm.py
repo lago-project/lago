@@ -56,24 +56,23 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
         self._has_guestfs = 'lago.guestfs_tools' in sys.modules
         libvirt_url = config.get('libvirt_url')
         self.libvirt_con = libvirt_utils.get_libvirt_connection(
-            name=self.vm.virt_env.uuid + libvirt_url,
             libvirt_url=libvirt_url,
         )
-        self._libvirt_ver = self.libvirt_con.getLibVersion()
+        self._libvirt_ver = libvirt_utils.get_libvirt_version()
 
-        caps_raw_xml = self.libvirt_con.getCapabilities()
-        self._caps = ET.fromstring(caps_raw_xml)
+        self._caps = libvirt_utils.get_libvirt_caps()
 
-        host_cpu = self._caps.xpath('host/cpu')[0]
-        self._cpu = cpu.CPU(spec=self.vm._spec, host_cpu=host_cpu)
+        self._cpu = None
 
-        # TO-DO: found a nicer way to expose these attributes to the VM
-        self.vm.cpu_model = self.cpu_model
-        self.vm.cpu_vendor = self.cpu_vendor
+    def cpu(self):
+        if self._cpu is None:
+            host_cpu = self._caps.xpath('host/cpu')[0]
+            self._cpu = cpu.CPU(spec=self.vm._spec, host_cpu=host_cpu)
+        return self._cpu
 
     def __del__(self):
         if self.libvirt_con is not None:
-            self.libvirt_con.close()
+            libvirt_utils.close_libvirt_connection()
 
     def start(self):
         super().start()
@@ -161,6 +160,8 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
             self.vm._ssh_client = None
             with LogTask('Destroying VM %s' % self.vm.name()):
                 self.libvirt_con.lookupByName(self._libvirt_name(), ).destroy()
+                libvirt_utils.close_libvirt_connection()
+                self.libvirt_con = None
 
     def shutdown(self, *args, **kwargs):
         super().shutdown(*args, **kwargs)
@@ -175,6 +176,8 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
             with utils.ExceptionTimer(timeout=60 * 5):
                 while self.defined():
                     time.sleep(1)
+                libvirt_utils.close_libvirt_connection()
+                self.libvirt_con = None
         except utils.TimerException:
             raise utils.LagoUserException(
                 'Failed to shutdown vm: {}'.format(self.vm.name())
@@ -455,7 +458,8 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
             str: CPU model
 
         """
-        return self._cpu.model
+        self.cpu()
+        return self.cpu.model
 
     @property
     def cpu_vendor(self):
@@ -465,7 +469,8 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
         Returns:
             str: CPU vendor
         """
-        return self._cpu.vendor
+        self.cpu()
+        return self.cpu.vendor
 
     def _libvirt_name(self):
         return self.vm.virt_env.prefixed_name(self.vm.name())
@@ -507,7 +512,8 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
 
         dom_xml = self._load_xml()
 
-        for child in self._cpu:
+        cpu = self.cpu()
+        for child in cpu:
             dom_xml.append(child)
 
         devices = dom_xml.xpath('/domain/devices')[0]
