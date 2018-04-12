@@ -10,8 +10,8 @@ _local_config = {
         {
             'images':
                 [
-                    'el7.4-base', 'el6-base', 'fc25-base', 'fc26-base',
-                    'fc27-base', 'ubuntu16.04-base', 'debian8-base'
+                    'el7.4-base-1', 'el6-base', 'fc26-base', 'fc27-base',
+                    'ubuntu16.04-base', 'debian8-base'
                 ]
         }  # noqa: E123
 }
