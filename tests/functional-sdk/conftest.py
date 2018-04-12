@@ -1,6 +1,10 @@
 import os
 import pytest
 import shutil
+from lago_fixtures import (  # noqa: F401
+    tmp_workdir, init_dict, init_fname, test_results,
+    external_log, env, vms, nets
+)
 
 _local_config = {
     'check_patch': {
@@ -61,9 +65,3 @@ def global_test_results():
         shutil.rmtree(workdir)
     os.makedirs(workdir)
     return str(workdir)
-
-
-@pytest.fixture(scope='module')
-def tmp_workdir(tmpdir_factory):
-    env_workdir = tmpdir_factory.mktemp('env')
-    return env_workdir
