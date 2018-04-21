@@ -558,7 +558,7 @@ class VMPlugin(plugins.Plugin):
         """
 
         try:
-            ssh.get_ssh_client(
+            self._ssh_client = ssh.get_ssh_client(
                 ip_addr=self.ip(),
                 host_name=self.name(),
                 ssh_tries=tries,
@@ -686,19 +686,23 @@ class VMPlugin(plugins.Plugin):
 
     @contextlib.contextmanager
     def _scp(self, propagate_fail=True):
-        client = ssh.get_ssh_client(
-            propagate_fail=propagate_fail,
-            ip_addr=self.ip(),
-            host_name=self.name(),
-            ssh_key=self.virt_env.prefix.paths.ssh_id_rsa(),
-            username=self._spec.get('ssh-user'),
-            password=self._spec.get('ssh-password'),
-        )
+        if self._ssh_client is not None:
+            client = self._ssh_client
+        else:
+            client = ssh.get_ssh_client(
+                propagate_fail=propagate_fail,
+                ip_addr=self.ip(),
+                host_name=self.name(),
+                ssh_key=self.virt_env.prefix.paths.ssh_id_rsa(),
+                username=self._spec.get('ssh-user'),
+                password=self._spec.get('ssh-password'),
+            )
         scp = SCPClient(client.get_transport())
         try:
             yield scp
         finally:
             client.close()
+            self._ssh_client = None
 
     def _detect_service_provider(self):
         LOGGER.debug('Detecting service provider for %s', self.name())
