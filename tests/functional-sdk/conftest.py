@@ -1,6 +1,10 @@
 import os
 import pytest
 import shutil
+from lago_fixtures import (  # noqa: F401
+    tmp_workdir, init_dict, init_fname, test_results,
+    external_log, env, vms, nets
+)
 
 _local_config = {
     'check_patch': {
@@ -10,8 +14,8 @@ _local_config = {
         {
             'images':
                 [
-                    'el7.4-base', 'el6-base', 'fc25-base', 'fc26-base',
-                    'fc27-base', 'ubuntu16.04-base', 'debian8-base'
+                    'el7.4-base-1', 'el6-base', 'fc26-base', 'fc27-base',
+                    'ubuntu16.04-base', 'debian8-base'
                 ]
         }  # noqa: E123
 }
@@ -61,9 +65,3 @@ def global_test_results():
         shutil.rmtree(workdir)
     os.makedirs(workdir)
     return str(workdir)
-
-
-@pytest.fixture(scope='module')
-def tmp_workdir(tmpdir_factory):
-    env_workdir = tmpdir_factory.mktemp('env')
-    return env_workdir
