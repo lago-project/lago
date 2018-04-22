@@ -27,17 +27,25 @@ from copy import deepcopy
 from lxml import etree as ET
 import lago.providers.libvirt.utils as libvirt_utils
 from lago import brctl, log_utils, utils
+from lago.config import config
 
 LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
 
 
 class Network(object):
-    def __init__(self, env, spec, compat, libvirt_con):
+    def __init__(self, env, spec, compat):
         self._env = env
-        self.libvirt_con = libvirt_con
         self._spec = spec
         self.compat = compat
+
+        libvirt_url = config.get('libvirt_url')
+        self.libvirt_con = libvirt_utils.get_libvirt_connection()
+
+    def __del__(self):
+        if self.libvirt_con is not None:
+            libvirt_utils.close_libvirt_connection()
+            self.libvirt_con = None
 
     def name(self):
         return self._spec['name']

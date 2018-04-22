@@ -56,7 +56,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
         self._has_guestfs = 'lago.guestfs_tools' in sys.modules
         libvirt_url = config.get('libvirt_url')
         self.libvirt_con = libvirt_utils.get_libvirt_connection(
-            libvirt_url=libvirt_url,
+            libvirt_url=libvirt_url
         )
         self._libvirt_ver = libvirt_utils.get_libvirt_version()
 
@@ -458,8 +458,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
             str: CPU model
 
         """
-        self.cpu()
-        return self.cpu.model
+        return self.cpu().model
 
     @property
     def cpu_vendor(self):
@@ -469,8 +468,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
         Returns:
             str: CPU vendor
         """
-        self.cpu()
-        return self.cpu.vendor
+        return self.cpu().vendor
 
     def _libvirt_name(self):
         return self.vm.virt_env.prefixed_name(self.vm.name())

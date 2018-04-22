@@ -29,7 +29,6 @@ import yaml
 
 from lago import log_utils, plugins, utils
 from lago.config import config
-from lago.providers.libvirt import utils as libvirt_utils
 from lago.providers.libvirt.network import BridgeNetwork, NATNetwork
 
 LOGGER = logging.getLogger(__name__)
@@ -71,7 +70,6 @@ class VirtEnv(object):
     * vms
     * net
 
-    * libvirt_con
     '''
 
     def __init__(self, prefix, vm_specs, net_specs):
@@ -84,10 +82,6 @@ class VirtEnv(object):
         with open(self.prefix.paths.uuid(), 'r') as uuid_fd:
             self.uuid = uuid_fd.read().strip()
 
-        libvirt_url = config.get('libvirt_url')
-        self.libvirt_con = libvirt_utils.get_libvirt_connection(
-            libvirt_url=libvirt_url,
-        )
         self._nets = {}
         for name, spec in net_specs.items():
             self._nets[name] = self._create_net(spec)
@@ -96,22 +90,12 @@ class VirtEnv(object):
         for name, spec in vm_specs.items():
             self._vms[name] = self._create_vm(spec)
 
-    def __del__(self):
-        if self.libvirt_con is not None:
-            libvirt_utils.close_libvirt_connection()
-            self.libvirt_con = None
-
     def _create_net(self, net_spec):
         if net_spec['type'] == 'nat':
             cls = NATNetwork
         elif net_spec['type'] == 'bridge':
             cls = BridgeNetwork
-        return cls(
-            self,
-            net_spec,
-            compat=self.get_compat(),
-            libvirt_con=self.libvirt_con
-        )
+        return cls(self, net_spec, compat=self.get_compat())
 
     def _create_vm(self, vm_spec):
         default_vm_type = config.get('default_vm_type')
@@ -427,8 +411,6 @@ class VirtEnv(object):
             with LogTask('Stop nets'):
                 for net in nets:
                     net.stop()
-            libvirt_utils.close_libvirt_connection()
-            self.libvirt_con = None
 
     def shutdown(self, vm_names, reboot=False):
 
@@ -447,8 +429,6 @@ class VirtEnv(object):
                 with LogTask('Stop nets'):
                     for net in nets:
                         net.stop()
-                libvirt_utils.close_libvirt_connection()
-                self.libvirt_con = None
 
     def get_nets(self):
         return self._nets.copy()
