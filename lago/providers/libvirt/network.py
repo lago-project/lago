@@ -36,17 +36,16 @@ LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
 class Network(object):
     def __init__(self, env, spec, compat):
         self._env = env
-        libvirt_url = config.get('libvirt_url')
-        self.libvirt_con = libvirt_utils.get_libvirt_connection(
-            name=env.uuid + libvirt_url,
-            libvirt_url=libvirt_url,
-        )
         self._spec = spec
         self.compat = compat
 
+        libvirt_url = config.get('libvirt_url')
+        self.libvirt_con = libvirt_utils.get_libvirt_connection()
+
     def __del__(self):
         if self.libvirt_con is not None:
-            self.libvirt_con.close()
+            libvirt_utils.close_libvirt_connection()
+            self.libvirt_con = None
 
     def name(self):
         return self._spec['name']
@@ -55,7 +54,7 @@ class Network(object):
         return self._spec.get('gw')
 
     def mtu(self):
-        if self.libvirt_con.getLibVersion() > 3001001:
+        if libvirt_utils.get_libvirt_version() > 3001001:
             return self._spec.get('mtu', '1500')
         else:
             return '1500'
@@ -256,7 +255,7 @@ class NATNetwork(Network):
                     self._generate_main_dns(self._spec['dns_records'], subnet)
                 )
             else:
-                if self.libvirt_con.getLibVersion() < 2002000:
+                if libvirt_utils.get_libvirt_version() < 2002000:
                     net_xml.append(
                         self._generate_dns_forward(self._spec['dns_forward'])
                     )

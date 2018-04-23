@@ -26,6 +26,7 @@ import lxml.etree
 import logging
 import pkg_resources
 from jinja2 import Environment, PackageLoader, TemplateNotFound
+from lago.utils import LagoException
 from lago.config import config
 
 LOGGER = logging.getLogger(__name__)
@@ -43,7 +44,11 @@ DOMAIN_STATES = {
 }
 
 #: Singleton with the cached opened libvirt connections
-LIBVIRT_CONNECTIONS = {}
+LIBVIRT_CONNECTION = None
+LIBVIRT_CONN_COUNTER = 0
+LIBVIRT_VER = None
+LIBVIRT_CAPS = None
+QEMU_KVM_PATH = None
 
 
 class Domain(object):
@@ -77,16 +82,58 @@ def auth_callback(credentials, user_data):
     return 0
 
 
-def get_libvirt_connection(name, libvirt_url='qemu:///system'):
-    if name not in LIBVIRT_CONNECTIONS:
+def get_libvirt_connection(libvirt_url='qemu:///system'):
+    global LIBVIRT_CONNECTION
+    global LIBVIRT_VERSION
+    global LIBVIRT_CAPS
+    global LIBVIRT_CONN_COUNTER
+    global QEMU_KVM_PATH
+    if LIBVIRT_CONNECTION is None:
         auth = [
             [libvirt.VIR_CRED_AUTHNAME, libvirt.VIR_CRED_PASSPHRASE],
             auth_callback, None
         ]
+        LIBVIRT_CONNECTION = libvirt.openAuth(libvirt_url, auth)
+        LIBVIRT_VERSION = LIBVIRT_CONNECTION.getLibVersion()
+        caps_raw_xml = LIBVIRT_CONNECTION.getCapabilities()
+        LIBVIRT_CAPS = lxml.etree.fromstring(caps_raw_xml)
+        _qemu_kvm_path = LIBVIRT_CAPS.findtext(
+            "guest[os_type='hvm']/arch[@name='x86_64']/domain[@type='kvm']"
+            "/emulator"
+        )
+        if not _qemu_kvm_path:
+            LOGGER.warning("hardware acceleration not available")
+            _qemu_kvm_path = LIBVIRT_CAPS.findtext(
+                "guest[os_type='hvm']/arch[@name='x86_64']"
+                "/domain[@type='qemu']/../emulator"
+            )
 
-        LIBVIRT_CONNECTIONS[name] = libvirt.openAuth(libvirt_url, auth)
+        if not _qemu_kvm_path:
+            raise LagoException('kvm executable not found')
+        QEMU_KVM_PATH = _qemu_kvm_path
 
-    return LIBVIRT_CONNECTIONS[name]
+    LIBVIRT_CONN_COUNTER += 1
+    return LIBVIRT_CONNECTION
+
+
+def close_libvirt_connection():
+    global LIBVIRT_CONNECTION
+    global LIBVIRT_CONN_COUNTER
+    LIBVIRT_CONN_COUNTER -= 1
+    if LIBVIRT_CONN_COUNTER == 0:
+        LIBVIRT_CONNECTION.close()
+
+
+def get_libvirt_version():
+    return LIBVIRT_VERSION
+
+
+def get_libvirt_caps():
+    return LIBVIRT_CAPS
+
+
+def get_qemu_kvm_path():
+    return QEMU_KVM_PATH
 
 
 def get_template(basename):

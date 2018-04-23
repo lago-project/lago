@@ -29,7 +29,6 @@ import yaml
 
 from lago import log_utils, plugins, utils
 from lago.config import config
-from lago.providers.libvirt import utils as libvirt_utils
 from lago.providers.libvirt.network import BridgeNetwork, NATNetwork
 
 LOGGER = logging.getLogger(__name__)
@@ -71,7 +70,6 @@ class VirtEnv(object):
     * vms
     * net
 
-    * libvirt_con
     '''
 
     def __init__(self, prefix, vm_specs, net_specs):
@@ -84,11 +82,6 @@ class VirtEnv(object):
         with open(self.prefix.paths.uuid(), 'r') as uuid_fd:
             self.uuid = uuid_fd.read().strip()
 
-        libvirt_url = config.get('libvirt_url')
-        self.libvirt_con = libvirt_utils.get_libvirt_connection(
-            name=self.uuid + libvirt_url,
-            libvirt_url=libvirt_url,
-        )
         self._nets = {}
         for name, spec in net_specs.items():
             self._nets[name] = self._create_net(spec)
