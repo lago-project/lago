@@ -54,26 +54,36 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
     def __init__(self, vm):
         super().__init__(vm)
         self._has_guestfs = 'lago.guestfs_tools' in sys.modules
-        libvirt_url = config.get('libvirt_url')
         self.libvirt_con = libvirt_utils.get_libvirt_connection(
-            name=self.vm.virt_env.uuid + libvirt_url,
-            libvirt_url=libvirt_url,
+            name=self.vm.virt_env.uuid,
         )
-        self._libvirt_ver = self.libvirt_con.getLibVersion()
-
-        caps_raw_xml = self.libvirt_con.getCapabilities()
-        self._caps = ET.fromstring(caps_raw_xml)
-
-        host_cpu = self._caps.xpath('host/cpu')[0]
-        self._cpu = cpu.CPU(spec=self.vm._spec, host_cpu=host_cpu)
-
-        # TO-DO: found a nicer way to expose these attributes to the VM
-        self.vm.cpu_model = self.cpu_model
-        self.vm.cpu_vendor = self.cpu_vendor
+        self._caps = None
+        self._cpu = None
+        self._libvirt_ver = None
 
     def __del__(self):
         if self.libvirt_con is not None:
             self.libvirt_con.close()
+
+    @property
+    def cpu(self):
+        if self._cpu is None:
+            host_cpu = self.caps.xpath('host/cpu')[0]
+            self._cpu = cpu.CPU(spec=self.vm._spec, host_cpu=host_cpu)
+        return self._cpu
+
+    @property
+    def caps(self):
+        if self._caps is None:
+            caps_raw_xml = self.libvirt_con.getCapabilities()
+            self._caps = ET.fromstring(caps_raw_xml)
+        return self._caps
+
+    @property
+    def libvirt_ver(self):
+        if self._libvirt_ver is None:
+            self._libvirt_ver = self.libvirt_con.getLibVersion()
+        return self._libvirt_ver
 
     def start(self):
         super().start()
@@ -229,7 +239,11 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
                 libvirt_cmd(dom)
 
     def defined(self):
-        dom_names = [dom.name() for dom in self.libvirt_con.listAllDomains()]
+        flags = libvirt.VIR_CONNECT_LIST_DOMAINS_ACTIVE \
+            | libvirt.VIR_CONNECT_LIST_DOMAINS_TRANSIENT
+        dom_names = [
+            dom.name() for dom in self.libvirt_con.listAllDomains(flags)
+        ]
         return self._libvirt_name() in dom_names
 
     def bootstrap(self):
@@ -455,7 +469,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
             str: CPU model
 
         """
-        return self._cpu.model
+        return self.cpu.model
 
     @property
     def cpu_vendor(self):
@@ -465,20 +479,20 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
         Returns:
             str: CPU vendor
         """
-        return self._cpu.vendor
+        return self.cpu.vendor
 
     def _libvirt_name(self):
         return self.vm.virt_env.prefixed_name(self.vm.name())
 
     def _get_qemu_kvm_path(self):
-        qemu_kvm_path = self._caps.findtext(
+        qemu_kvm_path = self.caps.findtext(
             "guest[os_type='hvm']/arch[@name='x86_64']/domain[@type='kvm']"
             "/emulator"
         )
 
         if not qemu_kvm_path:
             LOGGER.warning("hardware acceleration not available")
-            qemu_kvm_path = self._caps.findtext(
+            qemu_kvm_path = self.caps.findtext(
                 "guest[os_type='hvm']/arch[@name='x86_64']"
                 "/domain[@type='qemu']/../emulator"
             )
@@ -492,7 +506,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
 
         args = {
             'distro': self.vm.distro(),
-            'libvirt_ver': self._libvirt_ver,
+            'libvirt_ver': self.libvirt_ver,
             'name': self._libvirt_name(),
             'mem_size': self.vm.spec.get('memory', 16 * 1024),
             'qemu_kvm': self._get_qemu_kvm_path()
@@ -507,7 +521,8 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
 
         dom_xml = self._load_xml()
 
-        for child in self._cpu:
+        cpu = self.cpu
+        for child in cpu:
             dom_xml.append(child)
 
         devices = dom_xml.xpath('/domain/devices')[0]
@@ -601,7 +616,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
                     type='virtio',
                 ),
             )
-            if self._libvirt_ver > 3001001:
+            if self.libvirt_ver > 3001001:
                 mtu = dev_spec.get('mtu', '1500')
                 if mtu != '1500':
                     interface.append(ET.Element(

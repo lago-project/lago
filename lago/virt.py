@@ -29,7 +29,6 @@ import yaml
 
 from lago import log_utils, plugins, utils
 from lago.config import config
-from lago.providers.libvirt import utils as libvirt_utils
 from lago.providers.libvirt.network import BridgeNetwork, NATNetwork
 
 LOGGER = logging.getLogger(__name__)
@@ -71,7 +70,6 @@ class VirtEnv(object):
     * vms
     * net
 
-    * libvirt_con
     '''
 
     def __init__(self, prefix, vm_specs, net_specs):
@@ -84,29 +82,25 @@ class VirtEnv(object):
         with open(self.prefix.paths.uuid(), 'r') as uuid_fd:
             self.uuid = uuid_fd.read().strip()
 
-        libvirt_url = config.get('libvirt_url')
-        self.libvirt_con = libvirt_utils.get_libvirt_connection(
-            name=self.uuid + libvirt_url,
-            libvirt_url=libvirt_url,
-        )
         self._nets = {}
+        compat = self.get_compat()
         for name, spec in net_specs.items():
-            self._nets[name] = self._create_net(spec)
+            self._nets[name] = self._create_net(spec, compat)
 
         self._vms = {}
+        self._default_vm_type = config.get('default_vm_type')
         for name, spec in vm_specs.items():
             self._vms[name] = self._create_vm(spec)
 
-    def _create_net(self, net_spec):
+    def _create_net(self, net_spec, compat):
         if net_spec['type'] == 'nat':
             cls = NATNetwork
         elif net_spec['type'] == 'bridge':
             cls = BridgeNetwork
-        return cls(self, net_spec, compat=self.get_compat())
+        return cls(self, net_spec, compat=compat)
 
     def _create_vm(self, vm_spec):
-        default_vm_type = config.get('default_vm_type')
-        vm_type_name = vm_spec.get('vm-type', default_vm_type)
+        vm_type_name = vm_spec.get('vm-type', self._default_vm_type)
         try:
             vm_type = self.vm_types[vm_type_name]
         except KeyError:
