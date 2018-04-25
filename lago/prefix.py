@@ -32,6 +32,7 @@ import urllib
 import uuid
 import warnings
 import pkg_resources
+from hashlib import sha256
 from os.path import join
 from plugins.output import YAMLOutFormatPlugin
 
@@ -130,6 +131,53 @@ class Prefix(object):
                 self._metadata = {}
         return self._metadata
 
+    @property
+    @sdk_utils.expose
+    def uuid(self):
+        """
+        The prefix UUID
+
+        Returns:
+            str: UUID4
+        """
+        if not os.path.isfile(self.paths.uuid()):
+            raise utils.LagoException(
+                'No UUID found at {0}'.format(os.paths.uuid())
+            )
+        with open(self.paths.uuid(), 'r') as uuid_fd:
+            uuid = uuid_fd.read().strip()
+        return str(uuid)
+
+    @sdk_utils.expose
+    def prefixed_name(self, unprefixed_name, max_length=15):
+        """
+        Returns an alpha-numeric identifier for the `unprefixed_name` specific
+            to this prefix, it is composed from:
+                (last 8 chars from the prefix uuid) concatenated with
+                (last min(max_length-8,72) chars of the SHA256 of
+                    `unprefixed_name`)
+        Note that it is highly recommended to use the maximal length
+        possible(72), otherwise, hash collisions are more likely to happen.
+
+
+        Args:
+            unprefixed_name(str): Name to hash
+            max_length(int): Maximum identifier length to return. 0 means 15.
+                Other than 0 allowed values are in range [11, 15].
+        Returns:
+            str: prefix identifier for `unprefixed_name`
+        """
+
+        if max_length < 11:
+            raise utils.LagoException('max length must be larger than 11')
+
+        hashed_name = sha256(unprefixed_name)
+
+        return '{uuid}{hashed}'.format(
+            uuid=self.uuid[:8],
+            hashed=hashed_name.hexdigest()[:min(max_length - 8, 72)]
+        )
+
     def _save_metadata(self):
         """
         Write this prefix metadata to disk
@@ -181,7 +229,7 @@ class Prefix(object):
             )
 
     @log_task('Initialize prefix')
-    def initialize(self):
+    def initialize(self, skip_ssh=False):
         """
         Initialize this prefix, this includes creating the destination path,
         and creating the uuid for the prefix, for any other actions see
@@ -189,11 +237,13 @@ class Prefix(object):
 
         Will safely roll back if any of those steps fail
 
+        Args:
+            skip_ssh(bool): Skip generating SSH keys
         Returns:
             None
 
         Raises:
-            RuntimeError: If it fails to create the prefix dir
+            :exc:`LagoInitException`: If it fails to create the prefix dir
         """
         prefix = self.paths.prefix_path()
         os.environ['LAGO_PREFIX_PATH'] = prefix
@@ -204,17 +254,17 @@ class Prefix(object):
                 try:
                     os.mkdir(prefix)
                 except OSError as error:
-                    raise RuntimeError(
+                    raise LagoInitException(
                         'Could not create prefix at %s:\n%s' % (prefix, error)
                     )
             rollback.prependDefer(shutil.rmtree, prefix)
 
             with open(self.paths.uuid(), 'w') as f, \
-                    LogTask('Generate prefix uuid'):
-                f.write(uuid.uuid1().hex)
-
-            with LogTask('Create ssh keys'):
-                self._create_ssh_keys()
+                    LogTask('Generate prefix uuid4'):
+                f.write(uuid.uuid4().hex)
+            if not skip_ssh:
+                with LogTask('Create ssh keys'):
+                    self._create_ssh_keys()
 
             with LogTask('Tag prefix as initialized'):
                 with open(self.paths.prefix_lagofile(), 'w') as fd:

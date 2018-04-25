@@ -19,12 +19,13 @@
 #
 
 import os
-
+from uuid import UUID
 import pytest
-
+import random
 import lago
+import string
 from lago import prefix
-from lago.utils import LagoInitException
+from lago.utils import LagoInitException, LagoException
 
 
 class PathsMock(object):
@@ -32,7 +33,7 @@ class PathsMock(object):
         self.prefix = prefix
 
     def prefix_lagofile(self):
-        return os.path.join(self.prefix, "lagofile")
+        return os.path.join(self.prefix, 'lagofile')
 
 
 @pytest.fixture(scope='function')
@@ -43,6 +44,44 @@ def local_prefix(tmpdir, monkeypatch):
     lagofile.write('')
     monkeypatch.setattr(lago.paths, 'Paths', PathsMock)
     return prefix_dir
+
+
+@pytest.fixture
+def initalized_prefix_gen(tmpdir):
+    def gen():
+        counter = 0
+        while True:
+            inited_prefix = prefix.Prefix(
+                str(tmpdir.join('workdir-{0}'.format(counter)))
+            )
+            inited_prefix.initialize(skip_ssh=True)
+            yield inited_prefix
+            counter = counter + 1
+
+    return gen
+
+
+@pytest.fixture
+def random_unique_str_gen():
+    def gen(length):
+        used = set()
+        while True:
+            res = ''
+            while True:
+                res = ''.join(
+                    [
+                        random.choice(
+                            string.punctuation + string.ascii_letters +
+                            string.digits
+                        ) for x in range(length)
+                    ]
+                )
+                if res not in used:
+                    used.add(res)
+                    break
+            yield res
+
+    return gen
 
 
 class TestPrefixPathResolution(object):
@@ -75,7 +114,7 @@ class TestPrefixPathResolution(object):
 
 
 class TestPrefixNetworkInitalization(object):
-    @pytest.fixture()
+    @pytest.fixture
     def default_mgmt(self):
         return {'management': True, 'dns_domain_name': 'lago.local'}
 
@@ -266,3 +305,77 @@ class TestPrefixNetworkInitalization(object):
         with pytest.raises(LagoInitException, message=err_msg) as exc_info:
             empty_prefix._validate_netconfig(conf)
         exc_info.match(err_msg)
+
+
+class TestInitalizedPrefix(object):
+    def test_uuid_created(self, initalized_prefix_gen):
+        initalized_prefix = next(initalized_prefix_gen())
+        fetched_uuid = UUID(initalized_prefix.uuid, version=4)
+        assert fetched_uuid.hex == initalized_prefix.uuid
+
+    @pytest.mark.parametrize('bad_value', [-1, 10, 2, 0])
+    def test_prefixed_name_raises(self, initalized_prefix_gen, bad_value):
+        gen = initalized_prefix_gen()
+        initalized_prefix = next(gen)
+        with pytest.raises(LagoException):
+            initalized_prefix.prefixed_name('a', max_length=bad_value)
+
+    @pytest.mark.parametrize('name_length', [1, 3, 11, 150])
+    @pytest.mark.parametrize('prefix_length', range(11, 16))
+    def test_prefixed_name_max_length(
+        self, initalized_prefix_gen, name_length, prefix_length
+    ):
+        gen = initalized_prefix_gen()
+        initalized_prefix = next(gen)
+        name = ''.join(
+            [
+                random.choice(
+                    string.punctuation + string.ascii_letters + string.digits
+                ) for x in range(name_length)
+            ]
+        )
+        res = initalized_prefix.prefixed_name(name, max_length=prefix_length)
+        assert len(res) == prefix_length
+        assert res.isalnum()
+
+    @pytest.mark.parametrize('parallel', [50])
+    @pytest.mark.parametrize('name_length', [1, 2, 3, 5, 32])
+    @pytest.mark.parametrize('prefix_length', range(11, 21))
+    def test_prefixed_name_unique(
+        self, initalized_prefix_gen, random_unique_str_gen, name_length,
+        prefix_length, parallel
+    ):
+        gen = initalized_prefix_gen()
+        prefixes = (next(gen) for _ in range(parallel))
+        name = next(random_unique_str_gen(name_length))
+        assert len(name) == name_length
+        results = [
+            p.prefixed_name(name, max_length=prefix_length) for p in prefixes
+        ]
+        assert len(results) == parallel
+        assert all([len(res) == prefix_length for res in results])
+        assert all([res.isalnum() for res in results])
+        assert len(set(results)) == parallel
+
+    @pytest.mark.parametrize(
+        'num_names,name_length', [(6, 3), (20, 6), (25, 10)]
+    )
+    @pytest.mark.parametrize('prefix_length', range(12, 21))
+    def test_prefixed_name_unique_in_prefix(
+        self, initalized_prefix_gen, random_unique_str_gen, name_length,
+        prefix_length, num_names
+    ):
+
+        initalized_prefix = next(initalized_prefix_gen())
+        random_str = random_unique_str_gen(name_length)
+        names = [next(random_str) for _ in range(num_names)]
+        assert all([len(name) == name_length for name in names])
+        results = [
+            initalized_prefix.prefixed_name(name, max_length=prefix_length)
+            for name in names
+        ]
+
+        assert len(results) == num_names
+        assert all([len(res) == prefix_length for res in results])
+        assert all([res.isalnum() for res in results])
+        assert len(set(results)) == num_names

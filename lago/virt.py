@@ -19,12 +19,9 @@
 #
 from copy import deepcopy
 import functools
-import hashlib
 import json
 import logging
 import os
-import uuid
-
 import yaml
 
 from lago import log_utils, plugins, utils
@@ -35,34 +32,6 @@ from lago.providers.libvirt.network import BridgeNetwork, NATNetwork
 LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
 log_task = functools.partial(log_utils.log_task, logger=LOGGER)
-
-
-def _gen_ssh_command_id():
-    return uuid.uuid1().hex[:8]
-
-
-def _guestfs_copy_path(g, guest_path, host_path):
-    if g.is_file(guest_path):
-        with open(host_path, 'w') as f:
-            f.write(g.read_file(guest_path))
-    elif g.is_dir(guest_path):
-        os.mkdir(host_path)
-        for path in g.ls(guest_path):
-            _guestfs_copy_path(
-                g,
-                os.path.join(
-                    guest_path,
-                    path,
-                ),
-                os.path.join(host_path, os.path.basename(path)),
-            )
-
-
-def _path_to_xml(basename):
-    return os.path.join(
-        os.path.dirname(__file__),
-        basename,
-    )
 
 
 class VirtEnv(object):
@@ -81,12 +50,9 @@ class VirtEnv(object):
         )
         self.prefix = prefix
 
-        with open(self.prefix.paths.uuid(), 'r') as uuid_fd:
-            self.uuid = uuid_fd.read().strip()
-
         libvirt_url = config.get('libvirt_url')
         self.libvirt_con = libvirt_utils.get_libvirt_connection(
-            name=self.uuid + libvirt_url,
+            name=self.prefix.prefixed_name(libvirt_url),
             libvirt_url=libvirt_url,
         )
         self._nets = {}
@@ -117,41 +83,6 @@ class VirtEnv(object):
             )
         vm_spec['vm-type'] = vm_type_name
         return vm_type(self, vm_spec)
-
-    def prefixed_name(self, unprefixed_name, max_length=0):
-        """
-        Returns a uuid pefixed identifier
-
-        Args:
-            unprefixed_name(str): Name to add a prefix to
-            max_length(int): maximum length of the resultant prefixed name,
-                will adapt the given name and the length of the uuid ot fit it
-
-        Returns:
-            str: prefixed identifier for the given unprefixed name
-        """
-        if max_length == 0:
-            prefixed_name = '%s-%s' % (self.uuid[:8], unprefixed_name)
-        else:
-            if max_length < 6:
-                raise RuntimeError(
-                    "Can't prefix with less than 6 chars (%s)" %
-                    unprefixed_name
-                )
-            if max_length < 16:
-                _uuid = self.uuid[:4]
-            else:
-                _uuid = self.uuid[:8]
-
-            name_max_length = max_length - len(_uuid) - 1
-
-            if name_max_length < len(unprefixed_name):
-                hashed_name = hashlib.sha1(unprefixed_name).hexdigest()
-                unprefixed_name = hashed_name[:name_max_length]
-
-            prefixed_name = '%s-%s' % (_uuid, unprefixed_name)
-
-        return prefixed_name
 
     def virt_path(self, *args):
         return self.prefix.paths.virt(*args)

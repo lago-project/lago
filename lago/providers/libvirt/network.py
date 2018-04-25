@@ -38,7 +38,7 @@ class Network(object):
         self._env = env
         libvirt_url = config.get('libvirt_url')
         self.libvirt_con = libvirt_utils.get_libvirt_connection(
-            name=env.uuid + libvirt_url,
+            name=env.prefix.prefixed_name(libvirt_url),
             libvirt_url=libvirt_url,
         )
         self._spec = spec
@@ -79,8 +79,10 @@ class Network(object):
     def mapping(self):
         return self._spec['mapping']
 
-    def _libvirt_name(self):
-        return self._env.prefixed_name(self.name(), max_length=15)
+    def _libvirt_name(self, max_length=15):
+        return self._env.prefix.prefixed_name(
+            self.name(), max_length=max_length
+        )
 
     def _libvirt_xml(self):
         raise NotImplementedError(
@@ -184,7 +186,7 @@ class NATNetwork(Network):
 
         replacements = {
             '@NAME@': self._libvirt_name(),
-            '@BR_NAME@': ('%s-nic' % self._libvirt_name())[:12],
+            '@BR_NAME@': 'b' + self._libvirt_name(11),
             '@GW_ADDR@': self.gw(),
             '@SUBNET@': subnet
         }
