@@ -179,7 +179,7 @@ class VirtEnv(object):
                 vm = self._vms[name]
                 if not vm.spec.get('skip-export'):
                     vms.append(vm)
-                    if vm.defined():
+                    if vm.running():
                         running_vms.append(vm)
             except KeyError:
                 raise utils.LagoUserException(
@@ -393,7 +393,7 @@ class VirtEnv(object):
         for vm in vms_to_stop:
             unused_nets = unused_nets.union(vm.nets())
         for vm in self._vms.values():
-            if not vm.defined() or vm.name() in vm_names:
+            if not vm.running() or vm.name() in vm_names:
                 continue
             for net in vm.nets():
                 unused_nets.discard(net)

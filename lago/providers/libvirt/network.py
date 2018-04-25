@@ -86,9 +86,8 @@ class Network(object):
         )
 
     def alive(self):
-        flags = libvirt.VIR_CONNECT_LIST_NETWORKS_ACTIVE \
-            | libvirt.VIR_CONNECT_LIST_NETWORKS_TRANSIENT \
-            | libvirt.VIR_CONNECT_LIST_NETWORKS_NO_AUTOSTART
+        flags = libvirt.VIR_CONNECT_LIST_NETWORKS_TRANSIENT \
+            | libvirt.VIR_CONNECT_LIST_NETWORKS_ACTIVE
         net_names = [
             net.name() for net in self.libvirt_con.listAllNetworks(flags)
         ]

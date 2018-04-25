@@ -87,7 +87,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
 
     def start(self):
         super().start()
-        if not self.defined():
+        if not self.alive():
             # the wait_suspend method is a work around for:
             # https://bugzilla.redhat.com/show_bug.cgi?id=1411025
             # 'LAGO__START_WAIT__SUSPEND' should be set to a float or integer
@@ -167,7 +167,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
 
     def stop(self):
         super().stop()
-        if self.defined():
+        if self.alive():
             self.vm._ssh_client = None
             with LogTask('Destroying VM %s' % self.vm.name()):
                 self.libvirt_con.lookupByName(self._libvirt_name(), ).destroy()
@@ -183,7 +183,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
 
         try:
             with utils.ExceptionTimer(timeout=60 * 5):
-                while self.defined():
+                while self.alive():
                     time.sleep(1)
         except utils.TimerException:
             raise utils.LagoUserException(
@@ -218,7 +218,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
         Raises:
             RuntimeError: If acpi is not configured an ssh isn't available
         """
-        if not self.defined():
+        if not self.alive():
             return
 
         with LogTask('{} VM {}'.format(msg, self.vm.name())):
@@ -238,13 +238,21 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
                 LOGGER.debug('{} using libvirt'.format(msg))
                 libvirt_cmd(dom)
 
-    def defined(self):
-        flags = libvirt.VIR_CONNECT_LIST_DOMAINS_ACTIVE \
-            | libvirt.VIR_CONNECT_LIST_DOMAINS_TRANSIENT
+    def _domain_exists(self, flags):
         dom_names = [
             dom.name() for dom in self.libvirt_con.listAllDomains(flags)
         ]
         return self._libvirt_name() in dom_names
+
+    def alive(self):
+        flags = libvirt.VIR_CONNECT_LIST_DOMAINS_TRANSIENT \
+            | libvirt.VIR_CONNECT_LIST_DOMAINS_ACTIVE
+        return self._domain_exists(flags)
+
+    def running(self):
+        flags = libvirt.VIR_CONNECT_LIST_DOMAINS_TRANSIENT \
+            | libvirt.VIR_CONNECT_LIST_DOMAINS_RUNNING
+        return self._domain_exists(flags)
 
     def bootstrap(self):
         with LogTask('Bootstrapping %s' % self.vm.name()):
@@ -274,16 +282,16 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
 
         Returns:
             str: small description of the domain status, 'down' if it's not
-            defined at all.
+            found at all.
         """
-        if not self.defined():
+        try:
+            dom = self.libvirt_con.lookupByName(self._libvirt_name())
+            return libvirt_utils.Domain.resolve_state(dom.state())
+        except libvirt.libvirtError:
             return 'down'
 
-        state = self.libvirt_con.lookupByName(self._libvirt_name()).state()
-        return libvirt_utils.Domain.resolve_state(state)
-
     def create_snapshot(self, name):
-        if self.vm.alive():
+        if self.alive():
             self._create_live_snapshot(name)
         else:
             self._create_dead_snapshot(name)
@@ -300,8 +308,8 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
 
         with LogTask('Reverting %s to snapshot %s' % (self.vm.name(), name)):
 
-            was_defined = self.defined()
-            if was_defined:
+            was_alive = self.alive()
+            if was_alive:
                 self.stop()
             for disk, disk_template in zip(self.vm._spec['disks'], snap_info):
                 os.unlink(os.path.expandvars(disk['path']))
@@ -321,7 +329,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
                     raise RuntimeError('Failed to revert disk')
 
             self._reclaim_disks()
-            if was_defined:
+            if was_alive:
                 self.start()
 
     def extract_paths(self, paths, ignore_nopath):
@@ -443,7 +451,6 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
         else:
             return {self.vm.name(): vm_export_mgr.export()}
 
-    @vm_plugin.check_defined
     def interactive_console(self):
         """
         Opens an interactive console
@@ -451,6 +458,8 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
         Returns:
             lago.utils.CommandStatus: result of the virsh command execution
         """
+        if not self.running():
+            raise RuntimeError('VM %s is not running' % self._libvirt_.name)
         virsh_command = [
             "virsh",
             "-c",
