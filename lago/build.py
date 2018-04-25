@@ -175,8 +175,9 @@ class Build(object):
         """
         cmd = ['virt-customize', '-a', self.disk_path]
         if 'ssh-inject' in options and not options['ssh-inject']:
-            options['ssh-inject'
-                    ] = 'root:file:{}'.format(self.paths.ssh_id_rsa_pub())
+            options['ssh-inject'] = 'root:file:{}'.format(
+                self.paths.ssh_id_rsa_pub()
+            )
 
         options = self.normalize_options(options)
         cmd.extend(options)

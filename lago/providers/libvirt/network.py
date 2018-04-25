@@ -54,6 +54,12 @@ class Network(object):
     def gw(self):
         return self._spec.get('gw')
 
+    def mtu(self):
+        if self.libvirt_con.getLibVersion() > 3001001:
+            return self._spec.get('mtu', '1500')
+        else:
+            return '1500'
+
     def is_management(self):
         return self._spec.get('management', False)
 
@@ -176,6 +182,7 @@ class NATNetwork(Network):
 
         subnet = self.gw().split('.')[2]
         ipv6_prefix = self._ipv6_prefix(subnet=subnet)
+        mtu = self.mtu()
 
         replacements = {
             '@NAME@': self._libvirt_name(),
@@ -189,6 +196,11 @@ class NATNetwork(Network):
         parser = ET.XMLParser(remove_blank_text=True)
         net_xml = ET.fromstring(net_raw_xml, parser)
 
+        if mtu != '1500':
+            net_xml.append(ET.Element(
+                'mtu',
+                size=str(mtu),
+            ))
         if 'dhcp' in self._spec:
             ipv4 = net_xml.xpath('/network/ip')[0]
             ipv6 = net_xml.xpath('/network/ip')[1]
@@ -278,8 +290,9 @@ class NATNetwork(Network):
                 net_xml.append(dns)
 
         LOGGER.debug(
-            'Generated Network XML\n {0}'.
-            format(ET.tostring(net_xml, pretty_print=True))
+            'Generated Network XML\n {0}'.format(
+                ET.tostring(net_xml, pretty_print=True)
+            )
         )
         return ET.tostring(net_xml)
 

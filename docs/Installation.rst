@@ -231,13 +231,39 @@ Troubleshooting
       $ sudo -u qemu ls $HOME/some/nested/path
 
 
-.. [1] For more information why this step is needed see
-       https://libvirt.org/drvqemu.html, at the bottom of
-       "POSIX users/groups" section.
-.. [2] If the installation script does not work for you on the supported
+  For more information why this step is needed see
+  https://libvirt.org/drvqemu.html, at the bottom of
+  "POSIX users/groups" section.
+
+* *Problem*: When trying to start the environment Libvirt throws the following error:
+
+  .. code:: bash
+
+      libvirtError: internal error: Check the host setup: enabling IPv6
+      forwarding with RA routes without accept_ra set to 2 is likely
+      to cause routes loss. Interfaces to look at: INTERFACE
+
+  *Solution*: Nat networks that created by Lago are IPv6 enabled by default. In the latest
+  versions of Libvirt, `accept_ra` kernel parameter should be set to `2` in order to create
+  IPv6 enabled networks. This can be achieved with the following command (replace INTERFACE
+  with the name of the interface shown in the error message):
+
+  .. code:: bash
+
+      sudo echo 2 > /proc/sys/net/ipv6/conf/INTERFACE/accept_ra
+
+  In order to apply and make this change permanent, use the following commands
+  (don't forget to specify your interface):
+
+  .. code:: bash
+
+      sudo echo "net.ipv6.conf.INTERFACE.accept_ra=2" >> "/etc/sysctl.conf"
+      sudo sysctl -p
+
+.. [1] If the installation script does not work for you on the supported
        distributions, please open an issue at h
        ttps://github.com/lago-project/lago-demo.git
-.. [3] libguestfs Python bindings is unfortunately not available on PyPI,
+.. [2] libguestfs Python bindings is unfortunately not available on PyPI,
        see https://bugzilla.redhat.com/show_bug.cgi?id=1075594 for current
        status. You may also use the system-wide package, if those are
        available for your distribution. In that case, if using a virtualenv,

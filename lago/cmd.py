@@ -27,6 +27,7 @@ import pkg_resources
 import sys
 from textwrap import dedent
 import warnings
+from signal import signal, SIGTERM, SIGHUP
 
 import lago
 import lago.plugins
@@ -137,8 +138,9 @@ def do_init(
             'Unable to find init file: {0}'.format(virt_config)
         )
 
-    os.environ['LAGO_INITFILE_PATH'
-               ] = os.path.dirname(os.path.abspath(virt_config))
+    os.environ['LAGO_INITFILE_PATH'] = os.path.dirname(
+        os.path.abspath(virt_config)
+    )
 
     if prefix_name == 'current':
         prefix_name = 'default'
@@ -146,7 +148,10 @@ def do_init(
     with log_utils.LogTask('Initialize and populate prefix', LOGGER):
         LOGGER.debug('Using workdir %s', workdir)
         workdir = lago_workdir.Workdir(workdir)
-        if not os.path.exists(workdir.path):
+        if not (
+            os.path.exists(workdir.path)
+            and lago.workdir.Workdir.is_workdir(workdir.path)
+        ):
             LOGGER.debug(
                 'Initializing workdir %s with prefix %s',
                 workdir.path,
@@ -225,12 +230,13 @@ def do_cleanup(prefix, **kwargs):
 def do_destroy(
     prefix, yes, all_prefixes, parent_workdir, prefix_name, **kwargs
 ):
-    warn_message = prefix.paths.prefix
-    path = prefix.paths.prefix
 
     if all_prefixes:
         warn_message = 'all the prefixes under ' + parent_workdir.path
         path = parent_workdir.path
+    else:
+        warn_message = prefix.paths.prefix_path()
+        path = warn_message
 
     if not yes:
         response = raw_input(
@@ -573,7 +579,7 @@ def do_status(prefix, out_format, **kwargs):
         'Prefix':
             {
                 'Base directory':
-                    prefix.paths.prefix,
+                    prefix.paths.prefix_path(),
                 'UUID':
                     uuid,
                 'Networks':
@@ -898,7 +904,30 @@ def create_parser(cli_plugins, out_plugins):
     return parser
 
 
+def exit_handler(signum, frame):
+    """
+    Catch SIGTERM and SIGHUP and call "sys.exit" which raises
+    "SystemExit" exception.
+    This will trigger all the cleanup code defined in ContextManagers
+    and "finally" statements.
+
+    For more details about the arguments see "signal" documentation.
+
+    Args:
+        signum(int): The signal's number
+        frame(frame): The current stack frame, can be None
+    """
+
+    LOGGER.debug('signal {} was caught'.format(signum))
+    sys.exit(128 + signum)
+
+
 def main():
+
+    # Trigger cleanup on SIGTERM and SIGHUP
+    signal(SIGTERM, exit_handler)
+    signal(SIGHUP, exit_handler)
+
     cli_plugins = lago.plugins.load_plugins(
         lago.plugins.PLUGIN_ENTRY_POINTS['cli']
     )
@@ -918,9 +947,7 @@ def main():
             task_tree_depth=args.logdepth,
             level=getattr(logging, args.loglevel.upper()),
             dump_level=logging.ERROR,
-            formatter=log_utils.ColorFormatter(
-                fmt='%(msg)s',
-            )
+            formatter=log_utils.ColorFormatter(fmt='%(msg)s', )
         )
     ]
 

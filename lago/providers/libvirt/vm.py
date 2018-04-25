@@ -160,9 +160,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
         if self.defined():
             self.vm._ssh_client = None
             with LogTask('Destroying VM %s' % self.vm.name()):
-                self.libvirt_con.lookupByName(
-                    self._libvirt_name(),
-                ).destroy()
+                self.libvirt_con.lookupByName(self._libvirt_name(), ).destroy()
 
     def shutdown(self, *args, **kwargs):
         super().shutdown(*args, **kwargs)
@@ -446,9 +444,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
             "console",
             self._libvirt_name(),
         ]
-        return utils.run_interactive_command(
-            command=virsh_command,
-        )
+        return utils.run_interactive_command(command=virsh_command, )
 
     @property
     def cpu_model(self):
@@ -572,10 +568,6 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
             disk.append(serial)
 
             disk.append(
-                ET.Element('boot', order="{}".format(disk_order + 1)),
-            )
-
-            disk.append(
                 ET.Element(
                     'source',
                     file=os.path.expandvars(dev_spec['path']),
@@ -608,6 +600,13 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
                     type='virtio',
                 ),
             )
+            if self._libvirt_ver > 3001001:
+                mtu = dev_spec.get('mtu', '1500')
+                if mtu != '1500':
+                    interface.append(ET.Element(
+                        'mtu',
+                        size=str(mtu),
+                    ))
             if 'ip' in dev_spec:
                 interface.append(
                     ET.Element(

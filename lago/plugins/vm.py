@@ -479,8 +479,19 @@ class VMPlugin(plugins.Plugin):
         for net in nets.values():
             mapping = net.mapping()
             for hostname, ip in mapping.items():
-                if hostname.startswith(self.name()):
+                # hostname is <hostname>-<ifacename>
+                if hostname.startswith(self.name() + "-"):
                     ips.append(str(ip))
+        return ips
+
+    def ips_in_net(self, net_name):
+        ips = []
+        net = self.virt_env.get_net(name=net_name)
+        mapping = net.mapping()
+        for hostname, ip in mapping.items():
+            # hostname is <hostname>-<ifacename>
+            if hostname.startswith(self.name() + "-"):
+                ips.append(str(ip))
         return ips
 
     def ssh(
@@ -767,7 +778,8 @@ def _resolve_service_class(class_name, service_providers):
     raise plugins.NoSuchPluginError(
         'No service provider plugin with class name %s found, loaded '
         'providers: %s' % (
-            class_name, [
+            class_name,
+            [
                 plugin.__class__.__name__
                 for plugin in service_providers.itervalues()
             ],
