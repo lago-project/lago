@@ -41,35 +41,44 @@ class VerifyLagoStatus(object):
     Verify configuration:
     """
     verificationStatus = False
-    def __init__(self,username,envs_dir,groups,nested,virtualization,lago_env_dir,verify_status):
-        print('__init__ is the constructor for a class VerifyLagoStatus')
+    def __init__(self,username,envs_dir,groups,nested,virtualization,lago_env_dir,kvm_configure,verify_status):
+        #print('__init__ is the constructor for a class VerifyLagoStatus')
         self.username = username
         self.envs_dir = envs_dir
         self.groups = groups
         self.nested = nested
         self.virtualization = virtualization
         self.lago_env_dir = lago_env_dir
-
+        self.kvm_configure = kvm_configure
         VerifyLagoStatus.verificationStatus = verify_status
 
-    def __del__(self):
-        print('__del__ is the destructor for a class VerifyLagoStatus')
-
-    def __enter__(self):
-        print('__enter__ is for context manager VerifyLagoStatus')
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        print('__exit__ is for context manager VerifyLagoStatus')
-
     def displayLagoStatus(self):
-        print "Nested:" + self.nested
-        print "Virtualization: " +  self.virtualization
-        print "Groups: " + self.groups
-        print "Lago Environment Directory " +  self.envs_dir + " " + self.lago_env_dir
-        print "Status:" + str(VerifyLagoStatus.verificationStatus)
+        print "Configuration Status:"
+        print "====================="
+        print "Username used by Lago: " + self.username
+        print "Environment directory used by Lago: " + self.envs_dir 
+        print "Nested: " + self.return_status(self.nested)
+        print "Virtualization: " +  self.return_status(self.virtualization)
+        print "Groups: " + self.return_status(self.groups)
+        print "Lago Environment Directory " +  self.envs_dir + ": " + self.return_status(self.lago_env_dir)
+        print "Kvm Configure: " +  self.return_status(self.kvm_configure)
+        print "Status: " + str(VerifyLagoStatus.verificationStatus)
+        if (VerifyLagoStatus.verificationStatus == False):
+            print "Please read configuration setup:"
+            print "  http://lago.readthedocs.io/en/latest/Installation.html#troubleshooting"
+        
+    def fixLagoConfiguration(self):
+        print "Nested: " + self.return_status(self.nested)
+        print "Virtualization: " +  self.return_status(self.virtualization)
+        print "Groups: " + self.return_status(self.groups)
+        print "Lago Environment Directory " +  self.envs_dir + ": " + self.return_status(self.lago_env_dir)
+        print "Kvm Configure: " +  self.return_status(self.kvm_configure)
+        print "Status: " + str(VerifyLagoStatus.verificationStatus)
+        if (VerifyLagoStatus.verificationStatus == False):
+            print "Please read configuration setup:"
+            print "  http://lago.readthedocs.io/en/latest/Installation.html#troubleshooting"
 
-    def return_status(status):
+    def return_status(self,status):
         if status == 'Y':
             return "OK"
         else:
@@ -91,7 +100,6 @@ def check_virtualization():
 def get_cpu_vendor():
     Input = commands.getoutput("lscpu | awk '/Vendor ID/{print $3}'")   
     if Input == 'GenuineIntel': 
-        #print "intel"
         vendor = "intel"
     elif vendor == 'AuthenticAMD':
         #print "amd"
@@ -100,6 +108,23 @@ def get_cpu_vendor():
         #print "unrecognized CPU vendor: $vendor, only Intel/AMD are supported"
         vendor = "problem"
     return vendor
+
+def is_virtualization_enable():
+    res = commands.getoutput("cat /proc/cpuinfo | egrep 'vmx|svm'")   
+    if res == "": 
+        status = "N"
+    else:
+        status = "Y"
+    return status
+
+def check_kvm_configure(vendor):
+    res = commands.getoutput("lsmod | grep kvm_"+vendor)   
+    if res == "": 
+        status = "N"
+    else:
+        status = "Y"
+    return status
+
 
 def check_nested(vendor):
     mod="kvm_"+vendor
@@ -123,20 +148,19 @@ def check_groups(username):
 
 def check_permissions(envs_dirs,username):
 
+    status = True
+    
     uid = commands.getoutput("id -u  " + username) 
     gid = commands.getoutput("getent group  " + username + " | awk -F: '{print $3}'") 
-    status = True
-    print "check_permissions Var: " + envs_dirs
+
+    #print "check_permissions Var: " + envs_dirs
     for dirpath, dirnames, filenames in os.walk(envs_dirs):  
-        print "Dirpath: " + dirpath
         for dirname in dirnames:  
             if ( os.stat(os.path.join(dirpath, dirname)).st_uid != uid ) &  (os.stat(os.path.join(dirpath, dirname)).st_gid != gid):
                 status = False
-
         for filename in filenames:
             if ( os.stat(os.path.join(dirpath, filename)).st_uid != uid ) &  (os.stat(os.path.join(dirpath, filename)).st_gid != gid):
                 status = False
-
     if ( status ):
         return 'Y'
     else: 
@@ -177,6 +201,7 @@ def main(argv):
 
    username = ''
    envs_dir = ''
+   msg=''
    running_user=Input = getpass.getuser()   
    parser = argparse.ArgumentParser(description='Verify that the machine that Lago runs on is well configured')
    #parser.add_argument('-u','--username', help='Description for foo argument', required=True)
@@ -193,31 +218,43 @@ def main(argv):
    if args['username']:
         # code here
         username = args['username'] 
-        print args['username'] 
+        uid = commands.getoutput("id -u  " + username) 
+        if ( uid == "no such user" ):
+            msg = "\'"+username+"\'"+ " username doesn't exists"
 
    if args['envs_dir']:
         # code here
         envs_dir = args['envs_dir'] 
-        print args['envs_dir'] 
- 
+        if (os.path.isdir(envs_dir)==False):
+            msg = "\'"+envs_dir+"\'"+ " envs_dir doesn't exists"
+
+   if (msg):
+        print "Error: " + msg
+        exit(1)
+
+
+   vendor = get_cpu_vendor()
+   nested = check_nested(vendor)
+   #virtualization = check_virtualization()
+   virtualization = is_virtualization_enable()
+   groups = check_groups(args['username'])
+   lago_env_dir = check_permissions(args['envs_dir'] ,args['username'])
+   kvm_configure = check_kvm_configure(vendor)
+
    if args['verify']:
         # code here
         verify = args['verify'] 
         #print args['verify'] 
-        print "Configuration Status:"
-        vendor = get_cpu_vendor()
-        nested = check_nested(vendor)
-        virtualization = check_virtualization()
-        groups = check_groups(args['username'])
-        lago_env_dir = check_permissions(args['envs_dir'] ,args['username'])
-        # if not ok update ....
+
+         # if not ok update ....
         # Groups, Lago env, 
         # virtualization .. msg ...
         # 
         #virt-host-validate
-        verify_status = validate_status([groups,nested,virtualization,lago_env_dir])
-        verify = VerifyLagoStatus(username,envs_dir,groups,nested,virtualization,lago_env_dir,verify_status)
+        verify_status = validate_status([groups,nested,virtualization,lago_env_dir])           
+        verify = VerifyLagoStatus(username,envs_dir,groups,nested,virtualization,lago_env_dir,kvm_configure,verify_status)
         verify.displayLagoStatus()
+        
 
 
 if __name__ == "__main__":
