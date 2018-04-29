@@ -66,6 +66,9 @@ class VerifyLagoStatus(object):
         if (VerifyLagoStatus.verificationStatus == False):
             print "Please read configuration setup:"
             print "  http://lago.readthedocs.io/en/latest/Installation.html#troubleshooting"
+            return 2
+        else: 
+            return 0    
         
     def fixLagoConfiguration(self):
         print "Nested: " + self.return_status(self.nested)
@@ -147,13 +150,10 @@ def check_groups(username):
         return 'N'
 
 def check_permissions(envs_dirs,username):
-
     status = True
-    
-    uid = commands.getoutput("id -u  " + username) 
-    gid = commands.getoutput("getent group  " + username + " | awk -F: '{print $3}'") 
+    uid = int(commands.getoutput("id -u  " + username) )
+    gid = int(commands.getoutput("getent group  " + username + " | awk -F: '{print $3}'") )
 
-    #print "check_permissions Var: " + envs_dirs
     for dirpath, dirnames, filenames in os.walk(envs_dirs):  
         for dirname in dirnames:  
             if ( os.stat(os.path.join(dirpath, dirname)).st_uid != uid ) &  (os.stat(os.path.join(dirpath, dirname)).st_gid != gid):
@@ -167,17 +167,14 @@ def check_permissions(envs_dirs,username):
         return 'N'
 
 def change_permissions(envs_dirs,username):
-    ## sudo chown -R USERNAME:USERNAME /var/lib/lago
-
-    uid = commands.getoutput("id -u  " + username) 
-    gid = commands.getoutput("getent group  " + username + " | awk -F: '{print $3}'") 
-
+    uid = int(commands.getoutput("id -u  " + username) )
+    gid = int(commands.getoutput("getent group  " + username + " | awk -F: '{print $3}'") )  
     for dirpath, dirnames, filenames in os.walk(envs_dirs):  
         for dirname in dirnames:  
             os.chown(os.path.join(dirpath, dirname), uid, gid)
         for filename in filenames:
             os.chown(os.path.join(dirpath, filename), uid, gid)
-
+ 
 def reload_kvm():
     """
     reload kvm
@@ -232,7 +229,7 @@ def main(argv):
         print "Error: " + msg
         exit(1)
 
-
+   ## check what is configure
    vendor = get_cpu_vendor()
    nested = check_nested(vendor)
    #virtualization = check_virtualization()
@@ -254,7 +251,11 @@ def main(argv):
         verify_status = validate_status([groups,nested,virtualization,lago_env_dir])           
         verify = VerifyLagoStatus(username,envs_dir,groups,nested,virtualization,lago_env_dir,kvm_configure,verify_status)
         verify.displayLagoStatus()
-        
+   else:
+        # fix configuration    
+        if (lago_env_dir == 'N'):
+            change_permissions(envs_dir,username)
+            print "check permission: " + str(check_permissions(envs_dir,username))
 
 
 if __name__ == "__main__":
