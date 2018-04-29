@@ -35,13 +35,14 @@ import commands
 import argparse
 import sys
 import getpass
+import platform
 
 class VerifyLagoStatus(object):
     """
     Verify configuration:
     """
     verificationStatus = False
-    def __init__(self,username,envs_dir,groups,nested,virtualization,lago_env_dir,kvm_configure,verify_status):
+    def __init__(self,username,envs_dir,groups,nested,virtualization,lago_env_dir,kvm_configure,install_pkg,verify_status):
         #print('__init__ is the constructor for a class VerifyLagoStatus')
         self.username = username
         self.envs_dir = envs_dir
@@ -50,6 +51,7 @@ class VerifyLagoStatus(object):
         self.virtualization = virtualization
         self.lago_env_dir = lago_env_dir
         self.kvm_configure = kvm_configure
+        self.install_pkg = install_pkg
         VerifyLagoStatus.verificationStatus = verify_status
 
     def displayLagoStatus(self):
@@ -62,6 +64,7 @@ class VerifyLagoStatus(object):
         print "Groups: " + self.return_status(self.groups)
         print "Lago Environment Directory " +  self.envs_dir + ": " + self.return_status(self.lago_env_dir)
         print "Kvm Configure: " +  self.return_status(self.kvm_configure)
+        print "All packages installed: " +  self.return_status(self.install_pkg)
         print "Status: " + str(VerifyLagoStatus.verificationStatus)
         if (VerifyLagoStatus.verificationStatus == False):
             print "Please read configuration setup:"
@@ -76,6 +79,7 @@ class VerifyLagoStatus(object):
         print "Groups: " + self.return_status(self.groups)
         print "Lago Environment Directory " +  self.envs_dir + ": " + self.return_status(self.lago_env_dir)
         print "Kvm Configure: " +  self.return_status(self.kvm_configure)
+        print "All packages installed: " +  self.return_status(self.install_pkg)
         print "Status: " + str(VerifyLagoStatus.verificationStatus)
         if (VerifyLagoStatus.verificationStatus == False):
             print "Please read configuration setup:"
@@ -128,7 +132,6 @@ def check_kvm_configure(vendor):
         status = "Y"
     return status
 
-
 def check_nested(vendor):
     mod="kvm_"+vendor
     cmd = "cat /sys/module/"+mod+"/parameters/nested"
@@ -150,8 +153,8 @@ def check_groups(username):
         return 'N'
 
 def change_groups(username):
-    a = os.system("usermod -a -G qemu,libvirt,lago " + username) 
-    b = os.system("usermod -a -G " + username + " qemu" ) 
+    os.system("usermod -a -G qemu,libvirt,lago " + username) 
+    os.system("usermod -a -G " + username + " qemu" ) 
 
 def check_permissions(envs_dirs,username):
     status = True
@@ -182,19 +185,21 @@ def change_permissions(envs_dirs,username):
 def check_packages_installed():
     missing_pkg = []
     status = "Y"
-    #yum install -y epel-release centos-release-qemu-ev
-    #yum install -y python-devel libvirt libvirt-devel \
-    #libguestfs-tools libguestfs-devel gcc libffi-devel \
-    #openssl-devel qemu-kvm-ev
-    #yum list installed {PACKAGE_NAME_HERE}
+    if  platform.linux_distribution()[0] == "CentOS Linux":
+        pkg_list = ["girl","epel-release", "centos-release-qemu-ev", "python-devel", "libvirt", "libvirt-devel" , "libguestfs-tools", "libguestfs-devel", "gcc", "libffi-devel", "openssl-devel", "qemu-kvm-ev"]
+    else:
+        pkg_list = ["python2-devel", "libvirt", "libvirt-devel" , "libguestfs-tools", "libguestfs-devel", "gcc", "libffi-devel", "openssl-devel", "qemu-kvm"]
     rpm_output = commands.getoutput("rpm -qa ")
-    for pkg in ["girl","epel-release", "centos-release-qemu-ev", "python-devel", "libvirt", "libvirt-devel" , "libguestfs-tools", "libguestfs-devel", "gcc", "libffi-devel", "openssl-devel", "qemu-kvm-ev"]:        
+    for pkg in pkg_list:        
         if pkg not in rpm_output:
             missing_pkg.append(pkg)  
             status =  'N'
     return (status,missing_pkg)
 
-
+def install_missing_packages(missing_pkg):
+    for pkg in missing_pkg:     
+        os.system("yum install -y " + pkg) 
+ 
 def reload_kvm():
     """
     reload kvm
@@ -215,7 +220,6 @@ def enable_services():
     enable services
     """   
 def main(argv):
-
    username = ''
    envs_dir = ''
    msg=''
@@ -227,7 +231,6 @@ def main(argv):
    parser.add_argument('-v','--verify', help='Return report that describes which configurations are OK, and which are not.', action='store_true')
 
    args = vars(parser.parse_args())
-
 
    if  (args['verify'] == False) &  (os.getuid() != 0):
        print "Please use 'sudo', you need adminstrator permissions for configuration"
@@ -257,7 +260,7 @@ def main(argv):
    groups = check_groups(args['username'])
    lago_env_dir = check_permissions(args['envs_dir'] ,args['username'])
    kvm_configure = check_kvm_configure(vendor)
-   print check_packages_installed()
+   (install_pkg,missing_pkg) = check_packages_installed()
    if args['verify']:
         # code here
         verify = args['verify'] 
@@ -268,8 +271,8 @@ def main(argv):
         # virtualization .. msg ...
         # 
         #virt-host-validate
-        verify_status = validate_status([groups,nested,virtualization,lago_env_dir])           
-        verify = VerifyLagoStatus(username,envs_dir,groups,nested,virtualization,lago_env_dir,kvm_configure,verify_status)
+        verify_status = validate_status([groups,nested,virtualization,lago_env_dir,install_pkg])           
+        verify = VerifyLagoStatus(username,envs_dir,groups,nested,virtualization,lago_env_dir,kvm_configure,install_pkg,verify_status)
         verify.displayLagoStatus()
    else:
         # fix configuration    
@@ -279,5 +282,12 @@ def main(argv):
         if (groups == 'N'):
             change_groups(username)
             print "Check groups: " + str(check_groups(args['username']))
+        if (install_pkg == 'N'):
+            install_missing_packages(missing_pkg)      
+            print "Check missing packages: " + str(check_packages_installed()[0])
+        # if nested
+        # update the value of LagoStatus
+        # reload libvirtd
+
 if __name__ == "__main__":
    main(sys.argv[1:])    
