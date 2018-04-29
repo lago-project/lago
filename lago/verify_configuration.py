@@ -149,6 +149,10 @@ def check_groups(username):
     else: 
         return 'N'
 
+def change_groups(username):
+    a = os.system("usermod -a -G qemu,libvirt,lago " + username) 
+    b = os.system("usermod -a -G " + username + " qemu" ) 
+
 def check_permissions(envs_dirs,username):
     status = True
     uid = int(commands.getoutput("id -u  " + username) )
@@ -175,6 +179,22 @@ def change_permissions(envs_dirs,username):
         for filename in filenames:
             os.chown(os.path.join(dirpath, filename), uid, gid)
  
+def check_packages_installed():
+    missing_pkg = []
+    status = "Y"
+    #yum install -y epel-release centos-release-qemu-ev
+    #yum install -y python-devel libvirt libvirt-devel \
+    #libguestfs-tools libguestfs-devel gcc libffi-devel \
+    #openssl-devel qemu-kvm-ev
+    #yum list installed {PACKAGE_NAME_HERE}
+    rpm_output = commands.getoutput("rpm -qa ")
+    for pkg in ["girl","epel-release", "centos-release-qemu-ev", "python-devel", "libvirt", "libvirt-devel" , "libguestfs-tools", "libguestfs-devel", "gcc", "libffi-devel", "openssl-devel", "qemu-kvm-ev"]:        
+        if pkg not in rpm_output:
+            missing_pkg.append(pkg)  
+            status =  'N'
+    return (status,missing_pkg)
+
+
 def reload_kvm():
     """
     reload kvm
@@ -237,7 +257,7 @@ def main(argv):
    groups = check_groups(args['username'])
    lago_env_dir = check_permissions(args['envs_dir'] ,args['username'])
    kvm_configure = check_kvm_configure(vendor)
-
+   print check_packages_installed()
    if args['verify']:
         # code here
         verify = args['verify'] 
@@ -255,31 +275,9 @@ def main(argv):
         # fix configuration    
         if (lago_env_dir == 'N'):
             change_permissions(envs_dir,username)
-            print "check permission: " + str(check_permissions(envs_dir,username))
-
-
+            print "Check permission: " + str(check_permissions(envs_dir,username))
+        if (groups == 'N'):
+            change_groups(username)
+            print "Check groups: " + str(check_groups(args['username']))
 if __name__ == "__main__":
    main(sys.argv[1:])    
-
-
-
-
-
-
-class Setup(object):
-    """
-    Setup on configure parameters:
-    """
-
-    def __init__(self, username, envs_dir, groups, verify ):
-        """__init__
-        Args:
-            username (str): username Lago was installed
-            envs_dir (str): DirectoryDefault dictonary to load, can be empty.
-        """
-
-        self.username = username
-        self.envs_dir = envs_dir
-        self.groups = groups
-        self.verify = verify
-
