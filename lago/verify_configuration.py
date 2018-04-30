@@ -308,6 +308,11 @@ def check_configuration(username,envs_dir):
 def fix_configuration(username,envs_dir,groups,nested,virtualization,lago_env_dir,install_pkg):
     """
     Fix configuration, if possible
+    - file permissions
+    - groups
+    - packages
+    - nested
+    - kvm virtualization
     """ 
     if (lago_env_dir == 'N'):
         change_permissions(envs_dir,username)
