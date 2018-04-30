@@ -36,6 +36,7 @@ import lago.templates
 from lago.config import config
 from lago import (log_utils, workdir as lago_workdir, utils, lago_ansible)
 from lago.utils import (in_prefix, with_logging, LagoUserException)
+#import lago.verify_configuration as setup
 
 LOGGER = logging.getLogger('cli')
 in_lago_prefix = in_prefix(
@@ -768,6 +769,48 @@ def do_deploy(prefix, **kwargs):
     action='store_true',
     default=False,
 )
+#####
+@in_lago_prefix
+@with_logging
+def do_setup(
+    prefix, vm_names, standalone, dst_dir, compress, init_file_name,
+    out_format, collect_only, without_threads, **kwargs
+):
+    output = prefix.export_vms(
+        vm_names, standalone, dst_dir, compress, init_file_name, out_format,
+        collect_only, not without_threads
+    )
+    if collect_only:
+        print(out_format.format(output))
+
+@lago.plugins.cli.cli_plugin(
+    help='Verify that the machine runninh Lago is well configured and configure if needed'
+)
+@lago.plugins.cli.cli_plugin_add_argument(
+    '--username',
+    '-u',
+    help='Which user needs to be configured',
+    #default=running_user,
+    action='store',
+)
+
+@lago.plugins.cli.cli_plugin_add_argument(
+    '--envs-dir',
+    '-e',
+    dest='envs_dir',
+    help='Which directory the qemu has access permissions',
+    default='/var/lib/lago',
+    action='store',
+)
+
+@lago.plugins.cli.cli_plugin_add_argument(
+    '--verify',
+    '-v',
+    help='Return report that describes which configurations are OK, and which are not.',
+    action='store_true',
+)
+
+######
 def do_generate(verbose, **kwargs):
     print(config.get_ini(incl_unset=verbose))
 
