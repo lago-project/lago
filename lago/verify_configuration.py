@@ -39,11 +39,10 @@ import platform
 
 class VerifyLagoStatus(object):
     """
-    Verify configuration:
+    Verify Lago configuration
     """
     verificationStatus = False
     def __init__(self,username,envs_dir,groups,nested,virtualization,lago_env_dir,kvm_configure,install_pkg,verify_status):
-        #print('__init__ is the constructor for a class VerifyLagoStatus')
         self.username = username
         self.envs_dir = envs_dir
         self.groups = groups
@@ -55,6 +54,9 @@ class VerifyLagoStatus(object):
         VerifyLagoStatus.verificationStatus = verify_status
 
     def displayLagoStatus(self):
+        """
+        Display Lago configuration status (OK/Not-OK) Verify Lago configuration
+        """
         print "Configuration Status:"
         print "====================="
         print "Username used by Lago: " + self.username
@@ -74,6 +76,9 @@ class VerifyLagoStatus(object):
             return 0    
         
     def fixLagoConfiguration(self):
+        """
+        Fix Lago configuration if possible
+        """
         print "Nested: " + self.return_status(self.nested)
         print "Virtualization: " +  self.return_status(self.virtualization)
         print "Groups: " + self.return_status(self.groups)
@@ -86,18 +91,27 @@ class VerifyLagoStatus(object):
             print "  http://lago.readthedocs.io/en/latest/Installation.html#troubleshooting"
 
     def return_status(self,status):
+        """
+        Display OK or Not-OK
+        """
         if status == 'Y':
             return "OK"
         else:
-            return "Not OK"    
+            return "Not-OK"    
 
 def validate_status(list_status):
+    """
+    Validate the status of all configuration checks
+    """
     status = True
     if 'N' in list_status :
         status = False
     return status    
 
 def check_virtualization():
+    """
+    Check if KVM configure in BIOS
+    """    
     if os.system("dmesg | grep -q 'kvm: disabled by BIOS'"):
       virtualization =  'N'
     else:
@@ -105,6 +119,9 @@ def check_virtualization():
     return virtualization
 
 def get_cpu_vendor():
+    """
+    Get the CPU vendor ie. intel/amd
+    """ 
     Input = commands.getoutput("lscpu | awk '/Vendor ID/{print $3}'")   
     if Input == 'GenuineIntel': 
         vendor = "intel"
@@ -117,6 +134,9 @@ def get_cpu_vendor():
     return vendor
 
 def is_virtualization_enable():
+    """
+    Check if Virtualization enabled
+    """ 
     res = commands.getoutput("cat /proc/cpuinfo | egrep 'vmx|svm'")   
     if res == "": 
         status = "N"
@@ -125,6 +145,9 @@ def is_virtualization_enable():
     return status
 
 def check_kvm_configure(vendor):
+    """
+    Check if KVM configure
+    """ 
     res = commands.getoutput("lsmod | grep kvm_"+vendor)   
     if res == "": 
         status = "N"
@@ -133,6 +156,9 @@ def check_kvm_configure(vendor):
     return status
 
 def check_nested(vendor):
+    """
+    Check if nested is available
+    """ 
     mod="kvm_"+vendor
     cmd = "cat /sys/module/"+mod+"/parameters/nested"
     is_enabled= commands.getoutput(cmd)
@@ -142,6 +168,9 @@ def check_nested(vendor):
         return 'N'
 
 def check_groups(username):
+    """
+    Check the groups are confiugre correct for LAGO
+    """ 
     ## all groups username in
     groups_username = commands.getoutput("groups " + username) 
     status_username = all(x in groups_username for x in ['qemu','libvirt','lago',username])
@@ -153,10 +182,16 @@ def check_groups(username):
         return 'N'
 
 def change_groups(username):
+    """
+    Update the groups according to LAGO permissions
+    """ 
     os.system("usermod -a -G qemu,libvirt,lago " + username) 
     os.system("usermod -a -G " + username + " qemu" ) 
 
 def check_permissions(envs_dirs,username):
+    """
+    Check directory permissions
+    """ 
     status = True
     uid = int(commands.getoutput("id -u  " + username) )
     gid = int(commands.getoutput("getent group  " + username + " | awk -F: '{print $3}'") )
@@ -174,6 +209,9 @@ def check_permissions(envs_dirs,username):
         return 'N'
 
 def change_permissions(envs_dirs,username):
+    """
+    Change directory permissions
+    """ 
     uid = int(commands.getoutput("id -u  " + username) )
     gid = int(commands.getoutput("getent group  " + username + " | awk -F: '{print $3}'") )  
     for dirpath, dirnames, filenames in os.walk(envs_dirs):  
@@ -183,10 +221,13 @@ def change_permissions(envs_dirs,username):
             os.chown(os.path.join(dirpath, filename), uid, gid)
  
 def check_packages_installed():
+    """
+    Check if all required packages are installed
+    """ 
     missing_pkg = []
     status = "Y"
     if  platform.linux_distribution()[0] == "CentOS Linux":
-        pkg_list = ["girl","epel-release", "centos-release-qemu-ev", "python-devel", "libvirt", "libvirt-devel" , "libguestfs-tools", "libguestfs-devel", "gcc", "libffi-devel", "openssl-devel", "qemu-kvm-ev"]
+        pkg_list = ["mysql-community-server","epel-release", "centos-release-qemu-ev", "python-devel", "libvirt", "libvirt-devel" , "libguestfs-tools", "libguestfs-devel", "gcc", "libffi-devel", "openssl-devel", "qemu-kvm-ev"]
     else:
         pkg_list = ["python2-devel", "libvirt", "libvirt-devel" , "libguestfs-tools", "libguestfs-devel", "gcc", "libffi-devel", "openssl-devel", "qemu-kvm"]
     rpm_output = commands.getoutput("rpm -qa ")
@@ -197,6 +238,9 @@ def check_packages_installed():
     return (status,missing_pkg)
 
 def install_missing_packages(missing_pkg):
+    """
+    Install missing packages
+    """ 
     for pkg in missing_pkg:     
         os.system("yum install -y " + pkg) 
  
@@ -219,75 +263,61 @@ def enable_services():
     """
     enable services
     """   
-def main(argv):
-   username = ''
-   envs_dir = ''
-   msg=''
-   running_user=Input = getpass.getuser()   
-   parser = argparse.ArgumentParser(description='Verify that the machine that Lago runs on is well configured')
-   #parser.add_argument('-u','--username', help='Description for foo argument', required=True)
-   parser.add_argument('-u','--username', help='Which user needs to be configured',default=running_user)
-   parser.add_argument('-e','--envs-dir', help='Which directory the qemu has access permissions', default='/var/lib/lago',dest='envs_dir')
-   parser.add_argument('-v','--verify', help='Return report that describes which configurations are OK, and which are not.', action='store_true')
 
-   args = vars(parser.parse_args())
+def reload_libvirtd():
+    """
+    reload libvirtd
+    """
+    output = os.system("systemctl restart libvirtd") 
+    print "Reload:"+ str(output)
+       
 
-   if  (args['verify'] == False) &  (os.getuid() != 0):
-       print "Please use 'sudo', you need adminstrator permissions for configuration"
-       exit(1)
-   if args['username']:
-        # code here
-        username = args['username'] 
-        uid = commands.getoutput("id -u  " + username) 
-        if ( uid == "no such user" ):
-            msg = "\'"+username+"\'"+ " username doesn't exists"
+def check_user(username):
+    """
+    Check if user exists in passwd
+    """ 
+    msg=""
+    uid = commands.getoutput("id -u  " + username) 
+    if "no such user" in uid: 
+        msg = "\'"+username+"\'"+ " username doesn't exists"
+    return msg
+        
+def check_directory(envs_dir):
+    """
+    Check if directory exists
+    """ 
+    msg=""
+    if (os.path.isdir(envs_dir)==False):
+        msg = "\'"+envs_dir+"\'"+ " envs_dir doesn't exists"
+    return msg    
 
-   if args['envs_dir']:
-        # code here
-        envs_dir = args['envs_dir'] 
-        if (os.path.isdir(envs_dir)==False):
-            msg = "\'"+envs_dir+"\'"+ " envs_dir doesn't exists"
+def check_configuration(username,envs_dir):
+    """
+    Check the configuration of LAGO (what is configure)
+    """ 
+    vendor = get_cpu_vendor()
+    nested = check_nested(vendor)
+    #virtualization = check_virtualization()
+    virtualization = is_virtualization_enable()
+    groups = check_groups(username)
+    lago_env_dir = check_permissions(envs_dir,username)
+    kvm_configure = check_kvm_configure(vendor)
+    (install_pkg,missing_pkg) = check_packages_installed()
+    return (groups,nested,virtualization,lago_env_dir,kvm_configure,install_pkg)
 
-   if (msg):
-        print "Error: " + msg
-        exit(1)
+def fix_configuration(username,envs_dir,groups,nested,virtualization,lago_env_dir,install_pkg):
+    """
+    Fix configuration, if possible
+    """ 
+    if (lago_env_dir == 'N'):
+        change_permissions(envs_dir,username)
+    if (groups == 'N'):
+        change_groups(username)
 
-   ## check what is configure
-   vendor = get_cpu_vendor()
-   nested = check_nested(vendor)
-   #virtualization = check_virtualization()
-   virtualization = is_virtualization_enable()
-   groups = check_groups(args['username'])
-   lago_env_dir = check_permissions(args['envs_dir'] ,args['username'])
-   kvm_configure = check_kvm_configure(vendor)
-   (install_pkg,missing_pkg) = check_packages_installed()
-   if args['verify']:
-        # code here
-        verify = args['verify'] 
-        #print args['verify'] 
-
-         # if not ok update ....
-        # Groups, Lago env, 
-        # virtualization .. msg ...
-        # 
-        #virt-host-validate
-        verify_status = validate_status([groups,nested,virtualization,lago_env_dir,install_pkg])           
-        verify = VerifyLagoStatus(username,envs_dir,groups,nested,virtualization,lago_env_dir,kvm_configure,install_pkg,verify_status)
-        verify.displayLagoStatus()
-   else:
-        # fix configuration    
-        if (lago_env_dir == 'N'):
-            change_permissions(envs_dir,username)
-            print "Check permission: " + str(check_permissions(envs_dir,username))
-        if (groups == 'N'):
-            change_groups(username)
-            print "Check groups: " + str(check_groups(args['username']))
-        if (install_pkg == 'N'):
-            install_missing_packages(missing_pkg)      
-            print "Check missing packages: " + str(check_packages_installed()[0])
-        # if nested
-        # update the value of LagoStatus
-        # reload libvirtd
-
-if __name__ == "__main__":
-   main(sys.argv[1:])    
+    if (install_pkg == 'N'):
+        print "Check missing packages: "
+        install_missing_packages(missing_pkg)      
+    reload_libvirtd()    
+    # if nested
+    # update the value of LagoStatus
+    # reload libvirtd

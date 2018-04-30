@@ -37,6 +37,7 @@ from lago.config import config
 from lago import (log_utils, workdir as lago_workdir, utils, lago_ansible)
 from lago.utils import (in_prefix, with_logging, LagoUserException)
 #import lago.verify_configuration as setup
+from lago.verify_configuration  import (fix_configuration, check_configuration, check_user, check_directory,validate_status, VerifyLagoStatus)
 
 LOGGER = logging.getLogger('cli')
 in_lago_prefix = in_prefix(
@@ -68,7 +69,6 @@ in_lago_prefix = in_prefix(
         '$PWD/.lago'
     ),
     metavar='WORKDIR',
-    type=os.path.abspath,
     nargs='?',
 )
 @lago.plugins.cli.cli_plugin_add_argument(
@@ -752,7 +752,6 @@ def do_copy_to_vm(prefix, host, remote_path, local_path, **kwargs):
 def do_collect(prefix, output, no_skip, **kwargs):
     prefix.collect_artifacts(output, ignore_nopath=not no_skip)
 
-
 @lago.plugins.cli.cli_plugin(
     help='Run scripts that install necessary RPMs and configuration'
 )
@@ -762,7 +761,6 @@ def do_deploy(prefix, **kwargs):
     prefix.deploy()
 
 ######
-
 @lago.plugins.cli.cli_plugin(
     help='Verify that the machine runninh Lago is well configured and configure if needed'
 )
@@ -779,7 +777,8 @@ def do_deploy(prefix, **kwargs):
     '-e',
     dest='envs_dir',
     help='Which directory the qemu has access permissions',
-    default='/var/lib/lago',
+    default="/var/lib/lago",
+    type=os.path.abspath,
     action='store',
 )
 
@@ -792,19 +791,39 @@ def do_deploy(prefix, **kwargs):
 @in_lago_prefix
 @with_logging
 def do_setup(
-    prefix, vm_names, standalone, dst_dir, compress, init_file_name,
-    out_format, collect_only, without_threads, **kwargs
+    prefix, username, envs_dir, verify, **kwargs
 ):
-    output = prefix.export_vms(
-        vm_names, standalone, dst_dir, compress, init_file_name, out_format,
-        collect_only, not without_threads
-    )
-    if collect_only:
-        print(out_format.format(output))
+    msg_error = []
+    if (username):
+        if (check_user(username)):
+            msg_error.append("Username doesn't exists " + username)
+
+    if (envs_dir):
+        if (check_directory(envs_dir)):
+            msg_error.append("Directory doesn't exists "+ envs_dir)
+
+    if ( msg_error ):
+        msg_error_str = '\n'.join(msg_error)
+        LOGGER.error("%s", msg_error_str)
+        sys.exit(2)
+
+    (groups,nested,virtualization,lago_env_dir,kvm_configure,install_pkg) = check_configuration(username,envs_dir)
+
+    if (verify):
+       verify_status = validate_status([groups,nested,virtualization,lago_env_dir,install_pkg])           
+       verify_lago = VerifyLagoStatus(username,envs_dir,groups,nested,virtualization,lago_env_dir,kvm_configure,install_pkg,verify_status)
+       verify_lago.displayLagoStatus()
+    else:
+       if (os.getuid() != 0): 
+          print("Please use 'sudo', you need adminstrator permissions for configuration")
+       else:
+          print("You have sudo permissions")
+          fix_configuration(username,envs_dir,groups,nested,virtualization,lago_env_dir,install_pkg)
+          (groups,nested,virtualization,lago_env_dir,kvm_configure,install_pkg) = check_configuration(username,envs_dir)
+          verify_status = validate_status([groups,nested,virtualization,lago_env_dir,install_pkg])           
+          print("Verify status: " + str(verify_status))
 
 ######
-
-
 
 @lago.plugins.cli.cli_plugin(help="Dump configuration file")
 @lago.plugins.cli.cli_plugin_add_argument(
