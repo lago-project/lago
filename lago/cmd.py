@@ -761,27 +761,7 @@ def do_collect(prefix, output, no_skip, **kwargs):
 def do_deploy(prefix, **kwargs):
     prefix.deploy()
 
-
-@lago.plugins.cli.cli_plugin(help="Dump configuration file")
-@lago.plugins.cli.cli_plugin_add_argument(
-    '--verbose',
-    help='Include parameters with no default value.',
-    action='store_true',
-    default=False,
-)
-#####
-@in_lago_prefix
-@with_logging
-def do_setup(
-    prefix, vm_names, standalone, dst_dir, compress, init_file_name,
-    out_format, collect_only, without_threads, **kwargs
-):
-    output = prefix.export_vms(
-        vm_names, standalone, dst_dir, compress, init_file_name, out_format,
-        collect_only, not without_threads
-    )
-    if collect_only:
-        print(out_format.format(output))
+######
 
 @lago.plugins.cli.cli_plugin(
     help='Verify that the machine runninh Lago is well configured and configure if needed'
@@ -809,8 +789,31 @@ def do_setup(
     help='Return report that describes which configurations are OK, and which are not.',
     action='store_true',
 )
+@in_lago_prefix
+@with_logging
+def do_setup(
+    prefix, vm_names, standalone, dst_dir, compress, init_file_name,
+    out_format, collect_only, without_threads, **kwargs
+):
+    output = prefix.export_vms(
+        vm_names, standalone, dst_dir, compress, init_file_name, out_format,
+        collect_only, not without_threads
+    )
+    if collect_only:
+        print(out_format.format(output))
 
 ######
+
+
+
+@lago.plugins.cli.cli_plugin(help="Dump configuration file")
+@lago.plugins.cli.cli_plugin_add_argument(
+    '--verbose',
+    help='Include parameters with no default value.',
+    action='store_true',
+    default=False,
+)
+
 def do_generate(verbose, **kwargs):
     print(config.get_ini(incl_unset=verbose))
 
