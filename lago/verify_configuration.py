@@ -132,12 +132,10 @@ def get_cpu_vendor():
     """
     Get the CPU vendor ie. intel/amd
     """ 
-    #Input = commands.getoutput("lscpu | awk '/Vendor ID/{print $3}'")   
     (exit_code,Input ) = exec_cmd("lscpu | awk '/Vendor ID/{print $3}'")
     if Input == 'GenuineIntel': 
         vendor = "intel"
     elif vendor == 'AuthenticAMD':
-        #print "amd"
         vendor = "amd"
     else:
         vendor = "problem"
@@ -147,7 +145,6 @@ def is_virtualization_enable():
     """
     Check if Virtualization enabled
     """ 
-    #res = commands.getoutput("cat /proc/cpuinfo | egrep 'vmx|svm'") 
     (exit_code,res) = exec_cmd("cat /proc/cpuinfo | egrep 'vmx|svm'")
   
     if res == "": 
@@ -161,7 +158,6 @@ def check_kvm_configure(vendor):
     Check if KVM configure
     """ 
     cmd = "lsmod | grep kvm_"+vendor
-   # res = commands.getoutput("lsmod | grep kvm_"+vendor)  
     (exit_code,res) = exec_cmd("lsmod | grep kvm_"+vendor)
 
     if res == "": 
@@ -176,7 +172,6 @@ def check_nested(vendor):
     """ 
     mod="kvm_"+vendor
     cmd = "cat /sys/module/"+mod+"/parameters/nested"
-   # is_enabled= commands.getoutput(cmd)
     (exit_code,is_enabled) = exec_cmd(cmd)
     if is_enabled == 'Y':
         return 'Y'
@@ -188,12 +183,9 @@ def check_groups(username):
     Check the groups are confiugre correct for LAGO
     """ 
     ## all groups username in
-    #groups_username = commands.getoutput("groups " + username) 
     cmd = "groups " + username
     (exit_code,groups_username) = exec_cmd(cmd)
-
     status_username = all(x in groups_username for x in ['qemu','libvirt','lago',username])
-    #groups_qemu = commands.getoutput("groups qemu") 
     cmd = "groups qemu"
     (exit_code,groups_qemu) = exec_cmd(cmd)
     status_qemu = all(x in groups_qemu for x in [username])
@@ -206,9 +198,7 @@ def change_groups(username):
     """
     Update the groups according to LAGO permissions
     """ 
-    #os.system("usermod -a -G qemu,libvirt,lago " + username) 
     exec_cmd("usermod -a -G qemu,libvirt,lago " + username) 
-    #os.system("usermod -a -G " + username + " qemu" ) 
     exec_cmd("usermod -a -G " + username + " qemu") 
 
 def check_home_dir_permmisions():
@@ -225,7 +215,6 @@ def check_home_dir_permmisions():
 def change_home_dir_permissions():
     _USERNAME = os.getenv("SUDO_USER") or os.getenv("USER") 
     _HOME = os.path.expanduser('~'+_USERNAME)
-    #os.system("chmod g+x " +  _HOME )
     exec_cmd("chmod g+x " +  _HOME) 
  
 
@@ -239,19 +228,15 @@ def remove_write_permissions(path):
     NO_GROUP_WRITING = ~stat.S_IWGRP
     NO_OTHER_WRITING = ~stat.S_IWOTH
     NO_WRITING = NO_USER_WRITING & NO_GROUP_WRITING & NO_OTHER_WRITING
-
     current_permissions = stat.S_IMODE(os.lstat(path).st_mode)
     os.chmod(path, current_permissions & NO_WRITING)
-
 
 def check_permissions(envs_dirs,username):
     """
     Check directory permissions
     """ 
     status = True
-    #uid = int(commands.getoutput("id -u  " + username) )
     (exit_code,uid) = exec_cmd("id -u  " + username)
-    #gid = int(commands.getoutput("getent group  " + username + " | awk -F: '{print $3}'") )
     (exit_code,gid) = exec_cmd("getent group  " + username + " | awk -F: '{print $3}'")
     for dirpath, dirnames, filenames in os.walk(envs_dirs):  
         if ( os.stat(dirpath).st_uid != int(uid) ) &  (os.stat(dirpath).st_gid != int(gid)):
@@ -271,9 +256,7 @@ def change_permissions(envs_dirs,username):
     """
     Change directory permissions
     """ 
-    #uid = int(commands.getoutput("id -u  " + username) )
     (exit_code,uid) = exec_cmd("id -u  " + username)
-    #gid = int(commands.getoutput("getent group  " + username + " | awk -F: '{print $3}'") )  
     (exit_code,gid) = exec_cmd("getent group  " + username + " | awk -F: '{print $3}'")
     for dirpath, dirnames, filenames in os.walk(envs_dirs):  
         os.chown(dirpath, int(uid), int(gid))
@@ -292,7 +275,6 @@ def check_packages_installed():
         pkg_list = ["mysql-community-server","epel-release", "centos-release-qemu-ev", "python-devel", "libvirt", "libvirt-devel" , "libguestfs-tools", "libguestfs-devel", "gcc", "libffi-devel", "openssl-devel", "qemu-kvm-ev"]
     else:
         pkg_list = ["python2-devel", "libvirt", "libvirt-devel" , "libguestfs-tools", "libguestfs-devel", "gcc", "libffi-devel", "openssl-devel", "qemu-kvm"]
-    #rpm_output = commands.getoutput("rpm -qa ")
     (exit_code,rpm_output) = exec_cmd("rpm -qa ")
 
     for pkg in pkg_list:        
@@ -306,7 +288,6 @@ def install_missing_packages(missing_pkg):
     Install missing packages
     """ 
     for pkg in missing_pkg:     
-        #os.system("yum install -y " + pkg) 
         exec_cmd("yum install -y " + pkg) 
  
 def enable_nested(vendor):
@@ -320,14 +301,12 @@ def reload_kvm(vendor):
     reload kvm
     """    
     mod = "kvm-" + vendor
-    #os.system("modprobe -r " + mod + " ; modprobe -r kvm ; modprobe kvm ; modprobe " + mod )
     (exit_code,output) = exec_cmd("modprobe -r " + mod + " ; modprobe -r kvm ; modprobe kvm ; modprobe " + mod )
 
 def enable_service(service):
     """
     enable service
     """
-    #os.system("systemctl enable " + service + "; systemctl restart " + service )
     exec_cmd("systemctl enable " + service + "; systemctl restart " + service  )
 
 def check_configure_ipv6_networking():
@@ -342,7 +321,6 @@ def configure_ipv6_networking():
     file = open("/etc/sysctl.conf","a") 
     file.write("net.ipv6.conf.all.accept_ra=2" ) 
     file.close() 
-    #os.system("sysctl -p")
     print exec_cmd("sysctl -p")
 
 def check_user(username):
@@ -350,7 +328,6 @@ def check_user(username):
     Check if user exists in passwd
     """ 
     msg=""
-    #uid = commands.getoutput("id -u  " + username) 
     (exit_code,uid) = exec_cmd("id -u  " + username)
 
     if "no such user" in uid: 
@@ -381,7 +358,6 @@ def check_configuration(username,envs_dir):
     (config_dict['install_pkg'],missing_pkg) = check_packages_installed()
     config_dict['home_permissions'] = check_home_dir_permmisions()
     config_dict['ipv6_networking'] = check_configure_ipv6_networking()
-    #return (groups,nested,virtualization,lago_env_dir,kvm_configure,install_pkg,home_permissions,ipv6_networking)
     return config_dict
     
 def fix_configuration(username,envs_dir,config_dict):
