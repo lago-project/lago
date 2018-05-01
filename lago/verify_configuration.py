@@ -18,20 +18,6 @@
 # Refer to the README and COPYING files for full details of the license
 #
 
-# permissions
-# group
-# and configure
-# ask the user to run with sudo
-
-#groups qemu,libvirt - USERNAME
-#groups USERNAME - qemu
-
-#/var/lib/lago
-# owner USERNAME:USERNAME
-# systemctl restart libvirtd
-
-
-
 import os
 import commands
 import argparse
@@ -96,7 +82,6 @@ class VerifyLagoStatus(object):
         self.ipv6_networking = config_dict['ipv6_networking']
         VerifyLagoStatus.verificationStatus = verify_status
 
-        
     def return_status(self,status):
         """
         Display OK or Not-OK
@@ -217,7 +202,6 @@ def change_home_dir_permissions():
     _HOME = os.path.expanduser('~'+_USERNAME)
     exec_cmd("chmod g+x " +  _HOME) 
  
-
 def remove_write_permissions(path):
     """Remove write permissions from this path, while keeping all other permissions intact.
 
@@ -292,9 +276,13 @@ def install_missing_packages(missing_pkg):
  
 def enable_nested(vendor):
     filename = "/etc/modprobe.d/kvm-" + vendor + ".conf"
-    file = open(filename,"a") 
-    file.write("options kvm-" + vendor + " nested=y" ) 
-    file.close() 
+    line_to_write="options kvm-" + vendor + " nested=y"
+    with open(filename, 'r') as content_file:
+        content = content_file.read()
+    if "line_to_write" not in  content:
+        file = open(filename,"a") 
+        file.write("options kvm-" + vendor + " nested=y" ) 
+        file.close() 
 
 def reload_kvm(vendor):
     """
@@ -379,8 +367,8 @@ def fix_configuration(username,envs_dir,config_dict):
 
     if (config_dict['install_pkg'] == 'N'):
         print "Trying to fix missing packages... "
-      #  (install_pkg,missing_pkg) = check_packages_installed()
-      #  install_missing_packages(missing_pkg) 
+        (install_pkg,missing_pkg) = check_packages_installed()
+        install_missing_packages(missing_pkg) 
 
     if (config_dict['home_permissions'] == 'N'):
         print "Trying to fix home permissions... "
