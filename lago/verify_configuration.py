@@ -132,14 +132,14 @@ def get_cpu_vendor():
     """
     Get the CPU vendor ie. intel/amd
     """ 
-    Input = commands.getoutput("lscpu | awk '/Vendor ID/{print $3}'")   
+    #Input = commands.getoutput("lscpu | awk '/Vendor ID/{print $3}'")   
+    (exit_code,Input ) = exec_cmd("lscpu | awk '/Vendor ID/{print $3}'")
     if Input == 'GenuineIntel': 
         vendor = "intel"
     elif vendor == 'AuthenticAMD':
         #print "amd"
         vendor = "amd"
     else:
-        #print "unrecognized CPU vendor: $vendor, only Intel/AMD are supported"
         vendor = "problem"
     return vendor
 
@@ -147,7 +147,9 @@ def is_virtualization_enable():
     """
     Check if Virtualization enabled
     """ 
-    res = commands.getoutput("cat /proc/cpuinfo | egrep 'vmx|svm'")   
+    #res = commands.getoutput("cat /proc/cpuinfo | egrep 'vmx|svm'") 
+    (exit_code,res) = exec_cmd("cat /proc/cpuinfo | egrep 'vmx|svm'")
+  
     if res == "": 
         status = "N"
     else:
@@ -158,7 +160,10 @@ def check_kvm_configure(vendor):
     """
     Check if KVM configure
     """ 
-    res = commands.getoutput("lsmod | grep kvm_"+vendor)   
+    cmd = "lsmod | grep kvm_"+vendor
+   # res = commands.getoutput("lsmod | grep kvm_"+vendor)  
+    (exit_code,res) = exec_cmd("lsmod | grep kvm_"+vendor)
+
     if res == "": 
         status = "N"
     else:
@@ -171,7 +176,8 @@ def check_nested(vendor):
     """ 
     mod="kvm_"+vendor
     cmd = "cat /sys/module/"+mod+"/parameters/nested"
-    is_enabled= commands.getoutput(cmd)
+   # is_enabled= commands.getoutput(cmd)
+    (exit_code,is_enabled) = exec_cmd(cmd)
     if is_enabled == 'Y':
         return 'Y'
     else: 
@@ -182,9 +188,14 @@ def check_groups(username):
     Check the groups are confiugre correct for LAGO
     """ 
     ## all groups username in
-    groups_username = commands.getoutput("groups " + username) 
+    #groups_username = commands.getoutput("groups " + username) 
+    cmd = "groups " + username
+    (exit_code,groups_username) = exec_cmd(cmd)
+
     status_username = all(x in groups_username for x in ['qemu','libvirt','lago',username])
-    groups_qemu = commands.getoutput("groups qemu") 
+    #groups_qemu = commands.getoutput("groups qemu") 
+    cmd = "groups qemu"
+    (exit_code,groups_qemu) = exec_cmd(cmd)
     status_qemu = all(x in groups_qemu for x in [username])
     if ( status_username &  status_qemu ):
         return 'Y'
@@ -195,8 +206,10 @@ def change_groups(username):
     """
     Update the groups according to LAGO permissions
     """ 
-    os.system("usermod -a -G qemu,libvirt,lago " + username) 
-    os.system("usermod -a -G " + username + " qemu" ) 
+    #os.system("usermod -a -G qemu,libvirt,lago " + username) 
+    exec_cmd("usermod -a -G qemu,libvirt,lago " + username) 
+    #os.system("usermod -a -G " + username + " qemu" ) 
+    exec_cmd("usermod -a -G " + username + " qemu") 
 
 def check_home_dir_permmisions():
     import stat
@@ -212,7 +225,9 @@ def check_home_dir_permmisions():
 def change_home_dir_permissions():
     _USERNAME = os.getenv("SUDO_USER") or os.getenv("USER") 
     _HOME = os.path.expanduser('~'+_USERNAME)
-    os.system("chmod g+x " +  _HOME ) 
+    #os.system("chmod g+x " +  _HOME )
+    exec_cmd("chmod g+x " +  _HOME) 
+ 
 
 def remove_write_permissions(path):
     """Remove write permissions from this path, while keeping all other permissions intact.
@@ -234,15 +249,18 @@ def check_permissions(envs_dirs,username):
     Check directory permissions
     """ 
     status = True
-    uid = int(commands.getoutput("id -u  " + username) )
-    gid = int(commands.getoutput("getent group  " + username + " | awk -F: '{print $3}'") )
-
+    #uid = int(commands.getoutput("id -u  " + username) )
+    (exit_code,uid) = exec_cmd("id -u  " + username)
+    #gid = int(commands.getoutput("getent group  " + username + " | awk -F: '{print $3}'") )
+    (exit_code,gid) = exec_cmd("getent group  " + username + " | awk -F: '{print $3}'")
     for dirpath, dirnames, filenames in os.walk(envs_dirs):  
+        if ( os.stat(dirpath).st_uid != int(uid) ) &  (os.stat(dirpath).st_gid != int(gid)):
+            status = False 
         for dirname in dirnames:  
-            if ( os.stat(os.path.join(dirpath, dirname)).st_uid != uid ) &  (os.stat(os.path.join(dirpath, dirname)).st_gid != gid):
+            if ( os.stat(os.path.join(dirpath, dirname)).st_uid != int(uid) ) &  (os.stat(os.path.join(dirpath, dirname)).st_gid != int(gid)):
                 status = False
         for filename in filenames:
-            if ( os.stat(os.path.join(dirpath, filename)).st_uid != uid ) &  (os.stat(os.path.join(dirpath, filename)).st_gid != gid):
+            if ( os.stat(os.path.join(dirpath, filename)).st_uid != int(uid) ) &  (os.stat(os.path.join(dirpath, filename)).st_gid != int(gid)):
                 status = False
     if ( status ):
         return 'Y'
@@ -253,13 +271,16 @@ def change_permissions(envs_dirs,username):
     """
     Change directory permissions
     """ 
-    uid = int(commands.getoutput("id -u  " + username) )
-    gid = int(commands.getoutput("getent group  " + username + " | awk -F: '{print $3}'") )  
+    #uid = int(commands.getoutput("id -u  " + username) )
+    (exit_code,uid) = exec_cmd("id -u  " + username)
+    #gid = int(commands.getoutput("getent group  " + username + " | awk -F: '{print $3}'") )  
+    (exit_code,gid) = exec_cmd("getent group  " + username + " | awk -F: '{print $3}'")
     for dirpath, dirnames, filenames in os.walk(envs_dirs):  
+        os.chown(dirpath, int(uid), int(gid))
         for dirname in dirnames:  
-            os.chown(os.path.join(dirpath, dirname), uid, gid)
+            os.chown(os.path.join(dirpath, dirname), int(uid), int(gid))
         for filename in filenames:
-            os.chown(os.path.join(dirpath, filename), uid, gid)
+            os.chown(os.path.join(dirpath, filename), int(uid), int(gid))
  
 def check_packages_installed():
     """
@@ -271,7 +292,9 @@ def check_packages_installed():
         pkg_list = ["mysql-community-server","epel-release", "centos-release-qemu-ev", "python-devel", "libvirt", "libvirt-devel" , "libguestfs-tools", "libguestfs-devel", "gcc", "libffi-devel", "openssl-devel", "qemu-kvm-ev"]
     else:
         pkg_list = ["python2-devel", "libvirt", "libvirt-devel" , "libguestfs-tools", "libguestfs-devel", "gcc", "libffi-devel", "openssl-devel", "qemu-kvm"]
-    rpm_output = commands.getoutput("rpm -qa ")
+    #rpm_output = commands.getoutput("rpm -qa ")
+    (exit_code,rpm_output) = exec_cmd("rpm -qa ")
+
     for pkg in pkg_list:        
         if pkg not in rpm_output:
             missing_pkg.append(pkg)  
@@ -283,10 +306,10 @@ def install_missing_packages(missing_pkg):
     Install missing packages
     """ 
     for pkg in missing_pkg:     
-        os.system("yum install -y " + pkg) 
+        #os.system("yum install -y " + pkg) 
+        exec_cmd("yum install -y " + pkg) 
  
 def enable_nested(vendor):
-    print "Enabling nested virtualization..."
     filename = "/etc/modprobe.d/kvm-" + vendor + ".conf"
     file = open(filename,"a") 
     file.write("options kvm-" + vendor + " nested=y" ) 
@@ -297,15 +320,15 @@ def reload_kvm(vendor):
     reload kvm
     """    
     mod = "kvm-" + vendor
-    print "Reloading kvm kernel module"
-    os.system("modprobe -r " + mod + " ; modprobe -r kvm ; modprobe kvm ; modprobe " + mod )
- 
+    #os.system("modprobe -r " + mod + " ; modprobe -r kvm ; modprobe kvm ; modprobe " + mod )
+    (exit_code,output) = exec_cmd("modprobe -r " + mod + " ; modprobe -r kvm ; modprobe kvm ; modprobe " + mod )
+
 def enable_service(service):
     """
     enable service
     """
-    os.system("systemctl enable " + service + "; systemctl restart " + service )
-
+    #os.system("systemctl enable " + service + "; systemctl restart " + service )
+    exec_cmd("systemctl enable " + service + "; systemctl restart " + service  )
 
 def check_configure_ipv6_networking():
     with open('/etc/sysctl.conf', 'r') as content_file:
@@ -319,14 +342,17 @@ def configure_ipv6_networking():
     file = open("/etc/sysctl.conf","a") 
     file.write("net.ipv6.conf.all.accept_ra=2" ) 
     file.close() 
-    os.system("sysctl -p")
+    #os.system("sysctl -p")
+    print exec_cmd("sysctl -p")
 
 def check_user(username):
     """
     Check if user exists in passwd
     """ 
     msg=""
-    uid = commands.getoutput("id -u  " + username) 
+    #uid = commands.getoutput("id -u  " + username) 
+    (exit_code,uid) = exec_cmd("id -u  " + username)
+
     if "no such user" in uid: 
         msg = "\'"+username+"\'"+ " username doesn't exists"
     return msg
@@ -395,3 +421,12 @@ def fix_configuration(username,envs_dir,config_dict):
         reload_kvm(vendor)
 
     enable_service("libvirtd")    
+
+def exec_cmd(cmd):
+    """
+    Execute the requested command and return list with the cmd exit code and the output written to stdout/stderr.  
+    """
+    (exit_code,output)= commands.getstatusoutput(cmd)
+    #print "Exit code:" + str(exit_code)
+    #print "Exit code:" + str(output) 
+    return exit_code,output
