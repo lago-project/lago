@@ -760,7 +760,6 @@ def do_collect(prefix, output, no_skip, **kwargs):
 def do_deploy(prefix, **kwargs):
     prefix.deploy()
 
-######
 @lago.plugins.cli.cli_plugin(
     help='Verify that the machine runninh Lago is well configured and configure if needed'
 )
@@ -768,7 +767,6 @@ def do_deploy(prefix, **kwargs):
     '--username',
     '-u',
     help='Which user needs to be configured',
-    #default=running_user,
     action='store',
 )
 
@@ -824,20 +822,16 @@ def do_setup(
           print("Please use 'sudo', you need adminstrator permissions for configuration")
           sys.exit(1)
        else:
-         # verify_lago.displayLagoStatus()
           fix_configuration(username,envs_dir,config_dict)
           config_dict = check_configuration(username,envs_dir)
           (verify_status,list_not_configure) = validate_status(config_dict)
           verify_lago.fixLagoConfiguration(config_dict,verify_status)
-         # verify_lago.displayLagoStatus()
           LOGGER.error("Problem to configure: %s", str(list_not_configure))
 
           if verify_status:
               sys.exit(0)
           else:
               sys.exit(2)    
-
-######
 
 @lago.plugins.cli.cli_plugin(help="Dump configuration file")
 @lago.plugins.cli.cli_plugin_add_argument(
