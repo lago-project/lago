@@ -30,6 +30,8 @@
 # owner USERNAME:USERNAME
 # systemctl restart libvirtd
 
+
+
 import os
 import commands
 import argparse
@@ -42,15 +44,17 @@ class VerifyLagoStatus(object):
     Verify Lago configuration
     """
     verificationStatus = False
-    def __init__(self,username,envs_dir,groups,nested,virtualization,lago_env_dir,kvm_configure,install_pkg,verify_status):
+    def __init__(self,username,envs_dir,config_dict,verify_status):
         self.username = username
         self.envs_dir = envs_dir
-        self.groups = groups
-        self.nested = nested
-        self.virtualization = virtualization
-        self.lago_env_dir = lago_env_dir
-        self.kvm_configure = kvm_configure
-        self.install_pkg = install_pkg
+        self.groups = config_dict['groups']
+        self.nested = config_dict['nested']
+        self.virtualization = config_dict['virtualization']
+        self.lago_env_dir = config_dict['lago_env_dir']
+        self.kvm_configure = config_dict['kvm_configure']
+        self.install_pkg = config_dict['install_pkg']
+        self.home_permissions = config_dict['home_permissions']
+        self.ipv6_networking = config_dict['ipv6_networking']
         VerifyLagoStatus.verificationStatus = verify_status
 
     def displayLagoStatus(self):
@@ -67,6 +71,9 @@ class VerifyLagoStatus(object):
         print "Lago Environment Directory " +  self.envs_dir + ": " + self.return_status(self.lago_env_dir)
         print "Kvm Configure: " +  self.return_status(self.kvm_configure)
         print "All packages installed: " +  self.return_status(self.install_pkg)
+        print "Home Directory permissions: " +  self.return_status(self.home_permissions)
+        print "IPV6 configure: " +  self.return_status(self.ipv6_networking)
+
         print "Status: " + str(VerifyLagoStatus.verificationStatus)
         if (VerifyLagoStatus.verificationStatus == False):
             print "Please read configuration setup:"
@@ -75,21 +82,21 @@ class VerifyLagoStatus(object):
         else: 
             return 0    
         
-    def fixLagoConfiguration(self):
+    def fixLagoConfiguration(self,config_dict,verify_status):
         """
         Fix Lago configuration if possible
         """
-        print "Nested: " + self.return_status(self.nested)
-        print "Virtualization: " +  self.return_status(self.virtualization)
-        print "Groups: " + self.return_status(self.groups)
-        print "Lago Environment Directory " +  self.envs_dir + ": " + self.return_status(self.lago_env_dir)
-        print "Kvm Configure: " +  self.return_status(self.kvm_configure)
-        print "All packages installed: " +  self.return_status(self.install_pkg)
-        print "Status: " + str(VerifyLagoStatus.verificationStatus)
-        if (VerifyLagoStatus.verificationStatus == False):
-            print "Please read configuration setup:"
-            print "  http://lago.readthedocs.io/en/latest/Installation.html#troubleshooting"
+        self.groups = config_dict['groups']
+        self.nested = config_dict['nested']
+        self.virtualization = config_dict['virtualization']
+        self.lago_env_dir = config_dict['lago_env_dir']
+        self.kvm_configure = config_dict['kvm_configure']
+        self.install_pkg = config_dict['install_pkg']
+        self.home_permissions = config_dict['home_permissions']
+        self.ipv6_networking = config_dict['ipv6_networking']
+        VerifyLagoStatus.verificationStatus = verify_status
 
+        
     def return_status(self,status):
         """
         Display OK or Not-OK
@@ -104,9 +111,12 @@ def validate_status(list_status):
     Validate the status of all configuration checks
     """
     status = True
-    if 'N' in list_status :
+    list_not_configure=[]
+    if 'N' in list_status.itervalues():
         status = False
-    return status    
+        list_not_configure = [k for k,v in list_status.iteritems() if v == 'N']
+
+    return status,list_not_configure    
 
 def check_virtualization():
     """
@@ -188,6 +198,37 @@ def change_groups(username):
     os.system("usermod -a -G qemu,libvirt,lago " + username) 
     os.system("usermod -a -G " + username + " qemu" ) 
 
+def check_home_dir_permmisions():
+    import stat
+    _USERNAME = os.getenv("SUDO_USER") or os.getenv("USER") 
+    _HOME = os.path.expanduser('~'+_USERNAME)
+    mode = os.stat(_HOME).st_mode
+    group_exe = (stat.S_IMODE(mode) &  stat.S_IXGRP !=  stat.S_IXGRP)
+    if group_exe:
+        return "N"
+    else: 
+        return "Y"    
+ 
+def change_home_dir_permissions():
+    _USERNAME = os.getenv("SUDO_USER") or os.getenv("USER") 
+    _HOME = os.path.expanduser('~'+_USERNAME)
+    os.system("chmod g+x " +  _HOME ) 
+
+def remove_write_permissions(path):
+    """Remove write permissions from this path, while keeping all other permissions intact.
+
+    Params:
+        path:  The path whose permissions to alter.
+    """
+    NO_USER_WRITING = ~stat.S_IWUSR
+    NO_GROUP_WRITING = ~stat.S_IWGRP
+    NO_OTHER_WRITING = ~stat.S_IWOTH
+    NO_WRITING = NO_USER_WRITING & NO_GROUP_WRITING & NO_OTHER_WRITING
+
+    current_permissions = stat.S_IMODE(os.lstat(path).st_mode)
+    os.chmod(path, current_permissions & NO_WRITING)
+
+
 def check_permissions(envs_dirs,username):
     """
     Check directory permissions
@@ -244,33 +285,41 @@ def install_missing_packages(missing_pkg):
     for pkg in missing_pkg:     
         os.system("yum install -y " + pkg) 
  
-def reload_kvm():
+def enable_nested(vendor):
+    print "Enabling nested virtualization..."
+    filename = "/etc/modprobe.d/kvm-" + vendor + ".conf"
+    file = open(filename,"a") 
+    file.write("options kvm-" + vendor + " nested=y" ) 
+    file.close() 
+
+def reload_kvm(vendor):
     """
     reload kvm
-    """
-
-def reload_nested():
-    """
-    reload kvm
-    """
-
-def enable_service():
+    """    
+    mod = "kvm-" + vendor
+    print "Reloading kvm kernel module"
+    os.system("modprobe -r " + mod + " ; modprobe -r kvm ; modprobe kvm ; modprobe " + mod )
+ 
+def enable_service(service):
     """
     enable service
     """
+    os.system("systemctl enable " + service + "; systemctl restart " + service )
 
-def enable_services():
-    """
-    enable services
-    """   
 
-def reload_libvirtd():
-    """
-    reload libvirtd
-    """
-    output = os.system("systemctl restart libvirtd") 
-    print "Reload:"+ str(output)
-       
+def check_configure_ipv6_networking():
+    with open('/etc/sysctl.conf', 'r') as content_file:
+        content = content_file.read()
+    if "net.ipv6.conf.all.accept_ra=2" in  content:
+        return 'Y'
+    else:
+        return 'N'
+    
+def configure_ipv6_networking():
+    file = open("/etc/sysctl.conf","a") 
+    file.write("net.ipv6.conf.all.accept_ra=2" ) 
+    file.close() 
+    os.system("sysctl -p")
 
 def check_user(username):
     """
@@ -295,17 +344,21 @@ def check_configuration(username,envs_dir):
     """
     Check the configuration of LAGO (what is configure)
     """ 
-    vendor = get_cpu_vendor()
-    nested = check_nested(vendor)
+    config_dict={}
+    config_dict['vendor'] = get_cpu_vendor()
+    config_dict['nested'] = check_nested(config_dict['vendor'])
     #virtualization = check_virtualization()
-    virtualization = is_virtualization_enable()
-    groups = check_groups(username)
-    lago_env_dir = check_permissions(envs_dir,username)
-    kvm_configure = check_kvm_configure(vendor)
-    (install_pkg,missing_pkg) = check_packages_installed()
-    return (groups,nested,virtualization,lago_env_dir,kvm_configure,install_pkg)
-
-def fix_configuration(username,envs_dir,groups,nested,virtualization,lago_env_dir,install_pkg):
+    config_dict['virtualization'] = is_virtualization_enable()
+    config_dict['groups'] = check_groups(username)
+    config_dict['lago_env_dir'] = check_permissions(envs_dir,username)
+    config_dict['kvm_configure'] = check_kvm_configure(config_dict['vendor'])
+    (config_dict['install_pkg'],missing_pkg) = check_packages_installed()
+    config_dict['home_permissions'] = check_home_dir_permmisions()
+    config_dict['ipv6_networking'] = check_configure_ipv6_networking()
+    #return (groups,nested,virtualization,lago_env_dir,kvm_configure,install_pkg,home_permissions,ipv6_networking)
+    return config_dict
+    
+def fix_configuration(username,envs_dir,config_dict):
     """
     Fix configuration, if possible
     - file permissions
@@ -314,15 +367,31 @@ def fix_configuration(username,envs_dir,groups,nested,virtualization,lago_env_di
     - nested
     - kvm virtualization
     """ 
-    if (lago_env_dir == 'N'):
+    if (config_dict['lago_env_dir'] == 'N'):
+        print "Trying to fix env_dir permissions... "
         change_permissions(envs_dir,username)
-    if (groups == 'N'):
+
+    if (config_dict['groups'] == 'N'):
+        print "Trying to fix group permissions... "
         change_groups(username)
 
-    if (install_pkg == 'N'):
-        print "Check missing packages: "
-        install_missing_packages(missing_pkg)      
-    reload_libvirtd()    
-    # if nested
-    # update the value of LagoStatus
-    # reload libvirtd
+    if (config_dict['install_pkg'] == 'N'):
+        print "Trying to fix missing packages... "
+      #  (install_pkg,missing_pkg) = check_packages_installed()
+      #  install_missing_packages(missing_pkg) 
+
+    if (config_dict['home_permissions'] == 'N'):
+        print "Trying to fix home permissions... "
+        change_home_dir_permissions() 
+
+    if (config_dict['ipv6_networking'] == 'N'):
+        print "Trying to fix ipv6 configuration... "
+        configure_ipv6_networking()
+
+    vendor = get_cpu_vendor()
+    if (config_dict['nested'] == 'N'):
+        print "Trying to enable nested ... "
+        enable_nested(vendor)
+        reload_kvm(vendor)
+
+    enable_service("libvirtd")    

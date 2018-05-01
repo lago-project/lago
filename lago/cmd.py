@@ -797,6 +797,8 @@ def do_setup(
     if (username):
         if (check_user(username)):
             msg_error.append("Username doesn't exists " + username)
+    else:
+        username = os.getenv("SUDO_USER") or os.getenv("USER") 
 
     if (envs_dir):
         if (check_directory(envs_dir)):
@@ -805,23 +807,35 @@ def do_setup(
     if ( msg_error ):
         msg_error_str = '\n'.join(msg_error)
         LOGGER.error("%s", msg_error_str)
-        sys.exit(2)
+        sys.exit(1)
 
-    (groups,nested,virtualization,lago_env_dir,kvm_configure,install_pkg) = check_configuration(username,envs_dir)
-
+    config_dict = check_configuration(username,envs_dir)
+    (verify_status,list_not_configure) = validate_status(config_dict)           
+    verify_lago = VerifyLagoStatus(username,envs_dir,config_dict,verify_status)
+    
     if (verify):
-       verify_status = validate_status([groups,nested,virtualization,lago_env_dir,install_pkg])           
-       verify_lago = VerifyLagoStatus(username,envs_dir,groups,nested,virtualization,lago_env_dir,kvm_configure,install_pkg,verify_status)
        verify_lago.displayLagoStatus()
+       if verify_status:
+              sys.exit(0)
+       else:
+              sys.exit(2)   
     else:
        if (os.getuid() != 0): 
           print("Please use 'sudo', you need adminstrator permissions for configuration")
+          sys.exit(1)
        else:
-          print("You have sudo permissions")
-          fix_configuration(username,envs_dir,groups,nested,virtualization,lago_env_dir,install_pkg)
-          (groups,nested,virtualization,lago_env_dir,kvm_configure,install_pkg) = check_configuration(username,envs_dir)
-          verify_status = validate_status([groups,nested,virtualization,lago_env_dir,install_pkg])           
-          print("Verify status: " + str(verify_status))
+         # verify_lago.displayLagoStatus()
+          fix_configuration(username,envs_dir,config_dict)
+          config_dict = check_configuration(username,envs_dir)
+          (verify_status,list_not_configure) = validate_status(config_dict)
+          verify_lago.fixLagoConfiguration(config_dict,verify_status)
+         # verify_lago.displayLagoStatus()
+          LOGGER.error("Problem to configure: %s", str(list_not_configure))
+
+          if verify_status:
+              sys.exit(0)
+          else:
+              sys.exit(2)    
 
 ######
 
