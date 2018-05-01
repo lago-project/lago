@@ -36,7 +36,6 @@ import lago.templates
 from lago.config import config
 from lago import (log_utils, workdir as lago_workdir, utils, lago_ansible)
 from lago.utils import (in_prefix, with_logging, LagoUserException)
-#import lago.verify_configuration as setup
 from lago.verify_configuration  import (fix_configuration, check_configuration, check_user, check_directory,validate_status, VerifyLagoStatus)
 
 LOGGER = logging.getLogger('cli')
