@@ -825,11 +825,11 @@ def do_setup(
           config_dict = check_configuration(username,envs_dir)
           (verify_status,list_not_configure) = validate_status(config_dict)
           verify_lago.fixLagoConfiguration(config_dict,verify_status)
-          LOGGER.error("Problem to configure: %s", str(list_not_configure))
-
+          
           if verify_status:
               sys.exit(0)
           else:
+              LOGGER.error("Problem to configure: %s", str(list_not_configure))
               sys.exit(2)    
 
 @lago.plugins.cli.cli_plugin(help="Dump configuration file")

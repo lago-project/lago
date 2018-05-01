@@ -256,7 +256,7 @@ def check_packages_installed():
     missing_pkg = []
     status = "Y"
     if  platform.linux_distribution()[0] == "CentOS Linux":
-        pkg_list = ["mysql-community-server","epel-release", "centos-release-qemu-ev", "python-devel", "libvirt", "libvirt-devel" , "libguestfs-tools", "libguestfs-devel", "gcc", "libffi-devel", "openssl-devel", "qemu-kvm-ev"]
+        pkg_list = ["epel-release", "centos-release-qemu-ev", "python-devel", "libvirt", "libvirt-devel" , "libguestfs-tools", "libguestfs-devel", "gcc", "libffi-devel", "openssl-devel", "qemu-kvm-ev"]
     else:
         pkg_list = ["python2-devel", "libvirt", "libvirt-devel" , "libguestfs-tools", "libguestfs-devel", "gcc", "libffi-devel", "openssl-devel", "qemu-kvm"]
     (exit_code,rpm_output) = exec_cmd("rpm -qa ")
@@ -272,8 +272,8 @@ def install_missing_packages(missing_pkg):
     Install missing packages
     """ 
     for pkg in missing_pkg:     
-        exec_cmd("yum install -y " + pkg) 
- 
+        (exit_code,res)=exec_cmd("yum install -y " + pkg) 
+
 def enable_nested(vendor):
     filename = "/etc/modprobe.d/kvm-" + vendor + ".conf"
     line_to_write="options kvm-" + vendor + " nested=y"
@@ -358,29 +358,29 @@ def fix_configuration(username,envs_dir,config_dict):
     - kvm virtualization
     """ 
     if (config_dict['lago_env_dir'] == 'N'):
-        print "Trying to fix env_dir permissions... "
+        #print "Trying to fix env_dir permissions... "
         change_permissions(envs_dir,username)
 
     if (config_dict['groups'] == 'N'):
-        print "Trying to fix group permissions... "
+        #print "Trying to fix group permissions... "
         change_groups(username)
 
     if (config_dict['install_pkg'] == 'N'):
-        print "Trying to fix missing packages... "
+        #print "Trying to fix missing packages... "
         (install_pkg,missing_pkg) = check_packages_installed()
         install_missing_packages(missing_pkg) 
 
     if (config_dict['home_permissions'] == 'N'):
-        print "Trying to fix home permissions... "
+        #print "Trying to fix home permissions... "
         change_home_dir_permissions() 
 
     if (config_dict['ipv6_networking'] == 'N'):
-        print "Trying to fix ipv6 configuration... "
+        #print "Trying to fix ipv6 configuration... "
         configure_ipv6_networking()
 
     vendor = get_cpu_vendor()
     if (config_dict['nested'] == 'N'):
-        print "Trying to enable nested ... "
+        #print "Trying to enable nested ... "
         enable_nested(vendor)
         reload_kvm(vendor)
 
