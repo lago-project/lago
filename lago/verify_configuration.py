@@ -286,7 +286,7 @@ def enable_nested(vendor):
     line_to_write="options kvm-" + vendor + " nested=y"
     with open(filename, 'r') as content_file:
         content = content_file.read()
-    if "line_to_write" not in  content:
+    if line_to_write not in  content:
         file = open(filename,"a") 
         file.write("options kvm-" + vendor + " nested=y" ) 
         file.close() 
