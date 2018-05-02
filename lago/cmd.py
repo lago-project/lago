@@ -811,7 +811,7 @@ def do_setup(
     verify_lago = VerifyLagoStatus(username,envs_dir,config_dict,verify_status)
     
     if (verify):
-       verify_lago.displayLagoStatus()
+       verify_lago.displayLagoStatus(True)
        if verify_status:
               sys.exit(0)
        else:
@@ -830,6 +830,7 @@ def do_setup(
               sys.exit(0)
           else:
               LOGGER.error("Problem to configure: %s", str(list_not_configure))
+              verify_lago.displayLagoStatus(False)
               sys.exit(2)    
 
 @lago.plugins.cli.cli_plugin(help="Dump configuration file")

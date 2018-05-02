@@ -43,24 +43,26 @@ class VerifyLagoStatus(object):
         self.ipv6_networking = config_dict['ipv6_networking']
         VerifyLagoStatus.verificationStatus = verify_status
 
-    def displayLagoStatus(self):
+    def displayLagoStatus(self,display_list):
         """
         Display Lago configuration status (OK/Not-OK) Verify Lago configuration
         """
-        print "Configuration Status:"
-        print "====================="
-        print "Username used by Lago: " + self.username
-        print "Environment directory used by Lago: " + self.envs_dir 
-        print "Nested: " + self.return_status(self.nested)
-        print "Virtualization: " +  self.return_status(self.virtualization)
-        print "Groups: " + self.return_status(self.groups)
-        print "Lago Environment Directory " +  self.envs_dir + ": " + self.return_status(self.lago_env_dir)
-        print "Kvm Configure: " +  self.return_status(self.kvm_configure)
-        print "All packages installed: " +  self.return_status(self.install_pkg)
-        print "Home Directory permissions: " +  self.return_status(self.home_permissions)
-        print "IPV6 configure: " +  self.return_status(self.ipv6_networking)
+        if (display_list):
+            print "Configuration Status:"
+            print "====================="
+            print "Username used by Lago: " + self.username
+            print "Environment directory used by Lago: " + self.envs_dir 
+            print "Nested: " + self.return_status(self.nested)
+            print "Virtualization: " +  self.return_status(self.virtualization)
+            print "Groups: " + self.return_status(self.groups)
+            print "Lago Environment Directory " +  self.envs_dir + ": " + self.return_status(self.lago_env_dir)
+            print "Kvm Configure: " +  self.return_status(self.kvm_configure)
+            print "All packages installed: " +  self.return_status(self.install_pkg)
+            print "Home Directory permissions: " +  self.return_status(self.home_permissions)
+            print "IPV6 configure: " +  self.return_status(self.ipv6_networking)
 
-        print "Status: " + str(VerifyLagoStatus.verificationStatus)
+            print "Status: " + str(VerifyLagoStatus.verificationStatus)
+
         if (VerifyLagoStatus.verificationStatus == False):
             print "Please read configuration setup:"
             print "  http://lago.readthedocs.io/en/latest/Installation.html#troubleshooting"
@@ -256,7 +258,7 @@ def check_packages_installed():
     missing_pkg = []
     status = "Y"
     if  platform.linux_distribution()[0] == "CentOS Linux":
-        pkg_list = ["epel-release", "centos-release-qemu-ev", "python-devel", "libvirt", "libvirt-devel" , "libguestfs-tools", "libguestfs-devel", "gcc", "libffi-devel", "openssl-devel", "qemu-kvm-ev"]
+        pkg_list = ["mysqll","epel-release", "centos-release-qemu-ev", "python-devel", "libvirt", "libvirt-devel" , "libguestfs-tools", "libguestfs-devel", "gcc", "libffi-devel", "openssl-devel", "qemu-kvm-ev"]
     else:
         pkg_list = ["python2-devel", "libvirt", "libvirt-devel" , "libguestfs-tools", "libguestfs-devel", "gcc", "libffi-devel", "openssl-devel", "qemu-kvm"]
     (exit_code,rpm_output) = exec_cmd("rpm -qa ")
