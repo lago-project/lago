@@ -65,7 +65,6 @@ class VerifyLagoStatus(object):
             print "All packages installed: " +  self.return_status(self.install_pkg)
             print "Home Directory permissions: " +  self.return_status(self.home_permissions)
             print "IPV6 configure: " +  self.return_status(self.ipv6_networking)
-
             print "Status: " + str(VerifyLagoStatus.verificationStatus)
 
         if (VerifyLagoStatus.verificationStatus == False):
@@ -107,7 +106,6 @@ def validate_status(list_status):
     if 'N' in list_status.itervalues():
         status = False
         list_not_configure = [k for k,v in list_status.iteritems() if v == 'N']
-
     return status,list_not_configure    
 
 def check_virtualization():
