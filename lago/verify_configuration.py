@@ -263,7 +263,7 @@ def check_packages_installed():
     missing_pkg = []
     status = "Y"
     if  platform.linux_distribution()[0] == "CentOS Linux":
-        pkg_list = ["mysqll","epel-release", "centos-release-qemu-ev", "python-devel", "libvirt", "libvirt-devel" , "libguestfs-tools", "libguestfs-devel", "gcc", "libffi-devel", "openssl-devel", "qemu-kvm-ev"]
+        pkg_list = ["epel-release", "centos-release-qemu-ev", "python-devel", "libvirt", "libvirt-devel" , "libguestfs-tools", "libguestfs-devel", "gcc", "libffi-devel", "openssl-devel", "qemu-kvm-ev"]
     else:
         pkg_list = ["python2-devel", "libvirt", "libvirt-devel" , "libguestfs-tools", "libguestfs-devel", "gcc", "libffi-devel", "openssl-devel", "qemu-kvm"]
     (exit_code,rpm_output) = exec_cmd("rpm -qa ")
