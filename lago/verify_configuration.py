@@ -24,6 +24,11 @@ import argparse
 import sys
 import getpass
 import platform
+import logging
+
+from .utils import LagoUserException
+
+LOGGER = logging.getLogger(__name__)
 
 class VerifyLagoStatus(object):
     """
@@ -360,29 +365,23 @@ def fix_configuration(username,envs_dir,config_dict):
     - kvm virtualization
     """ 
     if (config_dict['lago_env_dir'] == 'N'):
-        #print "Trying to fix env_dir permissions... "
         change_permissions(envs_dir,username)
 
     if (config_dict['groups'] == 'N'):
-        #print "Trying to fix group permissions... "
         change_groups(username)
 
     if (config_dict['install_pkg'] == 'N'):
-        #print "Trying to fix missing packages... "
         (install_pkg,missing_pkg) = check_packages_installed()
         install_missing_packages(missing_pkg) 
 
     if (config_dict['home_permissions'] == 'N'):
-        #print "Trying to fix home permissions... "
         change_home_dir_permissions() 
 
     if (config_dict['ipv6_networking'] == 'N'):
-        #print "Trying to fix ipv6 configuration... "
         configure_ipv6_networking()
 
     vendor = get_cpu_vendor()
     if (config_dict['nested'] == 'N'):
-        #print "Trying to enable nested ... "
         enable_nested(vendor)
         reload_kvm(vendor)
 
@@ -393,6 +392,10 @@ def exec_cmd(cmd):
     Execute the requested command and return list with the cmd exit code and the output written to stdout/stderr.  
     """
     (exit_code,output)= commands.getstatusoutput(cmd)
+    if (exit_code == 0):
+        LOGGER.debug("Running command '%s' succeeded", cmd)
+    else:
+        LOGGER.debug("Running command '%s' failed", cmd)    
     #print "Exit code:" + str(exit_code)
     #print "Exit code:" + str(output) 
     return exit_code,output
