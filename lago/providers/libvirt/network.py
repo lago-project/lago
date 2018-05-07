@@ -226,7 +226,13 @@ class NATNetwork(Network):
                 )
             )
 
-            for hostname, ip4 in self._spec['mapping'].items():
+            ipv4s = []
+            for hostname in sorted(self._spec['mapping'].iterkeys()):
+                ip4 = self._spec['mapping'][hostname]
+                if ip4 in ipv4s:
+                    continue
+
+                ipv4s.append(ip4)
                 dhcp.append(
                     ET.Element(
                         'host',
