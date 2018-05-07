@@ -124,7 +124,7 @@ run_functional_cli_tests() {
     local tests
     tests=("$@")
     pushd tests/functional
-    sg lago -c "bats ${tests[*]} " | tee functional_tests.tap
+    bats "${tests[@]}" | tee functional_tests.tap
     res=${PIPESTATUS[0]}
     popd
     return "$res"
