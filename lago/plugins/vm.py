@@ -542,7 +542,6 @@ class VMPlugin(plugins.Plugin):
     def alive(self):
         return self.state() == 'running'
 
-    @check_alive
     def ssh_reachable(self, tries=None, propagate_fail=True):
         """
         Check if the VM is reachable with ssh
@@ -556,6 +555,8 @@ class VMPlugin(plugins.Plugin):
         Returns:
             bool: True if the VM is reachable.
         """
+        if not self.alive():
+            return False
 
         try:
             ssh.get_ssh_client(
