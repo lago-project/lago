@@ -364,9 +364,13 @@ def get_ssh_client(
             time.sleep(1)
         else:
             end_time = time.time()
-            raise RuntimeError(
+            raise LagoSSHTimeoutException(
                 'Timed out (in %d s) trying to ssh to %s' %
                 (end_time - start_time, host_name)
             )
 
     return client
+
+
+class LagoSSHTimeoutException(utils.LagoException):
+    pass
