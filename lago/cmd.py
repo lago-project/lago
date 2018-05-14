@@ -456,7 +456,7 @@ def do_shell(prefix, host, args=None, **kwargs):
             )
             raise
 
-    if not host.alive():
+    if not host.running():
         raise RuntimeError(
             'Host %s is not "running", but "%s"' % (host.name(), host.state())
         )
@@ -679,7 +679,7 @@ def do_copy_from_vm(prefix, host, remote_path, local_path, **kwargs):
         )
         raise
 
-    if not host.alive():
+    if not host.running():
         raise RuntimeError(
             'Host %s is not "running", but "%s"' % (host.name(), host.state())
         )
@@ -719,7 +719,7 @@ def do_copy_to_vm(prefix, host, remote_path, local_path, **kwargs):
         )
         raise
 
-    if not host.alive():
+    if not host.running():
         raise RuntimeError(
             'Host %s is not "running", but "%s"' % (host.name(), host.state())
         )

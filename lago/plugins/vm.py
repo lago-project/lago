@@ -61,20 +61,10 @@ class ExtractPathNoPathError(VMError):
     pass
 
 
-def check_defined(func):
+def check_running(func):
     @functools.wraps(func)
     def wrapper(self, *args, **kwargs):
-        if not self.defined():
-            raise RuntimeError('VM %s is not defined' % self.vm.name())
-        return func(self, *args, **kwargs)
-
-    return wrapper
-
-
-def check_alive(func):
-    @functools.wraps(func)
-    def wrapper(self, *args, **kwargs):
-        if not self.alive():
+        if not self.running():
             raise RuntimeError('VM %s is not running' % self.name())
         return func(self, *args, **kwargs)
 
@@ -132,17 +122,6 @@ class VMProviderPlugin(plugins.Plugin):
 
         Returns:
             None
-        """
-        pass
-
-    @abstractmethod
-    def defined(self, *args, **kwargs):
-        """
-        Return if the domain is defined (libvirt concept), currently used only
-        by the libvirt provider, put here to allow backwards compatibility.
-
-        Returns:
-            bool: True if the domain is already defined (libvirt concept)
         """
         pass
 
@@ -241,7 +220,7 @@ class VMProviderPlugin(plugins.Plugin):
                 path was found on the VM, and ``ignore_nopath`` is True.
             :exc:`~lago.plugins.vm.ExtractPathError`: on all other failures.
         """
-        if self.vm.alive() and self.vm.ssh_reachable(
+        if self.vm.running() and self.vm.ssh_reachable(
             tries=5, propagate_fail=False
         ):
             self._extract_paths_scp(paths=paths, ignore_nopath=ignore_nopath)
@@ -337,12 +316,6 @@ class VMPlugin(plugins.Plugin):
         Thin method that just uses the provider
         """
         return self.provider.reboot(*args, **kwargs)
-
-    def defined(self, *args, **kwargs):
-        """
-        Thin method that just uses the provider
-        """
-        return self.provider.defined(*args, **kwargs)
 
     def bootstrap(self, *args, **kwargs):
         """
@@ -502,7 +475,7 @@ class VMPlugin(plugins.Plugin):
         propagate_fail=True,
         tries=None,
     ):
-        if not self.alive():
+        if not self.running():
             raise RuntimeError('Attempt to ssh into a not running host')
 
         return ssh.ssh(
@@ -539,7 +512,7 @@ class VMPlugin(plugins.Plugin):
             password=self._spec.get('ssh-password'),
         )
 
-    def alive(self):
+    def running(self):
         return self.state() == 'running'
 
     def ssh_reachable(self, tries=None, propagate_fail=True):
@@ -555,7 +528,7 @@ class VMPlugin(plugins.Plugin):
         Returns:
             bool: True if the VM is reachable.
         """
-        if not self.alive():
+        if not self.running():
             return False
 
         try:
@@ -584,14 +557,14 @@ class VMPlugin(plugins.Plugin):
         with open(path, 'w') as f:
             utils.json_dump(self._spec, f)
 
-    @check_alive
+    @check_running
     def service(self, name):
         if self._service_class is None:
             self._detect_service_provider()
 
         return self._service_class(self, name)
 
-    @check_alive
+    @check_running
     def interactive_ssh(self, command=None):
         if command is None:
             command = ['bash']
