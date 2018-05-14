@@ -555,6 +555,8 @@ class VMPlugin(plugins.Plugin):
         Returns:
             bool: True if the VM is reachable.
         """
+        if not self.alive():
+            return False
 
         try:
             self._ssh_client = ssh.get_ssh_client(
