@@ -54,30 +54,40 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
     def __init__(self, vm):
         super().__init__(vm)
         self._has_guestfs = 'lago.guestfs_tools' in sys.modules
-        libvirt_url = config.get('libvirt_url')
         self.libvirt_con = libvirt_utils.get_libvirt_connection(
-            name=self.vm.virt_env.uuid + libvirt_url,
-            libvirt_url=libvirt_url,
+            name=self.vm.virt_env.uuid,
         )
-        self._libvirt_ver = self.libvirt_con.getLibVersion()
-
-        caps_raw_xml = self.libvirt_con.getCapabilities()
-        self._caps = ET.fromstring(caps_raw_xml)
-
-        host_cpu = self._caps.xpath('host/cpu')[0]
-        self._cpu = cpu.CPU(spec=self.vm._spec, host_cpu=host_cpu)
-
-        # TO-DO: found a nicer way to expose these attributes to the VM
-        self.vm.cpu_model = self.cpu_model
-        self.vm.cpu_vendor = self.cpu_vendor
+        self._caps = None
+        self._cpu = None
+        self._libvirt_ver = None
 
     def __del__(self):
         if self.libvirt_con is not None:
             self.libvirt_con.close()
 
+    @property
+    def cpu(self):
+        if self._cpu is None:
+            host_cpu = self.caps.xpath('host/cpu')[0]
+            self._cpu = cpu.CPU(spec=self.vm._spec, host_cpu=host_cpu)
+        return self._cpu
+
+    @property
+    def caps(self):
+        if self._caps is None:
+            caps_raw_xml = self.libvirt_con.getCapabilities()
+            self._caps = ET.fromstring(caps_raw_xml)
+        return self._caps
+
+    @property
+    def libvirt_ver(self):
+        if self._libvirt_ver is None:
+            self._libvirt_ver = self.libvirt_con.getLibVersion()
+        return self._libvirt_ver
+
     def start(self):
         super().start()
-        if not self.defined():
+        if not self.alive():
             # the wait_suspend method is a work around for:
             # https://bugzilla.redhat.com/show_bug.cgi?id=1411025
             # 'LAGO__START_WAIT__SUSPEND' should be set to a float or integer
@@ -157,7 +167,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
 
     def stop(self):
         super().stop()
-        if self.defined():
+        if self.alive():
             self.vm._ssh_client = None
             with LogTask('Destroying VM %s' % self.vm.name()):
                 self.libvirt_con.lookupByName(self._libvirt_name(), ).destroy()
@@ -173,7 +183,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
 
         try:
             with utils.ExceptionTimer(timeout=60 * 5):
-                while self.defined():
+                while self.alive():
                     time.sleep(1)
         except utils.TimerException:
             raise utils.LagoUserException(
@@ -208,7 +218,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
         Raises:
             RuntimeError: If acpi is not configured an ssh isn't available
         """
-        if not self.defined():
+        if not self.alive():
             return
 
         with LogTask('{} VM {}'.format(msg, self.vm.name())):
@@ -228,9 +238,21 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
                 LOGGER.debug('{} using libvirt'.format(msg))
                 libvirt_cmd(dom)
 
-    def defined(self):
-        dom_names = [dom.name() for dom in self.libvirt_con.listAllDomains()]
+    def _domain_exists(self, flags):
+        dom_names = [
+            dom.name() for dom in self.libvirt_con.listAllDomains(flags)
+        ]
         return self._libvirt_name() in dom_names
+
+    def alive(self):
+        flags = libvirt.VIR_CONNECT_LIST_DOMAINS_TRANSIENT \
+            | libvirt.VIR_CONNECT_LIST_DOMAINS_ACTIVE
+        return self._domain_exists(flags)
+
+    def running(self):
+        flags = libvirt.VIR_CONNECT_LIST_DOMAINS_TRANSIENT \
+            | libvirt.VIR_CONNECT_LIST_DOMAINS_RUNNING
+        return self._domain_exists(flags)
 
     def bootstrap(self):
         with LogTask('Bootstrapping %s' % self.vm.name()):
@@ -260,16 +282,16 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
 
         Returns:
             str: small description of the domain status, 'down' if it's not
-            defined at all.
+            found at all.
         """
-        if not self.defined():
+        try:
+            dom = self.libvirt_con.lookupByName(self._libvirt_name())
+            return libvirt_utils.Domain.resolve_state(dom.state())
+        except libvirt.libvirtError:
             return 'down'
 
-        state = self.libvirt_con.lookupByName(self._libvirt_name()).state()
-        return libvirt_utils.Domain.resolve_state(state)
-
     def create_snapshot(self, name):
-        if self.vm.alive():
+        if self.alive():
             self._create_live_snapshot(name)
         else:
             self._create_dead_snapshot(name)
@@ -286,8 +308,8 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
 
         with LogTask('Reverting %s to snapshot %s' % (self.vm.name(), name)):
 
-            was_defined = self.defined()
-            if was_defined:
+            was_alive = self.alive()
+            if was_alive:
                 self.stop()
             for disk, disk_template in zip(self.vm._spec['disks'], snap_info):
                 os.unlink(os.path.expandvars(disk['path']))
@@ -307,7 +329,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
                     raise RuntimeError('Failed to revert disk')
 
             self._reclaim_disks()
-            if was_defined:
+            if was_alive:
                 self.start()
 
     def extract_paths(self, paths, ignore_nopath):
@@ -429,7 +451,6 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
         else:
             return {self.vm.name(): vm_export_mgr.export()}
 
-    @vm_plugin.check_defined
     def interactive_console(self):
         """
         Opens an interactive console
@@ -437,6 +458,8 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
         Returns:
             lago.utils.CommandStatus: result of the virsh command execution
         """
+        if not self.running():
+            raise RuntimeError('VM %s is not running' % self._libvirt_.name)
         virsh_command = [
             "virsh",
             "-c",
@@ -455,7 +478,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
             str: CPU model
 
         """
-        return self._cpu.model
+        return self.cpu.model
 
     @property
     def cpu_vendor(self):
@@ -465,20 +488,20 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
         Returns:
             str: CPU vendor
         """
-        return self._cpu.vendor
+        return self.cpu.vendor
 
     def _libvirt_name(self):
         return self.vm.virt_env.prefixed_name(self.vm.name())
 
     def _get_qemu_kvm_path(self):
-        qemu_kvm_path = self._caps.findtext(
+        qemu_kvm_path = self.caps.findtext(
             "guest[os_type='hvm']/arch[@name='x86_64']/domain[@type='kvm']"
             "/emulator"
         )
 
         if not qemu_kvm_path:
             LOGGER.warning("hardware acceleration not available")
-            qemu_kvm_path = self._caps.findtext(
+            qemu_kvm_path = self.caps.findtext(
                 "guest[os_type='hvm']/arch[@name='x86_64']"
                 "/domain[@type='qemu']/../emulator"
             )
@@ -492,7 +515,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
 
         args = {
             'distro': self.vm.distro(),
-            'libvirt_ver': self._libvirt_ver,
+            'libvirt_ver': self.libvirt_ver,
             'name': self._libvirt_name(),
             'mem_size': self.vm.spec.get('memory', 16 * 1024),
             'qemu_kvm': self._get_qemu_kvm_path()
@@ -507,7 +530,8 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
 
         dom_xml = self._load_xml()
 
-        for child in self._cpu:
+        cpu = self.cpu
+        for child in cpu:
             dom_xml.append(child)
 
         devices = dom_xml.xpath('/domain/devices')[0]
@@ -601,7 +625,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
                     type='virtio',
                 ),
             )
-            if self._libvirt_ver > 3001001:
+            if self.libvirt_ver > 3001001:
                 mtu = dev_spec.get('mtu', '1500')
                 if mtu != '1500':
                     interface.append(ET.Element(
