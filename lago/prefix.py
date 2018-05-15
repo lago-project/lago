@@ -390,10 +390,11 @@ class Prefix(object):
         LOGGER.debug('Using network %s as main DNS server', dns_mgmt)
         forward = conf['nets'][dns_mgmt].get('gw')
         dns_records = {}
+
         for net_name, net_spec in nets.iteritems():
             dns_records.update(net_spec['mapping'].copy())
             if net_name not in mgmts:
-                net_spec['dns_forward'] = forward
+                net_spec['dns_forwarders'] = [{'addr': forward}]
 
         for mgmt in mgmts:
             if nets[mgmt].get('dns_records'):
