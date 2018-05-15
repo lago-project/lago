@@ -541,7 +541,7 @@ class VMPlugin(plugins.Plugin):
                 username=self._spec.get('ssh-user'),
                 password=self._spec.get('ssh-password'),
             )
-        except RuntimeError:
+        except ssh.LagoSSHTimeoutException:
             return False
 
         return True
