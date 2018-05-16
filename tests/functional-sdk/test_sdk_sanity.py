@@ -110,7 +110,7 @@ def test_custom_gateway(vms, nets, init_dict):
 
 def test_vm_is_running(vms, vm_name):
     vm = vms[vm_name]
-    assert vm.defined()
+    assert vm.running()
     assert vm.state() == 'running'
 
 
