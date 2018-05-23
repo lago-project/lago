@@ -318,6 +318,25 @@ def get_ssh_client(
     username='root',
     password='123456',
 ):
+    """
+    Get a connected SSH client
+
+    Args:
+        ip_addr(str): IP address of the endpoint
+        ssh_key(str or list of str): Path to a file which
+            contains the private key
+        hotname(str): The hostname of the endpoint
+        ssh_tries(int): The number of attempts to connect to the endpoint
+        propagate_fail(bool): If set to true, this event will be in the log
+            and fail the outer stage. Otherwise, it will be discarded.
+        username(str): The username to authenticate with
+        password(str): Used for password authentication
+            or for private key decryption
+
+    Raises:
+        :exc:`~LagoSSHTimeoutException`: If the client failed to connect after
+            "ssh_tries"
+    """
     host_name = host_name or ip_addr
     with LogTask(
         'Get ssh client for %s' % host_name,
@@ -364,9 +383,13 @@ def get_ssh_client(
             time.sleep(1)
         else:
             end_time = time.time()
-            raise RuntimeError(
+            raise LagoSSHTimeoutException(
                 'Timed out (in %d s) trying to ssh to %s' %
                 (end_time - start_time, host_name)
             )
 
     return client
+
+
+class LagoSSHTimeoutException(utils.LagoException):
+    pass
