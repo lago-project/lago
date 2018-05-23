@@ -27,7 +27,7 @@ from copy import deepcopy
 from lxml import etree as ET
 import lago.providers.libvirt.utils as libvirt_utils
 from lago import brctl, log_utils, utils
-from lago.config import config
+import libvirt
 
 LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
@@ -36,10 +36,8 @@ LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
 class Network(object):
     def __init__(self, env, spec, compat):
         self._env = env
-        libvirt_url = config.get('libvirt_url')
         self.libvirt_con = libvirt_utils.get_libvirt_connection(
-            name=env.uuid + libvirt_url,
-            libvirt_url=libvirt_url,
+            name=env.uuid,
         )
         self._spec = spec
         self.compat = compat
@@ -88,7 +86,11 @@ class Network(object):
         )
 
     def alive(self):
-        net_names = [net.name() for net in self.libvirt_con.listAllNetworks()]
+        flags = libvirt.VIR_CONNECT_LIST_NETWORKS_TRANSIENT \
+            | libvirt.VIR_CONNECT_LIST_NETWORKS_ACTIVE
+        net_names = [
+            net.name() for net in self.libvirt_con.listAllNetworks(flags)
+        ]
         return self._libvirt_name() in net_names
 
     def start(self, attempts=5, timeout=2):
@@ -226,7 +228,13 @@ class NATNetwork(Network):
                 )
             )
 
-            for hostname, ip4 in self._spec['mapping'].items():
+            ipv4s = []
+            for hostname in sorted(self._spec['mapping'].iterkeys()):
+                ip4 = self._spec['mapping'][hostname]
+                if ip4 in ipv4s:
+                    continue
+
+                ipv4s.append(ip4)
                 dhcp.append(
                     ET.Element(
                         'host',
