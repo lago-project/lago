@@ -37,6 +37,8 @@ REPO_NAME="local_tests_repo"
     pushd "$FIXTURES"
     outdir="$FIXTURES/output"
     rm -rf "$outdir"
+    "$LAGOCLI" status
+    "$LAGOCLI" shell vm01 "hostname"
     helpers.run_ok "$LAGOCLI" --loglevel=debug collect --output "$outdir"
 }
 
