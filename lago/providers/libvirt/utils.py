@@ -34,12 +34,17 @@ LOGGER = logging.getLogger(__name__)
 DOMAIN_STATES = {
     libvirt.VIR_DOMAIN_NOSTATE: 'no state',
     libvirt.VIR_DOMAIN_RUNNING: 'running',
-    libvirt.VIR_DOMAIN_BLOCKED: 'blocked',
+    libvirt.VIR_DOMAIN_BLOCKED: 'blocked',  # the domain is blocked on resource
     libvirt.VIR_DOMAIN_PAUSED: 'paused',
-    libvirt.VIR_DOMAIN_SHUTDOWN: 'beign shut down',
+    libvirt.VIR_DOMAIN_SHUTDOWN: 'begin shut down',
     libvirt.VIR_DOMAIN_SHUTOFF: 'shut off',
     libvirt.VIR_DOMAIN_CRASHED: 'crashed',
-    libvirt.VIR_DOMAIN_PMSUSPENDED: 'suspended',
+    libvirt.VIR_DOMAIN_PMSUSPENDED:
+        'suspended',  # the domain is suspended by guest power management
+}
+
+DOMAIN_RUNNING_STATES = {
+    libvirt.VIR_DOMAIN_RUNNING,
 }
 
 #: Singleton with the cached opened libvirt connections

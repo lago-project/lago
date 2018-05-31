@@ -67,6 +67,14 @@ class LagoVMNotRunningError(utils.LagoUserException):
         super().__init__('VM {} is not running'.format(vm_name))
 
 
+class LagoVMDoesNotExistError(utils.LagoException):
+    pass
+
+
+class LagoFailedToGetVMStateError(utils.LagoException):
+    pass
+
+
 def check_running(func):
     @functools.wraps(func)
     def wrapper(self, *args, **kwargs):
