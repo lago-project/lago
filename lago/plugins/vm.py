@@ -153,6 +153,14 @@ class VMProviderPlugin(plugins.Plugin):
         pass
 
     @abstractmethod
+    def running(self, *args, **kwargs):
+        """
+        Returns:
+            (bool): True if the VM is running
+        """
+        pass
+
+    @abstractmethod
     def create_snapshot(self, name, *args, **kwargs):
         """
         Take any actions needed to create a snapshot
@@ -337,6 +345,12 @@ class VMPlugin(plugins.Plugin):
         """
         return self.provider.state(*args, **kwargs)
 
+    def running(self, *args, **kwargs):
+        """
+        Thin method that just uses the provider
+        """
+        return self.provider.running(*args, **kwargs)
+
     def create_snapshot(self, name, *args, **kwargs):
         """
         Thin method that just uses the provider
@@ -519,9 +533,6 @@ class VMPlugin(plugins.Plugin):
             username=self._spec.get('ssh-user'),
             password=self._spec.get('ssh-password'),
         )
-
-    def running(self):
-        return self.state() == 'running'
 
     def ssh_reachable(self, tries=None, propagate_fail=True):
         """
