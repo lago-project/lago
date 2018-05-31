@@ -30,6 +30,7 @@ for example, using a remote libvirt instance or similar.
 from copy import deepcopy
 import contextlib
 import functools
+from future.builtins import super
 import logging
 import os
 import warnings
@@ -61,11 +62,16 @@ class ExtractPathNoPathError(VMError):
     pass
 
 
+class LagoVMNotRunningError(utils.LagoUserException):
+    def __init__(self, vm_name):
+        super().__init__('VM {} is not running'.format(vm_name))
+
+
 def check_running(func):
     @functools.wraps(func)
     def wrapper(self, *args, **kwargs):
         if not self.running():
-            raise RuntimeError('VM %s is not running' % self.name())
+            raise LagoVMNotRunningError(self.name())
         return func(self, *args, **kwargs)
 
     return wrapper
@@ -204,6 +210,9 @@ class VMProviderPlugin(plugins.Plugin):
         """
         pass
 
+    def name(self):
+        return self.vm.name()
+
     def extract_paths(self, paths, ignore_nopath):
         """
         Extract the given paths from the domain
@@ -220,16 +229,15 @@ class VMProviderPlugin(plugins.Plugin):
                 path was found on the VM, and ``ignore_nopath`` is True.
             :exc:`~lago.plugins.vm.ExtractPathError`: on all other failures.
         """
-        if self.vm.running() and self.vm.ssh_reachable(
-            tries=5, propagate_fail=False
-        ):
+        try:
             self._extract_paths_scp(paths=paths, ignore_nopath=ignore_nopath)
-        else:
+        except (ssh.LagoSSHTimeoutException, LagoVMNotRunningError):
             raise ExtractPathError(
                 'Unable to extract paths from {0}: unreachable with SSH'.
                 format(self.vm.name())
             )
 
+    @check_running
     def _extract_paths_scp(self, paths, ignore_nopath):
         for host_path, guest_path in paths:
             LOGGER.debug(
