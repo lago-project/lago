@@ -24,9 +24,10 @@ import json
 import logging
 import os
 import posixpath
+import requests
 import shutil
-import urllib
 import sys
+import urllib
 
 import lockfile
 
@@ -158,6 +159,9 @@ class HttpTemplateProvider:
                 (full_url, response.code)
             )
 
+        if dest is None:
+            return response
+
         meta = response.info()
         file_size_kb = int(meta.getheaders("Content-Length")[0]) / 1024
         if file_size_kb > 0:
@@ -166,18 +170,21 @@ class HttpTemplateProvider:
                 (file_size_kb, full_url)
             )
 
-        def report(count, block_size, total_size):
-            percent = (count * block_size * 100 / float(total_size))
-            sys.stdout.write(
-                "\r% 3.1f%%" % percent + " complete (%d " %
-                (count * block_size / 1024) + "Kilobytes)"
-            )
-            sys.stdout.flush()
-
-        if dest:
-            response.close()
-            urllib.urlretrieve(full_url, dest, report)
-            sys.stdout.write("\n")
+        response.close()
+        one_percent = int(file_size_kb / 100)
+        streamed = 0
+        dl_chunk_size_kb = 128
+        r = requests.get(full_url, stream=True)
+        with open(dest, 'wb') as f:
+            for chunk in r.iter_content(chunk_size=dl_chunk_size_kb * 1024):
+                if chunk:
+                    f.write(chunk)
+                    streamed += dl_chunk_size_kb
+                    if streamed > one_percent:
+                        sys.stdout.write('.')
+                        sys.stdout.flush()
+                        streamed = 0
+        sys.stdout.write("\n")
         return response
 
     def download_image(self, handle, dest):
