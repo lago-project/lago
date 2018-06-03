@@ -45,6 +45,7 @@ import virt
 import log_utils
 import build
 import sdk_utils
+import lago_cloud_init
 
 LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
@@ -1193,7 +1194,8 @@ class Prefix(object):
         template_repo=None,
         template_store=None,
         do_bootstrap=True,
-        do_build=True
+        do_build=True,
+        do_cloud_init=True
     ):
         """
         Initializes all the virt infrastructure of the prefix, creating the
@@ -1242,6 +1244,9 @@ class Prefix(object):
             if do_build:
                 self.build(conf['domains'])
 
+            if do_cloud_init:
+                self.cloud_init(self._virt_env.get_vms())
+
             self.save()
             rollback.clear()
 
@@ -1263,6 +1268,44 @@ class Prefix(object):
                         )
 
         utils.invoke_in_parallel(build.Build.build, builders)
+
+    def cloud_init(self, vms):
+        def _gen_iso_spec(iso_path, device, vm_name):
+            return {
+                'type': 'file',
+                'path': iso_path,
+                'dev': device,
+                'format': 'iso',
+                'name': '{}-cloud-init'.format(vm_name)
+            }
+
+        vms = {
+            vm.name(): vm
+            for vm in vms.values() if vm.in_spec('cloud-init')
+        }
+
+        free_device = {
+            vm.name(): utils.allocate_dev(vm.disks).next()
+            for vm in vms.values()
+        }
+
+        with open(self.paths.ssh_id_rsa_pub(), mode='rt') as f:
+            ssh_public_key = f.read()
+
+        iso_specs = lago_cloud_init.generate_from_itr(
+            vms=vms.values(),
+            iso_dir=self.paths.cloud_init(),
+            ssh_public_key=ssh_public_key
+        )
+
+        for vm_name, iso_path in iso_specs.viewitems():
+            vms[vm_name]._spec['disks'].append(
+                _gen_iso_spec(
+                    iso_path=iso_path,
+                    device=free_device[vm_name],
+                    vm_name=vm_name
+                )
+            )
 
     @sdk_utils.expose
     def export_vms(

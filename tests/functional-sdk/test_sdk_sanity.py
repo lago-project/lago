@@ -19,6 +19,10 @@ def init_str(images):
     domains:
       {% for vm_name, template in images.viewitems() %}
       {{ vm_name }}:
+        {%- if vm_name == 'vm-el7-4-base-2' %}
+        cloud-init: {}
+        bootstrap: False
+        {%- endif %}
         memory: 1024
         nics:
           - net: net-02

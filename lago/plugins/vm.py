@@ -465,6 +465,9 @@ class VMPlugin(plugins.Plugin):
         else:
             return groups
 
+    def in_spec(self, key):
+        return key in self._spec
+
     def name(self):
         return str(self._spec['name'])
 

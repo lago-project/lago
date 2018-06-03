@@ -71,3 +71,6 @@ class Paths(object):
 
     def scripts(self, *args):
         return self.prefixed('scripts', *args)
+
+    def cloud_init(self):
+        return self.prefixed('cloud-init')
