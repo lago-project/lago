@@ -67,6 +67,14 @@ class LagoVMNotRunningError(utils.LagoUserException):
         super().__init__('VM {} is not running'.format(vm_name))
 
 
+class LagoVMDoesNotExistError(utils.LagoException):
+    pass
+
+
+class LagoFailedToGetVMStateError(utils.LagoException):
+    pass
+
+
 def check_running(func):
     @functools.wraps(func)
     def wrapper(self, *args, **kwargs):
@@ -149,6 +157,14 @@ class VMProviderPlugin(plugins.Plugin):
 
         Returns:
             str: Small description of the current domain state
+        """
+        pass
+
+    @abstractmethod
+    def running(self, *args, **kwargs):
+        """
+        Returns:
+            (bool): True if the VM is running
         """
         pass
 
@@ -337,6 +353,12 @@ class VMPlugin(plugins.Plugin):
         """
         return self.provider.state(*args, **kwargs)
 
+    def running(self, *args, **kwargs):
+        """
+        Thin method that just uses the provider
+        """
+        return self.provider.running(*args, **kwargs)
+
     def create_snapshot(self, name, *args, **kwargs):
         """
         Thin method that just uses the provider
@@ -519,9 +541,6 @@ class VMPlugin(plugins.Plugin):
             username=self._spec.get('ssh-user'),
             password=self._spec.get('ssh-password'),
         )
-
-    def running(self):
-        return self.state() == 'running'
 
     def ssh_reachable(self, tries=None, propagate_fail=True):
         """

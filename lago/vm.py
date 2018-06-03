@@ -19,6 +19,7 @@
 #
 
 from lago.plugins import vm
+from lago import ssh
 
 
 class DefaultVM(vm.VMPlugin):
@@ -40,6 +41,21 @@ class SSHVMProvider(vm.VMProviderPlugin):
 
     def state(self, *args, **kwargs):
         return 'running'
+
+    def running(self, *args, **kwargs):
+        try:
+            ssh.get_ssh_client(
+                ip_addr=self.ip(),
+                host_name=self.name(),
+                propagate_fail=False,
+                ssh_key=self.virt_env.prefix.paths.ssh_id_rsa(),
+                username=self._spec.get('ssh-user'),
+                password=self._spec.get('ssh-password'),
+            )
+        except ssh.LagoSSHTimeoutException:
+            return False
+
+        return True
 
     def create_snapshot(self, name, *args, **kwargs):
         pass

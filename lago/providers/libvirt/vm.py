@@ -238,21 +238,20 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
                 LOGGER.debug('{} using libvirt'.format(msg))
                 libvirt_cmd(dom)
 
-    def _domain_exists(self, flags):
-        dom_names = [
-            dom.name() for dom in self.libvirt_con.listAllDomains(flags)
-        ]
-        return self._libvirt_name() in dom_names
-
     def alive(self):
-        flags = libvirt.VIR_CONNECT_LIST_DOMAINS_TRANSIENT \
-            | libvirt.VIR_CONNECT_LIST_DOMAINS_ACTIVE
-        return self._domain_exists(flags)
+        try:
+            return bool(self._get_domain().isActive())
+        except vm_plugin.LagoVMDoesNotExistError:
+            return False
 
     def running(self):
-        flags = libvirt.VIR_CONNECT_LIST_DOMAINS_TRANSIENT \
-            | libvirt.VIR_CONNECT_LIST_DOMAINS_RUNNING
-        return self._domain_exists(flags)
+        try:
+            return self.raw_state()[0] in libvirt_utils.DOMAIN_RUNNING_STATES
+        except (
+            vm_plugin.LagoVMDoesNotExistError,
+            vm_plugin.LagoFailedToGetVMStateError
+        ):
+            return False
 
     def bootstrap(self):
         with LogTask('Bootstrapping %s' % self.vm.name()):
@@ -276,6 +275,40 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
                     hostname=self.vm.name(),
                 )
 
+    def _get_domain(self):
+        """
+        Return the object representation of this provider VM.
+
+        Returns:
+            libvirt.virDomain: Libvirt domain object
+
+        Raises:
+            :exc:`~lago.plugins.vm.LagoFailedToGetVMStateError:
+                If the VM exist, but the query returned an error.
+        """
+        try:
+            return self.libvirt_con.lookupByName(self._libvirt_name())
+        except libvirt.libvirtError as e:
+            raise vm_plugin.LagoVMDoesNotExistError(str(e))
+
+    def raw_state(self):
+        """
+        Return the state of the domain in Libvirt's terms
+
+        Retruns:
+            tuple of ints: The state and its reason
+
+        Raises:
+            :exc:`~lago.plugins.vm.LagoVMDoesNotExistError`:
+                If the VM of this provider doesn't exist.
+            :exc:`~lago.plugins.vm.LagoFailedToGetVMStateError:
+                If the VM exist, but the query returned an error.
+        """
+        try:
+            return self._get_domain().state()
+        except libvirt.libvirtError as e:
+            raise vm_plugin.LagoFailedToGetVMStateError(str(e))
+
     def state(self):
         """
         Return a small description of the current status of the domain
@@ -285,10 +318,13 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
             found at all.
         """
         try:
-            dom = self.libvirt_con.lookupByName(self._libvirt_name())
-            return libvirt_utils.Domain.resolve_state(dom.state())
-        except libvirt.libvirtError:
+            return libvirt_utils.Domain.resolve_state(self.raw_state())
+        except vm_plugin.LagoVMDoesNotExistError:
             return 'down'
+        except vm_plugin.LagoFailedToGetVMStateError:
+            return 'failed to get state'
+        except KeyError:
+            return 'unknown state'
 
     def create_snapshot(self, name):
         if self.alive():
