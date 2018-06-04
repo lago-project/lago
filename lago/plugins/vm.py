@@ -465,6 +465,14 @@ class VMPlugin(plugins.Plugin):
         else:
             return groups
 
+    @property
+    def cpu_vendor(self):
+        return getattr(self.provider, 'cpu_vendor')
+
+    @property
+    def cpu_model(self):
+        return getattr(self.provider, 'cpu_model')
+
     def name(self):
         return str(self._spec['name'])
 
