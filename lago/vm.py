@@ -45,12 +45,13 @@ class SSHVMProvider(vm.VMProviderPlugin):
     def running(self, *args, **kwargs):
         try:
             ssh.get_ssh_client(
-                ip_addr=self.ip(),
-                host_name=self.name(),
+                ip_addr=self.vm.ip(),
+                host_name=self.vm.name(),
                 propagate_fail=False,
-                ssh_key=self.virt_env.prefix.paths.ssh_id_rsa(),
-                username=self._spec.get('ssh-user'),
-                password=self._spec.get('ssh-password'),
+                ssh_tries=1,
+                ssh_key=self.vm.virt_env.prefix.paths.ssh_id_rsa(),
+                username=self.vm._spec.get('ssh-user'),
+                password=self.vm._spec.get('ssh-password'),
             )
         except ssh.LagoSSHTimeoutException:
             return False
