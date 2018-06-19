@@ -3,7 +3,6 @@ VirtualEnv setup
 
 How to set up your virtualenv for the lago project?
 
-
 Requirements
 -------------
 Install virtual environment - virtualenv
@@ -26,6 +25,10 @@ https://virtualenvwrapper.readthedocs.io/en/latest/
 
 Configure Lago virtual environment:
 ---------------------------------------
+
+Make sure you followed all the instruction to install the virtual environment.
+It is mandatory in order to develop Lago.
+
   * Create a virtualenv for lago
 
     > mkvirtualenv lago_venv
@@ -44,13 +47,16 @@ Configure Lago virtual environment:
     > python setup.py develop
 
     Switching to branch, re-run 
+    
     > python setup.py develop
 
     and you get the new branch installed. 
 
   * Install the 'lago-ost-plugin' in the virtualenv.
     To run OST - switch under the lago_venv to the plugin directory and run 
+
     > pip install -r test-requires.txt
+
     > python setup.py develop 
     
     so you get them both in editable mode.
