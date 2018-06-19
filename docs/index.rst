@@ -31,6 +31,7 @@ Getting started
     :maxdepth: 2
 
     Env_Setup
+    VirtualEnv
     CI
     Dev_Bootstrap
 
