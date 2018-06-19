@@ -7,7 +7,8 @@ Here are some guidelines on how to set up your development of the lago project.
 Requirements
 -------------
 
-`fsdfsfsfs`
+First make sure you followed the `Lago Installation`_ process (don't install the LAGO package !!!)
+
 You'll need some extra packages to get started with the code for lago, assuming
 you are runnig Fedora::
 
@@ -112,3 +113,4 @@ directory and any generated artifacts under `exported-artifacts`.
 
    .. _`official yapf repo`: https://github.com/google/yapf
    .. _`copr`: https://copr.Fedoraproject.org/coprs/fulltext/?fulltext=yapf
+   .. _`Lago Installation`: Installation.html
