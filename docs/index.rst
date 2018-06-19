@@ -32,6 +32,7 @@ Getting started
 
     Env_Setup
     VirtualEnv
+    GIT_instructions
     CI
     Dev_Bootstrap
 
