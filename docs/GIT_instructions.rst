@@ -76,7 +76,9 @@ Create a feature branch
 Make changes on the feature branch
 
     > echo "Test Text!" >>foo.py
+
     > git add foo.py
+
     > git commit -m 'Added comment'
 
 Fetch upstream repository
@@ -99,6 +101,7 @@ Rebase changes from feature branch onto upstream/master
 Rebase local master onto feature branch
 
     > git checkout master
+    
     > git rebase feature
 
 Push local master to upstream
