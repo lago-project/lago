@@ -1,5 +1,5 @@
-Getting started with some Lago Examples!
-=========================================
+Lago Examples!
+===============
 
 Get Lago up & running in no time using one of the available examples
 

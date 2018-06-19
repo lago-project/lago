@@ -1,6 +1,7 @@
-CI Process
+Develop Flow
 =================
-
+.. CI Process
+=================
 Here is described the usual workflow of going through the CI process from
 starting a new branch to getting it merged and released in the
 `unstable repo`_.
