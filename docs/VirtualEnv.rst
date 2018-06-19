@@ -61,6 +61,4 @@ It is mandatory in order to develop Lago.
     
     so you get them both in editable mode.
 
-#### ovirt-engine-sdk-python - add to reuiqremts.txt
-
 
