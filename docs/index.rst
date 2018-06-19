@@ -26,31 +26,24 @@ Getting started
     BUILD
     CPU
 
-Developing
-------------
-
 .. toctree::
+    :caption: Developing
     :maxdepth: 2
 
-    CI
     Env_Setup
+    CI
     Dev_Bootstrap
 
 
-Contents
--------------
-
 .. toctree::
+   :caption: Contents
    :maxdepth: 4
 
    lago
    ovirtlago
 
-
-Releases
------------
-
 .. toctree::
+    :caption: Releases
     :maxdepth: 2
 
     Releases
