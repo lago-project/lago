@@ -1,21 +1,22 @@
-CI Process
+CI Tests
 =================
-
+.. CI Process
+=================
 Here is described the usual workflow of going through the CI process from
 starting a new branch to getting it merged and released in the
 `unstable repo`_.
 
 
-Starting a branch
+.. Starting a branch
 ---------------------
 First of all, when starting to work on a new feature or fix, you have to start
 a new branch (in your fork if you don't have push rights to the main repo).
 Make sure that your branch is up to date with the project's master::
-
+..
     git checkout -b my_fancy_feature
     # in case that origin is already lago-project/lago
     git reset --hard origin/master
-
+.. 
 Then, once you can just start working, doing commits to that branch, and
 pushing to the remote from time to time as a backup.
 

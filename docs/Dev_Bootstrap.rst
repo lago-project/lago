@@ -1,5 +1,7 @@
-Getting started developing
-============================
+Tools Set
+====================
+.. Starting developing
+====================
 
 Everyone is welcome to send patches to lago, but we know that not everybody
 knows everything, so here's a reference list of technologies and methodologies
