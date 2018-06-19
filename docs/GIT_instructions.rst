@@ -104,9 +104,8 @@ Rebase local master onto feature branch
     
     > git rebase feature
 
-Push local master to upstream
 
-    > git push upstream master
+Request from your github fork a pull request to upstream repository.
 
 
 cherry-pick
