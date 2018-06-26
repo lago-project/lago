@@ -352,7 +352,7 @@ class TemplateRepository:
                     'Unable to load repo from %s (IO error)' % path
                 )
 
-        return cls(json.loads(data),path)
+        return cls(json.loads(data), path)
 
     def _get_provider(self, spec):
         """
@@ -401,7 +401,7 @@ class TemplateRepository:
         try:
             spec = self._dom.get('templates', {})[name]
         except KeyError as err:
-            raise LagoMissingTemplateError(name,self._path)
+            raise LagoMissingTemplateError(name, self._path)
 
         return Template(
             name=name,
@@ -722,5 +722,5 @@ class TemplateStore:
 class LagoMissingTemplateError(utils.LagoException):
     def __init__(self, name, path):
         super().__init__(
-            'Failed to download image {} from repo {}'.format(name,path)
+            'Failed to download image {} from repo {}'.format(name, path)
         )
