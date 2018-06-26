@@ -30,6 +30,8 @@ import os
 import logging
 import shutil
 from functools import partial, wraps
+from future.builtins import super
+from textwrap import dedent
 
 from . import (prefix, utils)
 from .plugins import cli
@@ -266,14 +268,11 @@ class Workdir(object):
             The newly created prefix
 
         Raises:
-            PrefixAlreadyExists: if the prefix name already exists in the
-                workdir
+            LagoPrefixAlreadyExistsError: if prefix name already exists in the
+            workdir
         """
         if os.path.exists(self.join(name)):
-            raise PrefixAlreadyExists(
-                'Prefix with name %s already exists in workdir %s' %
-                (name, self.path)
-            )
+            raise LagoPrefixAlreadyExistsError(name, self.path)
 
         self.prefixes[name] = self.prefix_class(
             self.join(name), *args, **kwargs
@@ -503,3 +502,16 @@ def set_current(prefix_name, parent_workdir, **kwargs):
         workdir(str): path to the workdir to change the current of
     """
     parent_workdir.set_current(new_current=prefix_name)
+
+
+class LagoPrefixAlreadyExistsError(utils.LagoException):
+    def __init__(self, name, path):
+        super().__init__(
+            dedent(
+                """
+                Failed Prefix name {} already exists in workdir {}
+                1) Destroy old lago VM
+                2) Create a new prefix and then create the new VM
+                """
+            )
+        )
