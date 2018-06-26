@@ -400,7 +400,7 @@ class TemplateRepository:
         """
         try:
             spec = self._dom.get('templates', {})[name]
-        except KeyError as err:
+        except KeyError:
             raise LagoMissingTemplateError(name, self._path)
 
         return Template(
