@@ -65,13 +65,23 @@ class LagoVMNotRunningError(utils.LagoUserException):
     def __init__(self, vm_name):
         super().__init__('VM {} is not running'.format(vm_name))
 
+
 class LagoCopyFilesToVMError(utils.LagoUserException):
     def __init__(self, local_files):
-        super().__init__('Error: Copy files/directory {} does not exist'.format(local_files))
+        super().__init__(
+            'Failed, Copy files/directory {} does not exist'.
+            format(local_files)
+        )
+
 
 class LagoCopyFilesFromVMError(utils.LagoUserException):
     def __init__(self, remote_files, local_files):
-        super().__init__('Error: Copy files/directory from {} does not exist'.format(remote_files, local_files))
+        super().__init__(
+            'Failed, Copy files/directory from {} does not exist'.format(
+                remote_files, local_files
+            )
+        )
+
 
 class LagoVMDoesNotExistError(utils.LagoException):
     pass
@@ -441,8 +451,7 @@ class VMPlugin(plugins.Plugin):
                         local_path=local_path,
                     )
             except SCPException:
-                raise LagoCopyFilesFromVMError(remote_path,local_path)
-
+                raise LagoCopyFilesFromVMError(remote_path, local_path)
 
     @property
     def metadata(self):
