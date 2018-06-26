@@ -390,7 +390,7 @@ class TemplateRepository:
         try:
             spec = self._dom.get('templates', {})[name]
         except KeyError as err:
-            raise LagoMissingTemplateError(name) 
+            raise LagoMissingTemplateError(name)
 
         return Template(
             name=name,
@@ -403,7 +403,8 @@ class TemplateRepository:
                 )
                 for ver_name, ver_spec in spec['versions'].items()
             },
-            )
+        )
+
 
 class Template:
     """
@@ -706,7 +707,10 @@ class TemplateStore:
         with open(self._prefixed('%s.hash' % temp_ver.name)) as f:
             return f.read().strip()
 
+
 class LagoMissingTemplateError(utils.LagoException):
     def __init__(self, name):
         #super(utils.LagoException, self).__init__('Template image {} doesn\'t exist in repo'.format(name))
-        super().__init__('Template image {} doesn\'t exist in repo'.format(name))
+        super().__init__(
+            'Template image {} doesn\'t exist in repo'.format(name)
+        )
