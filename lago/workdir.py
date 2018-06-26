@@ -268,15 +268,10 @@ class Workdir(object):
             The newly created prefix
 
         Raises:
-            PrefixAlreadyExists: if the prefix name already exists in the
+            LagoPrefixAlreadyExistsError: if prefix name already exists in the
                 workdir
         """
         if os.path.exists(self.join(name)):
-#            raise PrefixAlreadyExists(
-#               'Prefix with name %s already exists in workdir %s' %
-#                (name, self.path)
-#            )
-
             raise LagoPrefixAlreadyExistsError(name, self.path)
 
         self.prefixes[name] = self.prefix_class(
@@ -508,16 +503,17 @@ def set_current(prefix_name, parent_workdir, **kwargs):
     """
     parent_workdir.set_current(new_current=prefix_name)
 
+
 class LagoPrefixAlreadyExistsError(utils.LagoException):
     def __init__(self, name, path):
         super().__init__(
             dedent(
                 """
-                'Prefix with name {} already exists in workdir {} !!! 
-                1) Destroy the old lago virtual machine in order to create new VM 
-                    > lago destroy 
-                2) Create a new prefix and then create the new VM 
-                    > lago  init <WORKDIR-PATH> <INIT-FILE>
-                """.format(name,path)
+                Failed Prefix name {} already exists in workdir {}
+                1) Destroy old lago VM in order to create new VM
+                    > lago destroy
+                2) Create a new prefix and then create the new VM
+                    > lago init <WORKDIR-PATH> <INIT-FILE>
+                """.format(name, path)
             )
         )
