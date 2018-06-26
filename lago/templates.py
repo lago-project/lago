@@ -307,7 +307,7 @@ class TemplateRepository:
         _providers (dict): Providers instances for any source in the spec
     """
 
-    def __init__(self, dom):
+    def __init__(self, dom, path):
         """
         You would usually use the
         :func:`TemplateRepository.from_url` method instead of
@@ -322,6 +322,7 @@ class TemplateRepository:
             name: self._get_provider(spec)
             for name, spec in self._dom.get('sources', {}).items()
         }
+        self._path = path
 
     @classmethod
     def from_url(cls, path):
@@ -351,7 +352,7 @@ class TemplateRepository:
                     'Unable to load repo from %s (IO error)' % path
                 )
 
-        return cls(json.loads(data))
+        return cls(json.loads(data),path)
 
     def _get_provider(self, spec):
         """
@@ -377,6 +378,16 @@ class TemplateRepository:
         """
         return self._dom['name']
 
+    @property
+    def path(self):
+        """
+        Getter for the template repo path
+
+        Returns:
+            str: the path/url of this template repo
+        """
+        return self._path
+
     def get_by_name(self, name):
         """
         Retrieve a template by it's name
@@ -385,12 +396,12 @@ class TemplateRepository:
             name (str): Name of the template to retrieve
 
         Raises:
-            KeyError: if no template is found
+            LagoMissingTemplateError: if no template is found
         """
         try:
             spec = self._dom.get('templates', {})[name]
         except KeyError as err:
-            raise LagoMissingTemplateError(name)
+            raise LagoMissingTemplateError(name,self._path)
 
         return Template(
             name=name,
@@ -709,8 +720,7 @@ class TemplateStore:
 
 
 class LagoMissingTemplateError(utils.LagoException):
-    def __init__(self, name):
-        #super(utils.LagoException, self).__init__('Template image {} doesn\'t exist in repo'.format(name))
+    def __init__(self, name, path):
         super().__init__(
-            'Template image {} doesn\'t exist in repo'.format(name)
+            'Failed to download image {} from repo {}'.format(name,path)
         )
