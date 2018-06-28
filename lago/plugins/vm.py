@@ -453,6 +453,8 @@ class VMPlugin(plugins.Plugin):
             except SCPException:
                 if (propagate_fail):
                     raise LagoCopyFilesFromVMError(remote_path, local_path)
+                else: 
+                    pass    
 
     @property
     def metadata(self):
