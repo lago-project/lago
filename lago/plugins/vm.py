@@ -451,7 +451,7 @@ class VMPlugin(plugins.Plugin):
                         local_path=local_path,
                     )
             except SCPException:
-                if (propagate_fail == True):
+                if (propagate_fail):
                     raise LagoCopyFilesFromVMError(remote_path, local_path)
 
     @property
