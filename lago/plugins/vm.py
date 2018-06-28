@@ -69,7 +69,7 @@ class LagoVMNotRunningError(utils.LagoUserException):
 class LagoCopyFilesToVMError(utils.LagoUserException):
     def __init__(self, local_files):
         super().__init__(
-            'Failed, Copy files/directory {} does not exist'.
+            'Failed, Copy files/directory {} does not exist!'.
             format(local_files)
         )
 
@@ -77,7 +77,7 @@ class LagoCopyFilesToVMError(utils.LagoUserException):
 class LagoCopyFilesFromVMError(utils.LagoUserException):
     def __init__(self, remote_files, local_files):
         super().__init__(
-            'Failed, Copy files/directory from {} does not exist'.format(
+            'Failed, Copy files/directory from {} does not exist!'.format(
                 remote_files, local_files
             )
         )
