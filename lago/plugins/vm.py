@@ -285,6 +285,9 @@ class VMProviderPlugin(plugins.Plugin):
                     propagate_fail=False
                 )
             except SCPException as err:
+                LOGGER.debug(
+                    '%s: SCPException _extract_paths_scp message', err.args[0]
+                )
                 if not ignore_nopath:
                     raise LagoCopyFilesFromVMError(remote_path, local_path)
 
