@@ -456,8 +456,6 @@ class VMPlugin(plugins.Plugin):
                         raise LagoCopyFilesFromVMError(remote_path, local_path)
                     else:
                         raise
-            else:
-                raise
 
     @property
     def metadata(self):
