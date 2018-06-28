@@ -291,8 +291,6 @@ class VMProviderPlugin(plugins.Plugin):
                     LOGGER.debug('%s: ignoring', err.args[0])
                 else:
                     raise ExtractPathNoPathError(err.args[0])
-            #else:
-            #    raise
 
 
 class VMPlugin(plugins.Plugin):
