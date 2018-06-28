@@ -291,8 +291,8 @@ class VMProviderPlugin(plugins.Plugin):
                     LOGGER.debug('%s: ignoring', err.args[0])
                 else:
                     raise ExtractPathNoPathError(err.args[0])
-            else:
-                raise
+            #else:
+            #    raise
 
 
 class VMPlugin(plugins.Plugin):
@@ -458,8 +458,8 @@ class VMPlugin(plugins.Plugin):
                         raise LagoCopyFilesFromVMError(remote_path, local_path)
                     else:
                         raise
-                else:
-                    raise
+            # else:
+            #     raise
 
     @property
     def metadata(self):
