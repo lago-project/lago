@@ -284,12 +284,15 @@ class VMProviderPlugin(plugins.Plugin):
                     remote_path=host_path,
                     propagate_fail=False
                 )
+            except LagoCopyFilesFromVMError as err:
+                LOGGER.debug('%s: LagoCopyFilesFromVMError', err.args[0])
             except SCPException as err:
-                LOGGER.debug(
-                    '%s: SCPException _extract_paths_scp message', err.args[0]
-                )
-                if not ignore_nopath:
-                    raise LagoCopyFilesFromVMError(host_path, guest_path)
+                if ignore_nopath:
+                    LOGGER.debug('%s: ignoring', err.args[0])
+                else:
+                    raise ExtractPathNoPathError(err.args[0])
+            else:
+                raise
 
 
 class VMPlugin(plugins.Plugin):
@@ -446,13 +449,17 @@ class VMPlugin(plugins.Plugin):
                         local_path=local_path,
                     )
             except SCPException as err:
-                LOGGER.debug('%s: SCPException message', err.args[0])
-
                 err_substr = ': No such file or directory'
                 if len(err.args) > 0 and isinstance(
                     err.args[0], basestring
                 ) and err_substr in err.args[0]:
-                    raise LagoCopyFilesFromVMError(remote_path, local_path)
+                    if propagate_fail:
+                        LOGGER.debug('%s: ignoring', err.args[0])
+                        raise LagoCopyFilesFromVMError(remote_path, local_path)
+                    else:
+                        raise
+                else:
+                    raise
 
     @property
     def metadata(self):
