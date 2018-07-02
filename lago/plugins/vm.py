@@ -35,6 +35,7 @@ import logging
 import os
 import warnings
 from abc import (ABCMeta, abstractmethod)
+
 from scp import SCPClient, SCPException
 
 from .. import (
@@ -65,13 +66,6 @@ class LagoVMNotRunningError(utils.LagoUserException):
     def __init__(self, vm_name):
         super().__init__('VM {} is not running'.format(vm_name))
 
-class LagoCopyFilesToVMError(utils.LagoUserException):
-    def __init__(self, local_files):
-        super().__init__('Error: Copy files/directory {} does not exist'.format(local_files))
-
-class LagoCopyFilesFromVMError(utils.LagoUserException):
-    def __init__(self, remote_files, local_files):
-        super().__init__('Error: Copy files/directory from {} does not exist'.format(remote_files, local_files))
 
 class LagoVMDoesNotExistError(utils.LagoException):
     pass
@@ -417,32 +411,22 @@ class VMPlugin(plugins.Plugin):
         with LogTask(
             'Copy %s to %s:%s' % (local_path, self.name(), remote_path),
         ):
-            try:
-                with self._scp() as scp:
-                    scp.put(
-                        files=local_path,
-                        remote_path=remote_path,
-                        recursive=recursive,
-                    )
-            except OSError:
-                raise LagoCopyFilesToVMError(local_path)
+            with self._scp() as scp:
+                scp.put(
+                    files=local_path,
+                    remote_path=remote_path,
+                    recursive=recursive,
+                )
 
     def copy_from(
         self, remote_path, local_path, recursive=True, propagate_fail=True
     ):
-        with LogTask(
-            'Copy from %s:%s to %s' % (self.name(), remote_path, local_path),
-        ):
-            try:
-                with self._scp(propagate_fail=propagate_fail) as scp:
-                    scp.get(
-                        recursive=recursive,
-                        remote_path=remote_path,
-                        local_path=local_path,
-                    )
-            except SCPException:
-                raise LagoCopyFilesFromVMError(remote_path,local_path)
-
+        with self._scp(propagate_fail=propagate_fail) as scp:
+            scp.get(
+                recursive=recursive,
+                remote_path=remote_path,
+                local_path=local_path,
+            )
 
     @property
     def metadata(self):
