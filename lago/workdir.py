@@ -269,7 +269,7 @@ class Workdir(object):
 
         Raises:
             LagoPrefixAlreadyExistsError: if prefix name already exists in the
-                workdir
+            workdir
         """
         if os.path.exists(self.join(name)):
             raise LagoPrefixAlreadyExistsError(name, self.path)
@@ -510,10 +510,8 @@ class LagoPrefixAlreadyExistsError(utils.LagoException):
             dedent(
                 """
                 Failed Prefix name {} already exists in workdir {}
-                1) Destroy old lago VM in order to create new VM
-                    > lago destroy
+                1) Destroy old lago VM
                 2) Create a new prefix and then create the new VM
-                    > lago init <WORKDIR-PATH> <INIT-FILE>
-                """.format(name, path)
+                """
             )
         )
