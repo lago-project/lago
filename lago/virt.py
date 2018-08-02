@@ -26,6 +26,7 @@ import os
 import uuid
 
 import yaml
+from future.builtins import super
 
 from lago import log_utils, plugins, utils
 from lago.config import config
@@ -34,6 +35,14 @@ from lago.providers.libvirt.network import BridgeNetwork, NATNetwork
 LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
 log_task = functools.partial(log_utils.log_task, logger=LOGGER)
+
+
+class LagoUnknownVMTypeError(utils.LagoUserException):
+    def __init__(self, vm_type_name, vm_types):
+        super().__init__(
+            'Unknown VM type: {0}, available types: {1}, \
+            need to install lago-ovirt plugin'.format(vm_type_name, vm_types)
+        )
 
 
 def _gen_ssh_command_id():
@@ -104,10 +113,8 @@ class VirtEnv(object):
         try:
             vm_type = self.vm_types[vm_type_name]
         except KeyError:
-            raise RuntimeError(
-                'Unknown VM type: {0}, available types: {1}'.format(
-                    vm_type_name, ','.join(self.vm_types.keys())
-                )
+            raise LagoUnknownVMTypeError(
+                vm_type_name, ','.join(self.vm_types.keys())
             )
         vm_spec['vm-type'] = vm_type_name
         return vm_type(self, vm_spec)
