@@ -135,6 +135,7 @@ class TestLagoAnsible(object):
         result = lago_ansible.LagoAnsible.get_key(path, data_structure)
         assert result == expected
 
+
 # yapf: disable
     @pytest.mark.parametrize(
         'keys, expected', [
@@ -172,6 +173,11 @@ class TestLagoAnsible(object):
                         generate_entry(VM2),
                         generate_entry(VM3),
                     ]
+                }
+            ), (
+                [], {
+                    'masters': [generate_entry(VM1)],
+                    'vms': [generate_entry(VM1), generate_entry(VM2)]
                 }
             )
         ]

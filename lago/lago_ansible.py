@@ -76,6 +76,13 @@ class LagoAnsible(object):
                 else:
                     inventory['{}={}'.format(key, value)].append(entry)
 
+            # Adding a special case for the group key.
+            # Most of the times the user wants that the host
+            # will be a part of the group "group", and not a part of
+            # "group=something"
+            for group in vm_spec.get('groups', []):
+                inventory[group].append(entry)
+
         return inventory
 
     def _generate_entry(self, vm):
