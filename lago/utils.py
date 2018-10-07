@@ -57,7 +57,11 @@ def _ret_via_queue(func, queue):
     try:
         queue.put({'return': func()})
     except Exception:
-        LOGGER.exception('Error while running thread')
+        LOGGER.debug(
+            'Error while running thread %s',
+            threading.current_thread().name,
+            exc_info=True
+        )
         queue.put({'exception': sys.exc_info()})
 
 
