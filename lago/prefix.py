@@ -40,7 +40,7 @@ import xmltodict
 import paths
 import subnet_lease
 import utils
-from utils import LagoInitException
+from utils import LagoInitException, LagoException
 import virt
 import log_utils
 import build
@@ -1653,7 +1653,7 @@ class Prefix(object):
                 if ret != 0:
                     LOGGER.debug('STDOUT:\n%s' % out)
                     LOGGER.error('STDERR\n%s' % err)
-                    raise RuntimeError(
+                    raise LagoDeployError(
                         '%s failed with status %d on %s' % (
                             script,
                             ret,
@@ -1668,3 +1668,7 @@ class Prefix(object):
             self._deploy_host,
             self.virt_env.get_vms().values()
         )
+
+
+class LagoDeployError(LagoException):
+    pass
