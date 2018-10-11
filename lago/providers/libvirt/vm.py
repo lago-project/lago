@@ -603,6 +603,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
                     driver = ET.Element(
                         'driver',
                         queues='{}'.format(self.vm._spec.get('vcpu', 2)),
+                        iothread='1'
                     )
                     controller.append(driver)
                     devices.append(controller)
@@ -614,14 +615,36 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
                 device=disk_device,
             )
 
-            disk.append(
-                ET.Element(
-                    'driver',
-                    name='qemu',
-                    type=dev_spec['format'],
-                    discard='unmap',
-                ),
-            )
+            if bus == 'virtio':
+                disk.append(
+                    ET.Element(
+                        'driver',
+                        name='qemu',
+                        type=dev_spec['format'],
+                        discard='unmap',
+                        cache='writeback',
+                        iothread='1',
+                        queues='1',
+                    ),
+                )
+            elif bus == 'scsi':
+                disk.append(
+                    ET.Element(
+                        'driver',
+                        name='qemu',
+                        type=dev_spec['format'],
+                        discard='unmap',
+                        cache='writeback',
+                    ),
+                )
+            else:
+                disk.append(
+                    ET.Element(
+                        'driver',
+                        name='qemu',
+                        type=dev_spec['format'],
+                    ),
+                )
 
             serial = ET.SubElement(disk, 'serial')
             serial.text = "{}".format(disk_order + 1)
@@ -659,6 +682,13 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
                 ET.Element(
                     'model',
                     type='virtio',
+                ),
+            )
+            interface.append(
+                ET.Element(
+                    'driver',
+                    name='vhost',
+                    queues='2',
                 ),
             )
             if self.libvirt_ver > 3001001:
