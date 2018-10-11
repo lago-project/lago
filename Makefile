@@ -12,7 +12,7 @@ DIST_DIR=${OUTPUT_DIR}/dist
 TAR_DIST_LOCATION=${DIST_DIR}/${TAR_FILE}
 TARBALL_DIST_LOCATION=${DIST_DIR}/${TARBALL_FILE}
 
-.PHONY: build rpm srpm ${TARBALL_DIST_LOCATION} check-local dist check ${SPECFILE} docs fullchangelog changelog python-sdist add-extra-files-sdist
+.PHONY: build rpm srpm ${TARBALL_DIST_LOCATION} check-local dist check ${SPECFILE} docs fullchangelog changelog python-sdist add-extra-files-sdist container
 
 changelog:
 	echo Creating RPM compatible ChangeLog \
@@ -89,3 +89,6 @@ clean:
 
 docs:
 	tox -v -r -e docs
+
+container:
+	make -C container RPM_PATH=${RPM_PATH}
