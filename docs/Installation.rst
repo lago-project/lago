@@ -250,14 +250,14 @@ Troubleshooting
 
   .. code:: bash
 
-      sudo echo 2 > /proc/sys/net/ipv6/conf/INTERFACE/accept_ra
+      echo 2 | sudo tee /proc/sys/net/ipv6/conf/INTERFACE/accept_ra
 
   In order to apply and make this change permanent, use the following commands
   (don't forget to specify your interface):
 
   .. code:: bash
 
-      sudo echo "net.ipv6.conf.INTERFACE.accept_ra=2" >> "/etc/sysctl.conf"
+      echo "net.ipv6.conf.INTERFACE.accept_ra=2" | sudo tee -a "/etc/sysctl.conf"
       sudo sysctl -p
 
 .. [1] If the installation script does not work for you on the supported
