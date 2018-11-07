@@ -968,8 +968,8 @@ def main():
     try:
         cli_plugins[args.verb].do_run(args)
     except utils.LagoException as e:
-        LOGGER.info(e.message)
-        LOGGER.debug(e)
+        LOGGER.error(e.message)
+        LOGGER.debug(e, exc_info=True)
         sys.exit(2)
     except Exception:
         LOGGER.exception('Error occured, aborting')
