@@ -1,7 +1,6 @@
 configparser
 enum34
 libvirt-python
-lockfile
 lxml
 paramiko
 pbr

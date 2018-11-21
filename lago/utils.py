@@ -35,7 +35,6 @@ import time
 import yaml
 import pkg_resources
 from io import StringIO
-import lockfile
 import argparse
 import configparser
 import uuid as uuid_m
@@ -367,21 +366,63 @@ class ExceptionTimer(object):
         signal.alarm(0)
 
 
+class Flock(object):
+    """A wrapper class around flock
+
+    Attributes:
+        path(str): Path to the lock file
+        readonly(bool): If true create a shared lock, otherwise
+            create an exclusive lock.
+        blocking(bool) If true block the calling process if the
+            lock is already acquired.
+    """
+
+    def __init__(self, path, readonly=False, blocking=True):
+        self._path = path
+        self._fd = None
+        if readonly:
+            self._op = fcntl.LOCK_SH
+        else:
+            self._op = fcntl.LOCK_EX
+
+        if not blocking:
+            self._op |= fcntl.LOCK_NB
+
+    def acquire(self):
+        """Acquire the lock
+
+        Raises:
+            IOError: if the call to flock fails
+        """
+        self._fd = open(self._path, mode='w+')
+        fcntl.flock(self._fd, self._op)
+
+    def release(self):
+        self._fd.close()
+
+
 class LockFile(object):
     """
-    Context manager that creates a lock around a directory, with optional
-    timeout in the acquire operation
+    Context manager that creates a file based lock, with optional
+    timeout in the acquire operation.
+
+    This context manager should be used only from the main Thread.
 
     Args:
         path(str): path to the dir to lock
         timeout(int): timeout in seconds to wait while acquiring the lock
-        **kwargs(dict): Any other param to pass to `lockfile.LockFile`
+        lock_cls(callable): A callable which returns a Lock object that
+            implements the acquire and release methods.
+            The default is Flock.
+        **kwargs(dict): Any other param to pass to the `lock_cls` instance.
+
     """
 
-    def __init__(self, path, timeout=None, **kwargs):
+    def __init__(self, path, timeout=None, lock_cls=None, **kwargs):
         self.path = path
         self.timeout = timeout or 0
-        self.lock = lockfile.LockFile(path=path, **kwargs)
+        self._lock_cls = lock_cls or Flock
+        self.lock = self._lock_cls(path=path, **kwargs)
 
     def __enter__(self):
         """
@@ -403,10 +444,9 @@ class LockFile(object):
             )
 
     def __exit__(self, *_):
-        if self.lock.is_locked():
-            LOGGER.debug('Trying to release lock for {}'.format(self.path))
-            self.lock.release()
-            LOGGER.debug('Lock for {} was released'.format(self.path))
+        LOGGER.debug('Trying to release lock for {}'.format(self.path))
+        self.lock.release()
+        LOGGER.debug('Lock for {} was released'.format(self.path))
 
 
 def read_nonblocking(file_descriptor):
