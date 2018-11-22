@@ -5,6 +5,8 @@ import os
 import logging
 import uuid
 import filecmp
+from time import sleep
+
 from jinja2 import Environment, BaseLoader
 from lago import sdk
 from lago.utils import run_command
@@ -217,14 +219,22 @@ def test_ansible_inventory(monkeypatch, env, test_results, vms):
 
 def test_systemd_analyze(test_results, vms, vm_name):
     vm = vms[vm_name]
+    retries = 3
+
     res = vm.ssh(['command', '-v', 'systemd-analyze'])
     if res.code != 0:
         raise pytest.skip(
             'systemd-analyze not available on {0}'.format(vm_name)
         )
 
-    res = vm.ssh(['systemd-analyze'])
-    assert res.code == 0
+    for i in xrange(retries):
+        res = vm.ssh(['systemd-analyze'])
+        if not res:
+            break
+        sleep(3)
+    else:
+        pytest.fail('Failed to run systemd-analyze on {}'.format(vm_name))
+
     log = '\n'.join([res.out, res.err])
 
     res = vm.ssh(['systemd-analyze', 'blame'])
