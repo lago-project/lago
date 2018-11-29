@@ -26,6 +26,7 @@ import os
 import uuid
 
 import yaml
+from future.builtins import super
 
 from lago import log_utils, plugins, utils
 from lago.config import config
@@ -34,6 +35,14 @@ from lago.providers.libvirt.network import BridgeNetwork, NATNetwork
 LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
 log_task = functools.partial(log_utils.log_task, logger=LOGGER)
+
+
+class LagoUnknownVMTypeError(utils.LagoUserException):
+    def __init__(self, vm_type_name, vm_types):
+        super().__init__(
+            'Unknown VM type: {0}, available types: {1}, \
+            need to install lago-ovirt plugin'.format(vm_type_name, vm_types)
+        )
 
 
 def _gen_ssh_command_id():
@@ -69,7 +78,6 @@ class VirtEnv(object):
     * prefix
     * vms
     * net
-
     '''
 
     def __init__(self, prefix, vm_specs, net_specs):
@@ -104,10 +112,8 @@ class VirtEnv(object):
         try:
             vm_type = self.vm_types[vm_type_name]
         except KeyError:
-            raise RuntimeError(
-                'Unknown VM type: {0}, available types: {1}'.format(
-                    vm_type_name, ','.join(self.vm_types.keys())
-                )
+            raise LagoUnknownVMTypeError(
+                vm_type_name, ','.join(self.vm_types.keys())
             )
         vm_spec['vm-type'] = vm_type_name
         return vm_type(self, vm_spec)
@@ -115,12 +121,10 @@ class VirtEnv(object):
     def prefixed_name(self, unprefixed_name, max_length=0):
         """
         Returns a uuid pefixed identifier
-
         Args:
             unprefixed_name(str): Name to add a prefix to
             max_length(int): maximum length of the resultant prefixed name,
                 will adapt the given name and the length of the uuid ot fit it
-
         Returns:
             str: prefixed identifier for the given unprefixed name
         """
@@ -228,7 +232,6 @@ class VirtEnv(object):
         """
         Generate an init file which represents this env and can
         be used with the images created by self.export_vms
-
         Args:
             dst (str): path and name of the new init file
             out_format (plugins.output.OutFormatPlugin):
@@ -293,7 +296,6 @@ class VirtEnv(object):
         Get the spec of the current env.
         The spec will hold the info about all the domains and
         networks associated with this env.
-
         Args:
             filters (list): list of paths to keys that should be removed from
                 the init file
@@ -347,16 +349,13 @@ class VirtEnv(object):
     def _get_stop_shutdown_common_args(self, vm_names):
         """
         Get the common arguments for stop and shutdown commands
-
         Args:
             vm_names (list of str): The names of the requested vms
-
         Returns
             list of plugins.vm.VMProviderPlugin:
                 vms objects that should be stopped
             list of virt.Network: net objects that should be stopped
             str: log message
-
         Raises:
             utils.LagoUserException: If a vm name doesn't exist
         """
@@ -375,14 +374,11 @@ class VirtEnv(object):
     def _get_unused_nets(self, vms_to_stop):
         """
         Return a list of nets that used only by the vms in vms_to_stop
-
         Args:
             vms_to_stop (list of str): The names of the requested vms
-
         Returns
             list of virt.Network: net objects that used only by
                 vms in vms_to_stop
-
         Raises:
             utils.LagoUserException: If a vm name doesn't exist
         """
@@ -450,13 +446,10 @@ class VirtEnv(object):
         """
         Returns the vm objects associated with vm_names
         if vm_names is None, return all the vms in the prefix
-
         Args:
             vm_names (list of str): The names of the requested vms
-
         Returns
             dict: Which contains the requested vm objects indexed by name
-
         Raises:
             utils.LagoUserException: If a vm name doesn't exist
         """
@@ -539,11 +532,9 @@ class VirtEnv(object):
     def get_snapshots(self, domains=None):
         """
         Get the list of snapshots for each domain
-
         Args:
             domanins(list of str): list of the domains to get the snapshots
             for, all will be returned if none or empty list passed
-
         Returns:
             dict of str -> list(str): with the domain names and the list of
             snapshots for each
