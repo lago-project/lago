@@ -507,7 +507,7 @@ class TestWorkdir(object):
             return_value=True,
         )
 
-        with pytest.raises(lago.workdir.PrefixAlreadyExists):
+        with pytest.raises(lago.workdir.LagoPrefixAlreadyExistsError):
             mock_workdir.add_prefix(name='ni!')
 
         mock_exists.assert_called_with('shrubbery')
