@@ -8,15 +8,15 @@ from lago_fixtures import (  # noqa: F401
 
 _local_config = {
     'check_patch': {
-        'images': ['el7.4-base']
+        'images': ['el7.5-base']
     },
     'check_merged':
         {
             'images': [
-                'el7.4-base-1',
+                'el7.5-base',
                 'el6-base',
-                'fc26-base',
-                'fc27-base',
+                'fc28-base',
+                'fc29-base',
             ]
         }  # noqa: E123
 }

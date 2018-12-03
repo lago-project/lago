@@ -168,6 +168,8 @@ class Prefix(object):
                 'ssh-keygen',
                 '-t',
                 'rsa',
+                '-m',
+                'PEM',
                 '-N',
                 '',
                 '-f',

@@ -22,6 +22,7 @@
 """
 from stevedore import ExtensionManager
 import logging
+import warnings
 
 LOGGER = logging.getLogger(__name__)
 
@@ -32,6 +33,12 @@ PLUGIN_ENTRY_POINTS = {
     'vm': 'lago.plugins.vm',
     'vm-service': 'lago.plugins.vm_service',
     'vm-provider': 'lago.plugins.vm_provider',
+}
+
+# Warnings that are emitted by stevedore package and we wnat to ignore.
+STEVEDORE_WARN_MSG = {
+    'Parameters to load are deprecated.  '
+    'Call .resolve and .require separately.',
 }
 
 
@@ -51,6 +58,17 @@ class Plugin(object):
 
 
 def load_plugins(namespace, instantiate=True):
+    with warnings.catch_warnings(record=True) as wlist:
+        plugins = _load_plugins(namespace, instantiate)
+        for warn in wlist:
+            msg = str(warn.message)
+            if msg not in STEVEDORE_WARN_MSG:
+                LOGGER.warning(msg)
+
+    return plugins
+
+
+def _load_plugins(namespace, instantiate=True):
     """
     Loads all the plugins for the given namespace
 

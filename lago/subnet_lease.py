@@ -26,14 +26,13 @@ import os
 import logging
 from netaddr import IPNetwork, AddrFormatError
 from textwrap import dedent
-from lockfile.mkdirlockfile import LockFailed
 
 from .config import config
 from . import utils, log_utils
 
 LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
-LOCK_NAME = 'leases'
+LOCK_NAME = 'subnet-lease.lock'
 
 
 class SubnetStore(object):
@@ -148,7 +147,7 @@ class SubnetStore(object):
                     acquired_subnet = self._acquire(uuid_path)
 
                 return acquired_subnet
-        except (utils.TimerException, LockFailed):
+        except (utils.TimerException, IOError):
             raise LagoSubnetLeaseLockException(self.path)
 
     def _acquire(self, uuid_path):
@@ -269,7 +268,7 @@ class SubnetStore(object):
 
         leases = [
             self.create_lease_object_from_idx(lease_file.split('.')[0])
-            for lease_file in lease_files
+            for lease_file in lease_files if lease_file != LOCK_NAME
         ]
         if not uuid:
             return leases
@@ -301,7 +300,7 @@ class SubnetStore(object):
             with self._create_lock():
                 for subnet in subnets_iter:
                     self._release(self.create_lease_object_from_subnet(subnet))
-        except (utils.TimerException, LockFailed):
+        except (utils.TimerException, IOError):
             raise LagoSubnetLeaseLockException(self.path)
 
     def _release(self, lease):
