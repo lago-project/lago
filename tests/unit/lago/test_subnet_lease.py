@@ -2,7 +2,7 @@ from lago import subnet_lease
 from lago.subnet_lease import (
     LagoSubnetLeaseOutOfRangeException, LagoSubnetLeaseStoreFullException,
     LagoSubnetLeaseTakenException, LagoSubnetLeaseMalformedAddrException,
-    LagoSubnetLeaseBadPermissionsException
+    LagoSubnetLeaseBadPermissionsException, LOCK_NAME
 )
 
 import pytest
@@ -93,6 +93,13 @@ class TestSubnetStore(object):
             subnet_store.path, '{}.lease'.format(third_octet)
         )
         _, dirnames, filenames = os.walk(subnet_store.path).next()
+
+        try:
+            # Don't count the lockfile
+            filenames.remove(LOCK_NAME)
+        except ValueError:
+            pass
+
         assert \
             len(dirnames) == 0 and \
             len(filenames) == 1 and \
@@ -140,17 +147,22 @@ class TestSubnetStore(object):
     def test_release_several_prefixes(
         self, subnet_store, prefix_mock_gen, num_prefixes, remains
     ):
+        def get_leases():
+            return [f for f in os.listdir(subnet_store.path) if f != LOCK_NAME]
+
         gen = prefix_mock_gen()
         for _ in range(num_prefixes):
             subnet_store.acquire(next(gen).uuid_path)
         acquired = subnet_store.list_leases()
         assert all(lease.valid for lease in acquired)
         assert len(acquired) == num_prefixes
-        assert len(os.listdir(subnet_store.path)) == num_prefixes
+        assert len(get_leases()) == num_prefixes
+
         to_release = random.sample(acquired, num_prefixes - remains)
         subnet_store.release([lease.subnet for lease in to_release])
+
         assert len(subnet_store.list_leases()) == remains
-        assert len(os.listdir(subnet_store.path)) == remains
+        assert len(get_leases()) == remains
 
     def test_list_leases_raises(self, subnet_store):
         with patch('lago.subnet_lease.os.listdir') as mock_listdir:

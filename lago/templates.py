@@ -19,7 +19,6 @@ definitions:
 
 """
 import errno
-import functools
 import json
 import logging
 import os
@@ -27,8 +26,6 @@ import posixpath
 import shutil
 import urllib
 import sys
-
-import lockfile
 
 import utils
 from . import log_utils
@@ -513,19 +510,6 @@ class TemplateVersion:
         self._source.download_image(self._handle, destination)
 
 
-def _locked(func):
-    """
-    Decorator that ensures that the decorated function has the lock of the
-    repo while running, meant to decorate only bound functions for classes that
-    have `lock_path` method.
-    """
-
-    @functools.wraps(func)
-    def wrapper(self, *args, **kwargs):
-        with lockfile.LockFile(self.lock_path()):
-            return func(self, *args, **kwargs)
-
-
 class TemplateStore:
     """
     Local cache to store templates
@@ -635,7 +619,7 @@ class TemplateStore:
         dest = self._prefixed(temp_ver.name)
         temp_dest = '%s.tmp' % dest
 
-        with lockfile.LockFile(dest):
+        with utils.LockFile(dest + '.lock'):
             # Image was downloaded while we were waiting
             if os.path.exists(dest):
                 return
