@@ -49,7 +49,7 @@ LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
 
 
-class VMError(Exception):
+class VMError(utils.LagoException):
     pass
 
 
@@ -58,7 +58,8 @@ class ExtractPathError(VMError):
 
 
 class ExtractPathNoPathError(VMError):
-    pass
+    def __init__(self, err):
+        super().__init__('Failed to extract files: {}'.format(err))
 
 
 class LagoVMNotRunningError(utils.LagoUserException):
@@ -265,11 +266,14 @@ class VMProviderPlugin(plugins.Plugin):
                 self.vm.copy_from(
                     local_path=guest_path,
                     remote_path=host_path,
-                    propagate_fail=False
+                    propagate_fail=not ignore_nopath
                 )
             except ExtractPathNoPathError as err:
                 if ignore_nopath:
-                    LOGGER.debug('%s: ignoring', err.args[0])
+                    LOGGER.debug(
+                        '%s: ignoring since ignore_nopath was set to True',
+                        err.args[0]
+                    )
                 else:
                     raise
 
@@ -417,6 +421,7 @@ class VMPlugin(plugins.Plugin):
     ):
         with LogTask(
             'Copy from %s:%s to %s' % (self.name(), remote_path, local_path),
+            propagate_fail=propagate_fail
         ):
             try:
                 with self._scp(propagate_fail=propagate_fail) as scp:
