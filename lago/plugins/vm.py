@@ -35,7 +35,6 @@ import logging
 import os
 import warnings
 from abc import (ABCMeta, abstractmethod)
-
 from scp import SCPClient, SCPException
 
 from .. import (
@@ -50,7 +49,7 @@ LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
 
 
-class VMError(Exception):
+class VMError(utils.LagoException):
     pass
 
 
@@ -59,12 +58,29 @@ class ExtractPathError(VMError):
 
 
 class ExtractPathNoPathError(VMError):
-    pass
+    def __init__(self, err):
+        super().__init__('Failed to extract files: {}'.format(err))
 
 
 class LagoVMNotRunningError(utils.LagoUserException):
     def __init__(self, vm_name):
         super().__init__('VM {} is not running'.format(vm_name))
+
+
+class LagoCopyFilesToVMError(utils.LagoUserException):
+    def __init__(self, local_files, err):
+        super().__init__(
+            'Failed to copy files/directory {}\n{}'.format(local_files, err)
+        )
+
+
+class LagoCopyFilesFromVMError(utils.LagoUserException):
+    def __init__(self, remote_files, local_files, err=''):
+        super().__init__(
+            'Failed to copy files/directory from {} to {}\n{}'.format(
+                remote_files, local_files, err
+            )
+        )
 
 
 class LagoVMDoesNotExistError(utils.LagoException):
@@ -91,7 +107,6 @@ class VMProviderPlugin(plugins.Plugin):
     you have to inherit from this class, and then define the
     'default_vm_provider' in your config to be your plugin, or explicitly
     specify it on each domain definition in the initfile with 'vm-provider' key
-
     You will have to override at least all the abstractmethods in order to
     write a provider plugin, even if they are just runnig `pass`.
     """
@@ -103,7 +118,6 @@ class VMProviderPlugin(plugins.Plugin):
     def start(self, *args, **kwargs):
         """
         Start a domain
-
         Returns:
             None
         """
@@ -113,7 +127,6 @@ class VMProviderPlugin(plugins.Plugin):
     def stop(self, *args, **kwargs):
         """
         Stop a domain
-
         Returns:
             None
         """
@@ -123,7 +136,6 @@ class VMProviderPlugin(plugins.Plugin):
     def shutdown(self, *args, **kwargs):
         """
         Shutdown a domain
-
         Returns:
             None
         """
@@ -133,7 +145,6 @@ class VMProviderPlugin(plugins.Plugin):
     def reboot(self, *args, **kwargs):
         """
         Reboot a domain
-
         Returns:
             None
         """
@@ -144,7 +155,6 @@ class VMProviderPlugin(plugins.Plugin):
         """
         Does any actions needed to get the domain ready to be used, ran on
         prefix init.
-
         Return:
             None
         """
@@ -154,7 +164,6 @@ class VMProviderPlugin(plugins.Plugin):
     def state(self, *args, **kwargs):
         """
         Return the current state of the domain
-
         Returns:
             str: Small description of the current domain state
         """
@@ -172,11 +181,9 @@ class VMProviderPlugin(plugins.Plugin):
     def create_snapshot(self, name, *args, **kwargs):
         """
         Take any actions needed to create a snapshot
-
         Args:
             name(str): Name for the snapshot, will be used as key to retrieve
                 it later
-
         Returns:
             None
         """
@@ -186,10 +193,8 @@ class VMProviderPlugin(plugins.Plugin):
     def revert_snapshot(self, name, *args, **kwargs):
         """
         Take any actions needed to revert/restore a snapshot
-
         Args:
             name(str): Name for the snapshot, same that was set on creation
-
         Returns:
             None
         """
@@ -198,7 +203,6 @@ class VMProviderPlugin(plugins.Plugin):
     def export_disks(self, standalone, dst_dir, compress, *args, **kwargs):
         """
         Export 'disks' as a standalone image or a layered image.
-
         Args:
             disks(list): The names of the disks to export
               (None means all the disks)
@@ -213,7 +217,6 @@ class VMProviderPlugin(plugins.Plugin):
     def interactive_console(self):
         """
         Run an interactive console
-
         Returns:
             lago.utils.CommandStatus: resulf of the interactive execution
         """
@@ -232,14 +235,11 @@ class VMProviderPlugin(plugins.Plugin):
     def extract_paths(self, paths, ignore_nopath):
         """
         Extract the given paths from the domain
-
         Args:
             paths(list of str): paths to extract
             ignore_nopath(boolean): if True will ignore none existing paths.
-
         Returns:
             None
-
         Raises:
             :exc:`~lago.plugins.vm.ExtractPathNoPathError`: if a none existing
                 path was found on the VM, and ``ignore_nopath`` is True.
@@ -266,17 +266,14 @@ class VMProviderPlugin(plugins.Plugin):
                 self.vm.copy_from(
                     local_path=guest_path,
                     remote_path=host_path,
-                    propagate_fail=False
+                    propagate_fail=not ignore_nopath
                 )
-            except SCPException as err:
-                err_substr = ': No such file or directory'
-                if len(err.args) > 0 and isinstance(
-                    err.args[0], basestring
-                ) and err_substr in err.args[0]:
-                    if ignore_nopath:
-                        LOGGER.debug('%s: ignoring', err.args[0])
-                    else:
-                        raise ExtractPathNoPathError(err.args[0])
+            except ExtractPathNoPathError as err:
+                if ignore_nopath:
+                    LOGGER.debug(
+                        '%s: ignoring since ignore_nopath was set to True',
+                        err.args[0]
+                    )
                 else:
                     raise
 
@@ -288,9 +285,7 @@ class VMPlugin(plugins.Plugin):
     the initfile lingo). From starting/stopping it to loading and calling the
     provider if needed. If you want to change only the way the VM is
     provisioned you can take a look to the `class:VMProviderPlugin` instead.
-
     This base class includes also some basic methods implemented with ssh.
-
     VM properties:
     * name
     * cpus
@@ -411,22 +406,44 @@ class VMPlugin(plugins.Plugin):
         with LogTask(
             'Copy %s to %s:%s' % (local_path, self.name(), remote_path),
         ):
-            with self._scp() as scp:
-                scp.put(
-                    files=local_path,
-                    remote_path=remote_path,
-                    recursive=recursive,
-                )
+            try:
+                with self._scp() as scp:
+                    scp.put(
+                        files=local_path,
+                        remote_path=remote_path,
+                        recursive=recursive,
+                    )
+            except (OSError, SCPException) as err:
+                raise LagoCopyFilesToVMError(local_path, str(err))
 
     def copy_from(
         self, remote_path, local_path, recursive=True, propagate_fail=True
     ):
-        with self._scp(propagate_fail=propagate_fail) as scp:
-            scp.get(
-                recursive=recursive,
-                remote_path=remote_path,
-                local_path=local_path,
-            )
+        with LogTask(
+            'Copy from %s:%s to %s' % (self.name(), remote_path, local_path),
+            propagate_fail=propagate_fail
+        ):
+            try:
+                with self._scp(propagate_fail=propagate_fail) as scp:
+                    scp.get(
+                        recursive=recursive,
+                        remote_path=remote_path,
+                        local_path=local_path,
+                    )
+            except SCPException as err:
+                err_substr = ': No such file or directory'
+                if all(
+                    (
+                        len(err.args) > 0,
+                        isinstance(err.args[0], basestring),
+                        err_substr in err.args[0],
+                    )
+                ):
+                    raise ExtractPathNoPathError(err.args[0])
+                else:
+                    raise LagoCopyFilesFromVMError(
+                        remote_path, local_path, err.args[0]
+                    )
 
     @property
     def metadata(self):
@@ -553,13 +570,11 @@ class VMPlugin(plugins.Plugin):
     def ssh_reachable(self, tries=None, propagate_fail=True):
         """
         Check if the VM is reachable with ssh
-
         Args:
             tries(int): Number of tries to try connecting to the host
             propagate_fail(bool): If set to true, this event will appear
             in the log and fail the outter stage. Otherwise, it will be
             discarded.
-
         Returns:
             bool: True if the VM is reachable.
         """
@@ -736,7 +751,6 @@ class VMPlugin(plugins.Plugin):
         """
         **NOTE**: Can be reduced to just one get call once we remove support
         for the service_class spec entry
-
         Returns:
             class: class for the loaded provider for that vm_spec
             None: if no provider was specified in the vm_spec
@@ -764,18 +778,14 @@ def _resolve_service_class(class_name, service_providers):
     """
     **NOTE**: This must be remved once the service_class spec entry is fully
     deprecated
-
     Retrieves a service plugin class from the class name instead of the
     provider name
-
     Args:
         class_name(str): Class name of the service plugin to retrieve
         service_providers(dict): provider_name->provider_class of the loaded
             service providers
-
     Returns:
         class: Class of the plugin that matches that name
-
     Raises:
         lago.plugins.NoSuchPluginError: if there was no service plugin that
             matched the search
