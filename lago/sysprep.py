@@ -19,7 +19,7 @@
 #
 import os
 
-import utils
+from . import utils
 import logging
 import tempfile
 from jinja2 import Environment, PackageLoader
