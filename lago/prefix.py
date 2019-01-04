@@ -282,7 +282,7 @@ class Prefix(object):
                     allocated_subnet = self._subnet_store.acquire(
                         self.paths.uuid()
                     )
-                    net_spec['gw'] = str(allocated_subnet.iter_hosts().next())
+                    net_spec['gw'] = str(next(allocated_subnet.iter_hosts()))
 
                 allocated_subnets.append(allocated_subnet)
         except:

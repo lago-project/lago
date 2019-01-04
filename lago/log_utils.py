@@ -395,7 +395,7 @@ class TaskHandler(logging.StreamHandler):
             return
 
         while self.tasks:
-            next_task = reversed(self.tasks.keys()).next()
+            next_task = next(reversed(self.tasks.keys()))
             if next_task == parent_task_name:
                 break
             del self.tasks[next_task]
