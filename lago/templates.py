@@ -651,7 +651,7 @@ class TemplateStore:
                 raise RuntimeError(
                     'Image %s does not match the expected hash %s' % (
                         temp_ver.name,
-                        sha1.hexdigest(),
+                        sha1,
                     )
                 )
 
