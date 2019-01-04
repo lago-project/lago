@@ -146,7 +146,7 @@ class Task(deque):
         self.force_show = False
         self.name = name
         self.start_time = datetime.datetime.now()
-        super(deque, self).__init__(*args, **kwargs)
+        super(Task, self).__init__(*args, **kwargs)
 
     def __str__(self):
         return (
