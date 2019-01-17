@@ -46,9 +46,9 @@ def pytest_generate_tests(metafunc):
 
 def pytest_runtest_setup(item):
     stage = pytest.config.getoption('--stage')
-    if item.get_marker('check_merged') and stage == 'check_patch':
+    if item.get_closest_marker('check_merged') and stage == 'check_patch':
         pytest.skip('runs only on check_merged stage')
-    elif item.get_marker('check_patch') and stage == 'check_merged':
+    elif item.get_closest_marker('check_patch') and stage == 'check_merged':
         pytest.skip('runs only on check_patch stage')
 
 
