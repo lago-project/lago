@@ -709,7 +709,7 @@ class VMPlugin(plugins.Plugin):
         return spec
 
     @contextlib.contextmanager
-    def _scp(self, propagate_fail=True):
+    def _ssh(self, propagate_fail=True):
         client = ssh.get_ssh_client(
             propagate_fail=propagate_fail,
             ip_addr=self.ip(),
@@ -718,11 +718,16 @@ class VMPlugin(plugins.Plugin):
             username=self._spec.get('ssh-user'),
             password=self._spec.get('ssh-password'),
         )
-        scp = SCPClient(client.get_transport())
         try:
-            yield scp
+            yield client
         finally:
             client.close()
+
+    @contextlib.contextmanager
+    def _scp(self, propagate_fail=True):
+        with self._ssh(propagate_fail) as ssh_client:
+            scp = SCPClient(ssh_client.get_transport())
+            yield scp
 
     def _detect_service_provider(self):
         LOGGER.debug('Detecting service provider for %s', self.name())
