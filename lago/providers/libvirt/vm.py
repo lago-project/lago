@@ -543,6 +543,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
             )
 
         if not qemu_kvm_path:
+            LOGGER.warning("emulator not found %r", ET.tostring(self.caps))
             raise utils.LagoException('kvm executable not found')
 
         return qemu_kvm_path
