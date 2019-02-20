@@ -29,10 +29,14 @@ for example, using a remote libvirt instance or similar.
 """
 from copy import deepcopy
 import contextlib
+import errno
 import functools
 from future.builtins import super
 import logging
 import os
+import shutil
+import subprocess
+import tempfile
 import warnings
 from abc import (ABCMeta, abstractmethod)
 from scp import SCPClient, SCPException
@@ -246,36 +250,89 @@ class VMProviderPlugin(plugins.Plugin):
             :exc:`~lago.plugins.vm.ExtractPathError`: on all other failures.
         """
         try:
-            self._extract_paths_scp(paths=paths, ignore_nopath=ignore_nopath)
+            self._extract_paths_tar_gz(paths, ignore_nopath)
         except (ssh.LagoSSHTimeoutException, LagoVMNotRunningError):
             raise ExtractPathError(
                 'Unable to extract paths from {0}: unreachable with SSH'.
                 format(self.vm.name())
             )
 
-    @check_running
-    def _extract_paths_scp(self, paths, ignore_nopath):
-        for host_path, guest_path in paths:
-            LOGGER.debug(
-                'Extracting scp://%s:%s to %s',
-                self.vm.name(),
-                host_path,
-                guest_path,
-            )
-            try:
-                self.vm.copy_from(
-                    local_path=guest_path,
-                    remote_path=host_path,
-                    propagate_fail=not ignore_nopath
+    @contextlib.contextmanager
+    def _make_temporary_directory(self):
+        path = tempfile.mkdtemp()
+        try:
+            yield path
+        finally:
+            shutil.rmtree(path, ignore_errors=True)
+
+    @contextlib.contextmanager
+    def _tar_gz_archive_from(self, remote_paths, compression_level=5):
+        with tempfile.NamedTemporaryFile() as archive_file:
+            with self.vm._ssh() as client:
+                cmd = (
+                    "tar "
+                    "--dereference "
+                    "--no-same-permissions "
+                    "--no-same-owner "
+                    "-c {} | gzip -f -{}"
                 )
-            except ExtractPathNoPathError as err:
-                if ignore_nopath:
-                    LOGGER.debug(
-                        '%s: ignoring since ignore_nopath was set to True',
-                        err.args[0]
+                remote_paths_arg = " ".join(remote_paths)
+                formatted_cmd = cmd.format(remote_paths_arg, compression_level)
+                _, stdout, _ = client.exec_command(formatted_cmd)
+                archive_file.write(stdout.read())
+                archive_file.flush()
+                os.fsync(archive_file.fileno())
+                LOGGER.debug(
+                    "Created %s archive with collected paths",
+                    archive_file.name
+                )
+                yield archive_file
+
+    @contextlib.contextmanager
+    def _remote_paths_extracted_to_temp_dir(self, remote_paths):
+        with self._tar_gz_archive_from(remote_paths) as archive_file:
+            with self._make_temporary_directory() as tmpdir_path:
+                LOGGER.debug(
+                    "Extracting archive %s to temporary directory: %s",
+                    archive_file.name, tmpdir_path
+                )
+                args = ["tar", "-xf", archive_file.name, "-C", tmpdir_path]
+                try:
+                    subprocess.check_output(args, stderr=subprocess.STDOUT)
+                except subprocess.CalledProcessError as e:
+                    LOGGER.error("'tar' command failed: %s", e.output)
+                yield tmpdir_path
+
+    @check_running
+    def _extract_paths_tar_gz(self, paths, ignore_nopath):
+        remote_paths = tuple(p[0] for p in paths)
+
+        with self._remote_paths_extracted_to_temp_dir(
+            remote_paths
+        ) as tmpdir_path:
+            for remote_path, desired_local_path in paths:
+                LOGGER.debug(
+                    'Moving %s to %s',
+                    remote_path,
+                    desired_local_path,
+                )
+                try:
+                    current_local_path = os.path.join(
+                        tmpdir_path, remote_path[1:]
                     )
-                else:
-                    raise
+                    shutil.move(current_local_path, desired_local_path)
+                except IOError as e:
+                    if e.errno == errno.ENOENT:
+                        if ignore_nopath:
+                            msg = (
+                                '%s: ignoring since ignore_nopath '
+                                'was set to True'
+                            )
+                            LOGGER.debug(msg, remote_path)
+                        else:
+                            raise ExtractPathNoPathError(remote_path)
+                    else:
+                        raise
 
 
 class VMPlugin(plugins.Plugin):
