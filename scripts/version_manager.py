@@ -2,6 +2,7 @@
 import argparse
 import copy
 import datetime
+import logging
 import os
 import re
 import sys
@@ -9,6 +10,8 @@ from collections import defaultdict, OrderedDict
 
 import dulwich.repo
 import dulwich.walk
+
+LOGGER = logging.getLogger(__name__)
 
 BUG_URL_REG = re.compile(
     r'.*Bug-Url: https?://bugzilla.*/[^\d]*(?P<bugid>\d+)'
@@ -70,8 +73,9 @@ def pretty_commit(commit, version=''):
     else:
         changelog_bugs = ''  # noqa
     return (
-        ('* {author_date} {author}{version}\n' if version is not None else '')
-        + '{changelog_message}\n' + '{changelog_bugs}'
+        ('* {author_date} {author}{version}\n'
+         if version is not None else '') + '{changelog_message}\n' +
+        '{changelog_bugs}'
     ).format(**vars())
 
 
@@ -141,6 +145,16 @@ def get_first_parents(repo_path):
         elif commit.parents and commit.sha().hexdigest() in first_parents:
             if commit.parents[0] not in first_parents:
                 first_parents.append(commit.parents[0])
+
+    if commit.parents:
+        # If this is the case, we have a shallow git clone
+        # which means that we don't have the metadata of the
+        # first's commit parent.
+        LOGGER.debug(
+            'This is a shallow git clone,'
+            ' removing the first\'s commit parent.'
+        )
+        first_parents.pop()
 
     return first_parents
 
@@ -309,7 +323,12 @@ def get_current_version(repo_path):
     return '%s.%s.%s' % (maj_version, feat_version, fix_version)
 
 
+def set_logging():
+    logging.basicConfig(level=logging.DEBUG)
+
+
 def main(args):
+    set_logging()
 
     parser = argparse.ArgumentParser()
     parser.add_argument(

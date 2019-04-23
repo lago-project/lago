@@ -31,6 +31,8 @@ import utils
 from . import log_utils
 from .config import config
 
+from future.builtins import super
+
 LOGGER = logging.getLogger(__name__)
 
 
@@ -302,7 +304,7 @@ class TemplateRepository:
         _providers (dict): Providers instances for any source in the spec
     """
 
-    def __init__(self, dom):
+    def __init__(self, dom, path):
         """
         You would usually use the
         :func:`TemplateRepository.from_url` method instead of
@@ -317,6 +319,7 @@ class TemplateRepository:
             name: self._get_provider(spec)
             for name, spec in self._dom.get('sources', {}).items()
         }
+        self._path = path
 
     @classmethod
     def from_url(cls, path):
@@ -346,7 +349,7 @@ class TemplateRepository:
                     'Unable to load repo from %s (IO error)' % path
                 )
 
-        return cls(json.loads(data))
+        return cls(json.loads(data), path)
 
     def _get_provider(self, spec):
         """
@@ -372,6 +375,16 @@ class TemplateRepository:
         """
         return self._dom['name']
 
+    @property
+    def path(self):
+        """
+        Getter for the template repo path
+
+        Returns:
+            str: the path/url of this template repo
+        """
+        return self._path
+
     def get_by_name(self, name):
         """
         Retrieve a template by it's name
@@ -380,9 +393,13 @@ class TemplateRepository:
             name (str): Name of the template to retrieve
 
         Raises:
-            KeyError: if no template is found
+            LagoMissingTemplateError: if no template is found
         """
-        spec = self._dom.get('templates', {})[name]
+        try:
+            spec = self._dom.get('templates', {})[name]
+        except KeyError:
+            raise LagoMissingTemplateError(name, self._path)
+
         return Template(
             name=name,
             versions={
@@ -634,7 +651,7 @@ class TemplateStore:
                 raise RuntimeError(
                     'Image %s does not match the expected hash %s' % (
                         temp_ver.name,
-                        sha1.hexdigest(),
+                        sha1,
                     )
                 )
 
@@ -684,3 +701,10 @@ class TemplateStore:
         """
         with open(self._prefixed('%s.hash' % temp_ver.name)) as f:
             return f.read().strip()
+
+
+class LagoMissingTemplateError(utils.LagoException):
+    def __init__(self, name, path):
+        super().__init__(
+            'Image {} doesn\'t exist in repo {}'.format(name, path)
+        )
