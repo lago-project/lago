@@ -1,6 +1,10 @@
 import json
+import os
 import yaml
+
 from StringIO import StringIO
+
+import pytest
 
 from lago import utils
 
@@ -107,3 +111,33 @@ class TestLoadVirtStream(object):
         expected = {'one': 1}
         loaded_conf = utils.load_virt_stream(virt_fd=bad_json)
         assert deep_compare(expected, loaded_conf)
+
+
+def test_should_give_a_temporary_directory_in():
+    remembered_dir_path = None
+    remembered_file_path = None
+
+    with utils.TemporaryDirectory() as tmpdir_path:
+        remembered_dir_path = tmpdir_path
+
+        assert os.path.isdir(tmpdir_path)
+
+        some_file_path = os.path.join(tmpdir_path, "smth")
+        remembered_file_path = some_file_path
+
+        with open(some_file_path, "w") as some_file:
+            some_file.write("stuff")
+        assert os.path.isfile(some_file_path)
+
+    assert not os.path.exists(remembered_dir_path)
+    assert not os.path.exists(remembered_file_path)
+
+
+def test_temporary_directory_should_respect_ignoring_errors_in():
+    with utils.TemporaryDirectory(ignore_errors=True) as tmpdir_path:
+        os.rmdir(tmpdir_path)
+        assert not os.path.exists(tmpdir_path)
+
+    with pytest.raises(OSError):
+        with utils.TemporaryDirectory(ignore_errors=False) as tmpdir_path:
+            os.rmdir(tmpdir_path)
