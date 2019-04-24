@@ -29,10 +29,13 @@ for example, using a remote libvirt instance or similar.
 """
 from copy import deepcopy
 import contextlib
+import errno
 import functools
 from future.builtins import super
 import logging
 import os
+import shutil
+import tempfile
 import warnings
 from abc import (ABCMeta, abstractmethod)
 from scp import SCPClient, SCPException
@@ -246,12 +249,98 @@ class VMProviderPlugin(plugins.Plugin):
             :exc:`~lago.plugins.vm.ExtractPathError`: on all other failures.
         """
         try:
-            self._extract_paths_scp(paths=paths, ignore_nopath=ignore_nopath)
+            if self._has_tar_and_gzip():
+                self._extract_paths_tar_gz(paths, ignore_nopath)
+            else:
+                self._extract_paths_scp(paths, ignore_nopath)
         except (ssh.LagoSSHTimeoutException, LagoVMNotRunningError):
             raise ExtractPathError(
                 'Unable to extract paths from {0}: unreachable with SSH'.
                 format(self.vm.name())
             )
+
+    @check_running
+    def _has_tar_and_gzip(self):
+        with self.vm._ssh() as client:
+            _, stdout, _ = client.exec_command("ls /usr/bin/tar")
+            if stdout.read().strip() != "/usr/bin/tar":
+                return False
+            _, stdout, _ = client.exec_command("ls /usr/bin/gzip")
+            if stdout.read().strip() != "/usr/bin/gzip":
+                return False
+        return True
+
+    @staticmethod
+    def _prepare_tar_gz_command(remote_paths, compression_level):
+        cmd = "tar --dereference -c {} | gzip -f -{}"
+        remote_paths_arg = " ".join(remote_paths)
+        return cmd.format(remote_paths_arg, compression_level)
+
+    def _pipe_ssh_cmd_output_to_file(self, cmd, out_file):
+        with self.vm._ssh() as client:
+            _, stdout, _ = client.exec_command(cmd)
+            out_file.write(stdout.read())
+            out_file.flush()
+            os.fsync(out_file.fileno())
+
+    @contextlib.contextmanager
+    def _tar_gz_archive_from(self, remote_paths, compression_level=5):
+        with tempfile.NamedTemporaryFile() as archive_file:
+            tar_gz_cmd = self._prepare_tar_gz_command(
+                remote_paths, compression_level
+            )
+            self._pipe_ssh_cmd_output_to_file(tar_gz_cmd, archive_file)
+            LOGGER.debug(
+                "Created %s archive with collected paths", archive_file.name
+            )
+            yield archive_file
+
+    @contextlib.contextmanager
+    def _remote_paths_extracted_to_temp_dir(self, remote_paths):
+        with self._tar_gz_archive_from(remote_paths) as archive_file:
+            with utils.TemporaryDirectory() as tmpdir_path:
+                LOGGER.debug(
+                    "Extracting archive %s to temporary directory: %s",
+                    archive_file.name, tmpdir_path
+                )
+                args = ["tar", "-xf", archive_file.name, "-C", tmpdir_path]
+                cmd_status = utils.run_command(args)
+                if cmd_status.code != 0:
+                    LOGGER.error("'tar' command failed: %s", cmd_status.err)
+                yield tmpdir_path
+
+    @check_running
+    def _extract_paths_tar_gz(self, paths, ignore_nopath):
+        remote_paths = tuple(p[0] for p in paths)
+
+        with self._remote_paths_extracted_to_temp_dir(
+            remote_paths
+        ) as tmpdir_path:
+            for remote_path, desired_local_path in paths:
+                LOGGER.debug(
+                    'Moving %s to %s',
+                    remote_path,
+                    desired_local_path,
+                )
+                try:
+                    # we need to strip first slash from absolute
+                    # 'remote_path' to make 'os.path.join' work
+                    current_local_path = os.path.join(
+                        tmpdir_path, remote_path[1:]
+                    )
+                    shutil.move(current_local_path, desired_local_path)
+                except IOError as e:
+                    if e.errno == errno.ENOENT:
+                        if ignore_nopath:
+                            msg = (
+                                '%s: ignoring since ignore_nopath '
+                                'was set to True'
+                            )
+                            LOGGER.debug(msg, remote_path)
+                        else:
+                            raise ExtractPathNoPathError(remote_path)
+                    else:
+                        raise
 
     @check_running
     def _extract_paths_scp(self, paths, ignore_nopath):
@@ -709,7 +798,7 @@ class VMPlugin(plugins.Plugin):
         return spec
 
     @contextlib.contextmanager
-    def _scp(self, propagate_fail=True):
+    def _ssh(self, propagate_fail=True):
         client = ssh.get_ssh_client(
             propagate_fail=propagate_fail,
             ip_addr=self.ip(),
@@ -718,11 +807,16 @@ class VMPlugin(plugins.Plugin):
             username=self._spec.get('ssh-user'),
             password=self._spec.get('ssh-password'),
         )
-        scp = SCPClient(client.get_transport())
         try:
-            yield scp
+            yield client
         finally:
             client.close()
+
+    @contextlib.contextmanager
+    def _scp(self, propagate_fail=True):
+        with self._ssh(propagate_fail) as ssh_client:
+            scp = SCPClient(ssh_client.get_transport())
+            yield scp
 
     def _detect_service_provider(self):
         LOGGER.debug('Detecting service provider for %s', self.name())
