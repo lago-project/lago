@@ -30,6 +30,7 @@ import signal
 import subprocess
 import sys
 import threading
+import tempfile
 import textwrap
 import time
 import yaml
@@ -395,6 +396,7 @@ class Flock(object):
             IOError: if the call to flock fails
         """
         self._fd = open(self._path, mode='w+')
+        os.chmod(self._path, 0o660)
         fcntl.flock(self._fd, self._op)
 
     def release(self):
@@ -447,6 +449,28 @@ class LockFile(object):
         LOGGER.debug('Trying to release lock for {}'.format(self.path))
         self.lock.release()
         LOGGER.debug('Lock for {} was released'.format(self.path))
+
+
+class TemporaryDirectory(object):
+    """
+    Context manager that creates a temporary directory and provides
+    its path as a property.
+
+    Args:
+        ignore_errors(bool): ignore errors when trying to remove directory
+    Raises:
+        OSError: anything that 'shutil.rmtree' might raise
+    """
+
+    def __init__(self, ignore_errors=True):
+        self._path = tempfile.mkdtemp()
+        self._ignore_errors = ignore_errors
+
+    def __enter__(self):
+        return self._path
+
+    def __exit__(self, *_):
+        shutil.rmtree(self._path, self._ignore_errors)
 
 
 def read_nonblocking(file_descriptor):
