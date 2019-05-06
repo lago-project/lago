@@ -109,9 +109,10 @@ def test_default_dict_empty():
     ]
 )
 def test_default_dict_loading(defaults):
-    config_load = config.ConfigLoad(defaults=defaults)
-    for key, value in defaults.iteritems():
-        assert config_load.get_section(key) == value
+    with patch('lago.config._get_configs_path', return_value=[]):
+        config_load = config.ConfigLoad(defaults=defaults)
+        for key, value in defaults.iteritems():
+            assert config_load.get_section(key) == value
 
 
 @patch('lago.config.open', new_callable=mock_open)
@@ -277,9 +278,10 @@ def test_key_only_in_file_exists(mocked_configs_path, mocked_open):
     ]
 )
 def test_get_ini(defaults):
-    config_load = config.ConfigLoad(defaults=defaults)
-    expected = _ini_from_dict(defaults)
-    assert config_load.get_ini() == expected
+    with patch('lago.config._get_configs_path', return_value=[]):
+        config_load = config.ConfigLoad(defaults=defaults)
+        expected = _ini_from_dict(defaults)
+        assert config_load.get_ini() == expected
 
 
 def test_get_ini_include_unset():
