@@ -164,7 +164,7 @@ The release procedure on the maintainer side
 #) Deploy the rpms from snapshot to dest repo and copy the ``ChangeLog`` from
    the tarball to ``ChangeLog_X.0.txt`` in the base of the ``stable/X.0/`` dir
 
-#) Send email to `lago-devel`_ with the announcement and the changelog since
+#) Send email to `devel`_ with the announcement and the changelog since
    the previous tag that you kept aside, feel free to change the body to your
    liking::
 
@@ -181,6 +181,6 @@ The release procedure on the maintainer side
 
 .. _open bug: https://bugzilla.redhat.com/enter_bug.cgi?product=lago
 .. _Create a changelog: https://gerrit.ovirt.org/49683
-.. _lago-devel: mailto:lago-devel@ovirt.org
+.. _devel: mailto:devel@ovirt.org
 .. _ovirt tests: http://jenkins.ovirt.org/search/?q=system-tests
 .. _vdsm functional tests: http://jenkins.ovirt.org/view/Master%20branch%20per%20project/view/vdsm/

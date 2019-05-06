@@ -396,6 +396,7 @@ class Flock(object):
             IOError: if the call to flock fails
         """
         self._fd = open(self._path, mode='w+')
+        os.chmod(self._path, 0o660)
         fcntl.flock(self._fd, self._op)
 
     def release(self):
