@@ -324,7 +324,7 @@ class TaskHandler(logging.StreamHandler):
 
         return (self.task_tree_depth < 0 or self.task_tree_depth >= cur_level)
 
-    def should_show_by_level(self, record_level, base_level=None):
+    def should_show_by_level(self, record, base_level=None):
         """
         Args:
             record_level (int): log level of the record to check
@@ -338,7 +338,7 @@ class TaskHandler(logging.StreamHandler):
         if base_level is None:
             base_level = self.dump_level
 
-        return record_level >= base_level
+        return record.levelno >= base_level
 
     def handle_new_task(self, task_name, record):
         """
