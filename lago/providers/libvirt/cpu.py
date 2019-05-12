@@ -19,6 +19,7 @@
 #
 
 import logging
+import libvirt
 
 from lxml import etree as ET
 
@@ -392,6 +393,18 @@ class LibvirtCPU(object):
 
     @classmethod
     def get_cpus_by_arch(cls, arch):
+        conn = libvirt.open('qemu:///system')
+        if conn is None:
+            raise LagoException('Failed to open connection to qemu:///system')
+        models = conn.getCPUModelNames('x86_64')
+        conn.close()
+        if models:
+            return models[0]
+        else:
+            raise LagoException('No such arch: {0}'.format(arch))
+
+    @classmethod
+    def get_cpus_by_arch1(cls, arch):
         """
         Get all CPUs info by arch
 
