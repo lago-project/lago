@@ -23,7 +23,7 @@ from itertools import permutations
 import lxml.etree as ET
 import pytest
 from xmlunittest import XmlTestCase
-
+import os
 from lago.providers.libvirt import cpu
 from lago.utils import LagoInitException
 
@@ -247,3 +247,23 @@ class TestCPU(XmlTestCase):
         }
         with pytest.raises(LagoInitException):
             cpu.CPU(spec=spec, host_cpu=self.get_host_cpu())
+
+    def test_create_xml_string(self):
+        _xml = """
+        <cpus>
+            <arch name="x86">
+               <model name='Penryn'>
+                   <signature family='6' model='23'/>
+                   <vendor name='Intel'/>
+                   <feature name='apic'/>
+               </model>
+            </arch>
+        </cpus>
+        """
+        test_dir = os.path.dirname(__file__)
+        cpu_map_dir = test_dir + "/fixtures/cpu_map/"
+        cpu_map_index_xml = cpu_map_dir + "index.xml"
+        cpu_xml = ET.fromstring(
+            cpu.create_xml_map(cpu_map_index_xml, cpu_map_dir)
+        )
+        self.assertXmlEquivalentOutputs(ET.tostring(cpu_xml), _xml)
