@@ -1,0 +1,7 @@
+ <cpus>
+      <model name='Penryn'>
+          <signature family='6' model='23'/>
+          <vendor name='Intel'/>
+          <feature name='apic'/>
+      </model>
+ </cpus>
