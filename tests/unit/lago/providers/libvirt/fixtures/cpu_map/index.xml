@@ -1,0 +1,5 @@
+<cpus>
+    <arch name="x86">
+         <include filename="x86_Penryn.xml"/>
+    </arch>
+</cpus>

@@ -19,7 +19,7 @@
 #
 
 import logging
-
+import os
 from lxml import etree as ET
 
 import lago.providers.libvirt.utils as utils
@@ -405,9 +405,40 @@ class LibvirtCPU(object):
             :exc:`~LagoException`: If no such ARCH is found
         """
 
-        with open('/usr/share/libvirt/cpu_map.xml', 'r') as cpu_map:
-            cpu_xml = ET.parse(cpu_map)
+        cpu_map_xml = "/usr/share/libvirt/cpu_map.xml"
+        cpu_map_dir = "/usr/share/libvirt/cpu_map/"
+        cpu_map_index_xml = cpu_map_dir + "index.xml"
+        if not os.path.exists(cpu_map_xml):
+            cpu_xml = ET.ElementTree(
+                ET.fromstring(create_xml_map(cpu_map_index_xml, cpu_map_dir))
+            )
+        else:
+            with open(cpu_map_xml, 'r') as cpu_map:
+                cpu_xml = ET.parse(cpu_map)
         try:
             return cpu_xml.xpath('/cpus/arch[@name="{0}"]'.format(arch))[0]
         except IndexError:
             raise LagoException('No such arch: {0}'.format(arch))
+
+
+def create_xml_map(cpu_map_index_xml, cpu_map_dir):
+    xml_list = []
+    if os.path.exists(cpu_map_index_xml):
+        with open(cpu_map_index_xml) as fp:
+            line = fp.readline()
+            while line:
+                if "include" in line:
+                    tree = ET.fromstring(line)
+                    for child in tree.getiterator():
+                        if child.tag == "include":
+                            filename = child.attrib["filename"]
+                            with open(
+                                cpu_map_dir + filename, 'r'
+                            ) as content_file:
+                                for content_line in content_file:
+                                    if "cpus" not in content_line:
+                                        xml_list.append(content_line)
+                else:
+                    xml_list.append(line)
+                line = fp.readline()
+    return ''.join(xml_list)

@@ -2,6 +2,7 @@ ansible
 bats
 dnf
 dnf-command(builddep)
+gcc
 git
 grubby
 libffi-devel
