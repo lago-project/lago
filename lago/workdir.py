@@ -157,7 +157,7 @@ class Workdir(object):
             return
 
         try:
-            basepath, dirs, _ = os.walk(self.path).next()
+            basepath, dirs, _ = next(os.walk(self.path))
         except StopIteration:
             raise MalformedWorkdir('Empty dir %s' % self.path)
 

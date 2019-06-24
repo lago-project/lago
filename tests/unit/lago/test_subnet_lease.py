@@ -92,7 +92,7 @@ class TestSubnetStore(object):
         path_to_lease = os.path.join(
             subnet_store.path, '{}.lease'.format(third_octet)
         )
-        _, dirnames, filenames = os.walk(subnet_store.path).next()
+        _, dirnames, filenames = next(os.walk(subnet_store.path))
 
         try:
             # Don't count the lockfile

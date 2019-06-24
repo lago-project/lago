@@ -33,18 +33,17 @@ import uuid
 import warnings
 import pkg_resources
 from os.path import join
-from plugins.output import YAMLOutFormatPlugin
+from .plugins.output import YAMLOutFormatPlugin
 
 import xmltodict
 
-import paths
-import subnet_lease
-import utils
-from utils import LagoInitException, LagoException
-import virt
-import log_utils
-import build
-import sdk_utils
+from . import paths
+from . import subnet_lease
+from . import utils
+from . import virt
+from . import log_utils
+from . import build
+from . import sdk_utils
 
 LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
@@ -283,7 +282,7 @@ class Prefix(object):
                     allocated_subnet = self._subnet_store.acquire(
                         self.paths.uuid()
                     )
-                    net_spec['gw'] = str(allocated_subnet.iter_hosts().next())
+                    net_spec['gw'] = str(next(allocated_subnet.iter_hosts()))
 
                 allocated_subnets.append(allocated_subnet)
         except:
@@ -463,7 +462,7 @@ class Prefix(object):
         try:
             net = conf['nets'][nic['net']]
         except KeyError:
-            raise LagoInitException(
+            raise utils.LagoInitException(
                 dedent(
                     """
                     Unrecognized network in {0}: {1},
@@ -591,7 +590,7 @@ class Prefix(object):
         nets = conf.get('nets', {})
         if len(nets) == 0:
             # TO-DO: add default networking if no network is configured
-            raise LagoInitException('No networks configured.')
+            raise utils.LagoInitException('No networks configured.')
 
         no_mgmt_dns = [
             name for name, net in nets.iteritems()
@@ -599,7 +598,7 @@ class Prefix(object):
             (net.get('main_dns') or net.get('dns_domain_name'))
         ]
         if len(no_mgmt_dns) > 0 and len(nets.keys()) > 1:
-            raise LagoInitException(
+            raise utils.LagoInitException(
                 (
                     'Networks: {0}, misconfigured, they '
                     'are not marked as management, but have '
@@ -615,7 +614,7 @@ class Prefix(object):
                 if net.get('management', False) is True:
                     mgmts.append(nic['net'])
             if len(mgmts) == 0:
-                raise LagoInitException(
+                raise utils.LagoInitException(
                     (
                         'VM {0} has no management network, '
                         'please connect it to '
@@ -624,7 +623,7 @@ class Prefix(object):
                 )
 
             if len(mgmts) > 1:
-                raise LagoInitException(
+                raise utils.LagoInitException(
                     (
                         'VM {0} has more than one management '
                         'network: {1}. It should have exactly '
@@ -870,7 +869,7 @@ class Prefix(object):
                 os.path.realpath(parent),
                 os.path.realpath(os.path.expandvars(disk_path))
             ):
-                raise LagoInitException(
+                raise utils.LagoInitException(
                     dedent(
                         """
                         Disk {} and its backing file are the same file.
@@ -884,7 +883,7 @@ class Prefix(object):
         try:
             name, version = os.path.basename(parent).split(':', 1)
         except ValueError:
-            raise LagoInitException(
+            raise utils.LagoInitException(
                 dedent(
                     """
                     Backing file resolution of disk {} failed.
@@ -1672,5 +1671,5 @@ class Prefix(object):
         )
 
 
-class LagoDeployError(LagoException):
+class LagoDeployError(utils.LagoException):
     pass

@@ -27,7 +27,7 @@ import shutil
 import urllib
 import sys
 
-import utils
+from . import utils
 from . import log_utils
 from .config import config
 
