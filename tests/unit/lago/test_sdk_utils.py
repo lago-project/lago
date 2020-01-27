@@ -1,22 +1,25 @@
 import pytest
 import types
 
+import six
+
 from lago import sdk_utils
 
 
 class MockExposed(object):
     def __init__(self, **kwargs):
-        for key, value in kwargs.iteritems():
+        for key, value in six.iteritems(kwargs):
             if value is True:
 
                 def dummy_method(self):
                     pass
 
-                setattr(
-                    self, key,
-                    sdk_utils.
-                    expose(types.MethodType(dummy_method, self, MockExposed))
-                )
+                if six.PY2:
+                    method = types.MethodType(dummy_method, self, MockExposed)
+                else:
+                    method = types.MethodType(dummy_method, self)
+
+                setattr(self, key, sdk_utils.expose(method))
 
 
 class TestSDKWrapper(object):
