@@ -27,24 +27,26 @@ import shutil
 import subprocess
 from textwrap import dedent
 import time
-import urlparse
 import urllib
 import uuid
 import warnings
 import pkg_resources
 from os.path import join
-from plugins.output import YAMLOutFormatPlugin
+from lago.plugins.output import YAMLOutFormatPlugin
 
 import xmltodict
 
-import paths
-import subnet_lease
-import utils
-from utils import LagoInitException, LagoException
-import virt
-import log_utils
-import build
-import sdk_utils
+from six.moves import urllib_parse as urlparse
+
+import lago.build as build
+import lago.log_utils as log_utils
+import lago.paths as paths
+import lago.sdk_utils as sdk_utils
+import lago.subnet_lease as subnet_lease
+import lago.utils as utils
+import lago.virt as virt
+
+from lago.utils import LagoInitException, LagoException
 
 LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)

@@ -21,6 +21,9 @@ from io import StringIO
 from warnings import warn
 
 import configparser
+
+import six
+
 from xdg import BaseDirectory as base_dirs
 
 from lago.constants import CONFS_PATH, CONFIG_DEFAULTS
@@ -78,7 +81,7 @@ def get_env_dict(root_section):
         ).format(root_section.upper())
     )
 
-    for key, value in os.environ.iteritems():
+    for key, value in six.iteritems(os.environ):
         match = decider.match(key)
         if not match:
             continue

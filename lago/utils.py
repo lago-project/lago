@@ -17,7 +17,6 @@
 #
 # Refer to the README and COPYING files for full details of the license
 #
-import Queue
 import collections
 import datetime
 import fcntl
@@ -44,6 +43,7 @@ from .log_utils import (LogTask, setup_prefix_logging)
 import hashlib
 
 import six
+from six.moves import queue
 
 LOGGER = logging.getLogger(__name__)
 
@@ -79,7 +79,7 @@ class VectorThread:
     def start_all(self):
         self.thread_handles = []
         for target in self.targets:
-            q = Queue.Queue()
+            q = queue.Queue()
             t = threading.Thread(target=_ret_via_queue, args=(target, q))
             self.thread_handles.append((t, q))
             t.start()
