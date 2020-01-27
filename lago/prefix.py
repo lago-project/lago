@@ -773,7 +773,7 @@ class Prefix(object):
                 'out:%s\nerr:%s' % ret,
             )
         # To avoid losing access to the file
-        os.chmod(disk_path, 0666)
+        os.chmod(disk_path, 0o666)
         return ret
 
     def _handle_template(
