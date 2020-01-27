@@ -294,7 +294,7 @@ class CPU(object):
                 cpus_per_cell, total_cells
             )
         )
-        for cell_id in xrange(0, total_cells):
+        for cell_id in range(0, total_cells):
             first_cpu_in_cell = cell_id * cpus_per_cell
             if cpus_per_cell == 1:
                 cpus_in_cell = str(first_cpu_in_cell)
