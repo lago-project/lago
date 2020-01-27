@@ -1,4 +1,7 @@
 #!/usr/bin/env python2
+
+from __future__ import print_function
+
 import argparse
 import copy
 import datetime
@@ -353,4 +356,4 @@ def main(args):
 
 if __name__ == '__main__':
 
-    print main(sys.argv[1:])
+    print(main(sys.argv[1:]))
