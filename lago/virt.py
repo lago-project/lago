@@ -209,7 +209,7 @@ class VirtEnv(object):
 
             if collect_only:
                 return (
-                    reduce(
+                    functools.reduce(
                         lambda x, y: x.update(y) or x, map(_export_disks, vms)
                     )
                 )
@@ -219,7 +219,9 @@ class VirtEnv(object):
                 else:
                     results = map(_export_disks, vms)
 
-                results = reduce(lambda x, y: x.update(y) or x, results)
+                results = functools.reduce(
+                    lambda x, y: x.update(y) or x, results
+                )
 
         self.generate_init(
             os.path.join(dst_dir, init_file_name), out_format, vms
