@@ -2,6 +2,8 @@ import lago.lago_ansible as lago_ansible
 import pytest
 import re
 
+import six
+
 # yapf: disable
 VM1 = {
     'name': 'vm1',
@@ -201,5 +203,5 @@ class TestLagoAnsible(object):
                     # We've found a host entry
                     hosts_dict[current_header].append(line.rstrip('\n'))
 
-        for group in expected.viewkeys():
+        for group in six.iterkeys(expected):
             assert sorted(expected[group]) == sorted(hosts_dict[group])
