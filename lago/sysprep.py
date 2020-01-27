@@ -55,7 +55,7 @@ def _render_template(distro, loader, **kwargs):
     template_name = 'sysprep-{0}.j2'.format(distro)
     template = env.select_template([template_name, 'sysprep-base.j2'])
     sysprep_content = template.render(guestfs_ver=_guestfs_version(), **kwargs)
-    with tempfile.NamedTemporaryFile(delete=False) as sysprep_file:
+    with tempfile.NamedTemporaryFile(mode='w', delete=False) as sysprep_file:
         sysprep_file.write('# {0}\n'.format(template.name))
         sysprep_file.write(sysprep_content)
 
