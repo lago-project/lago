@@ -1,7 +1,11 @@
 import logging
 import functools
-from lago import log_utils, utils
+
 from collections import namedtuple
+
+import six
+
+from lago import log_utils, utils
 
 LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
@@ -69,7 +73,7 @@ class Build(object):
             normalized_options.append(option)
             arg and normalized_options.append(arg)
 
-        for option, arg in options.viewitems():
+        for option, arg in six.iteritems(options):
             prefixed_option = Build.prefix_option(option)
             if isinstance(arg, list) and arg:
                 for a in arg:
@@ -129,8 +133,8 @@ class Build(object):
         for cmd in build_spec:
             if not cmd:
                 continue
-            cmd_name = cmd.keys()[0]
-            cmd_options = cmd.values()[0]
+            cmd_name = list(cmd.keys())[0]
+            cmd_options = list(cmd.values())[0]
             cmd_handler = self.get_cmd_handler(cmd_name)
             self.build_cmds.append(cmd_handler(cmd_options))
 
