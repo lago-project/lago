@@ -36,6 +36,7 @@ from lago.plugins.output import YAMLOutFormatPlugin
 
 import xmltodict
 
+import six
 from six.moves import urllib_parse as urlparse
 
 import lago.build as build
@@ -354,7 +355,7 @@ class Prefix(object):
         nets = conf['nets']
         mgmts = sorted(
             [
-                name for name, net in nets.iteritems()
+                name for name, net in six.iteritems(nets)
                 if net.get('management') is True
             ]
         )
@@ -394,7 +395,7 @@ class Prefix(object):
         LOGGER.debug('Using network %s as main DNS server', dns_mgmt)
         forward = conf['nets'][dns_mgmt].get('gw')
         dns_records = {}
-        for net_name, net_spec in nets.iteritems():
+        for net_name, net_spec in six.iteritems(nets):
             dns_records.update(net_spec['mapping'].copy())
             if net_name not in mgmts:
                 net_spec['dns_forward'] = forward
@@ -565,7 +566,7 @@ class Prefix(object):
 
         """
 
-        for dom_name, dom_spec in conf['domains'].iteritems():
+        for dom_name, dom_spec in six.iteritems(conf['domains']):
             domain_mgmt = [
                 nic['net'] for nic in dom_spec['nics'] if nic['net'] in mgmts
             ].pop()
@@ -596,7 +597,7 @@ class Prefix(object):
             raise LagoInitException('No networks configured.')
 
         no_mgmt_dns = [
-            name for name, net in nets.iteritems()
+            name for name, net in six.iteritems(nets)
             if net.get('management', None) is None and
             (net.get('main_dns') or net.get('dns_domain_name'))
         ]
@@ -1590,7 +1591,7 @@ class Prefix(object):
             None
         """
         with LogTask('Copying any deploy scripts'):
-            for host_name, host_spec in domains.iteritems():
+            for host_name, host_spec in six.iteritems(domains):
                 host_metadata = host_spec.get('metadata', {})
                 deploy_scripts = self._get_scripts(host_metadata)
                 new_scripts = self._copy_delpoy_scripts(deploy_scripts)
