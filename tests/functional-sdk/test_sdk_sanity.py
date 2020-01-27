@@ -227,7 +227,7 @@ def test_systemd_analyze(test_results, vms, vm_name):
             'systemd-analyze not available on {0}'.format(vm_name)
         )
 
-    for i in xrange(retries):
+    for i in range(retries):
         res = vm.ssh(['systemd-analyze'])
         if not res:
             break

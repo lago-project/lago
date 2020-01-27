@@ -116,7 +116,7 @@ class TestSubnetStore(object):
             subnet_store.acquire(prefix.uuid_path, subnet)
 
     def test_fail_on_full_store(self, subnet_store, prefix):
-        for i in xrange(
+        for i in range(
             subnet_store._min_third_octet, subnet_store._max_third_octet + 1
         ):
             subnet_store.acquire(prefix.uuid_path)
