@@ -34,13 +34,13 @@ except ImportError:
     LOGGER.debug('guestfs not available, ignoring')
 
 
-def _guestfs_version(default={'major': 1L, 'minor': 20L}):
+def _guestfs_version():
     if 'guestfs' in sys.modules:
         g = guestfs.GuestFS(python_return_dict=True)
         guestfs_ver = g.version()
         g.close()
     else:
-        guestfs_ver = default
+        guestfs_ver = {'major': 1, 'minor': 20}
 
     return guestfs_ver
 

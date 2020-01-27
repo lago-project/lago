@@ -3,8 +3,6 @@ from pytest import fixture
 from lago import sysprep
 import jinja2
 import os
-import mock
-import sys
 
 
 class TemplateFactory(object):
@@ -59,15 +57,3 @@ class TestSysprep(object):
             lines = generated.readlines()
         assert lines[0].strip() == '# sysprep-base.j2'
         assert lines[1] == 'remove-indent'
-
-    def test_guestfs_version_failed_import(self):
-        with mock.patch.dict('sys.modules'):
-            del sys.modules['guestfs']
-            assert sysprep._guestfs_version(default={'no': 'no'}) == {
-                'no': 'no'
-            }
-        assert 'guestfs' in sys.modules
-
-    def test_guestfs_version_good_import(self):
-        assert 'guestfs' in sys.modules
-        assert sysprep._guestfs_version(default={'no': 'no'}) != {'no': 'no'}
