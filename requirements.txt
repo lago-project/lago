@@ -1,6 +1,5 @@
 configparser
 enum34
-libvirt-python
 lxml
 paramiko
 pbr
