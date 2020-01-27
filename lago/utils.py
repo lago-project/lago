@@ -43,6 +43,8 @@ from . import constants
 from .log_utils import (LogTask, setup_prefix_logging)
 import hashlib
 
+import six
+
 LOGGER = logging.getLogger(__name__)
 
 
@@ -94,7 +96,7 @@ class VectorThread:
             for result in self.results:
                 if 'exception' in result:
                     exc_info = result['exception']
-                    raise exc_info[1], None, exc_info[2]
+                    six.reraise(exc_info[1], None, exc_info[2])
         return map(lambda x: x.get('return', None), self.results)
 
 
@@ -319,7 +321,7 @@ class RollbackContext(object):
                     undoExcInfo = sys.exc_info()
 
         if exc_type is None and undoExcInfo is not None:
-            raise undoExcInfo[0], undoExcInfo[1], undoExcInfo[2]
+            six.reraise(*undoExcInfo)
 
     def defer(self, func, *args, **kwargs):
         self._finally.append((func, args, kwargs))
