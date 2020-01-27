@@ -89,7 +89,7 @@ class VectorThread:
         for t, q in self.thread_handles:
             t.join()
 
-        self.results = map(lambda (t, q): q.get(), self.thread_handles)
+        self.results = [q.get() for _, q in self.thread_handles]
         if raise_exceptions:
             for result in self.results:
                 if 'exception' in result:
