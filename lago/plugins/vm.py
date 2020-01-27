@@ -38,6 +38,8 @@ import shutil
 import tempfile
 import warnings
 from abc import (ABCMeta, abstractmethod)
+
+import six
 from scp import SCPClient, SCPException
 
 from .. import (
@@ -524,7 +526,7 @@ class VMPlugin(plugins.Plugin):
                 if all(
                     (
                         len(err.args) > 0,
-                        isinstance(err.args[0], basestring),
+                        isinstance(err.args[0], six.string_types),
                         err_substr in err.args[0],
                     )
                 ):
