@@ -29,6 +29,8 @@ from textwrap import dedent
 import warnings
 from signal import signal, SIGTERM, SIGHUP
 
+import six
+
 import lago
 import lago.plugins
 import lago.plugins.cli
@@ -239,7 +241,7 @@ def do_destroy(
         path = warn_message
 
     if not yes:
-        response = raw_input(
+        response = six.input(
             'Do you really want to destroy %s? [Yn] ' % warn_message
         )
         if response and response[0] not in 'Yy':
