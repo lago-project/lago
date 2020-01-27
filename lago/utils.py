@@ -862,9 +862,9 @@ def ver_cmp(ver1, ver2):
         ver1>ver2.
     """
 
-    return cmp(
-        pkg_resources.parse_version(ver1), pkg_resources.parse_version(ver2)
-    )
+    v1 = pkg_resources.parse_version(ver1)
+    v2 = pkg_resources.parse_version(ver2)
+    return (v1 > v2) - (v1 < v2)
 
 
 class LagoException(Exception):
