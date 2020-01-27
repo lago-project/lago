@@ -34,7 +34,8 @@ fixtures_normalize_options = [
         OrderedDict(
             [
                 ('a', 'arg0'), ('b', ['argb0', 'argb1', 'argb2']),
-                ('empty-list', []), ('c', None)
+                ('empty-list', []),
+                ('c', None)
             ]
         ), [
             '-a', 'arg0', '-b', 'argb0', '-b', 'argb1', '-b', 'argb2',
@@ -110,7 +111,7 @@ class TestBuild(object):
     )
     def test_check_path_to_default_ssh_key(self, builder, build_spec, paths):
         builder.normalize_build_spec(build_spec)
-        cmd = filter(lambda x: x.name == 'virt-customize', builder.build_cmds)
+        cmd = [c for c in builder.build_cmds if c.name == 'virt-customize']
         expected = '--ssh-inject root:file:{}'.format(paths.ssh_id_rsa_pub())
         result = ' '.join(cmd.pop().cmd)
         assert expected in result
