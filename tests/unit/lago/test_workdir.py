@@ -647,7 +647,7 @@ class TestWorkdir(object):
         )
         to_destroy_param = to_destroy
         if to_destroy is None:
-            to_destroy = mock_workdir.prefixes.keys()
+            to_destroy = list(mock_workdir.prefixes.keys())
 
         assert mock_workdir.destroy(prefix_names=to_destroy_param) is None
         # we destroy all the specified prefixes
