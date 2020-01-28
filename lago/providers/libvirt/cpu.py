@@ -143,7 +143,7 @@ class CPU(object):
 
         cpu = ET.Element('cpu', mode='host-passthrough')
         cpu.append(self.generate_topology(vcpu_num))
-        if vcpu_num > 1:
+        if int(vcpu_num) > 1:
             cpu.append(self.generate_numa(vcpu_num))
         return cpu
 
