@@ -23,6 +23,8 @@ import pytest
 import configparser
 from mock import call, mock_open, patch
 
+import six
+
 from lago import config
 
 
@@ -111,7 +113,7 @@ def test_default_dict_empty():
 def test_default_dict_loading(defaults):
     with patch('lago.config._get_configs_path', return_value=[]):
         config_load = config.ConfigLoad(defaults=defaults)
-        for key, value in defaults.iteritems():
+        for key, value in six.iteritems(defaults):
             assert config_load.get_section(key) == value
 
 
