@@ -646,7 +646,7 @@ def do_list(workdir_path, out_format, **kwargs):
 
     workdir = lago_workdir.Workdir(path=workdir_path)
     workdir.load()
-    resources = workdir.prefixes.keys()
+    resources = list(workdir.prefixes.keys())
 
     print(out_format.format(resources))
 
@@ -971,7 +971,7 @@ def main():
     try:
         cli_plugins[args.verb].do_run(args)
     except utils.LagoException as e:
-        LOGGER.error(e.message)
+        LOGGER.error(getattr(e, 'message', str(e)))
         LOGGER.debug(e, exc_info=True)
         sys.exit(2)
     except Exception:
