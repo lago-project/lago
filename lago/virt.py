@@ -31,6 +31,8 @@ import uuid
 import yaml
 from future.builtins import super
 
+import six
+
 from lago import log_utils, plugins, utils
 from lago.config import config
 from lago.providers.libvirt.network import BridgeNetwork, NATNetwork
@@ -148,6 +150,7 @@ class VirtEnv(object):
             name_max_length = max_length - len(_uuid) - 1
 
             if name_max_length < len(unprefixed_name):
+                unprefixed_name = unprefixed_name.encode('utf-8')
                 hashed_name = hashlib.sha1(unprefixed_name).hexdigest()
                 unprefixed_name = hashed_name[:name_max_length]
 
@@ -159,9 +162,9 @@ class VirtEnv(object):
         return self.prefix.paths.virt(*args)
 
     def bootstrap(self):
-        vms = filter(
-            lambda vm: vm.spec.get('bootstrap', True), self._vms.values()
-        )
+        vms = [
+            vm for vm in self._vms.values() if vm.spec.get('bootstrap', True)
+        ]
         if vms:
             utils.invoke_in_parallel(lambda vm: vm.bootstrap(), vms)
 
@@ -178,7 +181,7 @@ class VirtEnv(object):
     ):
         # todo: move this logic to PrefixExportManager
         if not vms_names:
-            vms_names = self._vms.keys()
+            vms_names = list(self._vms.keys())
 
         running_vms = []
         vms = []
@@ -213,14 +216,15 @@ class VirtEnv(object):
             if collect_only:
                 return (
                     functools.reduce(
-                        lambda x, y: x.update(y) or x, map(_export_disks, vms)
+                        lambda x, y: x.update(y) or x,
+                        [_export_disks(v) for v in vms]
                     )
                 )
             else:
                 if with_threads:
                     results = utils.invoke_in_parallel(_export_disks, vms)
                 else:
-                    results = map(_export_disks, vms)
+                    results = [_export_disks(v) for v in vms]
 
                 results = functools.reduce(
                     lambda x, y: x.update(y) or x, results
@@ -272,7 +276,7 @@ class VirtEnv(object):
 
             spec['domains'] = temp
 
-            for _, domain in spec['domains'].viewitems():
+            for _, domain in six.iteritems(spec['domains']):
                 domain['disks'] = [
                     d for d in domain['disks'] if not d.get('skip-export')
                 ]
@@ -312,12 +316,12 @@ class VirtEnv(object):
             'domains':
                 {
                     vm_name: deepcopy(vm_object.spec)
-                    for vm_name, vm_object in self._vms.viewitems()
+                    for vm_name, vm_object in six.iteritems(self._vms)
                 },
             'nets':
                 {
                     net_name: deepcopy(net_object.spec)
-                    for net_name, net_object in self._nets.viewitems()
+                    for net_name, net_object in six.iteritems(self._nets)
                 }
         }
 
@@ -329,8 +333,8 @@ class VirtEnv(object):
     def start(self, vm_names=None):
         if not vm_names:
             log_msg = 'Start Prefix'
-            vms = self._vms.values()
-            nets = self._nets.values()
+            vms = list(self._vms.values())
+            nets = list(self._nets.values())
         else:
             log_msg = 'Start specified VMs'
             vms = [self._vms[vm_name] for vm_name in vm_names]
@@ -366,11 +370,11 @@ class VirtEnv(object):
             utils.LagoUserException: If a vm name doesn't exist
         """
 
-        vms_to_stop = self.get_vms(vm_names).values()
+        vms_to_stop = list(self.get_vms(vm_names).values())
 
         if not vm_names:
             log_msg = '{} prefix'
-            nets = self._nets.values()
+            nets = list(self._nets.values())
         else:
             log_msg = '{} specified VMs'
             nets = self._get_unused_nets(vms_to_stop)
@@ -513,8 +517,8 @@ class VirtEnv(object):
                 vm.save()
 
         spec = {
-            'nets': self._nets.keys(),
-            'vms': self._vms.keys(),
+            'nets': list(self._nets.keys()),
+            'vms': list(self._vms.keys()),
         }
 
         with LogTask('Save env'):
@@ -525,14 +529,14 @@ class VirtEnv(object):
     def create_snapshots(self, name):
         utils.invoke_in_parallel(
             lambda vm: vm.create_snapshot(name),
-            self._vms.values(),
+            list(self._vms.values()),
         )
 
     @log_task('Revert VMs snapshots')
     def revert_snapshots(self, name):
         utils.invoke_in_parallel(
             lambda vm: vm.revert_snapshot(name),
-            self._vms.values(),
+            list(self._vms.values()),
         )
 
     def get_snapshots(self, domains=None):
