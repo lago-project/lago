@@ -33,12 +33,12 @@ from abc import (abstractmethod, ABCMeta)
 import copy
 from operator import itemgetter
 
+from six import with_metaclass
+
 from . import Plugin
 
 
-class OutFormatPlugin(Plugin):
-    __metaclass__ = ABCMeta
-
+class OutFormatPlugin(with_metaclass(ABCMeta, Plugin)):
     def __init__(self):
         pass
 
