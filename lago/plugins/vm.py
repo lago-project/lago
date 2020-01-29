@@ -42,6 +42,7 @@ import warnings
 from abc import (ABCMeta, abstractmethod)
 
 import six
+from six import with_metaclass
 from scp import SCPClient, SCPException
 
 from .. import (
@@ -371,8 +372,7 @@ class VMProviderPlugin(plugins.Plugin):
                     raise
 
 
-class VMPlugin(plugins.Plugin):
-    __metaclass__ = ABCMeta
+class VMPlugin(with_metaclass(ABCMeta, plugins.Plugin)):
     '''
     This class takes care of the high level abstraction for a VM (a domain in
     the initfile lingo). From starting/stopping it to loading and calling the
