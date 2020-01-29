@@ -11,13 +11,15 @@ import time
 import json
 import shutil
 
+from six import with_metaclass
+
 from . import log_utils, utils
 
 LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
 
 
-class DiskExportManager(object):
+class DiskExportManager(with_metaclass(ABCMeta, object)):
     """
     DiskExportManager object is responsible on the export process of
     an image from the current Lago prefix.
@@ -38,8 +40,6 @@ class DiskExportManager(object):
         do_compress(bool): If true, apply compression to the exported
             disk.
     """
-
-    __metaclass__ = ABCMeta
 
     def __init__(self, dst, disk_type, disk, do_compress):
         """
@@ -338,7 +338,7 @@ class VMExportManager(object):
         """
         if self._with_threads:
             utils.invoke_different_funcs_in_parallel(
-                *map(lambda mgr: mgr.export, self._get_export_mgr())
+                *[mgr.export for mgr in self._get_export_mgr()]
             )
         else:
             for mgr in self._get_export_mgr():
