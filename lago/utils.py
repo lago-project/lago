@@ -100,11 +100,11 @@ class VectorThread:
                 if 'exception' in result:
                     exc_info = result['exception']
                     six.reraise(exc_info[1], None, exc_info[2])
-        return map(lambda x: x.get('return', None), self.results)
+        return [x.get('return', None) for x in self.results]
 
 
 def invoke_in_parallel(func, *args_sequences):
-    vt = VectorThread(func_vector(func, zip(*args_sequences)))
+    vt = VectorThread(func_vector(func, list(zip(*args_sequences))))
     vt.start_all()
     return vt.join_all()
 
@@ -121,8 +121,10 @@ _CommandStatus = collections.namedtuple(
 
 
 class CommandStatus(_CommandStatus):
-    def __nonzero__(self):
-        return self.code
+    def __bool__(self):
+        return bool(self.code)
+
+    __nonzero__ = __bool__
 
 
 def _run_command(
@@ -608,7 +610,7 @@ def ipv4_to_mac(ip):
     return ':'.join([('%02x' % x) for x in mac_addr_pieces])
 
 
-def argparse_to_ini(parser, root_section='lago', incl_unset=False):
+def argparse_to_ini(parser, root_section=u'lago', incl_unset=False):
     subparsers_actions = [
         action for action in parser._actions
         if isinstance(action, argparse._SubParsersAction)
@@ -642,13 +644,13 @@ def _add_subparser_to_cp(cp, section, actions, incl_unset):
         (action.default is None and incl_unset)
     )
     for action in print_actions:
-        var = str(action.dest)
+        var = six.text_type(action.dest)
         if action.default is None:
-            var = '#{0}'.format(var)
+            var = six.text_type('#{0}'.format(var))
         if action.help:
             for line in textwrap.wrap(action.help, width=70):
-                cp.set(section, '# {0}'.format(line))
-        cp.set(section, var, str(action.default))
+                cp.set(section, six.text_type('# {0}'.format(line)))
+        cp.set(section, var, six.text_type(action.default))
     if len(cp.items(section)) == 0:
         cp.remove_section(section)
 
@@ -765,7 +767,7 @@ def get_hash(file_path, checksum='sha1'):
     """
 
     sha = getattr(hashlib, checksum)()
-    with open(file_path) as file_descriptor:
+    with open(file_path, 'rb') as file_descriptor:
         while True:
             chunk = file_descriptor.read(65536)
             if not chunk:
@@ -848,7 +850,8 @@ def filter_spec(spec, paths, wildcard='*', separator='/'):
         try:
             remove_key(path.split(separator), spec)
         except LagoUserException as e:
-            e.message = e.message.format(path=path)
+            msg = e.args[0].format(path=path)
+            e.args = (msg, ) + e.args[1:]
             raise
 
 
