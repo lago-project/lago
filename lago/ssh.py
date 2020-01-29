@@ -13,6 +13,7 @@ import uuid
 import logging
 
 import paramiko
+import six
 
 from . import (
     utils,
@@ -124,7 +125,8 @@ def wait_for_ssh(
             )
         except Exception as err:
             ret = -1
-            sys.exc_clear()
+            if six.PY2:
+                sys.exc_clear()
             LOGGER.debug(
                 'Got exception while sshing to %s: %s',
                 host_name,
