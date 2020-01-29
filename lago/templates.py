@@ -1,6 +1,7 @@
 # encoding: utf-8
 
 from __future__ import absolute_import
+from __future__ import division
 """
 This module contains any disk template related classes and functions, including
 the repository store manager classes and template providers, some useful
@@ -26,8 +27,9 @@ import logging
 import os
 import posixpath
 import shutil
-import urllib
 import sys
+
+from six.moves.urllib import request as urllib
 
 import lago.utils as utils
 from . import log_utils
@@ -160,7 +162,7 @@ class HttpTemplateProvider:
             )
 
         meta = response.info()
-        file_size_kb = int(meta.getheaders("Content-Length")[0]) / 1024
+        file_size_kb = int(meta.getheaders("Content-Length")[0]) // 1024
         if file_size_kb > 0:
             sys.stdout.write(
                 "Downloading %s Kilobytes from %s \n" %
@@ -171,7 +173,7 @@ class HttpTemplateProvider:
             percent = (count * block_size * 100 / float(total_size))
             sys.stdout.write(
                 "\r% 3.1f%%" % percent + " complete (%d " %
-                (count * block_size / 1024) + "Kilobytes)"
+                (count * block_size // 1024) + "Kilobytes)"
             )
             sys.stdout.flush()
 
