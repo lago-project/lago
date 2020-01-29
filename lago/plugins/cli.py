@@ -103,12 +103,12 @@ from abc import (
     ABCMeta,
 )
 
+from six import with_metaclass
+
 from . import Plugin
 
 
-class CLIPlugin(Plugin):
-    __metaclass__ = ABCMeta
-
+class CLIPlugin(with_metaclass(ABCMeta, Plugin)):
     def __init__(self):
         pass
 
