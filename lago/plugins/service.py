@@ -29,6 +29,7 @@ This plugins are used in order to manage services in the vms
 from abc import (abstractmethod, abstractproperty, ABCMeta)
 
 from enum import Enum
+from six import with_metaclass
 
 from . import Plugin
 
@@ -40,9 +41,7 @@ class ServiceState(Enum):
     ACTIVE = 2
 
 
-class ServicePlugin(Plugin):
-    __metaclass__ = ABCMeta
-
+class ServicePlugin(with_metaclass(ABCMeta, Plugin)):
     def __init__(self, vm, name):
         self._vm = vm
         self._name = name
