@@ -17,14 +17,18 @@
 #
 # Refer to the README and COPYING files for full details of the license
 #
-import os
 
-import utils
+from __future__ import absolute_import
+
 import logging
-import tempfile
-from jinja2 import Environment, PackageLoader
-import textwrap
+import os
 import sys
+import tempfile
+import textwrap
+
+from jinja2 import Environment, PackageLoader
+
+from lago import utils
 
 LOGGER = logging.getLogger(__name__)
 

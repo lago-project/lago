@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 import array
 import fcntl
 import functools

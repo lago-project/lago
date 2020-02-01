@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 import lago.lago_ansible as lago_ansible
 import pytest
 import re

@@ -1,4 +1,6 @@
 # encoding: utf-8
+
+from __future__ import absolute_import
 """
 This module contains any disk template related classes and functions, including
 the repository store manager classes and template providers, some useful
