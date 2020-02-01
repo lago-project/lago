@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 from lago import subnet_lease
 from lago.subnet_lease import (
     LagoSubnetLeaseOutOfRangeException, LagoSubnetLeaseStoreFullException,

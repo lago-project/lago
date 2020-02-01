@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 import signal
 from multiprocessing import Process, Event
 from os import WNOHANG, kill, waitpid
