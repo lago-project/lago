@@ -20,14 +20,14 @@
 
 from __future__ import absolute_import
 
-from future.utils import raise_from
-from future.builtins import super
 import functools
 import json
 import os
 import logging
 from netaddr import IPNetwork, AddrFormatError
 from textwrap import dedent
+
+import six
 
 from .config import config
 from . import utils, log_utils
@@ -113,7 +113,7 @@ class SubnetStore(object):
             if not os.path.isdir(self.path):
                 os.makedirs(self.path)
         except OSError as e:
-            raise_from(
+            six.raise_from(
                 LagoSubnetLeaseBadPermissionsException(self.path, e.strerror),
                 e
             )
@@ -263,7 +263,7 @@ class SubnetStore(object):
         try:
             lease_files = os.listdir(self.path)
         except OSError as e:
-            raise_from(
+            six.raise_from(
                 LagoSubnetLeaseBadPermissionsException(self.path, e.strerror),
                 e
             )

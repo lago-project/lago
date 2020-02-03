@@ -20,7 +20,6 @@
 
 from __future__ import absolute_import
 
-from future.builtins import super
 from collections import defaultdict
 import functools
 import logging
