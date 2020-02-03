@@ -35,8 +35,6 @@ import lago.utils as utils
 from . import log_utils
 from .config import config
 
-from future.builtins import super
-
 LOGGER = logging.getLogger(__name__)
 
 

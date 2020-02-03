@@ -59,7 +59,6 @@ BuildRequires: python-enum34
 BuildRequires: python-scp
 BuildRequires: python2-rpm-macros
 BuildRequires: python-wrapt
-BuildRequires: python2-future
 %if 0%{?fedora} >= 24
 BuildRequires: python2-configparser
 BuildRequires: python2-paramiko >= 2.1.1
@@ -99,7 +98,6 @@ Requires: python-enum34
 Requires: pyxdg
 Requires: python-wrapt
 Requires: python-netaddr
-Requires: python2-future
 %if 0%{?fedora} >= 24
 Requires: python2-jinja2
 Requires: python2-configparser

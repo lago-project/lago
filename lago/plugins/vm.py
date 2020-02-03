@@ -33,7 +33,6 @@ from copy import deepcopy
 import contextlib
 import errno
 import functools
-from future.builtins import super
 import logging
 import os
 import shutil
