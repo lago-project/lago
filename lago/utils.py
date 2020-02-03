@@ -99,7 +99,7 @@ class VectorThread:
             for result in self.results:
                 if 'exception' in result:
                     exc_info = result['exception']
-                    six.reraise(exc_info[1], None, exc_info[2])
+                    six.reraise(*exc_info)
         return [x.get('return', None) for x in self.results]
 
 
