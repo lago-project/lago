@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 from __future__ import absolute_import
 from __future__ import print_function
@@ -6,7 +6,6 @@ from __future__ import print_function
 import argparse
 import copy
 import datetime
-import logging
 import os
 import re
 import sys
@@ -14,8 +13,6 @@ from collections import defaultdict, OrderedDict
 
 import dulwich.repo
 import dulwich.walk
-
-LOGGER = logging.getLogger(__name__)
 
 BUG_URL_REG = re.compile(
     r'.*Bug-Url: https?://bugzilla.*/[^\d]*(?P<bugid>\d+)'
@@ -56,7 +53,7 @@ def get_bzs_from_commit_msg(commit_msg):
 
 
 def pretty_commit(commit, version=''):
-    subject = commit.message.split('\n', 1)[0]  # noqa
+    subject = commit.message.decode('utf-8').split('\n', 1)[0]  # noqa
     short_hash = commit.sha().hexdigest()[:8]  # noqa
     author_date = datetime.datetime.fromtimestamp(  # noqa
         int(commit.commit_time)
@@ -64,7 +61,7 @@ def pretty_commit(commit, version=''):
     author = commit.author  # noqa
     if version:
         version = ' - ' + version
-    bugs = get_bzs_from_commit_msg(commit.message)
+    bugs = get_bzs_from_commit_msg(commit.message.decode('utf-8'))
     changelog_message = fit_to_cols(  # noqa
         '{short_hash}: {subject}'.format(**vars()),
         indent='    ',
@@ -84,12 +81,13 @@ def pretty_commit(commit, version=''):
 
 
 def get_tags(repo):
-    return {
-        commit: os.path.basename(tag_ref)
-        for tag_ref, commit in repo.get_refs().items()
-        if tag_ref.startswith('refs/tags/')
-        and VALID_TAG.match(tag_ref[len('refs/tags/'):])
-    }
+    tags = {}
+    for tag_ref, commit in repo.get_refs().items():
+        tag_ref = tag_ref.decode('utf-8')
+        if tag_ref.startswith('refs/tags/') \
+           and VALID_TAG.match(tag_ref[len('refs/tags/'):]):
+            tags[commit] = os.path.basename(tag_ref)
+    return tags
 
 
 def get_refs(repo):
@@ -124,6 +122,16 @@ def get_children_per_parent(repo_path):
     return children_per_parent
 
 
+def append_parent(parents, commit, add_parent=True, add_digest=True):
+    if add_digest:
+        hexdigest = commit.sha().hexdigest().encode('utf-8')
+        if hexdigest not in parents:
+            parents.append(hexdigest)
+    if add_parent:
+        if commit.parents[0] not in parents:
+            parents.append(commit.parents[0])
+
+
 def get_first_parents(repo_path):
     repo = dulwich.repo.Repo(repo_path)
     #: these are the commits that are parents of more than one other commit
@@ -133,32 +141,14 @@ def get_first_parents(repo_path):
     for entry in repo.get_walker(order=dulwich.walk.ORDER_TOPO):
         commit = entry.commit
         if not commit.parents:
-            if commit.sha().hexdigest() not in first_parents:
-                first_parents.append(commit.sha().hexdigest())
+            append_parent(first_parents, commit, add_parent=False)
         elif len(commit.parents) == 1 and not on_merge:
-            if commit.sha().hexdigest() not in first_parents:
-                first_parents.append(commit.sha().hexdigest())
-            if commit.parents[0] not in first_parents:
-                first_parents.append(commit.parents[0])
+            append_parent(first_parents, commit)
         elif len(commit.parents) > 1 and not on_merge:
             on_merge = True
-            if commit.sha().hexdigest() not in first_parents:
-                first_parents.append(commit.sha().hexdigest())
-            if commit.parents[0] not in first_parents:
-                first_parents.append(commit.parents[0])
+            append_parent(first_parents, commit)
         elif commit.parents and commit.sha().hexdigest() in first_parents:
-            if commit.parents[0] not in first_parents:
-                first_parents.append(commit.parents[0])
-
-    if commit.parents:
-        # If this is the case, we have a shallow git clone
-        # which means that we don't have the metadata of the
-        # first's commit parent.
-        LOGGER.debug(
-            'This is a shallow git clone,'
-            ' removing the first\'s commit parent.'
-        )
-        first_parents.pop()
+            append_parent(first_parents, commit, add_digest=False)
 
     return first_parents
 
@@ -172,7 +162,7 @@ def has_firstparent_child(sha, first_parents, parents_per_child):
 def get_merged_commits(repo, commit, first_parents, children_per_parent):
     merge_children = set()
 
-    to_explore = set([commit.sha().hexdigest()])
+    to_explore = set([commit.sha().hexdigest().encode('utf-8')])
 
     while to_explore:
         next_sha = to_explore.pop()
@@ -218,18 +208,18 @@ def get_children_per_first_parent(repo_path):
 
 
 def get_version(commit, tags, maj_version=0, feat_version=0, fix_version=0):
-    commit_sha = commit.sha().hexdigest()
+    commit_sha = commit.sha().hexdigest().encode('utf-8')
 
     if commit_sha in tags:
         maj_version, feat_version = tags[commit_sha].split('.')
         maj_version = int(maj_version)
         feat_version = int(feat_version)
         fix_version = 0
-    elif MAJOR_HEADER.search(commit.message):
+    elif MAJOR_HEADER.search(commit.message.decode('utf-8')):
         maj_version += 1
         feat_version = 0
         fix_version = 0
-    elif FEAT_HEADER.search(commit.message):
+    elif FEAT_HEADER.search(commit.message.decode('utf-8')):
         feat_version += 1
         fix_version = 0
     else:
@@ -327,12 +317,7 @@ def get_current_version(repo_path):
     return '%s.%s.%s' % (maj_version, feat_version, fix_version)
 
 
-def set_logging():
-    logging.basicConfig(level=logging.DEBUG)
-
-
 def main(args):
-    set_logging()
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
