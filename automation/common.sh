@@ -60,12 +60,13 @@ die() {
 
 setup_tox() {
     # to-do: add support for pip cache in standard-ci
+    export PATH="$PATH:/usr/local/bin"
     mkdir -p "$PIP_CACHE_DIR"
     chown -R "$USER:" "$PIP_CACHE_DIR"
     export PIP_CACHE_DIR
     # https://github.com/pypa/setuptools/issues/1042
-    for package in "six" "pip" "setuptools" "virtualenv" "tox"; do
-        pip install --upgrade "$package" || return 1
+    for package in "tox" "virtualenv<20"; do
+        python3 -m pip install --upgrade "$package" || return 1
     done
 }
 
@@ -96,7 +97,7 @@ run_installation_tests() {
 
     # fail if a glob turns out empty
     shopt -s failglob
-    for package in {python-,}lago ; do
+    for package in {python3-,}lago ; do
         echo "    $package: installing"
         ## Install one by one to make sure the deps are ok
         $yum install -y exported-artifacts/"$package"-[[:digit:]]*.noarch.rpm \
@@ -136,7 +137,7 @@ run_functional_sdk_tests() {
 
     unset LAGO__START__WAIT_SUSPEND
     TEST_RESULTS="$PWD/exported-artifacts/test_results/functional-sdk" \
-       tox -v -r -c tox-sdk.ini -e py27-sdk -- --stage "$stage"
+       tox -v -r -c tox-sdk.ini -e py3-sdk -- --stage "$stage"
 }
 
 run_functional_tests() {

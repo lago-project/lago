@@ -1,8 +1,8 @@
 from __future__ import absolute_import
 
 import os
+import setuptools
 import subprocess
-from setuptools import setup
 
 
 def check_output(args):
@@ -59,7 +59,4 @@ def get_version(project_dir=os.curdir):
 
 if __name__ == '__main__':
     os.environ['PBR_VERSION'] = get_version()
-    setup(
-        setup_requires=['pbr', 'dulwich'],
-        pbr=True,
-    )
+    setuptools.setup(pbr=True)
