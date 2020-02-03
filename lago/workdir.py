@@ -32,7 +32,6 @@ import os
 import logging
 import shutil
 from functools import partial, wraps
-from future.builtins import super
 from textwrap import dedent
 
 from . import (prefix, utils)
