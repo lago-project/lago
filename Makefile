@@ -44,17 +44,17 @@ ${SPECFILE}: ${SPECFILE}.in changelog
 	cat ChangeLog >> $@
 
 build:
-	LAGO_VERSION=${VERSION} python2 setup.py build
+	LAGO_VERSION=${VERSION} python3 setup.py build
 
 check: check-local
 
 check-local:
-	tox -v -r -e py27
+	tox -v -r -e py3
 
 dist: ${TARBALL_DIST_LOCATION}
 
 python-sdist:
-	LAGO_VERSION=${VERSION} python2 setup.py sdist --dist-dir ${DIST_DIR}
+	LAGO_VERSION=${VERSION} python3 setup.py sdist --dist-dir ${DIST_DIR}
 
 add-extra-files-sdist: changelog fullchangelog
 	gunzip ${TARBALL_DIST_LOCATION}
@@ -80,7 +80,7 @@ rpm: dist ${SPECFILE}
 		${SPECFILE}
 
 clean:
-	python2 setup.py clean
+	python3 setup.py clean
 	rm -rf ${DIST_DIR}
 	rm -rf ${RPM_DIR}
 	rm -rf build "$(REPO_LOCAL_REL_PATH)"

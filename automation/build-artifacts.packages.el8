@@ -1,0 +1,7 @@
+dnf
+dnf-utils
+git
+python3
+python3-dulwich
+python3-pbr
+python3-setuptools
