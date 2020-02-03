@@ -1,0 +1,3 @@
+# needed for pandoc
+centos-power-tools,http://mirror.centos.org/centos/$releasever/PowerTools/$basearch/os/
+sbonazzo-el8-collection,https://copr-be.cloud.fedoraproject.org/results/sbonazzo/EL8_collection/epel-8-$basearch/

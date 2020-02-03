@@ -1,0 +1,16 @@
+ansible
+bats
+dnf
+dnf-utils
+git
+libffi-devel
+libguestfs-devel
+libvirt-devel
+libxslt-devel
+openssl-devel
+pandoc
+python3-devel
+python3-dulwich
+python3-libguestfs
+python3-libvirt
+python3-pip
