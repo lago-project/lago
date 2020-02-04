@@ -30,6 +30,7 @@ import shutil
 import sys
 
 from six.moves.urllib import request as urllib
+from six.moves.urllib.error import HTTPError
 
 import lago.utils as utils
 from . import log_utils
@@ -152,15 +153,17 @@ class HttpTemplateProvider:
             except RuntimeError:
                 pass
         full_url = posixpath.join(self.baseurl, url) + suffix
-        response = urllib.urlopen(full_url)
-        if response.code >= 300:
-            raise RuntimeError(
-                'Failed no retrieve URL %s:\nCode: %d' %
-                (full_url, response.code)
-            )
+        try:
+            response = urllib.urlopen(full_url)
+        except HTTPError as e:
+            if e.code >= 300:
+                raise RuntimeError(
+                    'Failed no retrieve URL %s:\nCode: %d' %
+                    (full_url, e.code)
+                )
 
         meta = response.info()
-        file_size_kb = int(meta.getheaders("Content-Length")[0]) // 1024
+        file_size_kb = int(meta.get("Content-Length")[0]) // 1024
         if file_size_kb > 0:
             sys.stdout.write(
                 "Downloading %s Kilobytes from %s \n" %
