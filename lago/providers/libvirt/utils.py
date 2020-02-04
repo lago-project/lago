@@ -108,7 +108,7 @@ def get_template(basename):
     """
     return pkg_resources.resource_string(
         __name__, '/'.join(['templates', basename])
-    )
+    ).decode('utf-8')
 
 
 def get_domain_template(distro, libvirt_ver, **kwargs):
