@@ -95,7 +95,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
             # indicating how much time to sleep between the time the domain
             # is created in paused mode, until it is resumed.
             wait_suspend = os.environ.get('LAGO__START__WAIT_SUSPEND')
-            dom_xml = self._libvirt_xml()
+            dom_xml = self._libvirt_xml().decode('utf-8')
             LOGGER.debug('libvirt XML: %s\n', dom_xml)
             with LogTask('Starting VM %s' % self.vm.name()):
                 if wait_suspend is None:

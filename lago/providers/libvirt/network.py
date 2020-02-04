@@ -304,7 +304,7 @@ class NATNetwork(Network):
                 ET.tostring(net_xml, pretty_print=True)
             )
         )
-        return ET.tostring(net_xml)
+        return ET.tostring(net_xml).decode('utf-8')
 
 
 class BridgeNetwork(Network):
