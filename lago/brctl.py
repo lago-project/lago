@@ -65,7 +65,7 @@ def exists(name):
     if ret:
         raise RuntimeError('Failed to check if bridge {} exists'.format(name))
 
-    for entry in out.splitlines():
+    for entry in out.decode('utf-8').splitlines():
         if name == entry.split(':')[1].strip():
             return True
 

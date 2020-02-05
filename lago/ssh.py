@@ -274,16 +274,24 @@ def drain_ssh_channel(chan, stdin=None, stdout=sys.stdout, stderr=sys.stderr):
             pass
 
         if stdout in write:
-            stdout.write(out_queue.pop(0))
+            out = out_queue.pop(0)
+            try:
+                stdout.write(out)
+            except TypeError:
+                stdout.write(out.decode('utf-8'))
             stdout.flush()
         if stderr in write:
-            stderr.write(err_queue.pop(0))
+            err = err_queue.pop(0)
+            try:
+                stderr.write()
+            except TypeError:
+                stderr.write(err.decode('utf-8'))
             stderr.flush()
 
         if chan.closed and not out_queue and not err_queue:
             done = True
 
-    return (chan.exit_status, ''.join(out_all), ''.join(err_all))
+    return (chan.exit_status, b''.join(out_all), b''.join(err_all))
 
 
 def interactive_ssh_channel(chan, command=None, stdin=sys.stdin):
