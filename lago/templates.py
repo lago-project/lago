@@ -228,7 +228,7 @@ class HttpTemplateProvider:
         """
         response = self.open_url(url=handle, suffix='.hash')
         try:
-            return response.read()
+            return response.read().decode('utf-8')
         finally:
             response.close()
 
