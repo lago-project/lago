@@ -42,7 +42,8 @@ class SystemdService(ServicePlugin):
         if not ret:
             return ServiceState.ACTIVE
 
-        lines = [l.strip() for l in ret.out.split('\n')]
+        out = ret.out.decode('utf-8')
+        lines = [l.strip() for l in out.split('\n')]
         loaded = [l for l in lines if l.startswith('Loaded:')].pop()
 
         if loaded.split()[1] == 'loaded':
@@ -68,7 +69,8 @@ class SysVInitService(ServicePlugin):
         if ret.code == 0:
             return ServiceState.ACTIVE
 
-        if ret.out.strip().endswith('is stopped'):
+        out = ret.out.decode('utf-8')
+        if out.strip().endswith('is stopped'):
             return ServiceState.INACTIVE
 
         return ServiceState.MISSING
@@ -110,7 +112,8 @@ class SystemdContainerService(ServicePlugin):
         if ret.code == 0:
             return ServiceState.ACTIVE
 
-        lines = [l.strip() for l in ret.out.split('\n')]
+        out = ret.out.decode('utf-8')
+        lines = [l.strip() for l in out.split('\n')]
         loaded = [l for l in lines if l.startswith('Loaded:')].pop()
 
         if loaded.split()[1] == 'loaded':
@@ -120,7 +123,8 @@ class SystemdContainerService(ServicePlugin):
         if ret.code == 0:
             return ServiceState.ACTIVE
 
-        lines = [l.strip() for l in ret.out.split('\n')]
+        out = ret.out.decode('utf-8')
+        lines = [l.strip() for l in out.split('\n')]
         loaded = [l for l in lines if l.startswith('Loaded:')].pop()
 
         if loaded.split()[1] == 'loaded':

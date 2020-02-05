@@ -590,7 +590,7 @@ class VMPlugin(with_metaclass(ABCMeta, plugins.Plugin)):
 
     def ip(self):
         res = self.mgmt_net.resolve(self.name())
-        return res.encode('ascii', 'ignore')
+        return res
 
     def all_ips(self):
         nets = {}
