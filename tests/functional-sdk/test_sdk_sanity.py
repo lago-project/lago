@@ -21,7 +21,7 @@ def init_str(images):
     init_template = textwrap.dedent(
         """
     domains:
-      {% for vm_name, template in images.viewitems() %}
+      {% for vm_name, template in images.items() %}
       {{ vm_name }}:
         memory: 1024
         nics:
