@@ -1,12 +1,12 @@
 Prefix:
   Base directory: @@PREFIX@@
   Networks:
-    !!python/unicode 'n0':
-      gateway: !!python/unicode '192.168.201.1'
+    n0:
+      gateway: 192.168.201.1
       management: true
       status: down
-    !!python/unicode 'n1':
-      gateway: !!python/unicode '192.168.202.1'
+    n1:
+      gateway: 192.168.202.1
       management: false
       status: down
   UUID: fe689d3c39d011e5b22b54ee755a00ca
@@ -14,26 +14,26 @@ Prefix:
     vm0:
       NICs:
         eth0:
-          ip: !!python/unicode '192.168.201.2'
-          network: !!python/unicode 'n0'
+          ip: 192.168.201.2
+          network: n0
         eth1:
-          ip: !!python/unicode '192.168.202.2'
-          network: !!python/unicode 'n1'
-      distro: !!python/unicode 'cirros'
+          ip: 192.168.202.2
+          network: n1
+      distro: cirros
       metadata: {}
-      root password: !!python/unicode '123456'
+      root password: '123456'
       snapshots: ''
       status: down
     vm1:
       NICs:
         eth0:
-          ip: !!python/unicode '192.168.201.3'
-          network: !!python/unicode 'n0'
+          ip: 192.168.201.3
+          network: n0
         eth1:
-          ip: !!python/unicode '192.168.202.3'
-          network: !!python/unicode 'n1'
-      distro: !!python/unicode 'cirros'
+          ip: 192.168.202.3
+          network: n1
+      distro: cirros
       metadata: {}
-      root password: !!python/unicode 'cubswin:)'
+      root password: cubswin:)
       snapshots: ''
       status: down
