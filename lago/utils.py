@@ -818,7 +818,7 @@ def filter_spec(spec, paths, wildcard='*', separator='/'):
                 if isinstance(spec, list):
                     iterator = iter(spec)
                 elif isinstance(spec, collections.Mapping):
-                    iterator = spec.itervalues()
+                    iterator = six.itervalues(spec)
                 else:
                     raise LagoUserException(
                         'Glob char {char} should refer only to dict or list, '
