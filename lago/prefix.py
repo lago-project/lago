@@ -17,6 +17,9 @@
 #
 # Refer to the README and COPYING files for full details of the license
 #
+
+from __future__ import absolute_import
+
 import copy
 import functools
 import glob
@@ -27,24 +30,27 @@ import shutil
 import subprocess
 from textwrap import dedent
 import time
-import urlparse
-import urllib
 import uuid
 import warnings
 import pkg_resources
 from os.path import join
-from plugins.output import YAMLOutFormatPlugin
+from lago.plugins.output import YAMLOutFormatPlugin
 
 import xmltodict
 
-import paths
-import subnet_lease
-import utils
-from utils import LagoInitException, LagoException
-import virt
-import log_utils
-import build
-import sdk_utils
+import six
+from six.moves.urllib import request as urllib
+from six.moves import urllib_parse as urlparse
+
+import lago.build as build
+import lago.log_utils as log_utils
+import lago.paths as paths
+import lago.sdk_utils as sdk_utils
+import lago.subnet_lease as subnet_lease
+import lago.utils as utils
+import lago.virt as virt
+
+from lago.utils import LagoInitException, LagoException
 
 LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
@@ -270,7 +276,7 @@ class Prefix(object):
         """
         allocated_subnets = []
         try:
-            for net_spec in conf.get('nets', {}).itervalues():
+            for net_spec in six.itervalues(conf.get('nets', {})):
                 if net_spec['type'] != 'nat':
                     continue
 
@@ -283,7 +289,7 @@ class Prefix(object):
                     allocated_subnet = self._subnet_store.acquire(
                         self.paths.uuid()
                     )
-                    net_spec['gw'] = str(allocated_subnet.iter_hosts().next())
+                    net_spec['gw'] = str(next(allocated_subnet.iter_hosts()))
 
                 allocated_subnets.append(allocated_subnet)
         except:
@@ -352,7 +358,7 @@ class Prefix(object):
         nets = conf['nets']
         mgmts = sorted(
             [
-                name for name, net in nets.iteritems()
+                name for name, net in six.iteritems(nets)
                 if net.get('management') is True
             ]
         )
@@ -392,7 +398,7 @@ class Prefix(object):
         LOGGER.debug('Using network %s as main DNS server', dns_mgmt)
         forward = conf['nets'][dns_mgmt].get('gw')
         dns_records = {}
-        for net_name, net_spec in nets.iteritems():
+        for net_name, net_spec in six.iteritems(nets):
             dns_records.update(net_spec['mapping'].copy())
             if net_name not in mgmts:
                 net_spec['dns_forward'] = forward
@@ -563,7 +569,7 @@ class Prefix(object):
 
         """
 
-        for dom_name, dom_spec in conf['domains'].iteritems():
+        for dom_name, dom_spec in six.iteritems(conf['domains']):
             domain_mgmt = [
                 nic['net'] for nic in dom_spec['nics'] if nic['net'] in mgmts
             ].pop()
@@ -594,7 +600,7 @@ class Prefix(object):
             raise LagoInitException('No networks configured.')
 
         no_mgmt_dns = [
-            name for name, net in nets.iteritems()
+            name for name, net in six.iteritems(nets)
             if net.get('management', None) is None and
             (net.get('main_dns') or net.get('dns_domain_name'))
         ]
@@ -773,7 +779,7 @@ class Prefix(object):
                 'out:%s\nerr:%s' % ret,
             )
         # To avoid losing access to the file
-        os.chmod(disk_path, 0666)
+        os.chmod(disk_path, 0o666)
         return ret
 
     def _handle_template(
@@ -1249,7 +1255,7 @@ class Prefix(object):
 
     def build(self, conf):
         builders = []
-        for vm_name, spec in conf.viewitems():
+        for vm_name, spec in six.iteritems(conf):
             disks = spec.get('disks')
             if disks:
                 for disk in disks:
@@ -1418,7 +1424,7 @@ class Prefix(object):
         """
 
         subnets = (
-            str(net.gw()) for net in self.virt_env.get_nets().itervalues()
+            str(net.gw()) for net in six.itervalues(self.virt_env.get_nets())
         )
 
         self._subnet_store.release(subnets)
@@ -1527,7 +1533,7 @@ class Prefix(object):
 
         utils.invoke_in_parallel(
             _collect_artifacts,
-            self.virt_env.get_vms().values(),
+            list(self.virt_env.get_vms().values()),
         )
 
     def _get_scripts(self, host_metadata):
@@ -1588,7 +1594,7 @@ class Prefix(object):
             None
         """
         with LogTask('Copying any deploy scripts'):
-            for host_name, host_spec in domains.iteritems():
+            for host_name, host_spec in six.iteritems(domains):
                 host_metadata = host_spec.get('metadata', {})
                 deploy_scripts = self._get_scripts(host_metadata)
                 new_scripts = self._copy_delpoy_scripts(deploy_scripts)
@@ -1667,8 +1673,7 @@ class Prefix(object):
     @log_task('Deploy environment')
     def deploy(self):
         utils.invoke_in_parallel(
-            self._deploy_host,
-            self.virt_env.get_vms().values()
+            self._deploy_host, list(self.virt_env.get_vms().values())
         )
 
 

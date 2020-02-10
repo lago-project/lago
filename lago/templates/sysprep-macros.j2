@@ -8,7 +8,7 @@ write /etc/iscsi/initiatorname.iscsi:InitiatorName={{ name }}:{{ hostname }}
 mkdir /etc/sysconfig/network-scripts
 chmod 0755:/etc/sysconfig/network-scripts
 {% filter dedent %}
-{% for iface, mac in mappings.viewitems() %}
+{% for iface, mac in mappings.items() %}
 	write /etc/sysconfig/network-scripts/ifcfg-{{ iface }}:HWADDR="{{ mac }}" \
 	BOOTPROTO="dhcp" \
 	ONBOOT="yes" \
@@ -28,7 +28,7 @@ iface lo inet loopback \
 source /etc/network/interfaces.d/*.cfg \
 
 {% filter dedent %}
-{% for iface, mac in mappings.viewitems() %}
+{% for iface, mac in mappings.items() %}
     write /etc/network/interfaces.d/ifcfg-{{ iface }}.cfg:auto {{ iface }} \
     iface {{ iface }} inet6 auto \
     iface {{ iface }} inet dhcp \

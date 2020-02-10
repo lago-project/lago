@@ -17,12 +17,17 @@
 #
 # Refer to the README and COPYING files for full details of the license
 #
+
+from __future__ import absolute_import
+
 from future.builtins import super
 from collections import defaultdict
 import functools
 import logging
 import time
 from copy import deepcopy
+
+import six
 
 from lxml import etree as ET
 import lago.providers.libvirt.utils as libvirt_utils
@@ -159,9 +164,9 @@ class NATNetwork(Network):
         dns = ET.Element('dns', forwardPlainNames=forward_plain)
         reverse_records = defaultdict(list)
         ipv6_prefix = self._ipv6_prefix(subnet=subnet)
-        for hostname, ip in records.iteritems():
+        for hostname, ip in six.iteritems(records):
             reverse_records[ip] = reverse_records[ip] + [hostname]
-        for ip, hostnames in reverse_records.iteritems():
+        for ip, hostnames in six.iteritems(reverse_records):
             record_ipv4 = ET.Element('host', ip=ip)
             record_ipv6 = ET.Element('host', ip=ipv6_prefix + ip)
             for hostname in sorted(hostnames):
@@ -229,7 +234,7 @@ class NATNetwork(Network):
             )
 
             ipv4s = []
-            for hostname in sorted(self._spec['mapping'].iterkeys()):
+            for hostname in sorted(six.iterkeys(self._spec['mapping'])):
                 ip4 = self._spec['mapping'][hostname]
                 if ip4 in ipv4s:
                     continue

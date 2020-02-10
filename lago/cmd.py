@@ -18,6 +18,7 @@
 #
 # Refer to the README and COPYING files for full details of the license
 #
+from __future__ import absolute_import
 from __future__ import print_function
 
 import argparse
@@ -28,6 +29,8 @@ import sys
 from textwrap import dedent
 import warnings
 from signal import signal, SIGTERM, SIGHUP
+
+import six
 
 import lago
 import lago.plugins
@@ -239,7 +242,7 @@ def do_destroy(
         path = warn_message
 
     if not yes:
-        response = raw_input(
+        response = six.input(
             'Do you really want to destroy %s? [Yn] ' % warn_message
         )
         if response and response[0] not in 'Yy':
@@ -643,7 +646,7 @@ def do_list(workdir_path, out_format, **kwargs):
 
     workdir = lago_workdir.Workdir(path=workdir_path)
     workdir.load()
-    resources = workdir.prefixes.keys()
+    resources = list(workdir.prefixes.keys())
 
     print(out_format.format(resources))
 
@@ -968,7 +971,7 @@ def main():
     try:
         cli_plugins[args.verb].do_run(args)
     except utils.LagoException as e:
-        LOGGER.error(e.message)
+        LOGGER.error(getattr(e, 'message', str(e)))
         LOGGER.debug(e, exc_info=True)
         sys.exit(2)
     except Exception:

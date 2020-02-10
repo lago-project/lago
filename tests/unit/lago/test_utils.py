@@ -1,8 +1,10 @@
+from __future__ import absolute_import
+
 import json
 import os
 import yaml
 
-from StringIO import StringIO
+from six import StringIO
 
 import pytest
 

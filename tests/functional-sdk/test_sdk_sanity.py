@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 import pytest
 import textwrap
 import tempfile
@@ -19,7 +21,7 @@ def init_str(images):
     init_template = textwrap.dedent(
         """
     domains:
-      {% for vm_name, template in images.viewitems() %}
+      {% for vm_name, template in images.items() %}
       {{ vm_name }}:
         memory: 1024
         nics:
@@ -227,7 +229,7 @@ def test_systemd_analyze(test_results, vms, vm_name):
             'systemd-analyze not available on {0}'.format(vm_name)
         )
 
-    for i in xrange(retries):
+    for i in range(retries):
         res = vm.ssh(['systemd-analyze'])
         if not res:
             break

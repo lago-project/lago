@@ -17,6 +17,7 @@
 #
 # Refer to the README and COPYING files for full details of the license
 #
+from __future__ import absolute_import
 
 import os
 
@@ -263,6 +264,6 @@ class TestPrefixNetworkInitalization(object):
         ]
     )
     def test_validate_netconfig(self, empty_prefix, conf, err_msg):
-        with pytest.raises(LagoInitException, message=err_msg) as exc_info:
+        with pytest.raises(LagoInitException, match=err_msg) as exc_info:
             empty_prefix._validate_netconfig(conf)
         exc_info.match(err_msg)

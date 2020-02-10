@@ -1,11 +1,13 @@
+from __future__ import absolute_import
 from __future__ import print_function
+
 from future.builtins import super
 from lago import cmd
 from lago.config import config as lago_config
 from lago.lago_ansible import LagoAnsible
 from lago import workdir as lago_workdir
 from lago.log_utils import get_default_log_formatter
-from sdk_utils import SDKWrapper, setup_sdk_logging
+from lago.sdk_utils import SDKWrapper, setup_sdk_logging
 import weakref
 import os
 import logging

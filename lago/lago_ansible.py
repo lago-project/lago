@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 from collections import defaultdict
 import functools
 import logging
@@ -5,6 +7,8 @@ import tempfile
 import contextlib
 
 from . import log_utils
+
+import six
 
 LOGGER = logging.getLogger(__name__)
 LogTask = functools.partial(log_utils.LogTask, logger=LOGGER)
@@ -39,7 +43,7 @@ class LagoAnsible(object):
         """
         inventory = self.get_inventory(keys)
         lines = []
-        for name, hosts in inventory.viewitems():
+        for name, hosts in six.iteritems(inventory):
             lines.append('[{name}]'.format(name=name))
             for host in sorted(hosts):
                 lines.append(host)

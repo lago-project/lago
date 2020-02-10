@@ -1,3 +1,6 @@
+from __future__ import absolute_import
+from __future__ import print_function
+
 from lago import utils
 from lago.log_utils import LogTask
 import pytest
@@ -5,10 +8,10 @@ import pytest
 
 class LoggerMock(object):
     def debug(self, msg):
-        print msg
+        print(msg)
 
     def info(self, msg):
-        print msg
+        print(msg)
 
 
 class TestLogUtils(object):

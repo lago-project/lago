@@ -18,6 +18,8 @@
 # Refer to the README and COPYING files for full details of the license
 #
 
+from __future__ import absolute_import
+
 import logging
 import os
 from lxml import etree as ET
@@ -143,7 +145,7 @@ class CPU(object):
 
         cpu = ET.Element('cpu', mode='host-passthrough')
         cpu.append(self.generate_topology(vcpu_num))
-        if vcpu_num > 1:
+        if int(vcpu_num) > 1:
             cpu.append(self.generate_numa(vcpu_num))
         return cpu
 
@@ -294,7 +296,7 @@ class CPU(object):
                 cpus_per_cell, total_cells
             )
         )
-        for cell_id in xrange(0, total_cells):
+        for cell_id in range(0, total_cells):
             first_cpu_in_cell = cell_id * cpus_per_cell
             if cpus_per_cell == 1:
                 cpus_in_cell = str(first_cpu_in_cell)

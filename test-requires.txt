@@ -9,6 +9,3 @@ pytest>=3.6.0
 pytest-cov
 pytest-timeout
 pytest-catchlog
-# guestfs is not available on PyPI, however it can be installed
-# with a direct link.
-http://download.libguestfs.org/python/guestfs-1.36.4.tar.gz

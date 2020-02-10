@@ -17,6 +17,8 @@
 #
 # Refer to the README and COPYING files for full details of the license
 #
+
+from __future__ import absolute_import
 """
 A workdir is the base directory where lago will store all the files it needs
 and that are unique (not shared between workdirs).
@@ -157,7 +159,7 @@ class Workdir(object):
             return
 
         try:
-            basepath, dirs, _ = os.walk(self.path).next()
+            basepath, dirs, _ = next(os.walk(self.path))
         except StopIteration:
             raise MalformedWorkdir('Empty dir %s' % self.path)
 
@@ -316,7 +318,7 @@ class Workdir(object):
             passed (default) will destroy all of them
         """
         if prefix_names is None:
-            self.destroy(prefix_names=self.prefixes.keys())
+            self.destroy(prefix_names=list(self.prefixes.keys()))
             return
 
         for prefix_name in prefix_names:
@@ -387,7 +389,9 @@ class Workdir(object):
                                     os.path.join(os.curdir, path, '.lago')
                                 )
                             )
-                candidates = filter(Workdir.is_possible_workdir, candidates)
+                candidates = [
+                    c for c in candidates if Workdir.is_possible_workdir(c)
+                ]
                 for idx in range(len(candidates)):
                     if os.path.split(candidates[idx])[1] == '.lago':
                         candidates[idx] = os.path.dirname(candidates[idx])

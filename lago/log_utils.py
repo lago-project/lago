@@ -17,6 +17,8 @@
 #
 # Refer to the README and COPYING files for full details of the license
 #
+
+from __future__ import absolute_import
 """
 This module defines the special logging tools that lago uses
 """
@@ -243,7 +245,7 @@ class TaskHandler(logging.StreamHandler):
         Returns:
             str: the current active task
         """
-        return self.tasks.keys()[-1] if self.tasks else None
+        return list(self.tasks.keys())[-1] if self.tasks else None
 
     @property
     def cur_thread(self):
@@ -395,7 +397,7 @@ class TaskHandler(logging.StreamHandler):
             return
 
         while self.tasks:
-            next_task = reversed(self.tasks.keys()).next()
+            next_task = next(reversed(self.tasks.keys()))
             if next_task == parent_task_name:
                 break
             del self.tasks[next_task]

@@ -17,6 +17,8 @@
 #
 # Refer to the README and COPYING files for full details of the license
 #
+from __future__ import absolute_import
+
 import pytest
 
 import lago.providers.libvirt.utils as libvirt_utils
@@ -28,7 +30,7 @@ class TestDomain(object):
             ([state_int, 9], state_desc)
             for state_int, state_desc in libvirt_utils.DOMAIN_STATES.items()
         ] + [(['imnotastate', None], 'unknown')],
-        ids=libvirt_utils.DOMAIN_STATES.values() + ['unknown']
+        ids=list(libvirt_utils.DOMAIN_STATES.values()) + ['unknown']
     )
     def test_resolve_status(self, monkeypatch, expected, state):
         assert expected == libvirt_utils.Domain.resolve_state(state)

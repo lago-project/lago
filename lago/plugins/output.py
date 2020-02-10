@@ -17,6 +17,8 @@
 #
 # Refer to the README and COPYING files for full details of the license
 #
+
+from __future__ import absolute_import
 """
 About OutFormatPlugins
 
@@ -31,12 +33,12 @@ from abc import (abstractmethod, ABCMeta)
 import copy
 from operator import itemgetter
 
+from six import with_metaclass
+
 from . import Plugin
 
 
-class OutFormatPlugin(Plugin):
-    __metaclass__ = ABCMeta
-
+class OutFormatPlugin(with_metaclass(ABCMeta, Plugin)):
     def __init__(self):
         pass
 

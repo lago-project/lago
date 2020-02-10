@@ -18,6 +18,8 @@
 # Refer to the README and COPYING files for full details of the license
 #
 
+from __future__ import absolute_import
+
 from future.builtins import super
 import functools
 import logging
@@ -399,7 +401,8 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
             )
         except ExtractPathError as err:
             LOGGER.debug(
-                '%s: failed extracting files: %s', self.vm.name(), err.message
+                '%s: failed extracting files: %s', self.vm.name(),
+                getattr(err, 'message', str(err))
             )
             if self._has_guestfs:
                 self.extract_paths_dead(paths, ignore_nopath)

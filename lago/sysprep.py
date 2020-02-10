@@ -17,14 +17,18 @@
 #
 # Refer to the README and COPYING files for full details of the license
 #
-import os
 
-import utils
+from __future__ import absolute_import
+
 import logging
-import tempfile
-from jinja2 import Environment, PackageLoader
-import textwrap
+import os
 import sys
+import tempfile
+import textwrap
+
+from jinja2 import Environment, PackageLoader
+
+from lago import utils
 
 LOGGER = logging.getLogger(__name__)
 
@@ -34,13 +38,13 @@ except ImportError:
     LOGGER.debug('guestfs not available, ignoring')
 
 
-def _guestfs_version(default={'major': 1L, 'minor': 20L}):
+def _guestfs_version():
     if 'guestfs' in sys.modules:
         g = guestfs.GuestFS(python_return_dict=True)
         guestfs_ver = g.version()
         g.close()
     else:
-        guestfs_ver = default
+        guestfs_ver = {'major': 1, 'minor': 20}
 
     return guestfs_ver
 
@@ -55,7 +59,7 @@ def _render_template(distro, loader, **kwargs):
     template_name = 'sysprep-{0}.j2'.format(distro)
     template = env.select_template([template_name, 'sysprep-base.j2'])
     sysprep_content = template.render(guestfs_ver=_guestfs_version(), **kwargs)
-    with tempfile.NamedTemporaryFile(delete=False) as sysprep_file:
+    with tempfile.NamedTemporaryFile(mode='w', delete=False) as sysprep_file:
         sysprep_file.write('# {0}\n'.format(template.name))
         sysprep_file.write(sysprep_content)
 

@@ -17,7 +17,10 @@
 #
 # Refer to the README and COPYING files for full details of the license
 #
-import utils
+
+from __future__ import absolute_import
+
+from lago import utils
 
 _BRCTL = ['sudo', 'brctl']
 _IP = ['sudo', 'ip']

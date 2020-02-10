@@ -17,6 +17,8 @@
 #
 # Refer to the README and COPYING files for full details of the license
 #
+
+from __future__ import absolute_import
 """
 About CLIPlugins
 
@@ -101,12 +103,12 @@ from abc import (
     ABCMeta,
 )
 
+from six import with_metaclass
+
 from . import Plugin
 
 
-class CLIPlugin(Plugin):
-    __metaclass__ = ABCMeta
-
+class CLIPlugin(with_metaclass(ABCMeta, Plugin)):
     def __init__(self):
         pass
 

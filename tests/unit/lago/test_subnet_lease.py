@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 from lago import subnet_lease
 from lago.subnet_lease import (
     LagoSubnetLeaseOutOfRangeException, LagoSubnetLeaseStoreFullException,
@@ -92,7 +94,7 @@ class TestSubnetStore(object):
         path_to_lease = os.path.join(
             subnet_store.path, '{}.lease'.format(third_octet)
         )
-        _, dirnames, filenames = os.walk(subnet_store.path).next()
+        _, dirnames, filenames = next(os.walk(subnet_store.path))
 
         try:
             # Don't count the lockfile
@@ -116,7 +118,7 @@ class TestSubnetStore(object):
             subnet_store.acquire(prefix.uuid_path, subnet)
 
     def test_fail_on_full_store(self, subnet_store, prefix):
-        for i in xrange(
+        for i in range(
             subnet_store._min_third_octet, subnet_store._max_third_octet + 1
         ):
             subnet_store.acquire(prefix.uuid_path)
