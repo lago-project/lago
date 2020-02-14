@@ -38,6 +38,9 @@ REPO_NAME="local_tests_repo"
 
 
 @test "start.1vm_bridged: start everything at once" {
+    # FIXME:
+    skip "Bridged networks are broken on el8"
+
     common.is_initialized "$WORKDIR" || skip "Workdir not initiated"
     cd "$FIXTURES"
 
@@ -48,6 +51,9 @@ REPO_NAME="local_tests_repo"
 
 
 @test "start.1vm_bridged: start is reentrant" {
+    # FIXME:
+    skip "Bridged networks are broken on el8"
+
     # As there's no way to know the last test result, we will handle it here
     common.is_initialized "$WORKDIR" || skip "Workdir not initiated"
     cd "$FIXTURES"
