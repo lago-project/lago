@@ -43,15 +43,11 @@ REPO_NAME='local_tests_repo'
     helpers.run_ok "$LAGOCLI" deploy
 
 echo "Checking that the nicefile was properly created"
-    helpers.run_ok "$LAGOCLI" shell 'lago_functional_tests_vm01' <<EOC
-    cat /root/nicefile
-EOC
+    helpers.run_ok "$LAGOCLI" shell 'lago_functional_tests_vm01' "cat /root/nicefile"
     helpers.diff_output "$FIXTURES/nicefile"
 
     echo "Checking that the uglyfile was properly created"
-    helpers.run_ok "$LAGOCLI" shell 'lago_functional_tests_vm01' <<EOC
-    cat /root/uglyfile
-EOC
+    helpers.run_ok "$LAGOCLI" shell 'lago_functional_tests_vm01' "cat /root/uglyfile"
     helpers.diff_output "$FIXTURES/uglyfile"
 }
 

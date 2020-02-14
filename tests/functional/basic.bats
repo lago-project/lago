@@ -240,9 +240,7 @@ REPO_NAME="local_tests_repo"
     helpers.run_ok "$LAGOCLI" \
         shell \
         "lago_functional_tests_vm01" \
-        <<EOS
-          echo "$content" > /root/dummy_file_inside
-EOS
+        "echo $content > /root/dummy_file_inside"
     helpers.run_ok "$LAGOCLI" \
         copy-from-vm \
         "lago_functional_tests_vm01" \
