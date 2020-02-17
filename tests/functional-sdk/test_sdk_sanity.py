@@ -107,7 +107,7 @@ def test_networks_exists(env, init_dict):
 
 
 def test_custom_gateway(vms, nets, init_dict):
-    for net_name, net in init_dict['nets'].iteritems():
+    for net_name, net in init_dict['nets'].items():
         if 'gw' in net:
             assert nets[net_name].gw() == net['gw']
 
@@ -133,7 +133,8 @@ def test_vm_hostname_direct(vms, vm_name):
     domain = vm.mgmt_net.spec['dns_domain_name']
     res = vm.ssh(['hostname', '-f'])
     assert res.code == 0
-    assert str.strip(res.out) == '{0}.{1}'.format(vm.name(), domain)
+    direct_hostname = res.out.decode('utf-8').strip()
+    assert direct_hostname == '{0}.{1}'.format(vm.name(), domain)
 
 
 @pytest.mark.check_merged
@@ -193,7 +194,7 @@ def test_ansible_inventory(monkeypatch, env, test_results, vms):
     # Instead, we let it compute something and count the unique occurences.
 
     cmd = 'echo __abcd$(( 24 + 12 ))efgh___'
-    expected = '__abcd36efgh__'
+    expected = b'__abcd36efgh__'
     results = []
 
     with env.ansible_inventory_temp_file(keys=['groups']) as inv:
@@ -237,11 +238,11 @@ def test_systemd_analyze(test_results, vms, vm_name):
     else:
         pytest.fail('Failed to run systemd-analyze on {}'.format(vm_name))
 
-    log = '\n'.join([res.out, res.err])
+    log = '\n'.join([res.out.decode('utf-8'), res.err.decode('utf-8')])
 
     res = vm.ssh(['systemd-analyze', 'blame'])
     assert res.code == 0
-    log = log + '\n'.join([res.out, res.err])
+    log = log + '\n'.join([res.out.decode('utf-8'), res.err.decode('utf-8')])
     fname = os.path.join(
         test_results, 'systemd-analyze-{0}.txt'.format(vm.name())
     )
@@ -257,7 +258,7 @@ def test_collect_exists(tmpdir, vms, vm_name):
     content = 'nothing-{0}'.format(vm_name)
 
     vm = vms[vm_name]
-    with tempfile.NamedTemporaryFile(delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w+", delete=False) as f:
         f.write(content)
 
     res = vm.ssh(['mkdir', '-p', '/root/custom'])
