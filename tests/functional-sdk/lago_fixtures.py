@@ -22,7 +22,7 @@ def init_dict(init_str):
 
 @pytest.fixture(scope='module')
 def init_fname(init_str):
-    with tempfile.NamedTemporaryFile(delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w+", delete=False) as f:
         f.write(init_str)
     return f.name
 

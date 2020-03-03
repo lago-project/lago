@@ -25,10 +25,9 @@ unset LAGO__START__WAIT_SUSPEND
     common.is_initialized "$WORKDIR" || skip "prefix not initiated"
     pushd "$FIXTURES"
     helpers.run_ok "$LAGOCLI" start
-    helpers.run_ok "$LAGOCLI" shell "lago_functional_tests_vm01" <<EOC
-        echo "content before tests" > /root/nicefile
-        sync
-EOC
+    helpers.run_ok "$LAGOCLI" shell "lago_functional_tests_vm01" \
+"echo 'content before tests' > /root/nicefile
+sync"
     helpers.run_ok "$LAGOCLI" snapshot 'snapshot_number_1'
     helpers.run_ok "$LAGOCLI" status
     helpers.diff_output "$FIXTURES/1host_1disk_status"
@@ -46,10 +45,9 @@ EOC
 @test "snapshot.1host_1disk: make a change" {
     common.is_initialized "$WORKDIR" || skip "prefix not initiated"
     pushd "$FIXTURES"
-    helpers.run_ok "$LAGOCLI" shell "lago_functional_tests_vm01" <<EOC
-        echo "content after tests" > /root/nicefile
-        sync
-EOC
+    helpers.run_ok "$LAGOCLI" shell "lago_functional_tests_vm01" \
+"echo 'content after tests' > /root/nicefile
+sync"
     helpers.run_ok "$LAGOCLI" \
         copy-from-vm \
         'lago_functional_tests_vm01' \

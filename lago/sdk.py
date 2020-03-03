@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
-from future.builtins import super
 from lago import cmd
 from lago.config import config as lago_config
 from lago.lago_ansible import LagoAnsible

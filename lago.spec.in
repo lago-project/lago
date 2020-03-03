@@ -9,7 +9,7 @@ URL: https://github.com/lago-project/lago
 Source0: https://resources.ovirt.org/repos/%{name}/0.0/src/%{name}/%{name}-%{version}.tar.gz
 
 ###################### lago package
-Requires: python-%{name} = %{version}
+Requires: python3-%{name} = %{version}
 
 %description
 LAGO System testing framework.
@@ -19,12 +19,12 @@ Deploy and tear down environments of several virtual machines
 %setup -q -n %{name}-%{version}
 
 %build
-LAGO_VERSION=%{version} %{py2_build}
+LAGO_VERSION=%{version} %{py3_build}
 
 %install
-LAGO_VERSION=%{version} %{py2_install}
+LAGO_VERSION=%{version} %{py3_install}
 install -d -m 755 %{buildroot}/%{_sysconfdir}/lago
-PYTHONPATH="$PYTHONPATH:%{buildroot}/%{python_sitelib}"\
+PYTHONPATH="$PYTHONPATH:%{buildroot}/%{python3_sitelib}"\
              %{buildroot}/usr/bin/lago --ignore-warnings generate-config > "%{buildroot}/%{_sysconfdir}/lago/lago.conf"
 sed -i 's/^\([^#]\)\(.*\)/#\0/' "%{buildroot}/%{_sysconfdir}/lago/lago.conf"
 chmod 0644 "%{buildroot}/%{_sysconfdir}/lago/lago.conf"
@@ -43,97 +43,70 @@ install -p -D -m 644 etc/sudo/* %{buildroot}%{_sysconfdir}/sudoers.d/
 %files
 
 ###################### python-lago package
-%package -n python-%{name}
+%package -n python3-%{name}
 Summary: Library to perform lago operations
 BuildArch: noarch
 
-BuildRequires: python2-devel
-BuildRequires: python-stevedore
-BuildRequires: python-setuptools
-BuildRequires: python-yaml
-BuildRequires: pyxdg
-BuildRequires: python-xmltodict
-BuildRequires: python-lxml
-BuildRequires: libvirt-python
-BuildRequires: python-enum34
-BuildRequires: python-scp
-BuildRequires: python2-rpm-macros
-BuildRequires: python-wrapt
-BuildRequires: python2-future
-%if 0%{?fedora} >= 24
-BuildRequires: python2-configparser
-BuildRequires: python2-paramiko >= 2.1.1
-BuildRequires: python2-jinja2
-%else
-BuildRequires: python-jinja2
-BuildRequires: python-configparser
-BuildRequires: python2-paramiko
-%endif
-
-%if 0%{?fedora} >= 23
-BuildRequires: python2-dulwich
-BuildRequires: python2-pbr
-%else
-BuildRequires: python-pbr
-BuildRequires: python-dulwich
-%endif
-BuildRequires: python-flake8
 BuildRequires: git
-BuildRequires: python-netaddr
+BuildRequires: python3-dulwich
+BuildRequires: python3-jinja2
+BuildRequires: python3-libvirt
+BuildRequires: python3-lxml
+BuildRequires: python3-netaddr
+BuildRequires: python3-paramiko
+BuildRequires: python3-pbr
+BuildRequires: python3-pyxdg
+BuildRequires: python3-rpm-macros
+BuildRequires: python3-setuptools
+BuildRequires: python3-stevedore
+BuildRequires: python3-wrapt
+BuildRequires: python3-xmltodict
+BuildRequires: python3-yaml
+BuildRequires: python36-devel
+BuildRequires: python36-rpm-macros
 
-
-Requires: python
+Requires: python3
 Requires: libguestfs-tools >= 1.30
 Requires: libguestfs-devel >= 1.30
 Requires: libvirt >= 1.2.8
-Requires: libvirt-python
-Requires: python-libguestfs >= 1.30
-Requires: python-lxml
-Requires: python-pbr
-Requires: python-xmltodict
-Requires: python-scp
-Requires: python-setuptools
-Requires: python-stevedore
-Requires: python-yaml
-Requires: python-enum34
-Requires: pyxdg
-Requires: python-wrapt
-Requires: python-netaddr
-Requires: python2-future
-%if 0%{?fedora} >= 24
-Requires: python2-jinja2
-Requires: python2-configparser
-Requires: python2-paramiko >= 2.1.1
-%else
-Requires: python-jinja2
-Requires: python-configparser
-Requires: python2-paramiko
-%endif
-%if 0%{?rhel}
-Requires: qemu-img-rhev >= 2.1.2
-Requires: qemu-kvm-rhev >= 2.1.2
-%else
-Requires: qemu-img >= 2.1.2
-Requires: qemu-kvm >= 2.1.2
-%endif
+Requires: python3-libguestfs
+Requires: python3-libvirt
+Requires: python3-lxml
+Requires: python3-pbr
+Requires: python3-xmltodict
+Requires: python3-scp
+Requires: python3-setuptools
+Requires: python3-stevedore
+Requires: python3-yaml
+Requires: python3-pyxdg
+Requires: python3-wrapt
+Requires: python3-netaddr
+Requires: python3-jinja2
+Requires: python3-paramiko
+Requires: qemu-img
+Requires: qemu-kvm
 Requires: git
 Requires: sudo
 Requires: tar
-%{?python_provide:%python_provide python2-lago}
+%{?python_provide:%python_provide python3-lago}
 
-%description -n python-%{name}
+%description -n python3-%{name}
 
-%files -n python-%{name}
+%files -n python3-%{name}
 %doc AUTHORS COPYING README.rst
-%{python2_sitelib}/%{name}/*.py*
-%{python2_sitelib}/%{name}/plugins/*.py*
-%{python2_sitelib}/%{name}/templates/*.j2
-%{python2_sitelib}/%{name}/providers/*.py*
-%{python2_sitelib}/%{name}/providers/libvirt/*.py*
-%{python2_sitelib}/%{name}/providers/libvirt/templates/*.xml
-%{python2_sitelib}/%{name}/providers/libvirt/templates/*.j2
+%{python3_sitelib}/%{name}/*.py
+%{python3_sitelib}/%{name}/__pycache__
+%{python3_sitelib}/%{name}/plugins/*.py
+%{python3_sitelib}/%{name}/plugins/__pycache__
+%{python3_sitelib}/%{name}/templates/*.j2
+%{python3_sitelib}/%{name}/providers/*.py
+%{python3_sitelib}/%{name}/providers/__pycache__
+%{python3_sitelib}/%{name}/providers/libvirt/*.py
+%{python3_sitelib}/%{name}/providers/libvirt/__pycache__
+%{python3_sitelib}/%{name}/providers/libvirt/templates/*.xml
+%{python3_sitelib}/%{name}/providers/libvirt/templates/*.j2
 
-%{python2_sitelib}/%{name}-%{version}-py*.egg-info
+%{python3_sitelib}/%{name}-%{version}-py*.egg-info
 %{_bindir}/lagocli
 %{_bindir}/lago
 
@@ -147,12 +120,12 @@ Requires: tar
 %dir %attr(2775, root, lago) /var/lib/lago/repos/
 
 
-%pre -n python-%{name}
+%pre -n python3-%{name}
 if [[ "$1" -eq 1 ]]; then
     groupadd -f lago
 fi
 
-%postun -n python-%{name}
+%postun -n python3-%{name}
 if [[ "$1" -eq 0 ]]; then
     groupdel lago
 fi

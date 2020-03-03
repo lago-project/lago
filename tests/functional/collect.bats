@@ -52,11 +52,10 @@ REPO_NAME="local_tests_repo"
 @test "collect: generate some logs" {
     common.is_initialized "$WORKDIR" || skip "Workdir not initiated"
     pushd "$FIXTURES"
-    helpers.run_ok "$LAGOCLI" shell vm01 <<EOC
-        echo "mytest" > /var/log/something.log
-        echo "mytest2" > /var/log/something_else.log
-        sync
-EOC
+    helpers.run_ok "$LAGOCLI" shell vm01 \
+"echo mytest > /var/log/something.log
+echo mytest2 > /var/log/something_else.log
+sync"
     sync
 }
 

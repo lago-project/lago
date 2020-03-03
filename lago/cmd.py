@@ -942,6 +942,11 @@ def main():
         out_plugins=out_plugins,
     )
     args = parser.parse_args()
+
+    if args.verb is None:
+        parser.print_help()
+        sys.exit(1)
+
     config.update_args(args)
 
     logging.basicConfig(level=logging.DEBUG)

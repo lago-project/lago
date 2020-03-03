@@ -8,7 +8,6 @@ PyYAML
 scp
 setuptools
 stevedore
-future
 wrapt
 Jinja2
 xmltodict

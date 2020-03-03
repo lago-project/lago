@@ -41,13 +41,15 @@ def pytest_addoption(parser):
 
 
 def pytest_generate_tests(metafunc):
-    stage = pytest.config.getoption('--stage')
     if 'vm_name' in metafunc.fixturenames:
-        metafunc.parametrize('vm_name', _stage_images(stage).keys())
+        metafunc.parametrize(
+            'vm_name',
+            _stage_images(metafunc.config.option.stage).keys()
+        )
 
 
 def pytest_runtest_setup(item):
-    stage = pytest.config.getoption('--stage')
+    stage = item.config.option.stage
     if item.get_closest_marker('check_merged') and stage == 'check_patch':
         pytest.skip('runs only on check_merged stage')
     elif item.get_closest_marker('check_patch') and stage == 'check_merged':
@@ -56,8 +58,7 @@ def pytest_runtest_setup(item):
 
 @pytest.fixture(scope='session')
 def images(request):
-    stage = pytest.config.getoption('--stage')
-    return _stage_images(stage)
+    return _stage_images(request.config.option.stage)
 
 
 @pytest.fixture(scope='session')

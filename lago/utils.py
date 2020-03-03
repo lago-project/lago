@@ -99,7 +99,7 @@ class VectorThread:
             for result in self.results:
                 if 'exception' in result:
                     exc_info = result['exception']
-                    six.reraise(exc_info[1], None, exc_info[2])
+                    six.reraise(*exc_info)
         return [x.get('return', None) for x in self.results]
 
 
@@ -818,7 +818,7 @@ def filter_spec(spec, paths, wildcard='*', separator='/'):
                 if isinstance(spec, list):
                     iterator = iter(spec)
                 elif isinstance(spec, collections.Mapping):
-                    iterator = spec.itervalues()
+                    iterator = six.itervalues(spec)
                 else:
                     raise LagoUserException(
                         'Glob char {char} should refer only to dict or list, '
