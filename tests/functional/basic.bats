@@ -216,7 +216,7 @@ REPO_NAME="local_tests_repo"
     common.is_initialized "$WORKDIR" || skip "workdir not initiated"
     cd "$FIXTURES"
     rm -rf dummy_file
-    content="$(date)"
+    content="$(date +%s)"
     echo "$content" > "dummy_file"
     helpers.run_ok "$LAGOCLI" \
         copy-to-vm \
@@ -236,7 +236,7 @@ REPO_NAME="local_tests_repo"
     common.is_initialized "$WORKDIR" || skip "workdir not initiated"
     cd "$FIXTURES"
     rm -rf dummy_file
-    content="$(date)"
+    content="$(date +%s)"
     helpers.run_ok "$LAGOCLI" \
         shell \
         "lago_functional_tests_vm01" \
