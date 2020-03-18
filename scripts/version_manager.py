@@ -14,9 +14,6 @@ from collections import defaultdict, OrderedDict
 import dulwich.repo
 import dulwich.walk
 
-# TODO: Fix once we move to better CI pipeline
-VERSION = "1.0.0"
-
 BUG_URL_REG = re.compile(
     r'.*Bug-Url: https?://bugzilla.*/[^\d]*(?P<bugid>\d+)'
 )
@@ -317,8 +314,7 @@ def get_current_version(repo_path):
             fix_version=fix_version,
         )
 
-    # return '%s.%s.%s' % (maj_version, feat_version, fix_version)
-    return VERSION
+    return '%s.%s.%s' % (maj_version, feat_version, fix_version)
 
 
 def main(args):
