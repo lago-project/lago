@@ -6,7 +6,7 @@ BuildArch: noarch
 Group: System Environment/Libraries
 License: GPLv2+
 URL: https://github.com/lago-project/lago
-Source0: https://resources.ovirt.org/repos/%{name}/0.0/src/%{name}/%{name}-%{version}.tar.gz
+Source0: https://resources.ovirt.org/repos/%{name}/1.0/src/%{name}/%{name}-%{version}.tar.gz
 
 ###################### lago package
 Requires: python3-%{name} = %{version}
