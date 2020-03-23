@@ -140,6 +140,7 @@ def get_first_parents(repo_path):
 
     for entry in repo.get_walker(order=dulwich.walk.ORDER_TOPO):
         commit = entry.commit
+        commit_sha = commit.sha().hexdigest().encode('utf-8')
         if not commit.parents:
             append_parent(first_parents, commit, add_parent=False)
         elif len(commit.parents) == 1 and not on_merge:
@@ -147,7 +148,7 @@ def get_first_parents(repo_path):
         elif len(commit.parents) > 1 and not on_merge:
             on_merge = True
             append_parent(first_parents, commit)
-        elif commit.parents and commit.sha().hexdigest() in first_parents:
+        elif commit.parents and commit_sha in first_parents:
             append_parent(first_parents, commit, add_digest=False)
 
     return first_parents
