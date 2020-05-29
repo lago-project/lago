@@ -872,6 +872,9 @@ class Prefix(object):
         if not parent:
             return
 
+        if not os.path.isabs(parent):
+            parent = os.path.join(os.path.dirname(disk_path), parent)
+
         if os.path.isfile(parent):
             if os.path.samefile(
                 os.path.realpath(parent),
