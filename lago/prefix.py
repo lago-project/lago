@@ -845,7 +845,8 @@ class Prefix(object):
         self.resolve_parent(base_path, template_store, template_repo)
 
         qemu_cmd = [
-            'qemu-img', 'create', '-f', 'qcow2', '-b', base_path, disk_path
+            'qemu-img', 'create', '-f', 'qcow2', '-F', 'qcow2', '-b',
+            base_path, disk_path
         ]
         disk_metadata = template_spec.get('metadata', {})
         return qemu_cmd, disk_metadata
