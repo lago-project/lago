@@ -14,12 +14,11 @@ _local_config = {
     },
     'check_merged':
         {
-            'images': [
-                'el7.6-base-2',
-                'el6-base',
-                'fc28-base',
-                'fc29-base',
-            ]
+            'images':
+                [
+                    'el7.6-base-2', 'el6-base', 'fc28-base', 'fc29-base',
+                    'ubuntu16.04-base', 'debian8-base'
+                ]
         }  # noqa: E123
 }
 
