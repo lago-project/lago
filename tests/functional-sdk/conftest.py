@@ -17,8 +17,8 @@ _local_config = {
             'images': [
                 'el7.6-base-2',
                 'el6-base',
-                'fc28-base',
                 'fc29-base',
+                'fc30-base',
             ]
         }  # noqa: E123
 }
