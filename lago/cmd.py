@@ -113,6 +113,14 @@ in_lago_prefix = in_prefix(
         'section of all the disks'
     ),
 )
+@lago.plugins.cli.cli_plugin_add_argument(
+    '--ssh-key',
+    action='store',
+    help=(
+        'If passed, will be used for ssh access to VMs and no keys will '
+        'be generated'
+    ),
+)
 def do_init(
     workdir,
     virt_config,
@@ -124,6 +132,7 @@ def do_init(
     set_current=False,
     skip_bootstrap=False,
     skip_build=False,
+    ssh_key=None,
     **kwargs
 ):
 
@@ -160,7 +169,7 @@ def do_init(
                 workdir.path,
                 prefix_name,
             )
-            prefix = workdir.initialize(prefix_name)
+            prefix = workdir.initialize(prefix_name, ssh_key)
         else:
             LOGGER.debug(
                 'Adding prefix %s to workdir %s',
@@ -195,6 +204,7 @@ def do_init(
                     store,
                     do_bootstrap=not skip_bootstrap,
                     do_build=not skip_build,
+                    ssh_key=ssh_key,
                 )
 
             if set_current:

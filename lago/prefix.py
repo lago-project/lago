@@ -188,14 +188,27 @@ class Prefix(object):
                 self.paths.ssh_id_rsa(),
             )
 
+    def _copy_ssh_keys(self, ssh_key):
+        """
+        Copy existing ssh keys to prefix
+
+        Returns:
+            None
+        """
+        shutil.copyfile(ssh_key, self.paths.ssh_id_rsa())
+        shutil.copyfile(ssh_key + ".pub", self.paths.ssh_id_rsa_pub())
+
     @log_task('Initialize prefix')
-    def initialize(self):
+    def initialize(self, ssh_key=None):
         """
         Initialize this prefix, this includes creating the destination path,
         and creating the uuid for the prefix, for any other actions see
         :func:`Prefix.virt_conf`
 
         Will safely roll back if any of those steps fail
+
+        Args:
+            ssh_key(str): Optional path to existing ssh key to be used
 
         Returns:
             None
@@ -221,8 +234,12 @@ class Prefix(object):
                     LogTask('Generate prefix uuid'):
                 f.write(uuid.uuid1().hex)
 
-            with LogTask('Create ssh keys'):
-                self._create_ssh_keys()
+            if ssh_key is None:
+                with LogTask('Create ssh keys'):
+                    self._create_ssh_keys()
+            else:
+                with LogTask('Copying ssh key'):
+                    self._copy_ssh_keys(ssh_key)
 
             with LogTask('Tag prefix as initialized'):
                 with open(self.paths.prefix_lagofile(), 'w') as fd:
@@ -1099,6 +1116,7 @@ class Prefix(object):
         template_store=None,
         do_bootstrap=True,
         do_build=True,
+        ssh_key=None,
     ):
         """
         Initializes all the virt infrastructure of the prefix, creating the
@@ -1120,7 +1138,8 @@ class Prefix(object):
             template_repo=template_repo,
             template_store=template_store,
             do_bootstrap=do_bootstrap,
-            do_build=do_build
+            do_build=do_build,
+            ssh_key=ssh_key
         )
 
     def _prepare_domains_images(self, conf, template_repo, template_store):
@@ -1205,7 +1224,8 @@ class Prefix(object):
         template_repo=None,
         template_store=None,
         do_bootstrap=True,
-        do_build=True
+        do_build=True,
+        ssh_key=None
     ):
         """
         Initializes all the virt infrastructure of the prefix, creating the

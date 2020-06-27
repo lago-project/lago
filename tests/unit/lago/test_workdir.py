@@ -125,7 +125,7 @@ class TestWorkdir(object):
         my_prefix_instance = my_workdir.initialize(prefix_name=prefix_name)
 
         my_prefix.assert_called_with(my_workdir.join(prefix_name))
-        my_prefix_instance.initialize.assert_called_with()
+        my_prefix_instance.initialize.assert_called_with(None)
         assert not mock_makedirs.method_calls
         mock_exists.assert_called_with(my_workdir.join())
         mock_set_current.assert_called_with(prefix_name)
@@ -166,7 +166,7 @@ class TestWorkdir(object):
         my_prefix_instance = my_workdir.initialize(prefix_name=prefix_name)
 
         my_prefix.assert_called_with(my_workdir.join(prefix_name))
-        my_prefix_instance.initialize.assert_called_with()
+        my_prefix_instance.initialize.assert_called_with(None)
         mock_makedirs.assert_called_with(my_workdir.join())
         mock_exists.assert_called_with(my_workdir.join())
         mock_set_current.assert_called_with(prefix_name)

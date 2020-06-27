@@ -109,12 +109,13 @@ class Workdir(object):
         """
         return os.path.join(self.path, *args)
 
-    def initialize(self, prefix_name='default', *args, **kwargs):
+    def initialize(self, prefix_name='default', ssh_key=None, *args, **kwargs):
         """
         Initializes a workdir by adding a new prefix to the workdir.
 
         Args:
             prefix_name(str): Name of the new prefix to add
+            ssh_key(str): Optional path to existing ssh key to be used
             *args: args to pass along to the prefix constructor
             *kwargs: kwargs to pass along to the prefix constructor
 
@@ -135,7 +136,7 @@ class Workdir(object):
         self.prefixes[prefix_name] = self.prefix_class(
             self.join(prefix_name), *args, **kwargs
         )
-        self.prefixes[prefix_name].initialize()
+        self.prefixes[prefix_name].initialize(ssh_key)
         if self.current is None:
             self._set_current(prefix_name)
 
