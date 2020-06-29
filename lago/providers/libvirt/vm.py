@@ -431,8 +431,10 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
         """
         if not self._has_guestfs:
             raise LagoException(
-                ('guestfs module not available, cannot '
-                 )('extract files with libguestfs')
+                (
+                    'guestfs module not available, cannot '
+                    'extract files with libguestfs'
+                )
             )
 
         LOGGER.debug(
