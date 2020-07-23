@@ -74,18 +74,11 @@ class LagoAnsible(object):
                 value = self.get_key(key, vm_spec)
                 if value is None:
                     continue
-                if isinstance(value, list):
-                    for sub_value in value:
-                        inventory['{}={}'.format(key, sub_value)].append(entry)
-                else:
-                    inventory['{}={}'.format(key, value)].append(entry)
-
-            # Adding a special case for the group key.
-            # Most of the times the user wants that the host
-            # will be a part of the group "group", and not a part of
-            # "group=something"
-            for group in vm_spec.get('groups', []):
-                inventory[group].append(entry)
+                if not isinstance(value, list):
+                    value = [value]
+                for sub_value in value:
+                    inventory['{}'.format(sub_value.replace('-', '_')
+                                          )].append(entry)
 
         return inventory
 

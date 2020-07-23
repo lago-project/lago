@@ -145,34 +145,34 @@ class TestLagoAnsible(object):
         'keys, expected', [
             (['/f'], {}), (
                 None, {
-                    'groups=masters': [
+                    'masters': [
                         generate_entry(VM1),
                     ],
-                    'groups=vms': [
+                    'vms': [
                         generate_entry(VM1),
                         generate_entry(VM2),
                     ],
-                    'vm-provider=local-libvirt': [
+                    'local_libvirt': [
                         generate_entry(VM1),
                         generate_entry(VM2),
                         generate_entry(VM3),
                     ],
-                    'vm-type=default': [
+                    'default': [
                         generate_entry(VM1),
                         generate_entry(VM2),
                     ],
-                    'vm-type=not-default': [
+                    'not_default': [
                         generate_entry(VM3),
                     ],
                 }
             ), (
                 ['/disks/0/template_name', 'mgmt_net'], {
-                    '/disks/0/template_name=el7': [
+                    'el7': [
                         generate_entry(VM1),
                         generate_entry(VM2),
                     ],
-                    '/disks/0/template_name=fc25': [generate_entry(VM3)],
-                    'mgmt_net=lago': [
+                    'fc25': [generate_entry(VM3)],
+                    'lago': [
                         generate_entry(VM1),
                         generate_entry(VM2),
                         generate_entry(VM3),
