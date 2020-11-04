@@ -618,14 +618,19 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
                 device=disk_device,
             )
 
+            # cache='none' allows using io='native', which typically get best
+            # performance, and avoid multiple level of caching when using
+            # nested vms.
+
             if bus == 'virtio':
                 disk.append(
                     ET.Element(
                         'driver',
                         name='qemu',
                         type=dev_spec['format'],
+                        cache='none',
+                        io='native',
                         discard='unmap',
-                        cache='writeback',
                         iothread='1',
                         queues='1',
                     ),
@@ -636,8 +641,9 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
                         'driver',
                         name='qemu',
                         type=dev_spec['format'],
+                        cache='none',
+                        io='native',
                         discard='unmap',
-                        cache='writeback',
                     ),
                 )
             else:
