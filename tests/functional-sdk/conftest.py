@@ -12,15 +12,9 @@ _local_config = {
     'check_patch': {
         'images': ['el7.6-base-2']
     },
-    'check_merged':
-        {
-            'images': [
-                'el7.6-base-2',
-                'el6-base',
-                'fc28-base',
-                'fc29-base',
-            ]
-        }  # noqa: E123
+    'check_merged': {
+        'images': ['el7.6-base-2']
+    }  # noqa: E123
 }
 
 
