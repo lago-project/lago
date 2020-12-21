@@ -356,6 +356,8 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
                         'create',
                         '-f',
                         'qcow2',
+                        '-F',
+                        'qcow2',
                         '-b',
                         disk_template['path'],
                         disk['path'],
