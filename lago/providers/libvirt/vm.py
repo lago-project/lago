@@ -30,6 +30,7 @@ import sys
 import libvirt
 from lxml import etree as ET
 from textwrap import dedent
+from scp import SCPException
 
 from lago import export, log_utils, sysprep, utils
 from lago.utils import LagoException
@@ -400,7 +401,7 @@ class LocalLibvirtVMProvider(vm_plugin.VMProviderPlugin):
                 paths=paths,
                 ignore_nopath=ignore_nopath,
             )
-        except ExtractPathError as err:
+        except (ExtractPathError, SCPException) as err:
             LOGGER.debug(
                 '%s: failed extracting files: %s', self.vm.name(),
                 getattr(err, 'message', str(err))
