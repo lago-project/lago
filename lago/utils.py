@@ -402,12 +402,13 @@ class Flock(object):
         Raises:
             IOError: if the call to flock fails
         """
-        self._fd = open(self._path, mode='w+')
-        os.chmod(self._path, 0o660)
+        umask = os.umask(0o007)
+        self._fd = os.open(self._path, os.O_CREAT | os.O_RDWR, 0o660)
+        os.umask(umask)
         fcntl.flock(self._fd, self._op)
 
     def release(self):
-        self._fd.close()
+        os.close(self._fd)
 
 
 class LockFile(object):
