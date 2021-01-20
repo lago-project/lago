@@ -8,7 +8,6 @@ readonly PIP_CACHE_DIR=/var/tmp/lago_pip_cache
 readonly CHECK_PATCH_BATS=('basic.bats' \
     'collect.bats' \
     'deploy.bats' \
-    'export.bats' \
     'start.bats' \
     'status.bats' )
 
