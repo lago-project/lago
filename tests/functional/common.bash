@@ -9,6 +9,7 @@ VERBS=(
     deploy
     destroy
     init
+    setup
     shell
     snapshot
     start

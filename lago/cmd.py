@@ -39,6 +39,7 @@ import lago.templates
 from lago.config import config
 from lago import (log_utils, workdir as lago_workdir, utils, lago_ansible)
 from lago.utils import (in_prefix, with_logging, LagoUserException)
+from lago.verify_configuration  import (fix_configuration, check_configuration, check_user, check_directory,validate_status, VerifyLagoStatus)
 
 LOGGER = logging.getLogger('cli')
 in_lago_prefix = in_prefix(
@@ -70,7 +71,6 @@ in_lago_prefix = in_prefix(
         '$PWD/.lago'
     ),
     metavar='WORKDIR',
-    type=os.path.abspath,
     nargs='?',
 )
 @lago.plugins.cli.cli_plugin_add_argument(
@@ -754,7 +754,6 @@ def do_copy_to_vm(prefix, host, remote_path, local_path, **kwargs):
 def do_collect(prefix, output, no_skip, **kwargs):
     prefix.collect_artifacts(output, ignore_nopath=not no_skip)
 
-
 @lago.plugins.cli.cli_plugin(
     help='Run scripts that install necessary RPMs and configuration'
 )
@@ -763,6 +762,79 @@ def do_collect(prefix, output, no_skip, **kwargs):
 def do_deploy(prefix, **kwargs):
     prefix.deploy()
 
+@lago.plugins.cli.cli_plugin(
+    help='Verify that the machine runninh Lago is well configured and configure if needed'
+)
+@lago.plugins.cli.cli_plugin_add_argument(
+    '--username',
+    '-u',
+    help='Which user needs to be configured',
+    action='store',
+)
+
+@lago.plugins.cli.cli_plugin_add_argument(
+    '--envs-dir',
+    '-e',
+    dest='envs_dir',
+    help='Which directory the qemu has access permissions',
+    default="/var/lib/lago",
+    type=os.path.abspath,
+    action='store',
+)
+
+@lago.plugins.cli.cli_plugin_add_argument(
+    '--verify',
+    '-v',
+    help='Return report that describes which configurations are OK, and which are not.',
+    action='store_true',
+)
+@in_lago_prefix
+@with_logging
+def do_setup(
+    prefix, username, envs_dir, verify, **kwargs
+):
+    msg_error = []
+    if (username):
+        if (check_user(username)):
+            msg_error.append("Username doesn't exists " + username)
+    else:
+        username = os.getenv("SUDO_USER") or os.getenv("USER") 
+
+    if (envs_dir):
+        if (check_directory(envs_dir)):
+            msg_error.append("Directory doesn't exists "+ envs_dir)
+
+    if ( msg_error ):
+        msg_error_str = '\n'.join(msg_error)
+        LOGGER.error("%s", msg_error_str)
+        sys.exit(1)
+
+    config_dict = check_configuration(username,envs_dir)
+    (verify_status,list_not_configure) = validate_status(config_dict)           
+    verify_lago = VerifyLagoStatus(username,envs_dir,config_dict,verify_status)
+    
+    if (verify):
+       verify_lago.displayLagoStatus(True)
+       if verify_status:
+              sys.exit(0)
+       else:
+              sys.exit(2)   
+    else:
+       if (os.getuid() != 0): 
+          print("Please use 'sudo', you need adminstrator permissions for configuration")
+          sys.exit(1)
+       else:
+          fix_configuration(username,envs_dir,config_dict)
+          config_dict = check_configuration(username,envs_dir)
+          (verify_status,list_not_configure) = validate_status(config_dict)
+          verify_lago.fixLagoConfiguration(config_dict,verify_status)
+          
+          if verify_status:
+              sys.exit(0)
+          else:
+              LOGGER.error("Problem to configure: %s", str(list_not_configure))
+              verify_lago.displayLagoStatus(False)
+              sys.exit(2)    
 
 @lago.plugins.cli.cli_plugin(help="Dump configuration file")
 @lago.plugins.cli.cli_plugin_add_argument(
@@ -771,6 +843,7 @@ def do_deploy(prefix, **kwargs):
     action='store_true',
     default=False,
 )
+
 def do_generate(verbose, **kwargs):
     print(config.get_ini(incl_unset=verbose))
 
