@@ -171,6 +171,7 @@ html_theme_options = {
     'github_count': True,
     'github_button': True,
     'logo': 'lago_logo_200x200.png',
+    'caption_font_size': '1.7em',
 }
 
 # Add any paths that contain custom themes here, relative to this directory.

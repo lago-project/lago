@@ -1,5 +1,5 @@
-Lago CPU Models in detail
-=========================
+Lago CPU Models
+===============
 
 There are several ways you can configure the CPU model Lago will use
 for each VM. This section tries to explain more in-depth how it will be 
