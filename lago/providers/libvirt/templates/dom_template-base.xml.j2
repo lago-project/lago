@@ -7,20 +7,31 @@
       <suspend-to-mem enabled='no'/>
     </pm>
     <os>
-      <type arch='x86_64' machine='pc'>hvm</type>
+      <type arch='x86_64' machine='q35'>hvm</type>
       <bootmenu enable='no'/>
       <bios useserial='no'/>
     </os>
     <features>
       <acpi/>
-      <apic/>
+      <apic eoi='on'/>
       <pae/>
       <vmport state='off'/>
     </features>
+    <pm>
+      <suspend-to-disk enabled='no'/>
+      <suspend-to-mem enabled='yes'/>
+    </pm>
     <devices>
       <emulator>{{ qemu_kvm }}</emulator>
       <memballoon model='none'/>
-      <controller type='usb' model='none'>
+      <controller type='usb' model='none'/>
+      <controller type='pci' index='0' model='pcie-root'/>
+      <controller type='pci' index='1' model='dmi-to-pci-bridge'/>
+      <controller type='pci' index='2' model='pci-bridge'/>
+      <controller type='pci' index='3' model='pcie-expander-bus'>
+        <target>
+          <node>0</node>
+        </target>
       </controller>
       <disk type='file' device='disk'>
         <driver name='qemu' type='qcow2'/>
@@ -39,14 +50,8 @@
       <console type='pty'>
         <target type='virtio' port='0'/>
       </console>
-      <video>
-        <model type='cirrus' vram='16384' heads='1'/>
-        <alias name='video0'/>
-        <address type='pci' domain='0x0000' bus='0x00' slot='0x02' function='0x0'/>
-      </video>
     </devices>
     <clock offset='utc'>
-      <timer name='kvmclock'>
-      </timer>
+      <timer name='kvmclock'/>
     </clock>
 </domain>
