@@ -64,6 +64,10 @@ def init_str(images):
         dhcp:
           start: 100
           end: 254
+
+      net-03:
+        type: nat
+        subnet: 250
     """
     )
     template = Environment(loader=BaseLoader()).from_string(init_template)
@@ -110,6 +114,12 @@ def test_custom_gateway(vms, nets, init_dict):
     for net_name, net in init_dict['nets'].items():
         if 'gw' in net:
             assert nets[net_name].gw() == net['gw']
+
+
+def test_custom_subnet(vms, nets, init_dict):
+    for net_name, net in init_dict['nets'].iteritems():
+        if 'subnet' in net:
+            assert nets[net_name].subnet() == net['subnet']
 
 
 def test_vm_is_running(vms, vm_name):

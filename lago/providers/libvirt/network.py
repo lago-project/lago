@@ -56,6 +56,9 @@ class Network(object):
     def gw(self):
         return self._spec.get('gw')
 
+    def subnet(self):
+        return self._spec.get('subnet')
+
     def mtu(self):
         if self.libvirt_con.getLibVersion() > 3001001:
             return self._spec.get('mtu', '1500')
@@ -184,7 +187,10 @@ class NATNetwork(Network):
     def _libvirt_xml(self):
         net_raw_xml = libvirt_utils.get_template('net_nat_template.xml')
 
-        subnet = self.gw().split('.')[2]
+        subnet = self.subnet()
+        if not subnet:
+            subnet = self.gw().split('.')[2]
+
         ipv6_prefix = self._ipv6_prefix(subnet=subnet)
         mtu = self.mtu()
 
